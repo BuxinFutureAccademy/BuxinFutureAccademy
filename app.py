@@ -141,7 +141,7 @@ class GroupClass(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     teacher = db.relationship('User', foreign_keys=[teacher_id], lazy='select')
     students = db.relationship('User', secondary=group_class_students, 
-                             lazy='select', back_populates='group_classes')
+                             lazy='select', back_populates='group_classes')  # ✅ FIXED
 
 class Course(db.Model):
     """Model for courses in the store"""

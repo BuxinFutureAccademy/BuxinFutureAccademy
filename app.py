@@ -402,87 +402,11 @@ def generate_whatsapp_links(recipients, message):
         })
     return whatsapp_links
 
-# ========================================
-# COPY ALL YOUR ROUTES FROM ORIGINAL app.py HERE
-# ========================================
-# NOTE: This is where you need to copy ALL the routes from your original app.py
-# I'll include the essential ones, but you need to add ALL of them
-
-@app.route('/')
-def index():
-    if current_user.is_authenticated:
-        if current_user.is_admin:
-            return redirect(url_for('admin_dashboard'))
-        else:
-            return redirect(url_for('student_dashboard'))
-    return render_template('index.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.check_password(password):
-            login_user(user)
-            flash('Login successful!', 'success')
-            if user.is_admin:
-                return redirect(url_for('admin_dashboard'))
-            else:
-                return redirect(url_for('student_dashboard'))
-        else:
-            flash('Invalid username or password', 'danger')
-    
-    return render_template('login.html')
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        first_name = request.form['first_name']
-        last_name = request.form['last_name']
-        whatsapp_number = request.form.get('whatsapp_number')
-
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists', 'danger')
-            return render_template('register.html')
-        
-        if User.query.filter_by(email=email).first():
-            flash('Email already exists', 'danger')
-            return render_template('register.html')
-        
-        user = User(
-            username=username,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            whatsapp_number=whatsapp_number,
-            is_student=True,
-            is_admin=False
-        )
-        user.set_password(password)
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        flash('Registration successful! Please login.', 'success')
-        return redirect(url_for('login'))
-    
-    return render_template('register.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('index'))
 
 # ========================================
 # ADD ALL OTHER ROUTES HERE
 # ========================================
+
 # ========================================
 # AUTHENTICATION ROUTES
 # ========================================

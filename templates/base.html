@@ -116,6 +116,72 @@
             font-size: 0.9rem;
         }
 
+        /* Dropdown Enhancements */
+        .dropdown-toggle::after {
+            margin-left: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown.show .dropdown-toggle::after {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            box-shadow: var(--shadow-medium);
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            min-width: 200px;
+            animation: dropdownSlideIn 0.3s ease-out;
+        }
+
+        @keyframes dropdownSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            color: var(--dark-color);
+            text-decoration: none;
+        }
+
+        .dropdown-item i {
+            margin-right: 0.75rem;
+            width: 16px;
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        .dropdown-item:hover {
+            background: var(--gradient-primary);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .dropdown-item:hover i {
+            color: white;
+        }
+
+        .dropdown-divider {
+            margin: 0.5rem 0;
+            border-color: var(--glass-border);
+        }
+
         .navbar-toggler {
             border: none;
             padding: 0.5rem;
@@ -168,16 +234,15 @@
         /* Floating Flash Messages Container */
         .flash-messages-container {
             position: fixed;
-            top: 90px; /* Below navbar */
+            top: 90px;
             right: 20px;
             left: 20px;
-            z-index: 1050; /* Higher than navbar */
-            pointer-events: none; /* Allow clicks to pass through container */
+            z-index: 1050;
+            pointer-events: none;
             max-width: 600px;
             margin: 0 auto;
         }
 
-        /* Flash Messages */
         .flash-messages {
             display: flex;
             flex-direction: column;
@@ -238,7 +303,6 @@
             border-left-color: #0984e3;
         }
 
-        /* Alert close button styling */
         .alert .btn-close {
             background: rgba(255, 255, 255, 0.2);
             border-radius: 50%;
@@ -252,7 +316,6 @@
             transform: scale(1.1);
         }
 
-        /* Alert fade out animation */
         .alert.fade.show {
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
@@ -303,7 +366,7 @@
 
         /* Content Area */
         .main-content {
-            padding-bottom: 100px; /* Space for bottom nav on mobile */
+            padding-bottom: 100px;
         }
 
         /* Scrollbar Styling */
@@ -425,6 +488,19 @@
                 left: 10px;
                 top: 80px;
             }
+
+            .dropdown-menu {
+                position: static !important;
+                transform: none !important;
+                box-shadow: none;
+                border: none;
+                background: transparent;
+                backdrop-filter: none;
+            }
+
+            .dropdown-item {
+                padding: 0.5rem 1rem;
+            }
         }
 
         @media (min-width: 992px) {
@@ -518,7 +594,7 @@
     </style>
 </head>
 <body>
-    <!-- Modern Top Navbar -->
+    <!-- Modern Top Navbar with Organized Dropdowns -->
     <nav class="navbar navbar-expand-lg" id="mainNavbar">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
@@ -533,93 +609,126 @@
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav ms-auto align-items-center">
                     {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('store') }}">
-                                <i class="fas fa-store"></i>
-                                <span>Course Store</span>
+                        <!-- Learning & Courses Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Learning</span>
                             </a>
+                            <ul class="dropdown-menu" aria-labelledby="learningDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('store') }}">
+                                    <i class="fas fa-store"></i>Course Store
+                                </a></li>
+                                {% if not current_user.is_admin %}
+                                    <li><a class="dropdown-item" href="{{ url_for('my_courses') }}">
+                                        <i class="fas fa-book-open"></i>My Courses
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('my_course_orders') }}">
+                                        <i class="fas fa-receipt"></i>Course Orders
+                                    </a></li>
+                                {% endif %}
+                            </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('products') }}">
-                                <i class="fas fa-box"></i>
-                                <span>Products</span>
-                            </a>
-                        </li>
-                        {% if not current_user.is_admin %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('my_courses') }}">
-                                    <i class="fas fa-graduation-cap"></i>
-                                    <span>My Courses</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link position-relative" href="{{ url_for('cart') }}">
-                                    <i class="fas fa-shopping-cart"></i>
-                                    <span>Cart</span>
+
+                        <!-- Shopping Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="shoppingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>Shopping</span>
+                                {% if not current_user.is_admin %}
                                     {% set cart_count = current_user.cart_items|length if current_user.cart_items else 0 %}
                                     {% if cart_count > 0 %}
                                         <span class="cart-badge">{{ cart_count }}</span>
                                     {% endif %}
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('product_cart') }}">
-                                    <i class="fas fa-shopping-bag"></i>
-                                    <span>Product Cart</span>
-                                </a>
-                            </li>
-                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('my_course_orders') }}">
-                                    <i class="fas fa-shopping-bag"></i>
-                                    <span>course orders</span>
-                                </a>
-                            </li>
-                    
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('my_orders') }}">
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="shoppingDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('products') }}">
+                                    <i class="fas fa-box"></i>Products
+                                </a></li>
+                                {% if not current_user.is_admin %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('cart') }}">
+                                        <i class="fas fa-shopping-cart"></i>Course Cart
+                                        {% if cart_count > 0 %}
+                                            <span class="badge bg-primary ms-2">{{ cart_count }}</span>
+                                        {% endif %}
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('product_cart') }}">
+                                        <i class="fas fa-shopping-bag"></i>Product Cart
+                                    </a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
+
+                        {% if not current_user.is_admin %}
+                            <!-- Orders & Payments Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="ordersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-truck"></i>
                                     <span>Orders</span>
                                 </a>
+                                <ul class="dropdown-menu" aria-labelledby="ordersDropdown">
+                                    <li><a class="dropdown-item" href="{{ url_for('my_orders') }}">
+                                        <i class="fas fa-truck"></i>My Orders
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('payments') }}">
+                                        <i class="fas fa-credit-card"></i>Payments
+                                    </a></li>
+                                </ul>
+                            </li>
+                        {% else %}
+                            <!-- Admin can see payments directly -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('payments') }}">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Payments</span>
+                                </a>
                             </li>
                         {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('payments') }}">
-                                <i class="fas fa-credit-card"></i>
-                                <span>Payments</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('ai_assistant') }}">
-                                <i class="fas fa-brain"></i>
-                                <span>AI Assistant</span>
-                            </a>
-                        </li>
-                        <!-- In your navbar section of base.html -->
-                         <li class="nav-item">
-                           <a class="nav-link" href="{{ url_for('about_us') }}">
-                            <i class="fas fa-info-circle"></i>
-                               <span>About Us</span>
-                              </a>
-                         </li>
 
-
-                        <li class="nav-item">
-                            <span class="navbar-text">
-                                <i class="fas fa-user-circle me-2"></i>
-                                {{ current_user.first_name }}
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt"></i>
-                                <span>Logout</span>
+                        <!-- Tools & Support Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-tools"></i>
+                                <span>Tools</span>
                             </a>
+                            <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('ai_assistant') }}">
+                                    <i class="fas fa-brain"></i>AI Assistant
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('about_us') }}">
+                                    <i class="fas fa-info-circle"></i>About Us
+                                </a></li>
+                            </ul>
                         </li>
+
+                        <!-- User Account Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle"></i>
+                                <span>{{ current_user.first_name }}</span>
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="fas fa-user"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="fas fa-cog"></i>Settings
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt"></i>Logout
+                                </a></li>
+                            </ul>
+                        </li>
+
                     {% else %}
+                        <!-- Guest User Navigation -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('store') }}">
                                 <i class="fas fa-store"></i>
-                                <span>Course Store</span>
+                                <span>Courses</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -628,17 +737,21 @@
                                 <span>Products</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">
-                                <i class="fas fa-sign-in-alt"></i>
-                                <span>Login</span>
+                        
+                        <!-- Auth Dropdown for Guests -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user"></i>
+                                <span>Account</span>
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}">
-                                <i class="fas fa-user-plus"></i>
-                                <span>Register</span>
-                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="authDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('login') }}">
+                                    <i class="fas fa-sign-in-alt"></i>Login
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('register') }}">
+                                    <i class="fas fa-user-plus"></i>Register
+                                </a></li>
+                            </ul>
                         </li>
                     {% endif %}
                 </ul>
@@ -713,175 +826,3 @@
             window.addEventListener('scroll', function() {
                 if (window.scrollY > 50) {
                     navbar.classList.add('scrolled');
-                } else {
-                    navbar.classList.remove('scrolled');
-                }
-            });
-
-            // Enhanced auto-dismiss alerts after 5 seconds with animation
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach((alert, index) => {
-                // Stagger the appearance of multiple alerts
-                setTimeout(() => {
-                    alert.style.animation = 'slideInFromRight 0.5s ease-out';
-                }, index * 200);
-
-                // Auto dismiss after 5 seconds
-                setTimeout(() => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    
-                    // Add fade out animation before closing
-                    alert.addEventListener('close.bs.alert', function () {
-                        alert.style.animation = 'slideInFromRight 0.3s ease-in reverse';
-                    });
-                    
-                    bsAlert.close();
-                }, 5000 + (index * 200));
-            });
-
-            // Enhanced manual close animation
-            document.querySelectorAll('.alert .btn-close').forEach(closeBtn => {
-                closeBtn.addEventListener('click', function() {
-                    const alert = this.closest('.alert');
-                    alert.style.animation = 'slideInFromRight 0.3s ease-in reverse';
-                });
-            });
-
-            // Add loading spinner to forms on submit
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.addEventListener('submit', function() {
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    if (submitBtn) {
-                        const originalText = submitBtn.innerHTML;
-                        submitBtn.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
-                        submitBtn.disabled = true;
-                        
-                        // Re-enable button after 10 seconds as fallback
-                        setTimeout(() => {
-                            submitBtn.innerHTML = originalText;
-                            submitBtn.disabled = false;
-                        }, 10000);
-                    }
-                });
-            });
-
-            // Smooth scroll for anchor links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                });
-            });
-
-            // Add ripple effect to buttons
-            const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    const rect = button.getBoundingClientRect();
-                    const ripple = document.createElement('span');
-                    const size = Math.max(rect.width, rect.height);
-                    const x = e.clientX - rect.left - size / 2;
-                    const y = e.clientY - rect.top - size / 2;
-                    
-                    ripple.style.cssText = `
-                        position: absolute;
-                        border-radius: 50%;
-                        background: rgba(255, 255, 255, 0.3);
-                        width: ${size}px;
-                        height: ${size}px;
-                        left: ${x}px;
-                        top: ${y}px;
-                        animation: ripple 0.6s ease-out;
-                        pointer-events: none;
-                    `;
-                    
-                    button.style.position = 'relative';
-                    button.style.overflow = 'hidden';
-                    button.appendChild(ripple);
-                    
-                    setTimeout(() => {
-                        ripple.remove();
-                    }, 600);
-                });
-            });
-
-            // Add keyboard accessibility for alerts
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const visibleAlerts = document.querySelectorAll('.alert.show');
-                    visibleAlerts.forEach(alert => {
-                        const bsAlert = new bootstrap.Alert(alert);
-                        bsAlert.close();
-                    });
-                }
-            });
-        });
-
-        // CSS for ripple animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes ripple {
-                0% {
-                    transform: scale(0);
-                    opacity: 1;
-                }
-                100% {
-                    transform: scale(1);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Function to show custom notifications (can be called from other pages)
-        function showNotification(message, type = 'info', duration = 5000) {
-            const container = document.querySelector('.flash-messages-container .flash-messages');
-            if (!container) return;
-
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type} alert-dismissible fade show notification-enter`;
-            alert.setAttribute('role', 'alert');
-            
-            const iconMap = {
-                'success': 'check-circle',
-                'danger': 'times-circle',
-                'warning': 'exclamation-triangle',
-                'info': 'info-circle'
-            };
-
-            alert.innerHTML = `
-                <i class="fas fa-${iconMap[type] || 'info-circle'} me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                <div class="alert-progress"></div>
-            `;
-
-            container.appendChild(alert);
-
-            // Auto dismiss after specified duration
-            setTimeout(() => {
-                const bsAlert = new bootstrap.Alert(alert);
-                alert.addEventListener('close.bs.alert', function () {
-                    alert.style.animation = 'slideInFromRight 0.3s ease-in reverse';
-                });
-                bsAlert.close();
-            }, duration);
-
-            return alert;
-        }
-
-        // Make function globally available
-        window.showNotification = showNotification;
-    </script>
-
-    {% block extra_scripts %}
-    {% endblock %}
-</body>
-</html>

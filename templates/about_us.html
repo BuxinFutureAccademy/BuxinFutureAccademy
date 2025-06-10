@@ -1,0 +1,1168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    --warning-gradient: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    --info-gradient: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    --dark-gradient: linear-gradient(135deg, #2d3436 0%, #636e72 100%);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 16px 48px rgba(0, 0, 0, 0.15);
+    --shadow-heavy: 0 24px 64px rgba(0, 0, 0, 0.2);
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Hero Section */
+.about-hero {
+    background: var(--primary-gradient);
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    color: white;
+}
+
+.about-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(240, 147, 251, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.2) 0%, transparent 50%);
+    animation: heroFloat 20s ease-in-out infinite;
+}
+
+@keyframes heroFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(2deg); }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 4rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    background: linear-gradient(45deg, #fff, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.3rem;
+    opacity: 0.9;
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Modern Card */
+.modern-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: var(--shadow-light);
+    padding: 3rem;
+    margin-bottom: 3rem;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 30% 30%, rgba(102, 126, 234, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.modern-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f3f4;
+}
+
+.card-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1.5rem;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: var(--shadow-light);
+}
+
+.card-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3436;
+    margin: 0;
+}
+
+.card-content {
+    position: relative;
+    z-index: 2;
+    line-height: 1.8;
+    color: #636e72;
+    font-size: 1.1rem;
+}
+
+/* Values Grid */
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.value-item {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid var(--glass-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.value-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--primary-gradient);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.value-item:hover::before {
+    opacity: 0.05;
+}
+
+.value-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+}
+
+.value-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    color: white;
+    position: relative;
+    z-index: 2;
+}
+
+.value-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2d3436;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+}
+
+.value-description {
+    color: #636e72;
+    line-height: 1.6;
+    position: relative;
+    z-index: 2;
+}
+
+/* What We Do Section */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.service-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    border: 1px solid var(--glass-border);
+}
+
+.service-card.robotics {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+.service-card.electric {
+    background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(68, 160, 141, 0.1) 100%);
+}
+
+.service-card.education {
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.service-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.service-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-gradient);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: white;
+    font-size: 1.3rem;
+}
+
+.service-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3436;
+    margin: 0;
+}
+
+.service-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.service-list li {
+    padding: 0.5rem 0;
+    position: relative;
+    padding-left: 2rem;
+    color: #636e72;
+    line-height: 1.6;
+}
+
+.service-list li::before {
+    content: '✦';
+    position: absolute;
+    left: 0;
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* Achievements Section */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.achievement-item {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border-left: 4px solid;
+}
+
+.achievement-item:nth-child(1) { border-left-color: #667eea; }
+.achievement-item:nth-child(2) { border-left-color: #4ecdc4; }
+.achievement-item:nth-child(3) { border-left-color: #f093fb; }
+.achievement-item:nth-child(4) { border-left-color: #ffeaa7; }
+
+.achievement-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+}
+
+.achievement-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #667eea;
+}
+
+.achievement-text {
+    font-size: 1rem;
+    color: #636e72;
+    line-height: 1.6;
+}
+
+/* Media Gallery */
+.media-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 24px;
+    padding: 3rem;
+    margin: 3rem 0;
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+}
+
+.media-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 50px;
+    padding: 0.5rem;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    color: #636e72;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin: 0 0.5rem;
+}
+
+.tab-btn.active {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: var(--shadow-light);
+}
+
+.media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.media-item {
+    background: #f8f9fa;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.media-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+}
+
+.media-placeholder {
+    height: 200px;
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 3rem;
+}
+
+.media-info {
+    padding: 1.5rem;
+}
+
+.media-title {
+    font-weight: 600;
+    color: #2d3436;
+    margin-bottom: 0.5rem;
+}
+
+.media-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* CTA Section */
+.cta-section {
+    background: var(--primary-gradient);
+    border-radius: 24px;
+    padding: 4rem 3rem;
+    text-align: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    margin: 3rem 0;
+}
+
+.cta-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.cta-content {
+    position: relative;
+    z-index: 2;
+}
+
+.cta-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.cta-text {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.cta-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cta-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-medium);
+    text-decoration: none;
+}
+
+.cta-btn.primary {
+    background: white;
+    color: #667eea;
+    border-color: white;
+}
+
+.cta-btn.primary:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .modern-card {
+        padding: 2rem;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .card-icon {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .values-grid,
+    .services-grid,
+    .achievements-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .media-tabs {
+        flex-direction: column;
+        background: transparent;
+    }
+    
+    .tab-btn {
+        margin: 0.25rem 0;
+    }
+    
+    .media-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .cta-section {
+        padding: 3rem 2rem;
+    }
+    
+    .cta-title {
+        font-size: 2rem;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .cta-btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+/* Animation Classes */
+.fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stagger-animation > * {
+    opacity: 0;
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-animation > *:nth-child(5) { animation-delay: 0.5s; }
+</style>
+
+<!-- Hero Section -->
+<div class="about-hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">About BuXin</h1>
+            <p class="hero-subtitle">
+                Pioneering the future of technology in Africa through innovative robotics, 
+                AI solutions, and sustainable electric vehicles.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <!-- Who We Are -->
+    <div class="modern-card fade-in-up">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <h2 class="card-title">Who We Are</h2>
+        </div>
+        <div class="card-content">
+            <p>BuXin is an innovative African technology company specializing in <strong>robotics</strong>, <strong>artificial intelligence (AI)</strong>, and <strong>electric vehicles (EVs)</strong>. Founded by a passionate team of engineers and tech enthusiasts, BuXin's goal is to leverage smart technology to solve real-world challenges faced by communities across Africa and beyond.</p>
+        </div>
+    </div>
+
+    <!-- Mission & Vision -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="modern-card fade-in-up">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-target"></i>
+                    </div>
+                    <h2 class="card-title">Our Mission</h2>
+                </div>
+                <div class="card-content">
+                    <p>To empower Africa's youth and communities through cutting-edge robotics and AI solutions, sustainable electric vehicles, and inclusive STEM education — driving innovation, environmental stewardship, and economic growth.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="modern-card fade-in-up">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h2 class="card-title">Our Vision</h2>
+                </div>
+                <div class="card-content">
+                    <p>To become a global leader in robotics and green technology by building intelligent products that improve lives, create jobs, and foster a sustainable future — with Africa at the forefront of technological advancement.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Values -->
+    <div class="modern-card fade-in-up">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-heart"></i>
+            </div>
+            <h2 class="card-title">Core Values</h2>
+        </div>
+        <div class="values-grid stagger-animation">
+            <div class="value-item">
+                <div class="value-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <h3 class="value-title">Innovation</h3>
+                <p class="value-description">Pushing boundaries with creative, practical tech solutions.</p>
+            </div>
+            <div class="value-item">
+                <div class="value-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3 class="value-title">Education</h3>
+                <p class="value-description">Investing in youth training and mentorship to cultivate future leaders.</p>
+            </div>
+            <div class="value-item">
+                <div class="value-icon">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <h3 class="value-title">Sustainability</h3>
+                <p class="value-description">Developing eco-friendly technologies that reduce carbon footprints.</p>
+            </div>
+            <div class="value-item">
+                <div class="value-icon">
+                    <i class="fas fa-hands-helping"></i>
+                </div>
+                <h3 class="value-title">Community</h3>
+                <p class="value-description">Building technology that solves real local problems and uplifts people.</p>
+            </div>
+            <div class="value-item">
+                <div class="value-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="value-title">Integrity</h3>
+                <p class="value-description">Maintaining transparency, quality, and ethical business practices.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- What We Do -->
+    <div class="modern-card fade-in-up">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-cogs"></i>
+            </div>
+            <h2 class="card-title">What We Do</h2>
+        </div>
+        <div class="services-grid stagger-animation">
+            <div class="service-card robotics">
+                <div class="service-header">
+                    <div class="service-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="service-title">Robotics & AI Solutions</h3>
+                </div>
+                <ul class="service-list">
+                    <li>Designing AI-powered healthcare robots to assist hospitals in patient care and record management</li>
+                    <li>Building mobile robots for various applications including offices, education, and industry</li>
+                    <li>Developing intelligent automation systems to boost efficiency and reduce human error</li>
+                </ul>
+            </div>
+            <div class="service-card electric">
+                <div class="service-header">
+                    <div class="service-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="service-title">Electric Vehicles</h3>
+                </div>
+                <ul class="service-list">
+                    <li>Creating self-driving electric scooters, mini tractors, minibuses, and electric buses tailored for African roads</li>
+                    <li>Pioneering smart, green transportation solutions to lower pollution and improve mobility</li>
+                </ul>
+            </div>
+            <div class="service-card education">
+                <div class="service-header">
+                    <div class="service-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3 class="service-title">Education & Training</h3>
+                </div>
+                <ul class="service-list">
+                    <li>Launching <strong>BuXin Future Academy</strong>, a STEM-focused school offering courses in robotics, AI, machine learning, and programming</li>
+                    <li>Organizing robotics bootcamps, workshops, and competitions to inspire and nurture young talent</li>
+                    <li>Providing free or subsidized Arduino kits, learning resources, and certificates to students</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Major Achievements -->
+    <div class="modern-card fade-in-up">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h2 class="card-title">Major Achievements</h2>
+        </div>
+        <div class="achievements-grid stagger-animation">
+            <div class="achievement-item">
+                <div class="achievement-icon">
+                    <i class="fas fa-motorcycle"></i>
+                </div>
+                <p class="achievement-text">Successfully built and deployed electric scooters and mini tractors</p>
+            </div>
+            <div class="achievement-item">
+                <div class="achievement-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <p class="achievement-text">Developed AI assistant robots currently in testing phases for healthcare use</p>
+            </div>
+            <div class="achievement-item">
+                <div class="achievement-icon">
+                    <i class="fas fa-medal"></i>
+                </div>
+                <p class="achievement-text">Won national robotics competitions, empowering youth teams and building local tech capacity</p>
+            </div>
+            <div class="achievement-item">
+                <div class="achievement-icon">
+                    <i class="fas fa-laptop-code"></i>
+                </div>
+                <p class="achievement-text">Launched online robotics and coding classes reaching hundreds of students</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Future Plans -->
+    <div class="modern-card fade-in-up">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h2 class="card-title">Future Plans</h2>
+        </div>
+        <div class="card-content">
+            <ul class="service-list">
+                <li>Scale up production of self-driving electric buses for public transportation</li>
+                <li>Expand BuXin Future Academy with a physical campus and online global reach</li>
+                <li>Develop a fully autonomous electric car tailored for African cities</li>
+                <li>Partner with governments, NGOs, and private sector to boost STEM education and green tech adoption</li>
+                <li>Grow BuXin into a global tech hub and innovation leader</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Why BuXin Matters -->
+    <div class="modern-card fade-in-up">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <h2 class="card-title">Why BuXin Matters</h2>
+        </div>
+        <div class="card-content">
+            <p>Africa has immense talent and potential but lacks local technology infrastructure and education in emerging fields like AI and robotics. BuXin is bridging this gap by building homegrown technology solutions while empowering youth with practical skills. This not only drives economic development but also inspires a culture of innovation and self-reliance.</p>
+        </div>
+    </div>
+
+    <!-- Media Gallery -->
+    <div class="media-section fade-in-up">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-photo-video"></i>
+            </div>
+            <h2 class="card-title">Gallery</h2>
+        </div>
+        
+        <div class="media-tabs">
+            <button class="tab-btn active" onclick="showTab('pictures')">
+                <i class="fas fa-images me-2"></i>Pictures
+            </button>
+            <button class="tab-btn" onclick="showTab('videos')">
+                <i class="fas fa-video me-2"></i>Videos
+            </button>
+        </div>
+
+        <div id="pictures-tab" class="media-grid">
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">AI Healthcare Robot</h4>
+                    <p class="media-description">Smart electric minibus prototype for public transportation</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Competition Victory</h4>
+                    <p class="media-description">BuXin team winning national robotics competition</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-solar-panel"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Solar Technology</h4>
+                    <p class="media-description">Sustainable energy solutions integrated into our vehicles</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="videos-tab" class="media-grid" style="display: none;">
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Company Overview</h4>
+                    <p class="media-description">Learn about BuXin's mission and innovative projects</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Robot in Action</h4>
+                    <p class="media-description">Watch our AI healthcare robot assisting medical staff</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Electric Vehicle Demo</h4>
+                    <p class="media-description">Self-driving electric scooter demonstration</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Academy Tour</h4>
+                    <p class="media-description">Virtual tour of BuXin Future Academy facilities</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Student Success Stories</h4>
+                    <p class="media-description">Testimonials from our successful graduates</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Behind the Scenes</h4>
+                    <p class="media-description">Engineering process and team collaboration</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="cta-section fade-in-up">
+        <div class="cta-content">
+            <h2 class="cta-title">Join Us</h2>
+            <p class="cta-text">
+                Whether you are a student, investor, partner, or enthusiast, BuXin welcomes you to join our journey to build a smarter, cleaner, and more inclusive future through robotics and electric mobility.
+            </p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('register') }}" class="cta-btn primary">
+                    <i class="fas fa-user-plus me-2"></i>Become a Student
+                </a>
+                <a href="mailto:info@buxin.com" class="cta-btn">
+                    <i class="fas fa-handshake me-2"></i>Partner With Us
+                </a>
+                <a href="mailto:invest@buxin.com" class="cta-btn">
+                    <i class="fas fa-chart-line me-2"></i>Invest in Innovation
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for scroll animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in-up');
+                
+                // Add stagger animation to grid items
+                if (entry.target.classList.contains('stagger-animation')) {
+                    const children = entry.target.children;
+                    Array.from(children).forEach((child, index) => {
+                        setTimeout(() => {
+                            child.style.opacity = '1';
+                            child.style.animation = 'fadeInUp 0.6s ease-out forwards';
+                        }, index * 100);
+                    });
+                }
+            }
+        });
+    }, observerOptions);
+
+    // Observe all animated elements
+    const animatedElements = document.querySelectorAll('.modern-card, .media-section, .cta-section');
+    animatedElements.forEach(el => observer.observe(el));
+
+    // Add hover effects to cards
+    const cards = document.querySelectorAll('.modern-card, .value-item, .service-card, .achievement-item');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+
+    // Add ripple effect to buttons
+    const buttons = document.querySelectorAll('.cta-btn, .tab-btn');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const rect = button.getBoundingClientRect();
+            const ripple = document.createElement('span');
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                animation: ripple 0.6s ease-out;
+                pointer-events: none;
+            `;
+            
+            button.style.position = 'relative';
+            button.style.overflow = 'hidden';
+            button.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+
+    // Smooth scroll for internal links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Auto-play animations on load
+    setTimeout(() => {
+        const heroContent = document.querySelector('.hero-content');
+        if (heroContent) {
+            heroContent.style.animation = 'fadeInUp 1s ease-out';
+        }
+    }, 300);
+
+    // Add parallax effect to hero background
+    window.addEventListener('scroll', function() {
+        const scrolled = window.pageYOffset;
+        const hero = document.querySelector('.about-hero');
+        if (hero) {
+            hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+        }
+    });
+});
+
+// Tab switching function
+function showTab(tabName) {
+    // Hide all tabs
+    document.getElementById('pictures-tab').style.display = 'none';
+    document.getElementById('videos-tab').style.display = 'none';
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').style.display = 'grid';
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+    
+    // Add animation to newly shown items
+    const items = document.querySelectorAll(`#${tabName}-tab .media-item`);
+    items.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            item.style.transition = 'all 0.3s ease';
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+}
+
+// Add CSS for ripple animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes ripple {
+        0% {
+            transform: scale(0);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Media item click handlers (for future expansion)
+document.addEventListener('DOMContentLoaded', function() {
+    const mediaItems = document.querySelectorAll('.media-item');
+    mediaItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Add your media modal/lightbox functionality here
+            const title = this.querySelector('.media-title').textContent;
+            console.log('Opening media:', title);
+            
+            // For now, just add a visual feedback
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+});
+
+// Enhanced scrolling animations
+window.addEventListener('scroll', function() {
+    const scrolled = window.pageYOffset;
+    const rate = scrolled * -0.5;
+    
+    // Parallax effect for hero background
+    const heroBackground = document.querySelector('.about-hero::before');
+    if (heroBackground) {
+        document.querySelector('.about-hero').style.backgroundPosition = `center ${rate}px`;
+    }
+    
+    // Add navbar background on scroll
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        if (scrolled > 100) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    }
+});
+</script>
+
+{% endblock %}AI Healthcare Robot</h4>
+                    <p class="media-description">Our latest AI-powered healthcare assistant robot in testing phase</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-motorcycle"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Electric Scooter</h4>
+                    <p class="media-description">Self-driving electric scooter designed for African roads</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">Robotics Workshop</h4>
+                    <p class="media-description">Students learning robotics at BuXin Future Academy</p>
+                </div>
+            </div>
+            <div class="media-item">
+                <div class="media-placeholder">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="media-info">
+                    <h4 class="media-title">m,

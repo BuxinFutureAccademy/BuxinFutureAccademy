@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="fas fa-credit-card me-2"></i>Product Checkout</h2>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Payment & Shipping Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('process_product_payment') }}" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Select a Payment Method</label>
+                            
+                            <!-- Direct Bank Transfer -->
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" value="bank_transfer" id="bank_transfer" required>
+                                        <label class="form-check-label fw-bold" for="bank_transfer">
+                                            4️⃣ Direct Bank Transfer
+                                        </label>
+                                    </div>
+                                    <div class="ms-4 mt-2">
+                                        <p class="mb-1"><strong>Bank:</strong> Ecobank Gambia</p>
+                                        <p class="mb-1"><strong>Name:</strong> Abdoukadir Jabbie</p>
+                                        <p class="mb-1"><strong>Account #:</strong> 6261010783</p>
+                                        <p class="mb-0"><strong>SWIFT Code:</strong> ECOCGMGMXXX</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Mobile Money Options -->
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" value="wave" id="wave">
+                                        <label class="form-check-label fw-bold" for="wave">
+                                            1️⃣ WAVE
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" value="western_union" id="western_union">
+                                        <label class="form-check-label fw-bold" for="western_union">
+                                            1️⃣ Western Union
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" value="moneygram" id="moneygram">
+                                        <label class="form-check-label fw-bold" for="moneygram">
+                                            2️⃣ MoneyGram
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" value="ria" id="ria">
+                                        <label class="form-check-label fw-bold" for="ria">
+                                            3️⃣ Ria Money Transfer
+                                        </label>
+                                    </div>
+                                    <div class="ms-4 mt-2">
+                                        <p class="mb-1"><strong>Receiver Name:</strong> Foday Muhammed Jabbi</p>
+                                        <p class="mb-1"><strong>Country:</strong> The Gambia</p>
+                                        <p class="mb-0"><strong>Phone:</strong> +2205427090</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3">Submit Your Payment Details</h5>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="full_name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="payment_proof" class="form-label">Upload Payment Proof</label>
+                            <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept="image/*,.pdf" required> <!-- ✅ REQUIRED ADDED -->
+                            <div class="form-text">Upload screenshot or receipt of your payment</div>
+                        </div>
+                        
+                        <div class="alert alert-success mb-4">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            <strong>30-Day Money-Back Guarantee:</strong> If you're not completely satisfied with your purchase, 
+                            we offer a full refund within 30 days — no questions asked.
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-lock me-2"></i>Complete Order - ${{ "%.2f"|format(total) }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in cart_items %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <span>{{ item.product.name }}</span>
+                                {% if item.quantity > 1 %}
+                                    <br><small class="text-muted">Qty: {{ item.quantity }}</small>
+                                {% endif %}
+                            </div>
+                            <span>${{ "%.2f"|format(item.get_total_price()) }}</span>
+                        </div>
+                    {% endfor %}
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total</strong>
+                        <strong class="text-success">${{ "%.2f"|format(total) }}</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-info-circle me-2"></i>Need Help?</h6>
+                    <p class="small mb-0">Contact our support team at <a href="mailto:support@example.com">support@example.com</a> or call +220 123 4567</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

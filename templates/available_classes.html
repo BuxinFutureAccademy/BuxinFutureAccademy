@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-chalkboard-teacher me-2"></i>Available Classes</h2>
+    <p class="text-muted">Browse and enroll in available classes</p>
+    
+    <div class="row">
+        <!-- Individual Classes -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
+                </div>
+                <div class="card-body">
+                    {% if individual_classes %}
+                        {% for class in individual_classes %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ class.name }}</h5>
+                                    <p class="card-text">{{ class.description or 'No description available' }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">Teacher: {{ class.teacher.first_name }} {{ class.teacher.last_name }}</small>
+                                        <a href="{{ url_for('enroll_class', class_type='individual', class_id=class.id) }}" class="btn btn-sm btn-success">
+                                            Enroll Now (D100)
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-chalkboard fa-3x mb-3"></i>
+                            <p>No individual classes available at this time.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Group Classes -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
+                </div>
+                <div class="card-body">
+                    {% if group_classes %}
+                        {% for class in group_classes %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ class.name }}</h5>
+                                    <p class="card-text">{{ class.description or 'No description available' }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small class="text-muted">Teacher: {{ class.teacher.first_name }} {{ class.teacher.last_name }}</small><br>
+                                            <small class="text-muted">{{ class.students|length }}/{{ class.max_students }} students enrolled</small>
+                                        </div>
+                                        {% if class.students|length < class.max_students %}
+                                            <a href="{{ url_for('enroll_class', class_type='group', class_id=class.id) }}" class="btn btn-sm btn-success">
+                                                Enroll Now (D100)
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-danger">Class Full</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-users fa-3x mb-3"></i>
+                            <p>No group classes available at this time.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

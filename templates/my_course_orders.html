@@ -1,0 +1,85 @@
+<!-- templates/my_course_orders.html -->
+{% extends "base.html" %}
+
+{% block title %}My Course Orders - LMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-graduation-cap"></i> My Course Orders</h2>
+    
+    {% if orders %}
+        <div class="row">
+            {% for order in orders %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5>Order #{{ order.id }}</h5>
+                                <span class="badge bg-{% if order.status == 'completed' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'failed' %}danger{% elif order.status == 'refunded' %}info{% else %}secondary{% endif %}">
+                                    {% if order.status == 'pending' %}
+                                        <i class="fas fa-clock"></i> Pending Verification
+                                    {% elif order.status == 'completed' %}
+                                        <i class="fas fa-check"></i> Approved
+                                    {% elif order.status == 'failed' %}
+                                        <i class="fas fa-times"></i> Failed
+                                    {% elif order.status == 'refunded' %}
+                                        <i class="fas fa-undo"></i> Refunded
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-4">
+                                    {% if order.course.image_url %}
+                                        <img src="{{ order.course.image_url }}" class="img-fluid rounded" alt="{{ order.course.title }}">
+                                    {% else %}
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px;">
+                                            <i class="fas fa-book fa-2x text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-8">
+                                    <h6>{{ order.course.title }}</h6>
+                                    <p class="text-muted mb-1">{{ order.course.short_description[:50] }}...</p>
+                                    <p class="text-success mb-1"><strong>${{ "%.2f"|format(order.amount) }}</strong></p>
+                                    <p class="text-muted mb-0"><small>{{ order.purchased_at.strftime('%Y-%m-%d %H:%M') }}</small></p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <strong>Payment Method:</strong> {{ order.payment_method.replace('_', ' ').title() }}<br>
+                                    <strong>Transaction ID:</strong> {{ order.transaction_id }}
+                                </small>
+                            </div>
+                            
+                            {% if order.status == 'pending' %}
+                                <div class="alert alert-warning mt-3 mb-0">
+                                    <i class="fas fa-info-circle"></i>
+                                    <small><strong>Status:</strong> Your payment is being verified. You will receive access once approved.</small>
+                                </div>
+                            {% elif order.status == 'completed' %}
+                                <div class="mt-3">
+                                    <a href="{{ url_for('my_courses') }}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-play"></i> Access Course
+                                    </a>
+                                </div>
+                            {% elif order.status == 'failed' %}
+                                <div class="alert alert-danger mt-3 mb-0">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <small><strong>Payment Failed:</strong> Please contact support or try again.</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> You haven't placed any course orders yet. 
+            <a href="{{ url_for('store') }}">Browse our course catalog</a> to get started!
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Order #{{ order.id }} - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-invoice"></i> Order #{{ order.id }}</h2>
+        <a href="{{ url_for('admin_product_orders') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Orders
+        </a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Order ID:</strong> #{{ order.id }}</p>
+                            <p><strong>Transaction ID:</strong> {{ order.transaction_id }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{% if order.status == 'completed' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'shipped' %}info{% elif order.status == 'delivered' %}primary{% else %}secondary{% endif %}">
+                                    {{ order.status.title() }}
+                                </span>
+                            </p>
+                            <p><strong>Payment Method:</strong> {{ order.payment_method.replace('_', ' ').title() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Order Date:</strong> {{ order.ordered_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            {% if order.shipped_at %}
+                                <p><strong>Shipped Date:</strong> {{ order.shipped_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            {% endif %}
+                            {% if order.delivered_at %}
+                                <p><strong>Delivered Date:</strong> {{ order.delivered_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            {% endif %}
+                            {% if order.tracking_number %}
+                                <p><strong>Tracking Number:</strong> {{ order.tracking_number }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-box"></i> Product Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            {% if order.product.image_url %}
+                                <img src="{{ order.product.image_url }}" class="img-fluid rounded" alt="{{ order.product.name }}">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 150px;">
+                                    <i class="fas fa-box fa-3x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h5>{{ order.product.name }}</h5>
+                            <p class="text-muted">{{ order.product.short_description }}</p>
+                            <p><strong>SKU:</strong> {{ order.product.sku or 'N/A' }}</p>
+                            <p><strong>Category:</strong> {{ order.product.category }}</p>
+                            <p><strong>Type:</strong> {{ order.product.product_type }}</p>
+                            <p><strong>Unit Price:</strong> ${{ "%.2f"|format(order.unit_price) }}</p>
+                            <p><strong>Quantity:</strong> {{ order.quantity }}</p>
+                            <h5><strong>Total: ${{ "%.2f"|format(order.total_amount) }}</strong></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-user"></i> Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ order.customer_name }}</p>
+                    <p><strong>Email:</strong> {{ order.customer_email }}</p>
+                    <p><strong>Phone:</strong> {{ order.customer_phone or 'N/A' }}</p>
+                    {% if order.customer_address %}
+                        <p><strong>Address:</strong><br>{{ order.customer_address }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Payment Proof Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-receipt"></i> Payment Proof</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if order.payment_proof %}
+                        <a href="{{ url_for('payment_proof', filename=order.payment_proof) }}" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-download"></i> View Payment Proof
+                        </a>
+                        <div class="mt-2">
+                            <small class="text-muted">File: {{ order.payment_proof }}</small>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>No Payment Proof</strong><br>
+                            <small>Customer did not upload payment proof</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-edit"></i> Update Order Status</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tracking_number" class="form-label">Tracking Number (Optional)</label>
+                            <input type="text" class="form-control" id="tracking_number" name="tracking_number" value="{{ order.tracking_number or '' }}">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-save"></i> Update Status
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

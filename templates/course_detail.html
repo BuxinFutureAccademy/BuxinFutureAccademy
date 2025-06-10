@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            {% if course.image_url %}
+                <img src="{{ course.image_url }}" class="img-fluid rounded mb-4" alt="{{ course.title }}" style="width: 100%; height: 300px; object-fit: cover;">
+            {% endif %}
+            
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <span class="badge bg-primary me-2">{{ course.category }}</span>
+                    <span class="badge bg-secondary">{{ course.level }}</span>
+                </div>
+                <h2 class="text-success">${{ "%.2f"|format(course.price) }}</h2>
+            </div>
+            
+            <h1>{{ course.title }}</h1>
+            <p class="lead">{{ course.short_description }}</p>
+            
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        <span>{{ course.duration_weeks }} weeks</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-users text-success me-2"></i>
+                        <span>{{ course.get_enrolled_count() }} enrolled</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-signal text-info me-2"></i>
+                        <span>{{ course.level }} level</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Course Description</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ course.description }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    {% if current_user.is_authenticated %}
+                        {% if is_purchased %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                You have purchased this course!
+                            </div>
+                            <a href="{{ url_for('my_courses') }}" class="btn btn-success w-100">
+                                <i class="fas fa-play me-2"></i>Go to My Courses
+                            </a>
+                        {% elif in_cart %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                This course is in your cart
+                            </div>
+                            <a href="{{ url_for('cart') }}" class="btn btn-info w-100">
+                                <i class="fas fa-shopping-cart me-2"></i>View Cart
+                            </a>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('add_to_cart', course_id=course.id) }}">
+                                <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Please <a href="{{ url_for('login') }}">login</a> to purchase this course.
+                        </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <h6>What you'll learn:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Comprehensive course content</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Hands-on projects</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Expert instruction</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Certificate of completion</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

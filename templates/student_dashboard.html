@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .hover-scale:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 20px rgba(0, 97, 255, 0.2);
+    }
+    .btn-gradient {
+        background: linear-gradient(135deg, #007bff, #00c6ff);
+        color: white !important;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+        background: linear-gradient(135deg, #0056d2, #00a3cc);
+        box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    }
+</style>
+
+<div class="container-fluid mt-5 px-4">
+    <!-- Page Heading -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold">
+                <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
+            </h2>
+            <p class="text-muted">Welcome back, {{ current_user.first_name }}! Let’s keep learning and growing 🚀</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- My Classes Section -->
+        <div class="col-md-4">
+            <div class="card shadow-sm rounded-4 h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chalkboard me-2"></i>My Classes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Individual Classes -->
+                    <h6 class="fw-bold text-dark">Individual Classes</h6>
+                    {% for class in individual_classes %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>{{ class.name }}</strong>
+                            <p class="text-muted small mb-0">{{ class.description or 'No description' }}</p>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Not enrolled in any individual classes.</p>
+                    {% endfor %}
+
+                    <!-- Group Classes -->
+                    <h6 class="fw-bold text-dark mt-3">Group Classes</h6>
+                    {% for class in group_classes %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>{{ class.name }}</strong>
+                            <p class="text-muted small mb-1">{{ class.description or 'No description' }}</p>
+                            <small class="text-success">{{ class.students|length }}/{{ class.max_students }} students</small>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Not enrolled in any group classes.</p>
+                    {% endfor %}
+
+                    <!-- Browse Available Classes -->
+                    <a href="{{ url_for('available_classes') }}"
+                       class="btn btn-gradient w-100 rounded-pill mt-4 py-2 fw-bold d-flex align-items-center justify-content-center gap-2 hover-scale">
+                        <i class="fas fa-rocket"></i>
+                        <span>Explore New Classes Now</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Learning Materials Section -->
+        <div class="col-md-8">
+            <div class="card shadow-sm rounded-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-book me-2"></i>Recent Learning Materials
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if materials %}
+                        {% for material in materials %}
+                            <div class="card mb-3 shadow-sm border-0 hover-scale">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title fw-bold text-primary">{{ material.class_name }}</h6>
+                                            <p class="card-text text-dark">{{ material.content }}</p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>{{ material.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-{{ 'primary' if material.class_type == 'individual' else 'warning' }}">
+                                            {{ material.class_type.title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-book-open fa-3x mb-3"></i>
+                            <p class="fs-5">No learning materials available yet.</p>
+                            <p class="small">Materials shared by your teachers will appear here soon.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

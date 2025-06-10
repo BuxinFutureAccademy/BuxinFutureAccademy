@@ -1,0 +1,92 @@
+# templates/my_orders.html
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="fas fa-truck me-2"></i>My Orders</h2>
+            <p class="text-muted">Track your product orders</p>
+        </div>
+    </div>
+    
+    {% if orders %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Order Date</th>
+                                        <th>Tracking</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if order.product.image_url %}
+                                                        <img src="{{ order.product.image_url }}" alt="{{ order.product.name }}" 
+                                                             class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                                    {% endif %}
+                                                    <div>
+                                                        <strong>{{ order.product.name }}</strong><br>
+                                                        <small class="text-muted">{{ order.product.category }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ order.quantity }}</td>
+                                            <td>${{ "%.2f"|format(order.total_amount) }}</td>
+                                            <td>
+                                                {% if order.status == 'completed' %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                {% elif order.status == 'pending' %}
+                                                    <span class="badge bg-warning">Processing</span>
+                                                {% elif order.status == 'shipped' %}
+                                                    <span class="badge bg-info">Shipped</span>
+                                                {% elif order.status == 'delivered' %}
+                                                    <span class="badge bg-success">Delivered</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ order.status.title() }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ order.ordered_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                {% if order.tracking_number %}
+                                                    <code>{{ order.tracking_number }}</code>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center text-muted">
+                    <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                    <h4>No orders found</h4>
+                    <p>Your order history will appear here after you make purchases.</p>
+                    <a href="{{ url_for('products') }}" class="btn btn-primary">
+                        <i class="fas fa-box me-2"></i>Browse Products
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

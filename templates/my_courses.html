@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="fas fa-book me-2"></i>My Courses</h2>
+            <p class="text-muted">Access your purchased courses and continue learning</p>
+        </div>
+    </div>
+    
+    {% if purchases %}
+        <div class="row">
+            {% for purchase in purchases %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 course-card">
+                        <div class="position-relative">
+                            {% if purchase.course.image_url %}
+                                <img src="{{ purchase.course.image_url }}" class="card-img-top" alt="{{ purchase.course.title }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                                <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <i class="fas fa-graduation-cap fa-3x text-white"></i>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Course progress overlay -->
+                            <div class="position-absolute top-0 end-0 m-2">
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Owned
+                                </span>
+                            </div>
+                            
+                            <!-- Video count overlay -->
+                            {% if purchase.course.get_video_count() > 0 %}
+                                <div class="position-absolute bottom-0 start-0 m-2">
+                                    <span class="badge bg-dark bg-opacity-75">
+                                        <i class="fas fa-play me-1"></i>{{ purchase.course.get_video_count() }} lessons
+                                    </span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-primary">{{ purchase.course.category }}</span>
+                                <span class="badge bg-secondary">{{ purchase.course.level }}</span>
+                            </div>
+                            
+                            <h5 class="card-title">{{ purchase.course.title }}</h5>
+                            <p class="card-text text-muted">{{ purchase.course.short_description or purchase.course.description[:100] + '...' }}</p>
+                            
+                            <!-- Course stats -->
+                            <div class="course-stats mb-3">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="stat-item">
+                                            <i class="fas fa-calendar text-info"></i>
+                                            <small class="d-block text-muted">{{ purchase.course.duration_weeks }} weeks</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="stat-item">
+                                            {% if purchase.course.get_video_count() > 0 %}
+                                                <i class="fas fa-video text-success"></i>
+                                                <small class="d-block text-muted">{{ purchase.course.get_video_count() }} videos</small>
+                                            {% else %}
+                                                <i class="fas fa-book text-warning"></i>
+                                                <small class="d-block text-muted">Text course</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="stat-item">
+                                            {% if purchase.course.get_total_duration() %}
+                                                <i class="fas fa-clock text-primary"></i>
+                                                <small class="d-block text-muted">{{ purchase.course.get_total_duration() }}</small>
+                                            {% else %}
+                                                <i class="fas fa-infinity text-muted"></i>
+                                                <small class="d-block text-muted">Self-paced</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress bar (placeholder - you can implement actual progress tracking) -->
+                            <div class="progress mb-3" style="height: 6px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted mb-3">Progress: 0% complete</small>
+                            
+                            <div class="mt-auto">
+                                <small class="text-muted d-block mb-2">
+                                    <i class="fas fa-calendar-check me-1"></i>
+                                    Purchased: {{ purchase.purchased_at.strftime('%B %d, %Y') }}
+                                </small>
+                                
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('learn_course', course_id=purchase.course.id) }}" class="btn btn-success">
+                                        <i class="fas fa-play me-2"></i>Start Learning
+                                    </a>
+                                    <a href="{{ url_for('course_detail', course_id=purchase.course.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-info-circle me-2"></i>Course Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Quick stats summary -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h4 class="text-primary">{{ purchases|length }}</h4>
+                                <small class="text-muted">Courses Owned</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-success">
+                                    {% set total_videos = 0 %}
+                                    {% for purchase in purchases %}
+                                        {% set total_videos = total_videos + purchase.course.get_video_count() %}
+                                    {% endfor %}
+                                    {{ total_videos }}
+                                </h4>
+                                <small class="text-muted">Total Lessons</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-info">${{ "%.2f"|format(purchases|sum(attribute='amount')) }}</h4>
+                                <small class="text-muted">Total Investment</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-warning">0%</h4>
+                                <small class="text-muted">Avg. Progress</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-book-open fa-4x mb-4 text-muted"></i>
+                    <h4>No courses purchased yet</h4>
+                    <p>Browse our course catalog and start your learning journey today!</p>
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{{ url_for('store') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-store me-2"></i>Browse Courses
+                        </a>
+                        <a href="{{ url_for('products') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-shopping-cart me-2"></i>View Products
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.course-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: none;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+
+.stat-item {
+    padding: 0.5rem 0;
+}
+
+.stat-item i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+}
+
+.course-stats {
+    border-top: 1px solid #e9ecef;
+    border-bottom: 1px solid #e9ecef;
+    margin: 1rem 0;
+    padding: 0.75rem 0;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.btn {
+    border-radius: 8px;
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+</style>
+{% endblock %}

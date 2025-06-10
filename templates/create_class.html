@@ -1,0 +1,93 @@
+# templates/create_class.html
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="fas fa-plus me-2"></i>Create New Class</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Class Type</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="class_type" value="individual" id="individual" checked>
+                            <label class="form-check-label" for="individual">
+                                <i class="fas fa-user me-1"></i>Individual Class
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="class_type" value="group" id="group">
+                            <label class="form-check-label" for="group">
+                                <i class="fas fa-users me-1"></i>Group Class
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Class Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3" id="max-students-field" style="display: none;">
+                        <label for="max_students" class="form-label">Maximum Students</label>
+                        <input type="number" class="form-control" id="max_students" name="max_students" value="10" min="1" max="50">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Select Students</label>
+                        <div class="row">
+                            {% for student in students %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="students" value="{{ student.id }}" id="student{{ student.id }}">
+                                        <label class="form-check-label" for="student{{ student.id }}">
+                                            {{ student.first_name }} {{ student.last_name }} ({{ student.username }})
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Create Class
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide max students field based on class type
+document.addEventListener('DOMContentLoaded', function() {
+    const individualRadio = document.getElementById('individual');
+    const groupRadio = document.getElementById('group');
+    const maxStudentsField = document.getElementById('max-students-field');
+    
+    function toggleMaxStudentsField() {
+        if (groupRadio.checked) {
+            maxStudentsField.style.display = 'block';
+        } else {
+            maxStudentsField.style.display = 'none';
+        }
+    }
+    
+    individualRadio.addEventListener('change', toggleMaxStudentsField);
+    groupRadio.addEventListener('change', toggleMaxStudentsField);
+});
+</script>
+{% endblock %}

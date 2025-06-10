@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Message Results - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .whatsapp-link {
+            background: #25D366;
+            color: white;
+            border-radius: 25px;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0.25rem 0;
+            transition: all 0.3s;
+        }
+        .whatsapp-link:hover {
+            background: #128C7E;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        .user-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+        }
+        .user-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .copy-btn {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+        }
+        .message-preview {
+            background: #f8f9fa;
+            border-left: 4px solid #25D366;
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .stats-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2><i class="fas fa-check-circle me-2 text-success"></i>Message Sent Successfully</h2>
+                    <div>
+                        <a href="{{ url_for('bulk_message') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-plus me-1"></i>Send Another Message
+                        </a>
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="stats-summary">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <h3><i class="fas fa-envelope me-2"></i>{{ email_count or 0 }}</h3>
+                    <p class="mb-0">Emails Sent</p>
+                </div>
+                <div class="col-md-4">
+                    <h3><i class="fab fa-whatsapp me-2"></i>{{ whatsapp_links|length if whatsapp_links else 0 }}</h3>
+                    <p class="mb-0">WhatsApp Links Generated</p>
+                </div>
+                <div class="col-md-4">
+                    <h3><i class="fas fa-users me-2"></i>{{ (whatsapp_links|length if whatsapp_links else 0) + (email_count or 0) }}</h3>
+                    <p class="mb-0">Total Recipients</p>
+                </div>
+            </div>
+        </div>
+
+        {% if email_count and email_count > 0 %}
+        <!-- Email Results -->
+        <div class="result-card">
+            <div class="d-flex align-items-center mb-3">
+                <i class="fas fa-envelope fa-2x text-primary me-3"></i>
+                <div>
+                    <h4 class="mb-0">Email Delivery</h4>
+                    <p class="text-muted mb-0">{{ email_count }} emails have been sent successfully</p>
+                </div>
+            </div>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                All emails have been delivered to the recipients' inboxes. Recipients will receive the message within a few minutes.
+            </div>
+        </div>
+        {% endif %}
+
+        {% if whatsapp_links %}
+        <!-- WhatsApp Results -->
+        <div class="result-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center">
+                    <i class="fab fa-whatsapp fa-2x text-success me-3"></i>
+                    <div>
+                        <h4 class="mb-0">WhatsApp Links</h4>
+                        <p class="text-muted mb-0">Click the links below to send WhatsApp messages</p>
+                    </div>
+                </div>
+                <button class="btn btn-outline-success" onclick="copyAllLinks()">
+                    <i class="fas fa-copy me-2"></i>Copy All Links
+                </button>
+            </div>
+
+            <!-- Message Preview -->
+            <div class="mb-4">
+                <h6><i class="fas fa-eye me-2"></i>Message Preview</h6>
+                <div class="message-preview">{{ message }}</div>
+            </div>
+
+            <!-- Individual WhatsApp Links -->
+            <div class="row">
+                {% for item in whatsapp_links %}
+                <div class="col-md-6 mb-3">
+                    <div class="user-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">{{ item.user.first_name }} {{ item.user.last_name }}</h6>
+                                <small class="text-muted">{{ item.user.email }}</small>
+                                {% if item.user.is_admin %}
+                                    <span class="badge bg-danger ms-2">Admin</span>
+                                {% endif %}
+                                {% if item.user.is_student %}
+                                    <span class="badge bg-primary ms-2">Student</span>
+                                {% endif %}
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="copyLink('{{ item.link }}')">
+                                        <i class="fas fa-copy me-2"></i>Copy Link
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="previewMessage({{ loop.index0 }})">
+                                        <i class="fas fa-eye me-2"></i>Preview Message
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <a href="{{ item.link }}" target="_blank" class="whatsapp-link">
+                                <i class="fab fa-whatsapp me-2"></i>Send WhatsApp Message
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Instructions -->
+            <div class="alert alert-info mt-4">
+                <h6><i class="fas fa-info-circle me-2"></i>How to use WhatsApp links:</h6>
+                <ol class="mb-0">
+                    <li>Click on the "Send WhatsApp Message" button for each user</li>
+                    <li>WhatsApp Web will open with the pre-filled message</li>
+                    <li>Click "Send" in WhatsApp to deliver the message</li>
+                    <li>Repeat for each recipient</li>
+                </ol>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="text-center">
+            <a href="{{ url_for('bulk_message') }}" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-plus me-2"></i>Send Another Message
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-users me-2"></i>Back to User Management
+            </a>
+        </div>
+    </div>
+
+    <!-- Message Preview Modal -->
+    <div class="modal fade" id="messageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fab fa-whatsapp me-2 text-success"></i>WhatsApp Message Preview
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="message-preview" id="modalMessageContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="sendWhatsAppBtn">
+                        <i class="fab fa-whatsapp me-2"></i>Send via WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast for Copy Notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="copyToast" class="toast" role="alert">
+            <div class="toast-header">
+                <i class="fas fa-copy text-success me-2"></i>
+                <strong class="me-auto">Copied!</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                Link copied to clipboard successfully.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Store WhatsApp data for JavaScript access
+        const whatsappData = [
+            {% for item in whatsapp_links %}
+            {
+                user: "{{ item.user.first_name }} {{ item.user.last_name }}",
+                message: `{{ item.message|safe }}`,
+                link: "{{ item.link }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        function copyLink(link) {
+            navigator.clipboard.writeText(link).then(function() {
+                showToast();
+            }).catch(function(err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast();
+            });
+        }
+
+        function copyAllLinks() {
+            const links = whatsappData.map(item => item.link).join('\n');
+            navigator.clipboard.writeText(links).then(function() {
+                showToast('All links copied to clipboard!');
+            }).catch(function(err) {
+                console.error('Failed to copy links: ', err);
+                alert('Failed to copy links. Please copy them manually.');
+            });
+        }
+
+        function previewMessage(index) {
+            const data = whatsappData[index];
+            document.getElementById('modalMessageContent').textContent = data.message;
+            document.getElementById('sendWhatsAppBtn').onclick = function() {
+                window.open(data.link, '_blank');
+                bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
+            };
+            new bootstrap.Modal(document.getElementById('messageModal')).show();
+        }
+
+        function showToast(message = 'Link copied to clipboard successfully.') {
+            const toastBody = document.querySelector('#copyToast .toast-body');
+            toastBody.textContent = message;
+            const toast = new bootstrap.Toast(document.getElementById('copyToast'));
+            toast.show();
+        }
+
+        // Auto-show instructions if there are WhatsApp links
+        {% if whatsapp_links %}
+        document.addEventListener('DOMContentLoaded', function() {
+            // Optional: Show a welcome message or instructions
+            setTimeout(function() {
+                const hasSeenInstructions = localStorage.getItem('whatsapp_instructions_seen');
+                if (!hasSeenInstructions) {
+                    alert('WhatsApp links have been generated successfully!\n\nClick on each "Send WhatsApp Message" button to open WhatsApp with the pre-filled message, then click Send in WhatsApp to deliver the message.');
+                    localStorage.setItem('whatsapp_instructions_seen', 'true');
+                }
+            }, 1000);
+        });
+        {% endif %}
+    </script>
+</body>
+</html>

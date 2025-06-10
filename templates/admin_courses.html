@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-graduation-cap me-2"></i>Course Management</h2>
+                    <p class="text-muted">Manage all courses in the store</p>
+                </div>
+                <a href="{{ url_for('create_course') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create New Course
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Course Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-graduation-cap fa-2x me-3"></i>
+                        <div>
+                            <h4 class="mb-0">{{ courses|length }}</h4>
+                            <small>Total Courses</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-play fa-2x me-3"></i>
+                        <div>
+                            <h4 class="mb-0">
+                                {% set total_videos = 0 %}
+                                {% for course in courses %}
+                                    {% set total_videos = total_videos + course.get_video_count() %}
+                                {% endfor %}
+                                {{ total_videos }}
+                            </h4>
+                            <small>Total Videos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-users fa-2x me-3"></i>
+                        <div>
+                            <h4 class="mb-0">
+                                {% set total_enrolled = 0 %}
+                                {% for course in courses %}
+                                    {% set total_enrolled = total_enrolled + course.get_enrolled_count() %}
+                                {% endfor %}
+                                {{ total_enrolled }}
+                            </h4>
+                            <small>Total Enrolled</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-eye-slash fa-2x me-3"></i>
+                        <div>
+                            <h4 class="mb-0">
+                                {% set inactive_courses = courses|selectattr('is_active', 'equalto', False)|list|length %}
+                                {{ inactive_courses }}
+                            </h4>
+                            <small>Inactive</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if courses %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">All Courses</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Category</th>
+                                        <th>Level</th>
+                                        <th>Price</th>
+                                        <th>Content</th>
+                                        <th>Students</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in courses %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if course.image_url %}
+                                                        <img src="{{ course.image_url }}" alt="{{ course.title }}" 
+                                                             class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="bg-gradient rounded me-3 d-flex align-items-center justify-content-center" 
+                                                             style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                            <i class="fas fa-graduation-cap text-white"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <strong>{{ course.title }}</strong><br>
+                                                        <small class="text-muted">
+                                                            {{ course.short_description[:50] if course.short_description else course.description[:50] }}...
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ course.category }}</span>
+                                            </td>
+                                            <td>
+                                                {% if course.level == 'Beginner' %}
+                                                    <span class="badge bg-success">{{ course.level }}</span>
+                                                {% elif course.level == 'Intermediate' %}
+                                                    <span class="badge bg-warning">{{ course.level }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">{{ course.level }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if course.price == 0 %}
+                                                    <span class="badge bg-success">FREE</span>
+                                                {% else %}
+                                                    <strong class="text-success">${{ "%.2f"|format(course.price) }}</strong>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="content-stats">
+                                                    <div class="d-flex flex-column">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-play text-primary me-1"></i>
+                                                            {{ course.get_video_count() }} video{{ 's' if course.get_video_count() != 1 else '' }}
+                                                        </small>
+                                                        {% if course.get_total_duration() %}
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-clock text-info me-1"></i>
+                                                                {{ course.get_total_duration() }}
+                                                            </small>
+                                                        {% endif %}
+                                                        {% if course.materials %}
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-file text-warning me-1"></i>
+                                                                {{ course.materials|length }} material{{ 's' if course.materials|length != 1 else '' }}
+                                                            </small>
+                                                        {% endif %}
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-calendar text-secondary me-1"></i>
+                                                            {{ course.duration_weeks }} week{{ 's' if course.duration_weeks != 1 else '' }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="text-center">
+                                                    <h6 class="mb-0">{{ course.get_enrolled_count() }}</h6>
+                                                    <small class="text-muted">enrolled</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if course.is_active %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Active
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times me-1"></i>Inactive
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    {{ course.created_at.strftime('%m/%d/%Y') }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('course_detail', course_id=course.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary" title="View Course">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('edit_course', course_id=course.id) }}" 
+                                                       class="btn btn-sm btn-outline-warning" title="Edit Course">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button class="btn btn-sm btn-outline-info course-details-btn" 
+                                                            data-course-id="{{ course.id }}" title="Quick View">
+                                                        <i class="fas fa-info"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-graduation-cap fa-4x mb-4"></i>
+                    <h4>No courses created yet</h4>
+                    <p>Create your first course to get started with your learning platform.</p>
+                    <a href="{{ url_for('create_course') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i>Create Your First Course
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Course Details Modal -->
+<div class="modal fade" id="courseDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Course Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="courseDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.content-stats {
+    min-width: 120px;
+}
+
+.content-stats small {
+    line-height: 1.4;
+    margin-bottom: 2px;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: none;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+
+<script>
+// Use event delegation for better performance and cleaner code
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle course details buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.course-details-btn')) {
+            const courseId = e.target.closest('.course-details-btn').getAttribute('data-course-id');
+            showCourseDetails(courseId);
+        }
+    });
+});
+
+function showCourseDetails(courseId) {
+    // This would typically fetch course details via AJAX
+    // For now, we'll show a placeholder
+    const modal = new bootstrap.Modal(document.getElementById('courseDetailsModal'));
+    document.getElementById('courseDetailsContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading course details...</p>
+        </div>
+    `;
+    modal.show();
+    
+    // Simulate loading - in a real app, you'd make an AJAX call here
+    setTimeout(() => {
+        document.getElementById('courseDetailsContent').innerHTML = `
+            <div class="course-details">
+                <h6>Course #${courseId} Details</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Content Overview</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-play text-primary me-2"></i>Video lessons</li>
+                            <li><i class="fas fa-file text-warning me-2"></i>Downloadable materials</li>
+                            <li><i class="fas fa-users text-info me-2"></i>Student enrollment</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Quick Actions</h6>
+                        <div class="d-grid gap-2">
+                            <a href="/admin/edit_course/${courseId}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit me-2"></i>Edit Course
+                            </a>
+                            <a href="/course/${courseId}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-eye me-2"></i>View Course Page
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    In a production app, this would show detailed analytics, video list, and management options.
+                </small>
+            </div>
+        `;
+    }, 1000);
+}
+</script>
+{% endblock %}

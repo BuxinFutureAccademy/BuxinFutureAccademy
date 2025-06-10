@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-plus me-2"></i>Create New Course</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="courseForm">
+                        <!-- Basic Course Information -->
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="title" class="form-label">Course Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="price" class="form-label">Price ($) *</label>
+                                <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="short_description" class="form-label">Short Description</label>
+                            <input type="text" class="form-control" id="short_description" name="short_description" 
+                                   placeholder="Brief description for course cards" maxlength="500">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Full Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" 
+                                      placeholder="Detailed course description" required></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="category" class="form-label">Category *</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Programming">Programming</option>
+                                    <option value="Web Development">Web Development</option>
+                                    <option value="Data Science">Data Science</option>
+                                    <option value="Design">Design</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Business">Business</option>
+                                    <option value="Photography">Photography</option>
+                                    <option value="Music">Music</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="level" class="form-label">Level *</label>
+                                <select class="form-select" id="level" name="level" required>
+                                    <option value="">Select Level</option>
+                                    <option value="Beginner">Beginner</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="duration_weeks" class="form-label">Duration (weeks)</label>
+                                <input type="number" class="form-control" id="duration_weeks" name="duration_weeks" 
+                                       value="4" min="1" max="52">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">Course Image URL</label>
+                            <input type="url" class="form-control" id="image_url" name="image_url" 
+                                   placeholder="https://example.com/image.jpg">
+                            <div class="form-text">Optional: Provide a URL for the course thumbnail image</div>
+                        </div>
+
+                        <!-- Video Upload Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-video me-2"></i>Course Videos
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="videoContainer">
+                                    <!-- Video upload forms will be added here -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" id="addVideoBtn">
+                                    <i class="fas fa-plus me-2"></i>Add Video Lesson
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Course Materials Upload -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-file-alt me-2"></i>Course Materials
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="course_materials" class="form-label">Upload Additional Materials</label>
+                                    <input type="file" class="form-control" id="course_materials" name="course_materials" 
+                                           multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.txt">
+                                    <div class="form-text">Upload PDFs, documents, presentations, or zip files (Max 10MB each)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>Create Course
+                            </button>
+                            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Courses
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Progress Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Uploading Course Content</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar" role="progressbar" style="width: 0%" id="uploadProgress"></div>
+                </div>
+                <div id="uploadStatus">Preparing upload...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.video-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+
+.video-preview {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 0.375rem;
+}
+
+.file-info {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.remove-video {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.video-item-wrapper {
+    position: relative;
+}
+</style>
+
+<script>
+let videoCount = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addVideoBtn = document.getElementById('addVideoBtn');
+    const videoContainer = document.getElementById('videoContainer');
+    const courseForm = document.getElementById('courseForm');
+
+    // Add first video input by default
+    addVideoInput();
+
+    addVideoBtn.addEventListener('click', addVideoInput);
+
+    function addVideoInput() {
+        videoCount++;
+        const videoDiv = document.createElement('div');
+        videoDiv.className = 'video-item-wrapper';
+        videoDiv.innerHTML = `
+            <div class="video-item" id="video-${videoCount}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="video_title_${videoCount}" class="form-label">Lesson Title *</label>
+                        <input type="text" class="form-control" name="video_titles" 
+                               id="video_title_${videoCount}" placeholder="e.g., Introduction to Python" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="video_order_${videoCount}" class="form-label">Order</label>
+                        <input type="number" class="form-control" name="video_orders" 
+                               id="video_order_${videoCount}" value="${videoCount}" min="1">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Duration (optional)</label>
+                        <input type="text" class="form-control" name="video_durations" 
+                               placeholder="e.g., 15:30" pattern="[0-9]{1,2}:[0-9]{2}">
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label for="video_file_${videoCount}" class="form-label">Video File *</label>
+                        <input type="file" class="form-control video-file-input" 
+                               name="video_files" id="video_file_${videoCount}" 
+                               accept=".mp4,.avi,.mov,.wmv,.flv,.webm,.mkv" required>
+                        <div class="form-text">Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV (Max 500MB)</div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label for="video_description_${videoCount}" class="form-label">Lesson Description</label>
+                        <textarea class="form-control" name="video_descriptions" 
+                                  id="video_description_${videoCount}" rows="2" 
+                                  placeholder="Brief description of what this lesson covers"></textarea>
+                    </div>
+                </div>
+
+                <div class="video-preview-container mt-3" style="display: none;">
+                    <video class="video-preview" controls>
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="file-info mt-2"></div>
+                </div>
+
+                ${videoCount > 1 ? `
+                <button type="button" class="btn btn-sm btn-outline-danger remove-video" 
+                        onclick="removeVideo(${videoCount})">
+                    <i class="fas fa-times"></i>
+                </button>
+                ` : ''}
+            </div>
+        `;
+
+        videoContainer.appendChild(videoDiv);
+
+        // Add event listener for file preview
+        const fileInput = videoDiv.querySelector(`#video_file_${videoCount}`);
+        fileInput.addEventListener('change', function(e) {
+            previewVideo(e.target, videoCount);
+        });
+    }
+
+    // Form submission with progress
+    courseForm.addEventListener('submit', function(e) {
+        const videoFiles = document.querySelectorAll('.video-file-input');
+        let hasLargeFiles = false;
+        
+        videoFiles.forEach(input => {
+            if (input.files[0] && input.files[0].size > 500 * 1024 * 1024) { // 500MB
+                hasLargeFiles = true;
+            }
+        });
+
+        if (hasLargeFiles) {
+            e.preventDefault();
+            alert('Please ensure all video files are under 500MB');
+            return;
+        }
+
+        // Show upload modal for large uploads
+        const formData = new FormData(courseForm);
+        let totalSize = 0;
+        for (let pair of formData.entries()) {
+            if (pair[1] instanceof File) {
+                totalSize += pair[1].size;
+            }
+        }
+
+        if (totalSize > 50 * 1024 * 1024) { // 50MB
+            e.preventDefault();
+            showUploadProgress();
+            uploadWithProgress(formData);
+        }
+    });
+});
+
+function removeVideo(videoId) {
+    const videoElement = document.getElementById(`video-${videoId}`);
+    videoElement.parentElement.remove();
+}
+
+function previewVideo(input, videoId) {
+    const file = input.files[0];
+    if (file) {
+        const videoItem = document.getElementById(`video-${videoId}`);
+        const previewContainer = videoItem.querySelector('.video-preview-container');
+        const video = videoItem.querySelector('.video-preview');
+        const fileInfo = videoItem.querySelector('.file-info');
+
+        const url = URL.createObjectURL(file);
+        video.src = url;
+        
+        const fileSize = (file.size / (1024 * 1024)).toFixed(2); // MB
+        fileInfo.innerHTML = `
+            <strong>File:</strong> ${file.name}<br>
+            <strong>Size:</strong> ${fileSize} MB<br>
+            <strong>Type:</strong> ${file.type}
+        `;
+
+        previewContainer.style.display = 'block';
+
+        // Clean up object URL when video loads
+        video.addEventListener('loadeddata', function() {
+            URL.revokeObjectURL(url);
+        });
+    }
+}
+
+function showUploadProgress() {
+    const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+    modal.show();
+}
+
+function uploadWithProgress(formData) {
+    const xhr = new XMLHttpRequest();
+    const progressBar = document.getElementById('uploadProgress');
+    const statusDiv = document.getElementById('uploadStatus');
+
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            progressBar.textContent = Math.round(percentComplete) + '%';
+            statusDiv.textContent = `Uploading... ${Math.round(percentComplete)}% complete`;
+        }
+    });
+
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            statusDiv.textContent = 'Upload completed successfully!';
+            setTimeout(() => {
+                window.location.href = "{{ url_for('admin_courses') }}";
+            }, 2000);
+        } else {
+            statusDiv.textContent = 'Upload failed. Please try again.';
+        }
+    });
+
+    xhr.addEventListener('error', function() {
+        statusDiv.textContent = 'Upload failed. Please check your connection and try again.';
+    });
+
+    xhr.open('POST', window.location.href);
+    xhr.send(formData);
+}
+</script>
+{% endblock %}

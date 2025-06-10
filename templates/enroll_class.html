@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-money-bill-wave me-2"></i>Enroll in {{ class_obj.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>Class Fee: D100</h5>
+                        <p class="mb-0">Please complete your payment using one of the methods below to enroll in this class.</p>
+                    </div>
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        <h5 class="mt-4 mb-3">Select a Payment Method</h5>
+                        
+                        <div class="list-group mb-4">
+                            {% for method in payment_methods %}
+                                <label class="list-group-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="method-{{ method.id }}" value="{{ method.id }}" required>
+                                        <label class="form-check-label fw-bold" for="method-{{ method.id }}">
+                                            {{ method.name }}
+                                        </label>
+                                        <div class="payment-details mt-2 ps-4 text-muted">
+                                            {{ method.details|safe }}
+                                        </div>
+                                    </div>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        
+                        <h5 class="mt-4 mb-3">Submit Your Payment Details</h5>
+                        
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" 
+                                   value="{{ current_user.first_name }} {{ current_user.last_name }}" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ current_user.email }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="payment_proof" class="form-label">Upload Payment Proof</label>
+                            <input class="form-control" type="file" id="payment_proof" name="payment_proof" required>
+                            <div class="form-text">Upload screenshot or receipt of your payment</div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> After submitting your enrollment, our team will verify your payment. 
+                            You will receive access to your class once payment is confirmed.
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check-circle me-2"></i>Submit Enrollment
+                            </button>
+                            <a href="{{ url_for('available_classes') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Classes
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

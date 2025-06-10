@@ -463,7 +463,7 @@ def about_us():
         'page_title': 'About BuXin Future Academy',
         'meta_description': 'Learn about BuXin Future Academy - pioneering robotics, AI, and electric vehicle technology in Africa.'
     }
-    return render_template('about_us.html', **context
+    return render_template('about_us.html', **context)
                            
 @app.route('/')                           
 def index():

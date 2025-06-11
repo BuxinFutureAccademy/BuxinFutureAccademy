@@ -56,7 +56,7 @@ body {
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
     line-height: 1.6;
-    padding-bottom: 80px; /* 👈 Add this */
+    padding-bottom: 80px; /* 👈 Room for bottom nav */
 }
 
 /* =================================================================
@@ -394,11 +394,10 @@ body {
    ============================================================ */
 
 .bottom-nav {
-
+    position: fixed !important;
     bottom: 0 !important;
     left: 0;
     right: 0;
-    width: 100%;
     z-index: 1050;
     background: var(--glass-bg) !important;
     backdrop-filter: blur(20px);
@@ -406,6 +405,7 @@ body {
     padding: 0.5rem 0;
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
 }
+
 
 /* Ensure nav items do not wrap and are scrollable if needed */
 .bottom-nav .container-fluid {

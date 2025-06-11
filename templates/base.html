@@ -3,747 +3,736 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BuXin Future Academy - Next-Gen Learning Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>{% block title %}BuXin Future Academy - Learning Management System{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* =================================================================
-           🎨 MODERN DESIGN SYSTEM - 2025 EDITION
-           ================================================================= */
-
-        :root {
-            /* 🌈 Dynamic Color Palette */
-            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            --primary-solid: #667eea;
-            --secondary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --accent: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            --success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --warning: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
-            --danger: linear-gradient(135deg, #fd746c 0%, #ff9068 100%);
-            
-            /* 🎭 Neutral Colors */
-            --dark: #0f0f23;
-            --dark-soft: #1a1a2e;
-            --gray-900: #16213e;
-            --gray-800: #2a3447;
-            --gray-700: #434e65;
-            --gray-600: #5d6b7d;
-            --gray-500: #7c8fac;
-            --gray-400: #a0aec0;
-            --gray-300: #cbd5e0;
-            --gray-200: #e2e8f0;
-            --gray-100: #f7fafc;
-            --light: #ffffff;
-            
-            /* ✨ Glass & Effects */
-            --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            --glass-dark: rgba(15, 15, 35, 0.75);
-            --blur-strong: blur(25px);
-            --blur-medium: blur(15px);
-            --blur-light: blur(8px);
-            
-            /* 🌊 Advanced Shadows */
-            --shadow-xs: 0 1px 2px rgba(15, 15, 35, 0.05);
-            --shadow-sm: 0 4px 8px rgba(15, 15, 35, 0.08);
-            --shadow-md: 0 10px 25px rgba(15, 15, 35, 0.12);
-            --shadow-lg: 0 20px 40px rgba(15, 15, 35, 0.15);
-            --shadow-xl: 0 30px 60px rgba(15, 15, 35, 0.20);
-            --shadow-glow: 0 0 30px rgba(102, 126, 234, 0.3);
-            
-            /* 📏 Spacing System */
-            --space-xs: 0.25rem;
-            --space-sm: 0.5rem;
-            --space-md: 1rem;
-            --space-lg: 1.5rem;
-            --space-xl: 2rem;
-            --space-2xl: 3rem;
-            --space-3xl: 4rem;
-            
-            /* 🎯 Border Radius */
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 24px;
-            --radius-2xl: 32px;
-            --radius-full: 9999px;
-            
-            /* ⚡ Animation Timing */
-            --duration-fast: 0.15s;
-            --duration-normal: 0.25s;
-            --duration-slow: 0.35s;
-            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-            --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-
-        /* =================================================================
-           🔧 MODERN RESET & BASE STYLES
-           ================================================================= */
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            font-size: 16px;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-            color: var(--light);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-            padding-bottom: 100px;
-        }
-
-        /* Animated background particles */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(240, 147, 251, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(118, 75, 162, 0.05) 0%, transparent 50%);
-            animation: backgroundFloat 20s ease-in-out infinite;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        @keyframes backgroundFloat {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(30px, -30px) rotate(120deg); }
-            66% { transform: translate(-20px, 20px) rotate(240deg); }
-        }
-
-        /* =================================================================
-           🧭 FUTURISTIC NAVIGATION SYSTEM
-           ================================================================= */
-
-        .navbar {
-            background: var(--glass-dark) !important;
-            backdrop-filter: var(--blur-strong);
-            -webkit-backdrop-filter: var(--blur-strong);
-            border-bottom: 1px solid var(--glass-border);
-            padding: var(--space-md) 0;
-            position: sticky;
-            top: 0;
-            z-index: 1050;
-            box-shadow: var(--shadow-lg);
-            transition: all var(--duration-slow) var(--ease-out);
-        }
-
-        .navbar.scrolled {
-            background: var(--glass-dark) !important;
-            backdrop-filter: var(--blur-strong);
-            box-shadow: var(--shadow-xl);
-            transform: translateY(0);
-        }
-
-        /* 🚀 Futuristic Brand */
-        .navbar-brand {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 800;
-            font-size: 1.75rem;
-            background: var(--primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all var(--duration-normal) var(--ease-bounce);
-            position: relative;
-        }
-
-        .navbar-brand::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--primary);
-            transition: width var(--duration-slow) var(--ease-out);
-        }
-
-        .navbar-brand:hover::after {
-            width: 100%;
-        }
-
-        .navbar-brand:hover {
-            transform: scale(1.05) translateY(-2px);
-            filter: drop-shadow(0 8px 16px rgba(102, 126, 234, 0.4));
-        }
-
-        .navbar-brand i {
-            background: var(--accent);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: robotGlow 3s ease-in-out infinite;
-            margin-right: var(--space-sm);
-        }
-
-        @keyframes robotGlow {
-            0%, 100% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.1); filter: brightness(1.3); }
-        }
-
-        /* 🎯 Modern Navigation Links */
-        .nav-link {
-            font-weight: 600;
-            color: var(--gray-300) !important;
-            padding: var(--space-md) var(--space-lg) !important;
-            border-radius: var(--radius-full);
-            transition: all var(--duration-normal) var(--ease-out);
-            position: relative;
-            margin: 0 var(--space-xs);
-            display: flex;
-            align-items: center;
-            text-transform: uppercase;
-            font-size: 0.875rem;
-            letter-spacing: 0.5px;
-            overflow: hidden;
-        }
-
-        .nav-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--primary);
-            opacity: 0;
-            transition: opacity var(--duration-normal) var(--ease-out);
-            border-radius: inherit;
-        }
-
-        .nav-link:hover {
-            color: var(--light) !important;
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-glow);
-        }
-
-        .nav-link:hover::before {
-            opacity: 1;
-        }
-
-        .nav-link i {
-            margin-right: var(--space-sm);
-            font-size: 1rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        .nav-link span {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* 🎨 Dropdown Enhancements */
-        .dropdown-menu {
-            background: var(--glass-dark);
-            backdrop-filter: var(--blur-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-xl);
-            margin-top: var(--space-md);
-            padding: var(--space-md);
-            min-width: 280px;
-            animation: dropdownSlideUp 0.4s var(--ease-out);
-            overflow: hidden;
-        }
-
-        @keyframes dropdownSlideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .dropdown-item {
-            padding: var(--space-md) var(--space-lg);
-            border-radius: var(--radius-md);
-            transition: all var(--duration-normal) var(--ease-out);
-            display: flex;
-            align-items: center;
-            font-weight: 500;
-            color: var(--gray-300);
-            text-decoration: none;
-            margin-bottom: var(--space-xs);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .dropdown-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--secondary);
-            transition: left var(--duration-slow) var(--ease-out);
-        }
-
-        .dropdown-item:hover {
-            color: var(--light);
-            transform: translateX(8px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .dropdown-item:hover::before {
-            left: 0;
-        }
-
-        .dropdown-item i {
-            margin-right: var(--space-md);
-            width: 20px;
-            text-align: center;
-            color: var(--primary-solid);
-            position: relative;
-            z-index: 2;
-        }
-
-        .dropdown-item span {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* 🏷️ Enhanced Badges */
-        .cart-badge {
-            background: var(--danger);
-            color: var(--light);
-            border-radius: var(--radius-full);
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            position: absolute;
-            top: -4px;
-            right: 8px;
-            min-width: 22px;
-            text-align: center;
-            animation: pulse 2s infinite;
-            box-shadow: var(--shadow-md);
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        /* =================================================================
-           💬 ADVANCED NOTIFICATION SYSTEM
-           ================================================================= */
-
-        .flash-messages-container {
-            position: fixed;
-            top: 100px;
-            right: var(--space-xl);
-            left: var(--space-xl);
-            z-index: 1060;
-            pointer-events: none;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .alert {
-            border: none;
-            border-radius: var(--radius-xl);
-            background: var(--glass-dark);
-            backdrop-filter: var(--blur-medium);
-            color: var(--light);
-            box-shadow: var(--shadow-xl);
-            border-left: 4px solid;
-            margin-bottom: var(--space-md);
-            pointer-events: auto;
-            animation: slideInFromTop 0.6s var(--ease-bounce);
-            position: relative;
-            overflow: hidden;
-            padding: var(--space-lg) var(--space-xl);
-        }
-
-        @keyframes slideInFromTop {
-            from {
-                opacity: 0;
-                transform: translateY(-100%) scale(0.8);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .alert-success { border-left-color: #38ef7d; }
-        .alert-danger { border-left-color: #ff9068; }
-        .alert-warning { border-left-color: #f7b733; }
-        .alert-info { border-left-color: #00f2fe; }
-
-        .alert .btn-close {
-            background: var(--glass-bg);
-            border-radius: var(--radius-full);
-            opacity: 0.8;
-            transition: all var(--duration-normal) var(--ease-out);
-            width: 32px;
-            height: 32px;
-        }
-
-        .alert .btn-close:hover {
-            background: var(--glass-border);
-            opacity: 1;
-            transform: scale(1.15);
-        }
-
-        /* =================================================================
-           📱 REVOLUTIONARY BOTTOM NAVIGATION
-           ================================================================= */
-
-        .bottom-nav {
-            position: fixed !important;
-            bottom: var(--space-lg) !important;
-            left: var(--space-lg);
-            right: var(--space-lg);
-            z-index: 1050;
-            background: var(--glass-dark);
-            backdrop-filter: var(--blur-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-2xl);
-            padding: var(--space-md);
-            box-shadow: var(--shadow-xl);
-            animation: slideUpFromBottom 0.8s var(--ease-out);
-        }
-
-        @keyframes slideUpFromBottom {
-            from {
-                opacity: 0;
-                transform: translateY(100px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .bottom-nav .container-fluid {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            gap: var(--space-sm);
-            padding: 0;
-        }
-
-        .bottom-nav .nav-link {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray-400) !important;
-            padding: var(--space-md) var(--space-sm);
-            border-radius: var(--radius-xl);
-            transition: all var(--duration-normal) var(--ease-out);
-            text-decoration: none;
-            position: relative;
-            overflow: hidden;
-            min-height: 60px;
-        }
-
-        .bottom-nav .nav-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--primary);
-            opacity: 0;
-            transition: opacity var(--duration-normal) var(--ease-out);
-            border-radius: inherit;
-        }
-
-        .bottom-nav .nav-link:hover,
-        .bottom-nav .nav-link.active {
-            color: var(--light) !important;
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-glow);
-        }
-
-        .bottom-nav .nav-link:hover::before,
-        .bottom-nav .nav-link.active::before {
-            opacity: 1;
-        }
-
-        .bottom-nav .nav-link i {
-            font-size: 1.25rem;
-            margin-bottom: var(--space-xs);
-            position: relative;
-            z-index: 2;
-        }
-
-        .bottom-nav .nav-link div {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* =================================================================
-           🎨 ENHANCED BUTTON SYSTEM
-           ================================================================= */
-
-        .btn {
-            border-radius: var(--radius-full);
-            font-weight: 600;
-            padding: var(--space-md) var(--space-xl);
-            transition: all var(--duration-normal) var(--ease-out);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: none;
-            position: relative;
-            overflow: hidden;
-            font-size: 0.875rem;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left var(--duration-slow) var(--ease-out);
-        }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .btn-primary {
-            background: var(--primary);
-        }
-
-        .btn-success {
-            background: var(--success);
-        }
-
-        .btn-warning {
-            background: var(--warning);
-        }
-
-        .btn-danger {
-            background: var(--danger);
-        }
-
-        /* =================================================================
-           🃏 MODERN CARD COMPONENTS
-           ================================================================= */
-
-        .card {
-            border: none;
-            border-radius: var(--radius-xl);
-            background: var(--glass-bg);
-            backdrop-filter: var(--blur-medium);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-md);
-            transition: all var(--duration-normal) var(--ease-out);
-            overflow: hidden;
-        }
-
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-xl);
-            border-color: rgba(102, 126, 234, 0.3);
-        }
-
-        /* =================================================================
-           🛠️ UTILITY CLASSES
-           ================================================================= */
-
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: var(--blur-medium);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-md);
-        }
-
-        .gradient-text {
-            background: var(--primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .animate-fade-in {
-            animation: fadeInUp 0.8s var(--ease-out);
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* =================================================================
-           📱 RESPONSIVE DESIGN
-           ================================================================= */
-
-        @media (max-width: 768px) {
-            .navbar-brand {
-                font-size: 1.5rem;
-            }
-            
-            .flash-messages-container {
-                right: var(--space-md);
-                left: var(--space-md);
-            }
-
-            .bottom-nav {
-                left: var(--space-md);
-                right: var(--space-md);
-                bottom: var(--space-md);
-            }
-
-            .bottom-nav .nav-link div {
-                font-size: 0.65rem;
-            }
-
-            .dropdown-menu {
-                position: static !important;
-                transform: none !important;
-                box-shadow: none;
-                background: transparent;
-                backdrop-filter: none;
-                border: none;
-                margin-top: 0;
-            }
-        }
-
-        /* =================================================================
-           🎭 DEMO CONTENT STYLES
-           ================================================================= */
-
-        .hero-section {
-            padding: var(--space-3xl) 0;
-            text-align: center;
-            position: relative;
-        }
-
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            background: var(--primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: var(--space-lg);
-            line-height: 1.2;
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem;
-            color: var(--gray-400);
-            margin-bottom: var(--space-2xl);
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: var(--space-xl);
-            margin-top: var(--space-3xl);
-        }
-
-        .feature-card {
-            background: var(--glass-bg);
-            backdrop-filter: var(--blur-medium);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: var(--space-2xl);
-            text-align: center;
-            transition: all var(--duration-normal) var(--ease-out);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: var(--shadow-xl);
-            border-color: rgba(102, 126, 234, 0.4);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            background: var(--accent);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: var(--space-lg);
-        }
-
-        .feature-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: var(--space-md);
-            color: var(--light);
-        }
-
-        .feature-description {
-            color: var(--gray-400);
-            line-height: 1.6;
-        }
-
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2.5rem;
-            }
-            
-            .hero-subtitle {
-                font-size: 1.125rem;
-            }
-            
-            .feature-grid {
-                grid-template-columns: 1fr;
-                gap: var(--space-lg);
-            }
-        }
-    </style>
+
+   /* =================================================================
+   🎨 CSS VARIABLES & DESIGN SYSTEM
+   ================================================================= */
+
+:root {
+    /* 🎨 PRIMARY COLOR PALETTE */
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --accent-color: #f093fb;
+    
+    /* 🚦 STATUS COLORS */
+    --success-color: #4ecdc4;
+    --warning-color: #ffeaa7;
+    --danger-color: #fd79a8;
+    --dark-color: #2d3436;
+    --light-color: #ddd6fe;
+    
+    /* ✨ GLASS MORPHISM EFFECTS */
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    
+    /* 🌊 SHADOW EFFECTS */
+    --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 16px 48px rgba(0, 0, 0, 0.15);
+    
+    /* 🌈 GRADIENT DEFINITIONS */
+    --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    --gradient-accent: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+}
+
+/* =================================================================
+   🔧 GLOBAL STYLES & RESET
+   ================================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    line-height: 1.6;
+    padding-bottom: 80px; /* 👈 Room for bottom nav */
+}
+
+/* =================================================================
+   🧭 TOP NAVIGATION BAR
+   ================================================================= */
+
+/* 📱 Main Navbar Container */
+.navbar {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 0.0500rem 0;
+    margin-bottom: -1rem;
+    transition: all 0.3s ease;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    box-shadow: var(--shadow-light);
+}
+
+/* 📜 Navbar Scroll Effect */
+.navbar.scrolled {
+    background: rgba(102, 126, 234, 0.95) !important;
+    backdrop-filter: blur(25px);
+}
+
+/* 🏷️ Brand/Logo Section */
+.navbar-brand {
+    font-weight: 800;
+    font-size: 1.5rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 0.3s ease;
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+}
+
+/* 🤖 Brand Icon with Animation */
+.navbar-brand i {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: robotPulse 2s ease-in-out infinite;
+}
+
+@keyframes robotPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* 📋 Navigation Container */
+.navbar-nav {
+    align-items: center;
+}
+
+/* 🔗 Navigation Links */
+.nav-link {
+    font-weight: 500;
+    color: var(--dark-color) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    position: relative;
+    margin: 0 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.nav-link:hover {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    color: var(--primary-color) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-light);
+}
+
+.nav-link i {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* 📱 Mobile Toggle Button */
+.navbar-toggler {
+    border: none;
+    padding: 0.5rem;
+    border-radius: 10px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+}
+
+.navbar-toggler:focus {
+    box-shadow: none;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='m4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* =================================================================
+   📂 DROPDOWN MENU SYSTEM
+   ================================================================= */
+
+/* 🔽 Dropdown Toggle Arrow Animation */
+.dropdown-toggle::after {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.dropdown.show .dropdown-toggle::after {
+    transform: rotate(180deg);
+}
+
+/* 📋 Dropdown Menu Container */
+.dropdown-menu {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    box-shadow: var(--shadow-medium);
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    min-width: 200px;
+    animation: dropdownSlideIn 0.3s ease-out;
+}
+
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 📝 Dropdown Items */
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    color: var(--dark-color);
+    text-decoration: none;
+}
+
+.dropdown-item i {
+    margin-right: 0.75rem;
+    width: 16px;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+.dropdown-item:hover {
+    background: var(--gradient-primary);
+    color: white;
+    transform: translateX(5px);
+}
+
+.dropdown-item:hover i {
+    color: white;
+}
+
+/* ➖ Dropdown Divider */
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-color: var(--glass-border);
+}
+
+/* =================================================================
+   🔔 BADGES & NOTIFICATIONS
+   ================================================================= */
+
+/* 🛒 Cart Badge */
+.cart-badge {
+    background: var(--gradient-accent);
+    color: white;
+    border-radius: 50%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    position: absolute;
+    top: -5px;
+    right: 5px;
+    min-width: 20px;
+    text-align: center;
+    animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* 👋 Welcome Message */
+.navbar-text {
+    background: var(--gradient-primary);
+    color: white !important;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    margin: 0 0.5rem;
+    box-shadow: var(--shadow-light);
+}
+
+/* =================================================================
+   💬 FLASH MESSAGES & ALERTS SYSTEM
+   ================================================================= */
+
+/* 📍 Flash Messages Container */
+.flash-messages-container {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    left: 20px;
+    z-index: 1050;
+    pointer-events: none;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.flash-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 🚨 Alert Base Styles */
+.alert {
+    border: none;
+    border-radius: 15px;
+    background: #ffffff;
+    color: #333;
+    box-shadow: var(--shadow-medium);
+    border-left: 4px solid;
+    margin: 0;
+    pointer-events: auto;
+    animation: slideInFromRight 1s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.alert > * {
+    position: relative;
+    z-index: 2;
+}
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 🎨 Alert Type Variations */
+.alert-success {
+    background: rgba(78, 205, 196, 0.95);
+    color: white;
+    border-left-color: #00b894;
+}
+
+.alert-danger {
+    background: rgba(253, 121, 168, 0.95);
+    color: white;
+    border-left-color: #e84393;
+}
+
+.alert-warning {
+    background: rgba(255, 234, 167, 0.95);
+    color: #8b4513;
+    border-left-color: #fdcb6e;
+}
+
+.alert-info {
+    background: rgba(102, 126, 234, 0.95);
+    color: white;
+    border-left-color: #0984e3;
+}
+
+/* ❌ Alert Close Button */
+.alert .btn-close {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.alert .btn-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* 🌀 Alert Fade Transitions */
+.alert.fade.show {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.alert.fade:not(.show) {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* 📊 Progress Bar for Auto-dismiss */
+.alert-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 0 0 15px 15px;
+    animation: progressBar 5s linear forwards;
+}
+
+@keyframes progressBar {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+/* ============================================================
+   📱 BOTTOM NAVIGATION (FIXED, RESPONSIVE, GLASSMORPHIC)
+   ============================================================ */
+
+.bottom-nav {
+    bottom: 0 !important;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    padding: 0.5rem 0;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Ensure nav items do not wrap and are scrollable if needed */
+.bottom-nav .container-fluid {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+}
+
+/* Nav link styles */
+.bottom-nav .nav-link {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--dark-color) !important;
+    padding: 0.5rem;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Hover and active states */
+.bottom-nav .nav-link:hover,
+.bottom-nav .nav-link.active {
+    background: var(--gradient-primary);
+    color: white !important;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-light);
+}
+
+/* Icon styling */
+.bottom-nav .nav-link i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Label styling */
+.bottom-nav .nav-link div {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Haptic-like tap feedback */
+.bottom-nav .nav-link:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* Accessibility: Focus state */
+.bottom-nav .nav-link:focus {
+    outline: 2px dashed var(--primary-color);
+    outline-offset: 4px;
+}
+
+/* Responsive tweaks for smaller screens */
+@media (max-width: 400px) {
+    .bottom-nav .nav-link div {
+        font-size: 0.65rem;
+    }
+
+    .bottom-nav .nav-link {
+        padding: 0.4rem;
+        min-width: 50px;
+    }
+}
+
+
+/* =================================================================
+   📄 CONTENT LAYOUT & STRUCTURE
+   ================================================================= */
+
+/* 📋 Main Content Container */
+.main-content {
+    padding-bottom: 100px;
+}
+
+/* =================================================================
+   🔘 BUTTON COMPONENTS
+   ================================================================= */
+
+/* 🎯 Base Button Styles */
+.btn {
+    border-radius: 50px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ✨ Button Shine Effect */
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.5s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+/* 🎨 Button Color Variations */
+.btn-primary {
+    background: var(--gradient-primary);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success-color) 0%, #00b894 100%);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, var(--warning-color) 0%, #fdcb6e 100%);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger-color) 0%, #e84393 100%);
+}
+
+/* =================================================================
+   🃏 CARD COMPONENTS
+   ================================================================= */
+
+.card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: var(--shadow-light);
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+}
+
+/* =================================================================
+   📜 CUSTOM SCROLLBAR
+   ================================================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gradient-primary);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gradient-accent);
+}
+
+/* =================================================================
+   ⏳ LOADING & ANIMATION COMPONENTS
+   ================================================================= */
+
+/* 🌀 Loading Spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 🔔 Notification Animation */
+.notification-enter {
+    animation: notificationSlide 0.3s ease-out;
+}
+
+@keyframes notificationSlide {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 🌅 Fade In Animation */
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =================================================================
+   🎭 THEME & SPECIAL COMPONENTS
+   ================================================================= */
+
+/* 🌙 Theme Toggle Button */
+.theme-toggle {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dark-color);
+    transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+    background: var(--gradient-primary);
+    color: white;
+    transform: rotate(180deg);
+}
+
+/* =================================================================
+   🛠️ UTILITY CLASSES
+   ================================================================= */
+
+/* 🪟 Glass Morphism Card */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-light);
+}
+
+/* 🌈 Gradient Text */
+.gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* =================================================================
+   📱 RESPONSIVE DESIGN
+   ================================================================= */
+
+/* 📱 Tablet & Mobile (≤768px) */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+    
+    .nav-link {
+        padding: 0.4rem 0.8rem !important;
+        font-size: 0.9rem;
+    }
+    
+    .navbar-text {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .flash-messages-container {
+        right: 10px;
+        left: 10px;
+        top: 80px;
+    }
+
+    .dropdown-menu {
+        position: static !important;
+        transform: none !important;
+        box-shadow: none;
+        border: none;
+        background: transparent;
+        backdrop-filter: none;
+    }
+
+    .dropdown-item {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* 💻 Desktop (≥992px) */
+@media (min-width: 992px) {
+    .main-content {
+        padding-bottom: 2rem;
+    }
+}
+</style>
 </head>
 <body>
-    <!-- Futuristic Navigation System -->
+    <!-- Modern Top Navbar with Organized Dropdowns -->
     <nav class="navbar navbar-expand-lg" id="mainNavbar">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="#">
-                <i class="fas fa-robot"></i>
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <i class="fas fa-robot me-2"></i>
                 <span>BuXin</span>
             </a>
             
@@ -753,432 +742,221 @@
             
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav ms-auto align-items-center">
-                    <!-- Learning & Courses Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span>Learning</span>
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="learningDropdown">
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-store"></i><span>Course Store</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-book-open"></i><span>My Courses</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-receipt"></i><span>Course Orders</span>
-                            </a></li>
-                        </ul>
-                    </li>
+                    {% if current_user.is_authenticated %}
+                        <!-- Learning & Courses Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Learning</span>
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="learningDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('store') }}">
+                                    <i class="fas fa-store"></i>Course Store
+                                </a></li>
+                                {% if not current_user.is_admin %}
+                                    <li><a class="dropdown-item" href="{{ url_for('my_courses') }}">
+                                        <i class="fas fa-book-open"></i>My Courses
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('my_course_orders') }}">
+                                        <i class="fas fa-receipt"></i>Course Orders
+                                    </a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
 
-                    <!-- Shopping Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="shoppingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-shopping-cart"></i>
-                            <span>Shopping</span>
-                            <span class="cart-badge">3</span>
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="shoppingDropdown">
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-box"></i><span>Products</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-shopping-cart"></i><span>Course Cart</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-shopping-bag"></i><span>Product Cart</span>
-                            </a></li>
-                        </ul>
-                    </li>
+                        <!-- Shopping Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="shoppingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>Shopping</span>
+                                {% if not current_user.is_admin %}
+                                    {% set cart_count = current_user.cart_items|length if current_user.cart_items else 0 %}
+                                    {% if cart_count > 0 %}
+                                        <span class="cart-badge">{{ cart_count }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="shoppingDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('products') }}">
+                                    <i class="fas fa-box"></i>Products
+                                </a></li>
+                                {% if not current_user.is_admin %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('cart') }}">
+                                        <i class="fas fa-shopping-cart"></i>Course Cart
+                                        {% if cart_count > 0 %}
+                                            <span class="badge bg-primary ms-2">{{ cart_count }}</span>
+                                        {% endif %}
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('product_cart') }}">
+                                        <i class="fas fa-shopping-bag"></i>Product Cart
+                                    </a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
 
-                    <!-- Orders & Payments Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="ordersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-truck"></i>
-                            <span>Orders</span>
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="ordersDropdown">
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-truck"></i><span>My Orders</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-credit-card"></i><span>Payments</span>
-                            </a></li>
-                        </ul>
-                    </li>
+                        {% if not current_user.is_admin %}
+                            <!-- Orders & Payments Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="ordersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-truck"></i>
+                                    <span>Orders</span>
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="ordersDropdown">
+                                    <li><a class="dropdown-item" href="{{ url_for('my_orders') }}">
+                                        <i class="fas fa-truck"></i>My Orders
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('payments') }}">
+                                        <i class="fas fa-credit-card"></i>Payments
+                                    </a></li>
+                                </ul>
+                            </li>
+                        {% else %}
+                            <!-- Admin can see payments directly -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('payments') }}">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Payments</span>
+                                </a>
+                            </li>
+                        {% endif %}
 
-                    <!-- Tools & Support Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-tools"></i>
-                            <span>Tools</span>
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-brain"></i><span>AI Assistant</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-info-circle"></i><span>About Us</span>
-                            </a></li>
-                        </ul>
-                    </li>
+                        <!-- Tools & Support Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-tools"></i>
+                                <span>Tools</span>
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('ai_assistant') }}">
+                                    <i class="fas fa-brain"></i>AI Assistant
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('about_us') }}">
+                                    <i class="fas fa-info-circle"></i>About Us
+                                </a></li>
+                            </ul>
+                        </li>
 
-                    <!-- User Account Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle"></i>
-                            <span>Alex Chen</span>
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-user"></i><span>Profile</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-cog"></i><span>Settings</span>
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
-                            </a></li>
-                        </ul>
-                    </li>
+                        <!-- User Account Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle"></i>
+                                <span>{{ current_user.first_name }}</span>
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="fas fa-user"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="fas fa-cog"></i>Settings
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt"></i>Logout
+                                </a></li>
+                            </ul>
+                        </li>
+
+                    {% else %}
+                        <!-- Guest User Navigation -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('store') }}">
+                                <i class="fas fa-store"></i>
+                                <span>Courses</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('products') }}">
+                                <i class="fas fa-box"></i>
+                                <span>Products</span>
+                            </a>
+                        </li>
+                        
+                        <!-- Auth Dropdown for Guests -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user"></i>
+                                <span>Account</span>
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="authDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('login') }}">
+                                    <i class="fas fa-sign-in-alt"></i>Login
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('register') }}">
+                                    <i class="fas fa-user-plus"></i>Register
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Advanced Notification System -->
+    <!-- Floating Flash Messages Container -->
     <div class="flash-messages-container">
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            Welcome to BuXin Future Academy! Your learning journey begins now.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show notification-enter" role="alert">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'warning' else 'check-circle' if category == 'success' else 'info-circle' if category == 'info' else 'times-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <div class="alert-progress"></div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
     </div>
 
     <!-- Main Content Area -->
     <div class="main-content animate-fade-in">
-        <!-- Hero Section -->
-        <div class="container-fluid">
-            <section class="hero-section">
-                <h1 class="hero-title">Future-Ready Learning</h1>
-                <p class="hero-subtitle">
-                    Experience next-generation education with AI-powered courses, 
-                    immersive learning environments, and cutting-edge technology.
-                </p>
-                <div class="d-flex gap-3 justify-content-center flex-wrap">
-                    <button class="btn btn-primary">
-                        <i class="fas fa-rocket me-2"></i>Start Learning
-                    </button>
-                    <button class="btn btn-success">
-                        <i class="fas fa-play me-2"></i>Watch Demo
-                    </button>
-                </div>
-            </section>
-
-            <!-- Features Grid -->
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-brain"></i>
-                    </div>
-                    <h3 class="feature-title">AI-Powered Learning</h3>
-                    <p class="feature-description">
-                        Personalized learning paths powered by advanced AI algorithms 
-                        that adapt to your learning style and pace.
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-vr-cardboard"></i>
-                    </div>
-                    <h3 class="feature-title">Immersive Experience</h3>
-                    <p class="feature-description">
-                        Virtual reality and augmented reality components that make 
-                        learning engaging and memorable.
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3 class="feature-title">Collaborative Learning</h3>
-                    <p class="feature-description">
-                        Connect with learners worldwide through our advanced 
-                        social learning platform and study groups.
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h3 class="feature-title">Progress Analytics</h3>
-                    <p class="feature-description">
-                        Detailed insights into your learning progress with 
-                        predictive analytics and performance optimization.
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-mobile-alt"></i>
-                    </div>
-                    <h3 class="feature-title">Mobile-First Design</h3>
-                    <p class="feature-description">
-                        Learn anywhere, anytime with our responsive design 
-                        optimized for all devices and platforms.
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-certificate"></i>
-                    </div>
-                    <h3 class="feature-title">Verified Certificates</h3>
-                    <p class="feature-description">
-                        Earn blockchain-verified certificates that are 
-                        recognized by top employers and institutions worldwide.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Stats Section -->
-            <section class="stats-section mt-5 pt-5">
-                <div class="row text-center">
-                    <div class="col-md-3 mb-4">
-                        <div class="glass-card p-4">
-                            <h2 class="gradient-text display-4 fw-bold">10K+</h2>
-                            <p class="text-light">Active Students</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-4">
-                        <div class="glass-card p-4">
-                            <h2 class="gradient-text display-4 fw-bold">500+</h2>
-                            <p class="text-light">Expert Instructors</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-4">
-                        <div class="glass-card p-4">
-                            <h2 class="gradient-text display-4 fw-bold">1000+</h2>
-                            <p class="text-light">Premium Courses</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-4">
-                        <div class="glass-card p-4">
-                            <h2 class="gradient-text display-4 fw-bold">95%</h2>
-                            <p class="text-light">Success Rate</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Course Categories Preview -->
-            <section class="categories-section mt-5 pt-5">
-                <h2 class="text-center gradient-text display-5 fw-bold mb-5">Explore Categories</h2>
-                <div class="row g-4">
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body text-center p-4">
-                                <i class="fas fa-code fa-3x text-info mb-3"></i>
-                                <h5 class="card-title text-light">Programming</h5>
-                                <p class="card-text text-muted">Master the latest programming languages and frameworks</p>
-                                <button class="btn btn-primary">Explore</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body text-center p-4">
-                                <i class="fas fa-palette fa-3x text-warning mb-3"></i>
-                                <h5 class="card-title text-light">Design</h5>
-                                <p class="card-text text-muted">Create stunning visuals and user experiences</p>
-                                <button class="btn btn-warning">Explore</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body text-center p-4">
-                                <i class="fas fa-chart-bar fa-3x text-success mb-3"></i>
-                                <h5 class="card-title text-light">Data Science</h5>
-                                <p class="card-text text-muted">Unlock insights from data with ML and AI</p>
-                                <button class="btn btn-success">Explore</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body text-center p-4">
-                                <i class="fas fa-briefcase fa-3x text-danger mb-3"></i>
-                                <h5 class="card-title text-light">Business</h5>
-                                <p class="card-text text-muted">Develop leadership and entrepreneurial skills</p>
-                                <button class="btn btn-danger">Explore</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body text-center p-4">
-                                <i class="fas fa-camera fa-3x text-info mb-3"></i>
-                                <h5 class="card-title text-light">Photography</h5>
-                                <p class="card-text text-muted">Capture and edit stunning visual stories</p>
-                                <button class="btn btn-primary">Explore</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body text-center p-4">
-                                <i class="fas fa-music fa-3x text-warning mb-3"></i>
-                                <h5 class="card-title text-light">Music</h5>
-                                <p class="card-text text-muted">Learn instruments and music production</p>
-                                <button class="btn btn-warning">Explore</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
+        {% block content %}
+        {% endblock %}
     </div>
 
-    <!-- Revolutionary Bottom Navigation -->
-    <nav class="navbar d-lg-none bottom-nav">
-        <div class="container-fluid">
-            <a class="nav-link active" href="#">
+    <!-- Modern Bottom Navigation for Mobile -->
+    <nav class="navbar d-lg-none bottom-nav fixed-bottom">
+       <div class="container-fluid d-flex justify-content-around flex-nowrap overflow-auto">
+            <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
                 <i class="fas fa-home"></i>
                 <div>Home</div>
             </a>
-            <a class="nav-link" href="#">
+            <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store') }}">
                 <i class="fas fa-store"></i>
                 <div>Courses</div>
             </a>
-            <a class="nav-link" href="#">
+            <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
                 <i class="fas fa-box"></i>
                 <div>Products</div>
             </a>
-            <a class="nav-link" href="#">
-                <i class="fas fa-shopping-cart"></i>
-                <div>Cart</div>
-            </a>
-            <a class="nav-link" href="#">
-                <i class="fas fa-brain"></i>
-                <div>AI</div>
-            </a>
+            {% if current_user.is_authenticated %}
+                <a class="nav-link {% if request.endpoint == 'cart' %}active{% endif %}" href="{{ url_for('cart') }}">
+                    <i class="fas fa-shopping-cart"></i>
+                    <div>Cart</div>
+                </a>
+                <a class="nav-link {% if request.endpoint == 'ai_assistant' %}active{% endif %}" href="{{ url_for('ai_assistant') }}">
+                    <i class="fas fa-brain"></i>
+                    <div>AI</div>
+                </a>
+            {% else %}
+                <a class="nav-link {% if request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <div>Login</div>
+                </a>
+            {% endif %}
         </div>
     </nav>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Enhanced navbar scroll effect
+            // Navbar scroll effect
             const navbar = document.getElementById('mainNavbar');
-            let lastScrollTop = 0;
             
             window.addEventListener('scroll', function() {
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                
-                if (scrollTop > 100) {
+                if (window.scrollY > 50) {
                     navbar.classList.add('scrolled');
-                } else {
-                    navbar.classList.remove('scrolled');
-                }
-                
-                // Hide/show navbar on scroll
-                if (scrollTop > lastScrollTop && scrollTop > 200) {
-                    navbar.style.transform = 'translateY(-100%)';
-                } else {
-                    navbar.style.transform = 'translateY(0)';
-                }
-                
-                lastScrollTop = scrollTop;
-            });
-
-            // Auto-dismiss alerts after 5 seconds
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                setTimeout(() => {
-                    const closeBtn = alert.querySelector('.btn-close');
-                    if (closeBtn) {
-                        closeBtn.click();
-                    }
-                }, 5000);
-            });
-
-            // Smooth scroll for navigation links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                });
-            });
-
-            // Add loading state to buttons
-            document.querySelectorAll('.btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
-                    this.disabled = true;
-                    
-                    setTimeout(() => {
-                        this.innerHTML = originalText;
-                        this.disabled = false;
-                    }, 2000);
-                });
-            });
-
-            // Parallax effect for hero section
-            window.addEventListener('scroll', function() {
-                const scrolled = window.pageYOffset;
-                const hero = document.querySelector('.hero-section');
-                if (hero) {
-                    hero.style.transform = `translateY(${scrolled * 0.5}px)`;
-                }
-            });
-
-            // Intersection Observer for animations
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            };
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            }, observerOptions);
-
-            // Observe cards for staggered animations
-            document.querySelectorAll('.feature-card, .card').forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(30px)';
-                card.style.transition = `all 0.6s ease ${index * 0.1}s`;
-                observer.observe(card);
-            });
-
-            // Dynamic gradient animation
-            let hue = 0;
-            setInterval(() => {
-                hue = (hue + 1) % 360;
-                document.documentElement.style.setProperty(
-                    '--primary', 
-                    `linear-gradient(135deg, hsl(${hue}, 70%, 60%) 0%, hsl(${(hue + 60) % 360}, 70%, 60%) 50%, hsl(${(hue + 120) % 360}, 70%, 60%) 100%)`
-                );
-            }, 100);
-        });
-    </script>
-</body>
-</html>

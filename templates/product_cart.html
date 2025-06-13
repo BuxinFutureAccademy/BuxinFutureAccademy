@@ -38,7 +38,7 @@
                                     </form>
                                 </div>
                                 <div class="col-md-2 text-center">
-                                    <strong class="text-success">${{ "%.2f"|format(item.get_total_price()) }}</strong>
+                                    <strong class="text-success">GMD {{ "%.2f"|format(item.get_total_price()) }}</strong>
                                 </div>
                                 <div class="col-md-2 text-end">
                                     <form method="POST" action="{{ url_for('remove_product_from_cart', cart_item_id=item.id) }}" class="d-inline">
@@ -61,12 +61,12 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-2">
                             <span>Items ({{ cart_items|length }})</span>
-                            <span>${{ "%.2f"|format(total) }}</span>
+                            <span>GMD {{ "%.2f"|format(total) }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-3">
                             <strong>Total</strong>
-                            <strong class="text-success">${{ "%.2f"|format(total) }}</strong>
+                            <strong class="text-success">GMD {{ "%.2f"|format(total) }}</strong>
                         </div>
                         <a href="{{ url_for('product_checkout') }}" class="btn btn-success w-100 btn-lg">
                             <i class="fas fa-credit-card me-2"></i>Proceed to Checkout

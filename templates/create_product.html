@@ -251,10 +251,23 @@
                                         <button type="button" class="btn btn-outline-primary" onclick="resetForm()">
                                             <i class="fas fa-undo me-2"></i>Reset
                                         </button>
-                                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
-                                            <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
-                                            <i class="fas fa-save me-2" id="submitIcon"></i>Create Product
-                                        </button>
+                                        <div class="btn-group">
+                                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                                <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
+                                                <i class="fas fa-save me-2" id="submitIcon"></i>Create Product
+                                            </button>
+                                            <button type="button" class="btn btn-success btn-lg dropdown-toggle dropdown-toggle-split" 
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="visually-hidden">Toggle Dropdown</span>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <button type="submit" class="dropdown-item" name="action" value="save_and_new">
+                                                        <i class="fas fa-plus me-2"></i>Save & Create Another
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -295,11 +308,39 @@ function validateForm() {
     const price = parseFloat(priceField.value);
     if (isNaN(price) || price < 0) {
         priceField.classList.add('is-invalid');
+        showAlert('Please enter a valid price (0 or greater).', 'danger');
         isValid = false;
     }
 
+    // Validate stock quantity
+    const stockField = document.getElementById('stock_quantity');
+    const stock = parseInt(stockField.value);
+    if (isNaN(stock) || stock < 0) {
+        stockField.classList.add('is-invalid');
+        showAlert('Please enter a valid stock quantity (0 or greater).', 'danger');
+        isValid = false;
+    }
+
+    // Validate image URL if provided
+    const imageUrlField = document.getElementById('image_url');
+    const imageUrl = imageUrlField.value.trim();
+    if (imageUrl) {
+        try {
+            new URL(imageUrl);
+        } catch {
+            imageUrlField.classList.add('is-invalid');
+            showAlert('Please enter a valid image URL.', 'danger');
+            isValid = false;
+        }
+    }
+
     if (!isValid) {
-        showAlert('Please fill in all required fields correctly.', 'danger');
+        // Scroll to first invalid field
+        const firstInvalidField = form.querySelector('.is-invalid');
+        if (firstInvalidField) {
+            firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalidField.focus();
+        }
         return false;
     }
 

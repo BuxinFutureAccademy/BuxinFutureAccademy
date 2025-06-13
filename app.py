@@ -815,43 +815,21 @@ def admin_products():
 @app.route('/admin/create_product', methods=['GET', 'POST'])
 @login_required
 def create_product():
+    print(f"DEBUG: create_product route accessed")
+    print(f"DEBUG: User authenticated: {current_user.is_authenticated}")
+    print(f"DEBUG: User is admin: {current_user.is_admin if current_user.is_authenticated else 'N/A'}")
+    print(f"DEBUG: Request method: {request.method}")
+    
     if not current_user.is_admin:
+        print("DEBUG: Access denied - user is not admin")
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
     
+    print("DEBUG: Admin access granted, rendering template")
+    
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        short_description = request.form.get('short_description', '')
-        price = float(request.form['price'])
-        product_type = request.form['product_type']
-        category = request.form['category']
-        brand = request.form.get('brand', '')
-        sku = request.form.get('sku', '')
-        stock_quantity = int(request.form.get('stock_quantity', 0))
-        image_url = request.form.get('image_url', '')
-        featured = 'featured' in request.form
-        
-        product = Product(
-            name=name,
-            description=description,
-            short_description=short_description,
-            price=price,
-            product_type=product_type,
-            category=category,
-            brand=brand,
-            sku=sku,
-            stock_quantity=stock_quantity,
-            image_url=image_url,
-            featured=featured,
-            created_by=current_user.id
-        )
-        
-        db.session.add(product)
-        db.session.commit()
-        
-        flash('Product created successfully!', 'success')
-        return redirect(url_for('admin_products'))
+        print("DEBUG: Processing POST request")
+        # ... rest of your POST logic
     
     return render_template('create_product.html')
 

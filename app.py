@@ -158,6 +158,8 @@ class Course(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator = db.relationship('User', foreign_keys=[created_by], lazy='select')
+    is_active = db.Column(db.Boolean, default=True)  # False for coming soon
+    expected_release = db.Column(db.String(20))  # "Q2 2024", etc.
     
     def get_enrolled_count(self):
         return Purchase.query.filter_by(course_id=self.id, status='completed').count()
@@ -2187,8 +2189,49 @@ def delete_class(class_type, class_id):
     
     return redirect(url_for('admin_dashboard'))
 
-# Add these routes to your Flask application after the create_class route............................................................................................................................../////////////////
+# Add these routes to your Flask application after the create_class route............................................................................................................................../////////////////................
 
+# Add these routes to handle the new features:
+
+@app.route('/admin/toggle-product-status/<int:product_id>', methods=['POST'])
+@login_required
+def toggle_product_status(product_id):
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}
+    
+    product = Product.query.get_or_404(product_id)
+    data = request.get_json()
+    product.is_active = data.get('is_active', False)
+    
+    try:
+        db.session.commit()
+        return {'success': True}
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}
+
+@app.route('/admin/product/<int:product_id>/details')
+@login_required
+def product_details(product_id):
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    product = Product.query.get_or_404(product_id)
+    return {
+        'id': product.id,
+        'name': product.name,
+        'description': product.description,
+        'price': product.price,
+        'category': product.category,
+        'product_type': product.product_type,
+        'stock_quantity': product.stock_quantity,
+        'brand': product.brand,
+        'sku': product.sku,
+        'image_url': product.image_url,
+        'is_active': product.is_active,
+        'featured': product.featured
+    }
+...........................................................................................................................................................................................................................
 
 # ========================================
 # SAMPLE DATA CREATION
@@ -2385,6 +2428,18 @@ def create_sample_data():
         print(f"Error creating sample data: {e}")
         db.session.rollback()
 
+........................................................................................................................................................................................
+@app.route('/api/notify-course/<int:course_id>', methods=['POST'])
+def notify_course(course_id):
+    # Save user interest in course
+    # Send email when course becomes available
+    pass
+
+@app.route('/api/subscribe', methods=['POST'])
+def subscribe_updates():
+    # Save email for course updates
+    pass
+..............................................................................................................................................................................................
 # ========================================
 # APPLICATION STARTUP
 # ========================================

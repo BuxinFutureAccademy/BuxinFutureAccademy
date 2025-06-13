@@ -802,10 +802,67 @@ def edit_course(course_id):
 # PRODUCT MANAGEMENT ROUTES
 # ========================================
 
+# ========================================
+# PRODUCT MANAGEMENT ROUTES (Keep these together)
+# ========================================
+
+@app.route('/admin/products')
+@login_required
+def admin_products():
+    """Display all products with filtering and search"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    search = request.args.get('search', '').strip()
+    category = request.args.get('category', '').strip()
+    status = request.args.get('status', '').strip()
+    sort_by = request.args.get('sort', 'newest')
+    
+    # Start with base query
+    query = Product.query
+    
+    # Apply filters
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Product.name.like(search_filter),
+                Product.description.like(search_filter),
+                Product.brand.like(search_filter),
+                Product.sku.like(search_filter)
+            )
+        )
+    
+    if category:
+        query = query.filter_by(category=category)
+    
+    if status == 'active':
+        query = query.filter_by(is_active=True)
+    elif status == 'inactive':
+        query = query.filter_by(is_active=False)
+    
+    # Apply sorting
+    if sort_by == 'name':
+        query = query.order_by(Product.name.asc())
+    elif sort_by == 'price_low':
+        query = query.order_by(Product.price.asc())
+    elif sort_by == 'price_high':
+        query = query.order_by(Product.price.desc())
+    elif sort_by == 'stock':
+        query = query.order_by(Product.stock_quantity.desc())
+    else:  # newest
+        query = query.order_by(Product.created_at.desc())
+    
+    products = query.all()
+    
+    return render_template('admin_products.html', products=products)
 
 @app.route('/admin/create_product', methods=['GET', 'POST'])
 @login_required
 def create_product():
+    """Create a new product"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
@@ -926,8 +983,141 @@ def create_product():
     # GET request - show the form
     return render_template('create_product.html')
 
+@app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
+@login_required
+def edit_product(product_id):
+    """Edit an existing product"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    product = Product.query.get_or_404(product_id)
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            product.name = request.form.get('name', '').strip()
+            product.description = request.form.get('description', '').strip()
+            product.short_description = request.form.get('short_description', '').strip()
+            price = request.form.get('price', '0')
+            product.product_type = request.form.get('product_type', '').strip()
+            product.category = request.form.get('category', '').strip()
+            product.brand = request.form.get('brand', '').strip()
+            sku = request.form.get('sku', '').strip()
+            stock_quantity = request.form.get('stock_quantity', '0')
+            product.image_url = request.form.get('image_url', '').strip()
+            product.is_active = 'is_active' in request.form
+            product.featured = 'featured' in request.form
+            
+            # Validate required fields
+            if not all([product.name, product.description, price, product.product_type, product.category]):
+                flash('Please fill in all required fields (Name, Description, Price, Type, Category).', 'danger')
+                return render_template('edit_product.html', product=product)
+            
+            # Validate and convert price
+            try:
+                product.price = float(price)
+                if product.price < 0:
+                    flash('Price must be a positive number.', 'danger')
+                    return render_template('edit_product.html', product=product)
+            except ValueError:
+                flash('Please enter a valid price.', 'danger')
+                return render_template('edit_product.html', product=product)
+            
+            # Validate and convert stock quantity
+            try:
+                product.stock_quantity = int(stock_quantity)
+                if product.stock_quantity < 0:
+                    flash('Stock quantity must be a positive number.', 'danger')
+                    return render_template('edit_product.html', product=product)
+            except ValueError:
+                flash('Please enter a valid stock quantity.', 'danger')
+                return render_template('edit_product.html', product=product)
+            
+            # Check SKU uniqueness if changed
+            if sku != product.sku:
+                existing_product = Product.query.filter_by(sku=sku).filter(Product.id != product_id).first()
+                if existing_product:
+                    flash(f'SKU "{sku}" already exists. Please choose a different SKU.', 'danger')
+                    return render_template('edit_product.html', product=product)
+                product.sku = sku
+            
+            # For digital products, set stock to 0
+            if product.product_type == 'Digital':
+                product.stock_quantity = 0
+            
+            # Validate image URL if provided
+            if product.image_url:
+                try:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(product.image_url)
+                    if not all([parsed.scheme, parsed.netloc]):
+                        flash('Please enter a valid image URL.', 'warning')
+                        product.image_url = ''
+                except:
+                    flash('Please enter a valid image URL.', 'warning')
+                    product.image_url = ''
+            
+            # Save changes
+            db.session.commit()
+            
+            flash(f'Product "{product.name}" updated successfully!', 'success')
+            return redirect(url_for('admin_products'))
+                
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating product: {str(e)}', 'danger')
+            print(f"Error updating product {product_id}: {e}")
+            return render_template('edit_product.html', product=product)
+    
+    # GET request - show the form with current data
+    return render_template('edit_product.html', product=product)
 
-# Add these routes to your Flask app.py file
+@app.route('/admin/delete_product/<int:product_id>', methods=['POST'])
+@login_required
+def delete_product(product_id):
+    """Delete a product"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+
+    try:
+        product = Product.query.get_or_404(product_id)
+        product_name = product.name
+        
+        # Check if there are any orders for this product
+        orders_count = 0
+        try:
+            orders_count = ProductOrder.query.filter_by(product_id=product_id).count()
+        except:
+            pass  # Table might not exist or have different structure
+        
+        if orders_count > 0:
+            flash(f'Cannot delete "{product_name}" because it has {orders_count} associated orders. Deactivate it instead.', 'warning')
+            return redirect(url_for('admin_products'))
+        
+        # Check if there are any cart items for this product
+        cart_items_count = 0
+        try:
+            cart_items_count = ProductCartItem.query.filter_by(product_id=product_id).count()
+            if cart_items_count > 0:
+                # Remove from carts first
+                ProductCartItem.query.filter_by(product_id=product_id).delete()
+        except:
+            pass  # Table might not exist or have different structure
+        
+        # Delete the product
+        db.session.delete(product)
+        db.session.commit()
+        
+        flash(f'Product "{product_name}" deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting product: {str(e)}', 'danger')
+        print(f"Error deleting product {product_id}: {e}")
+    
+    return redirect(url_for('admin_products'))
 
 @app.route('/admin/toggle-product-status/<int:product_id>', methods=['POST'])
 @login_required
@@ -969,11 +1159,15 @@ def product_details(product_id):
     try:
         product = Product.query.get_or_404(product_id)
         
-        # Get sales count (you might need to adjust this based on your order model)
-        sales_count = ProductOrder.query.filter_by(
-            product_id=product_id, 
-            status='completed'
-        ).count() if hasattr(globals().get('ProductOrder', None), 'product_id') else 0
+        # Get sales count (safely handle if ProductOrder doesn't exist)
+        sales_count = 0
+        try:
+            sales_count = ProductOrder.query.filter_by(
+                product_id=product_id, 
+                status='completed'
+            ).count()
+        except:
+            pass  # Table might not exist or have different structure
         
         return {
             'id': product.id,
@@ -997,88 +1191,6 @@ def product_details(product_id):
         print(f"Error getting product details: {e}")
         return {'error': str(e)}, 500
 
-# Update your existing admin_products route to handle filtering
-@app.route('/admin/products')
-@login_required
-def admin_products():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    
-    # Get filter parameters
-    search = request.args.get('search', '').strip()
-    category = request.args.get('category', '').strip()
-    status = request.args.get('status', '').strip()
-    
-    # Start with base query
-    query = Product.query
-    
-    # Apply filters
-    if search:
-        search_filter = f"%{search}%"
-        query = query.filter(
-            db.or_(
-                Product.name.like(search_filter),
-                Product.description.like(search_filter),
-                Product.brand.like(search_filter),
-                Product.sku.like(search_filter)
-            )
-        )
-    
-    if category:
-        query = query.filter_by(category=category)
-    
-    if status == 'active':
-        query = query.filter_by(is_active=True)
-    elif status == 'inactive':
-        query = query.filter_by(is_active=False)
-    
-    # Order by creation date (newest first)
-    products = query.order_by(Product.created_at.desc()).all()
-    
-    return render_template('admin_products.html', products=products)
-
-# Update your existing delete_product route to handle the form submission
-@app.route('/admin/delete_product/<int:product_id>', methods=['POST'])
-@login_required
-def delete_product(product_id):
-    """Delete a product"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-
-    try:
-        product = Product.query.get_or_404(product_id)
-        product_name = product.name
-        
-        # Check if there are any orders for this product
-        orders_count = ProductOrder.query.filter_by(product_id=product_id).count() if hasattr(globals().get('ProductOrder', None), 'product_id') else 0
-        
-        if orders_count > 0:
-            flash(f'Cannot delete "{product_name}" because it has {orders_count} associated orders. Deactivate it instead.', 'warning')
-            return redirect(url_for('admin_products'))
-        
-        # Check if there are any cart items for this product
-        cart_items_count = ProductCartItem.query.filter_by(product_id=product_id).count() if hasattr(globals().get('ProductCartItem', None), 'product_id') else 0
-        
-        if cart_items_count > 0:
-            # Remove from carts first
-            ProductCartItem.query.filter_by(product_id=product_id).delete()
-        
-        # Delete the product
-        db.session.delete(product)
-        db.session.commit()
-        
-        flash(f'Product "{product_name}" deleted successfully!', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error deleting product: {str(e)}', 'danger')
-        print(f"Error deleting product {product_id}: {e}")
-    
-    return redirect(url_for('admin_products'))
-
-# Add a route to handle bulk actions (optional enhancement)
 @app.route('/admin/products/bulk-action', methods=['POST'])
 @login_required
 def bulk_product_action():
@@ -1120,9 +1232,12 @@ def bulk_product_action():
             # Check for orders first
             products_with_orders = []
             for product in products:
-                orders_count = ProductOrder.query.filter_by(product_id=product.id).count() if hasattr(globals().get('ProductOrder', None), 'product_id') else 0
-                if orders_count > 0:
-                    products_with_orders.append(product.name)
+                try:
+                    orders_count = ProductOrder.query.filter_by(product_id=product.id).count()
+                    if orders_count > 0:
+                        products_with_orders.append(product.name)
+                except:
+                    pass  # Table might not exist
             
             if products_with_orders:
                 return {
@@ -1132,8 +1247,11 @@ def bulk_product_action():
             
             # Delete products
             for product in products:
-                # Remove from carts first
-                ProductCartItem.query.filter_by(product_id=product.id).delete()
+                try:
+                    # Remove from carts first
+                    ProductCartItem.query.filter_by(product_id=product.id).delete()
+                except:
+                    pass  # Table might not exist
                 db.session.delete(product)
             
             message = f'Deleted {len(products)} products'
@@ -1149,7 +1267,6 @@ def bulk_product_action():
         print(f"Error in bulk action: {e}")
         return {'success': False, 'error': str(e)}, 500
 
-# Add a route to get product statistics (optional enhancement)
 @app.route('/admin/products/stats')
 @login_required
 def product_stats():
@@ -1198,7 +1315,6 @@ def product_stats():
         print(f"Error getting product stats: {e}")
         return {'error': str(e)}, 500
 
-# Add a route to export products (optional enhancement)
 @app.route('/admin/products/export')
 @login_required
 def export_products():
@@ -1255,6 +1371,112 @@ def export_products():
     except Exception as e:
         flash(f'Error exporting products: {str(e)}', 'danger')
         return redirect(url_for('admin_products'))
+
+@app.route('/admin/products/import', methods=['GET', 'POST'])
+@login_required
+def import_products():
+    """Import products from CSV"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        try:
+            import csv
+            from io import StringIO
+            
+            # Check if file was uploaded
+            if 'csv_file' not in request.files:
+                flash('No file selected!', 'danger')
+                return redirect(url_for('import_products'))
+            
+            file = request.files['csv_file']
+            if file.filename == '':
+                flash('No file selected!', 'danger')
+                return redirect(url_for('import_products'))
+            
+            if not file.filename.endswith('.csv'):
+                flash('Please upload a CSV file!', 'danger')
+                return redirect(url_for('import_products'))
+            
+            # Read CSV content
+            stream = StringIO(file.stream.read().decode("UTF8"), newline=None)
+            csv_input = csv.DictReader(stream)
+            
+            created_count = 0
+            error_count = 0
+            errors = []
+            
+            for row_num, row in enumerate(csv_input, start=2):  # Start at 2 to account for header
+                try:
+                    # Validate required fields
+                    if not all([row.get('Name'), row.get('Description'), row.get('Price'), 
+                              row.get('Product Type'), row.get('Category')]):
+                        errors.append(f"Row {row_num}: Missing required fields")
+                        error_count += 1
+                        continue
+                    
+                    # Check if product with same name or SKU exists
+                    existing_product = Product.query.filter(
+                        db.or_(
+                            Product.name == row['Name'],
+                            Product.sku == row.get('SKU')
+                        )
+                    ).first()
+                    
+                    if existing_product:
+                        errors.append(f"Row {row_num}: Product '{row['Name']}' or SKU '{row.get('SKU')}' already exists")
+                        error_count += 1
+                        continue
+                    
+                    # Create product
+                    product = Product(
+                        name=row['Name'],
+                        description=row['Description'],
+                        short_description=row.get('Short Description', ''),
+                        price=float(row['Price']),
+                        product_type=row['Product Type'],
+                        category=row['Category'],
+                        brand=row.get('Brand', ''),
+                        sku=row.get('SKU', ''),
+                        stock_quantity=int(row.get('Stock Quantity', 0)),
+                        image_url=row.get('Image URL', ''),
+                        is_active=row.get('Is Active', 'Yes').lower() in ['yes', 'true', '1'],
+                        featured=row.get('Featured', 'No').lower() in ['yes', 'true', '1'],
+                        created_by=current_user.id
+                    )
+                    
+                    db.session.add(product)
+                    created_count += 1
+                    
+                except Exception as e:
+                    errors.append(f"Row {row_num}: {str(e)}")
+                    error_count += 1
+                    continue
+            
+            db.session.commit()
+            
+            # Show results
+            if created_count > 0:
+                flash(f'Successfully imported {created_count} products!', 'success')
+            
+            if error_count > 0:
+                flash(f'{error_count} errors occurred during import. Check the error details below.', 'warning')
+                for error in errors[:10]:  # Show first 10 errors
+                    flash(error, 'danger')
+                if len(errors) > 10:
+                    flash(f'... and {len(errors) - 10} more errors', 'danger')
+            
+            return redirect(url_for('admin_products'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error importing products: {str(e)}', 'danger')
+            return redirect(url_for('import_products'))
+    
+    # GET request - show import form
+    return render_template('import_products.html')
+
 
 # ========================================
 # ORDER MANAGEMENT ROUTES

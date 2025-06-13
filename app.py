@@ -159,7 +159,6 @@ class Course(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator = db.relationship('User', foreign_keys=[created_by], lazy='select')
     is_active = db.Column(db.Boolean, default=True)  # False for coming soon
-    expected_release = db.Column(db.String(20))  # "Q2 2024", etc.
     
     def get_enrolled_count(self):
         return Purchase.query.filter_by(course_id=self.id, status='completed').count()

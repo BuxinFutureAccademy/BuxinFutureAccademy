@@ -798,9 +798,6 @@ def edit_course(course_id):
     
     return render_template('edit_course.html', course=course)
 
-# ========================================
-# PRODUCT MANAGEMENT ROUTES
-# ========================================
 
 # ========================================
 # PRODUCT MANAGEMENT ROUTES (Keep these together)
@@ -1477,7 +1474,9 @@ def import_products():
     # GET request - show import form
     return render_template('import_products.html')
 
-
+# ========================================
+# END PRODUCT MANAGEMENT ROUTES
+# ========================================
 # ========================================
 # ORDER MANAGEMENT ROUTES
 # ========================================

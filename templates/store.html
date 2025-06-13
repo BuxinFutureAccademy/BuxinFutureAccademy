@@ -128,7 +128,7 @@
                                     {% if course.price == 0 %}
                                         <span class="badge bg-success">FREE</span>
                                     {% else %}
-                                        ${{ "%.2f"|format(course.price) }}
+                                        GMD {{ "%.2f"|format(course.price) }}
                                     {% endif %}
                                 </span>
                                 {% if course.materials %}

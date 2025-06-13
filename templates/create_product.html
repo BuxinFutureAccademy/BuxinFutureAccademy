@@ -1,30 +1,33 @@
-{% extends "base.html" %}
-
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Product Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header bg-success text-white">
-                    <h4><i class="fas fa-plus me-2"></i>Create New Product</h4>
+                    <h4><i class="fas fa-plus me-2"></i>Create New Product - DEBUG VERSION</h4>
                 </div>
                 <div class="card-body">
-                    <!-- Debug: Show flash messages -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
+                    <!-- Debug Info Panel -->
+                    <div class="alert alert-info" id="debugInfo">
+                        <h6><i class="fas fa-bug"></i> Debug Information:</h6>
+                        <div id="debugContent">Form loading...</div>
+                    </div>
 
-                    <form method="POST" enctype="multipart/form-data" onsubmit="return validateForm()">
-                        <!-- CSRF Token (if you're using Flask-WTF) -->
-                        <!-- {{ csrf_token() }} -->
-                        
+                    <!-- Form Status -->
+                    <div id="formStatus" class="alert alert-secondary">
+                        <strong>Form Status:</strong> <span id="statusText">Ready</span>
+                    </div>
+
+                    <form method="POST" action="/admin/create_product" enctype="multipart/form-data" id="productForm">
                         <!-- Product Name -->
                         <div class="mb-3">
                             <label for="name" class="form-label">Product Name *</label>
@@ -125,11 +128,18 @@
                             </div>
                         </div>
                         
+                        <!-- Debug Form Data -->
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-info btn-sm" onclick="debugFormData()">
+                                <i class="fas fa-search"></i> Debug Form Data
+                            </button>
+                        </div>
+                        
                         <!-- Submit Buttons -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('admin_products') }}" class="btn btn-secondary me-md-2">
+                            <button type="button" class="btn btn-secondary me-md-2" onclick="window.history.back()">
                                 <i class="fas fa-times me-2"></i>Cancel
-                            </a>
+                            </button>
                             <button type="submit" class="btn btn-success" id="submitBtn">
                                 <span class="spinner-border spinner-border-sm d-none" id="submitSpinner"></span>
                                 <i class="fas fa-save me-2" id="submitIcon"></i>Create Product
@@ -142,33 +152,97 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-// Debug: Log form data before submission
-function validateForm() {
-    const form = document.querySelector('form');
+// Enhanced debug functions
+function updateStatus(message, type = 'info') {
+    const statusElement = document.getElementById('statusText');
+    const statusContainer = document.getElementById('formStatus');
+    
+    statusElement.textContent = message;
+    statusContainer.className = `alert alert-${type}`;
+    
+    console.log(`[STATUS] ${message}`);
+}
+
+function debugFormData() {
+    const form = document.getElementById('productForm');
     const formData = new FormData(form);
     
-    console.log('=== FORM DEBUG INFO ===');
-    console.log('Form action:', form.action);
-    console.log('Form method:', form.method);
-    console.log('Form data:');
+    let debugHtml = '<strong>Current Form Data:</strong><br>';
+    let allFieldsValid = true;
     
-    for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}: ${value}`);
+    // Check each field
+    const fields = [
+        {name: 'name', required: true, type: 'text'},
+        {name: 'description', required: true, type: 'text'},
+        {name: 'short_description', required: false, type: 'text'},
+        {name: 'price', required: true, type: 'number'},
+        {name: 'stock_quantity', required: false, type: 'number'},
+        {name: 'product_type', required: true, type: 'select'},
+        {name: 'category', required: true, type: 'select'},
+        {name: 'brand', required: false, type: 'text'},
+        {name: 'sku', required: false, type: 'text'},
+        {name: 'image_url', required: false, type: 'url'},
+        {name: 'is_active', required: false, type: 'checkbox'},
+        {name: 'featured', required: false, type: 'checkbox'}
+    ];
+    
+    fields.forEach(field => {
+        const value = formData.get(field.name);
+        const element = document.getElementById(field.name);
+        
+        let status = '';
+        if (field.required && (!value || value.trim() === '')) {
+            status = ' <span class="text-danger">❌ MISSING</span>';
+            allFieldsValid = false;
+        } else if (value) {
+            status = ' <span class="text-success">✅ OK</span>';
+        } else {
+            status = ' <span class="text-muted">⚪ OPTIONAL</span>';
+        }
+        
+        debugHtml += `• <strong>${field.name}:</strong> "${value}"${status}<br>`;
+    });
+    
+    debugHtml += `<br><strong>Form Valid:</strong> ${allFieldsValid ? '<span class="text-success">✅ YES</span>' : '<span class="text-danger">❌ NO</span>'}`;
+    debugHtml += `<br><strong>Form Action:</strong> ${form.action}`;
+    debugHtml += `<br><strong>Form Method:</strong> ${form.method}`;
+    debugHtml += `<br><strong>Form Enctype:</strong> ${form.enctype}`;
+    
+    document.getElementById('debugContent').innerHTML = debugHtml;
+    
+    if (!allFieldsValid) {
+        updateStatus('Form has missing required fields', 'danger');
+    } else {
+        updateStatus('Form is ready to submit', 'success');
     }
+}
+
+// Form submission handler
+document.getElementById('productForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Prevent default submission for debugging
+    
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    updateStatus('Validating form...', 'warning');
+    
+    const formData = new FormData(this);
     
     // Check required fields
     const requiredFields = ['name', 'description', 'price', 'product_type', 'category'];
     let isValid = true;
+    let missingFields = [];
     
     requiredFields.forEach(field => {
-        const element = document.getElementById(field);
         const value = formData.get(field);
+        const element = document.getElementById(field);
         
         if (!value || value.trim() === '') {
             console.error(`Missing required field: ${field}`);
             element.classList.add('is-invalid');
             isValid = false;
+            missingFields.push(field);
         } else {
             element.classList.remove('is-invalid');
             element.classList.add('is-valid');
@@ -176,6 +250,7 @@ function validateForm() {
     });
     
     if (!isValid) {
+        updateStatus(`Missing required fields: ${missingFields.join(', ')}`, 'danger');
         alert('Please fill in all required fields marked with *');
         return false;
     }
@@ -188,9 +263,47 @@ function validateForm() {
     submitBtn.disabled = true;
     submitIcon.classList.add('d-none');
     submitSpinner.classList.remove('d-none');
+    updateStatus('Submitting form...', 'info');
     
-    return true;
-}
+    // Log all form data
+    console.log('Form data being submitted:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value}`);
+    }
+    
+    // Actually submit the form
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (response.ok) {
+            updateStatus('Form submitted successfully!', 'success');
+            return response.text();
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+    })
+    .then(html => {
+        console.log('Response received, redirecting...');
+        // If successful, redirect to products page
+        window.location.href = '/admin/products';
+    })
+    .catch(error => {
+        console.error('Submission error:', error);
+        updateStatus(`Submission failed: ${error.message}`, 'danger');
+        
+        // Reset button state
+        submitBtn.disabled = false;
+        submitIcon.classList.remove('d-none');
+        submitSpinner.classList.add('d-none');
+        
+        alert(`Error submitting form: ${error.message}`);
+    });
+});
 
 // Auto-generate SKU based on product name
 document.getElementById('name').addEventListener('input', function() {
@@ -229,21 +342,31 @@ document.querySelectorAll('input[required], select[required], textarea[required]
     });
 });
 
-// Debug: Check if form is properly set up
+// Initialize debug info on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    console.log('=== FORM SETUP DEBUG ===');
-    console.log('Form found:', !!form);
-    console.log('Form method:', form ? form.method : 'N/A');
-    console.log('Form action:', form ? form.action : 'N/A');
-    console.log('Form enctype:', form ? form.enctype : 'N/A');
+    const form = document.getElementById('productForm');
+    
+    let debugHtml = '<strong>Form Setup Check:</strong><br>';
+    debugHtml += `• Form found: ${!!form ? '✅' : '❌'}<br>`;
+    debugHtml += `• Form method: ${form ? form.method : 'N/A'}<br>`;
+    debugHtml += `• Form action: ${form ? form.action : 'N/A'}<br>`;
+    debugHtml += `• Form enctype: ${form ? form.enctype : 'N/A'}<br>`;
     
     // Check if all required fields exist
     const requiredFields = ['name', 'description', 'price', 'product_type', 'category'];
     requiredFields.forEach(field => {
         const element = document.getElementById(field);
-        console.log(`Field '${field}':`, !!element);
+        debugHtml += `• Field '${field}': ${!!element ? '✅' : '❌'}<br>`;
     });
+    
+    document.getElementById('debugContent').innerHTML = debugHtml;
+    updateStatus('Form loaded successfully', 'success');
+    
+    console.log('=== FORM SETUP DEBUG ===');
+    console.log('Form found:', !!form);
+    console.log('Form method:', form ? form.method : 'N/A');
+    console.log('Form action:', form ? form.action : 'N/A');
+    console.log('Form enctype:', form ? form.enctype : 'N/A');
 });
 </script>
 
@@ -272,5 +395,15 @@ document.addEventListener('DOMContentLoaded', function() {
     width: 1rem;
     height: 1rem;
 }
+
+#debugInfo {
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+#formStatus {
+    font-weight: bold;
+}
 </style>
-{% endblock %}
+</body>
+</html>

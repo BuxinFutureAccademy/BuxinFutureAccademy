@@ -5,11 +5,32 @@
     <div class="row">
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-boxes me-2"></i>Manage Products</h2>
-                <a href="{{ url_for('create_product') }}" class="btn btn-success">
-                    <i class="fas fa-plus me-2"></i>Add New Product
-                </a>
+                <div>
+                    <h2><i class="fas fa-boxes me-2"></i>Manage Products</h2>
+                    <p class="text-muted mb-0">Manage your store's product catalog</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('export_products') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-download me-2"></i>Export CSV
+                    </a>
+                    <a href="{{ url_for('create_product') }}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Add New Product
+                    </a>
+                </div>
             </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' or category == 'danger' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
             <!-- Product Statistics Cards -->
             <div class="row mb-4">
@@ -146,7 +167,10 @@
                                                     <span class="badge bg-light text-dark">{{ product.category }}</span>
                                                 {% endif %}
                                                 {% if product.brand %}
-                                                    <span class="badge bg-outline-secondary">{{ product.brand }}</span>
+                                                    <span class="badge bg-secondary">{{ product.brand }}</span>
+                                                {% endif %}
+                                                {% if product.sku %}
+                                                    <span class="badge bg-info">{{ product.sku }}</span>
                                                 {% endif %}
                                             </small>
                                             {% if product.short_description %}
@@ -208,7 +232,7 @@
                                             
                                             <!-- Delete Button -->
                                             <button class="btn btn-sm btn-danger" 
-                                                    onclick="confirmDelete({{ product.id }}, '{{ product.name }}')" 
+                                                    onclick="confirmDelete({{ product.id }}, '{{ product.name|replace("'", "\\'") }}')" 
                                                     title="Delete Product">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -245,7 +269,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="productModalBody">
-                <!-- Product details will be loaded here -->
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading product details...</p>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -256,21 +285,44 @@
 
 <!-- Hidden form for delete operations -->
 <form id="deleteForm" method="POST" style="display: none;">
-    <input type="hidden" name="_method" value="DELETE">
 </form>
 
 <script>
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Admin Products page loaded');
+    
+    // Initialize tooltips if using Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
 // Toggle product status via AJAX
 function toggleProductStatus(productId, isActive) {
-    fetch(`/admin/toggle-product-status/${productId}`, {
+    console.log(`Toggling product ${productId} to ${isActive ? 'active' : 'inactive'}`);
+    
+    // Check if the route exists
+    const toggleUrl = `/admin/toggle-product-status/${productId}`;
+    
+    fetch(toggleUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({ is_active: isActive })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Toggle response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Toggle response data:', data);
         if (data.success) {
             const badge = document.getElementById(`status-badge-${productId}`);
             const row = document.getElementById(`product-${productId}`);
@@ -287,14 +339,14 @@ function toggleProductStatus(productId, isActive) {
             
             showAlert('Product status updated successfully!', 'success');
         } else {
-            showAlert('Failed to update product status', 'danger');
+            showAlert(data.error || 'Failed to update product status', 'danger');
             // Revert checkbox
             document.getElementById(`status-${productId}`).checked = !isActive;
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        showAlert('Error updating product status', 'danger');
+        console.error('Error toggling product status:', error);
+        showAlert('Error updating product status: ' + error.message, 'danger');
         // Revert checkbox
         document.getElementById(`status-${productId}`).checked = !isActive;
     });
@@ -302,32 +354,62 @@ function toggleProductStatus(productId, isActive) {
 
 // View product details
 function viewProduct(productId) {
-    fetch(`/admin/product/${productId}/details`)
-    .then(response => response.json())
+    console.log(`Viewing product ${productId}`);
+    
+    // Show modal immediately with loading state
+    const modal = new bootstrap.Modal(document.getElementById('productModal'));
+    modal.show();
+    
+    // Reset modal body to loading state
+    const modalBody = document.getElementById('productModalBody');
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading product details...</p>
+        </div>
+    `;
+    
+    const detailsUrl = `/admin/product/${productId}/details`;
+    
+    fetch(detailsUrl)
+    .then(response => {
+        console.log('Product details response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(product => {
-        const modalBody = document.getElementById('productModalBody');
+        console.log('Product details:', product);
         modalBody.innerHTML = `
             <div class="row">
                 <div class="col-md-4">
                     ${product.image_url ? 
-                        `<img src="${product.image_url}" class="img-fluid rounded" alt="${product.name}">` :
-                        '<div class="text-center p-4 bg-light rounded"><i class="fas fa-box-open fa-4x text-muted"></i></div>'
+                        `<img src="${product.image_url}" class="img-fluid rounded" alt="${product.name}" 
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';">` :
+                        '<div class="text-center p-4 bg-light rounded"><i class="fas fa-box-open fa-4x text-muted"></i><p class="mt-2 text-muted">No Image</p></div>'
                     }
                 </div>
                 <div class="col-md-8">
                     <h4>${product.name}</h4>
-                    <p class="text-muted">${product.description || 'No description available'}</p>
+                    <p class="text-muted">${product.short_description || 'No short description'}</p>
+                    <hr>
+                    <p>${product.description || 'No description available'}</p>
                     
-                    <div class="row">
+                    <div class="row mt-3">
                         <div class="col-6">
-                            <strong>Price:</strong> $${product.price.toFixed(2)}<br>
+                            <strong>Price:</strong> ${product.price == 0 ? 'FREE' : '$' + product.price.toFixed(2)}<br>
                             <strong>Category:</strong> ${product.category || 'N/A'}<br>
-                            <strong>Type:</strong> ${product.product_type || 'Physical'}
+                            <strong>Type:</strong> ${product.product_type || 'Physical'}<br>
+                            <strong>Created:</strong> ${new Date(product.created_at || Date.now()).toLocaleDateString()}
                         </div>
                         <div class="col-6">
-                            <strong>Stock:</strong> ${product.product_type === 'Digital' ? 'Digital' : product.stock_quantity}<br>
+                            <strong>Stock:</strong> ${product.product_type === 'Digital' ? 'Unlimited' : (product.stock_quantity || 0)}<br>
                             <strong>Brand:</strong> ${product.brand || 'N/A'}<br>
-                            <strong>SKU:</strong> ${product.sku || 'N/A'}
+                            <strong>SKU:</strong> ${product.sku || 'N/A'}<br>
+                            <strong>Sales:</strong> ${product.sales_count || 0}
                         </div>
                     </div>
                     
@@ -340,50 +422,107 @@ function viewProduct(productId) {
                 </div>
             </div>
         `;
-        
-        new bootstrap.Modal(document.getElementById('productModal')).show();
     })
     .catch(error => {
-        console.error('Error:', error);
-        showAlert('Error loading product details', 'danger');
+        console.error('Error loading product details:', error);
+        modalBody.innerHTML = `
+            <div class="text-center text-danger">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h5>Error Loading Product</h5>
+                <p>Unable to load product details. Please try again.</p>
+                <p class="small text-muted">Error: ${error.message}</p>
+            </div>
+        `;
     });
 }
 
 // Confirm delete
 function confirmDelete(productId, productName) {
-    if (confirm(`Are you sure you want to delete "${productName}"?\n\nThis action cannot be undone.`)) {
+    console.log(`Attempting to delete product ${productId}: ${productName}`);
+    
+    // Escape the product name for safe display
+    const safeName = productName.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    
+    const confirmed = confirm(`Are you sure you want to delete "${productName}"?\n\nThis action cannot be undone and will permanently remove the product from your store.`);
+    
+    if (confirmed) {
+        console.log('Delete confirmed');
+        
+        // Show loading state
+        const deleteBtn = document.querySelector(`button[onclick*="confirmDelete(${productId}"]`);
+        if (deleteBtn) {
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+        
         const form = document.getElementById('deleteForm');
         form.action = `/admin/delete_product/${productId}`;
         form.submit();
+    } else {
+        console.log('Delete cancelled');
     }
 }
 
 // Show alert messages
-function showAlert(message, type) {
+function showAlert(message, type = 'info') {
+    console.log(`Showing alert: ${type} - ${message}`);
+    
+    // Remove existing alerts
+    document.querySelectorAll('.alert.position-fixed').forEach(alert => {
+        alert.remove();
+    });
+    
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;';
+    
+    const iconClass = type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle';
+    
     alertDiv.innerHTML = `
+        <i class="fas fa-${iconClass} me-2"></i>
         ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
     
     document.body.appendChild(alertDiv);
     
+    // Auto-remove after 5 seconds
     setTimeout(() => {
         if (alertDiv.parentNode) {
-            alertDiv.parentNode.removeChild(alertDiv);
+            alertDiv.remove();
         }
-    }, 3000);
+    }, 5000);
+}
 
-// Auto-refresh every 30 seconds (optional)
-// setInterval(() => {
-//     window.location.reload();
-// }, 30000);
+// Error handling for images
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle broken images
+    document.querySelectorAll('img').forEach(img => {
+        img.addEventListener('error', function() {
+            this.style.display = 'none';
+            const placeholder = this.nextElementSibling;
+            if (placeholder) {
+                placeholder.style.display = 'block';
+            }
+        });
+    });
+});
 
+// Search and filter functionality
+document.querySelector('form[method="GET"]').addEventListener('submit', function(e) {
+    console.log('Applying filters...');
+    // Form will submit normally, no need to prevent default
+});
 
-   
-    
+// Quick search functionality (optional)
+let searchTimeout;
+document.querySelector('input[name="search"]').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        // Auto-submit form after 1 second of no typing
+        // this.form.submit();
+    }, 1000);
+});
 </script>
 
 <style>
@@ -393,6 +532,11 @@ function showAlert(message, type) {
 
 .img-thumbnail {
     border: 2px solid #dee2e6;
+    transition: transform 0.2s;
+}
+
+.img-thumbnail:hover {
+    transform: scale(1.1);
 }
 
 .form-switch {
@@ -402,6 +546,11 @@ function showAlert(message, type) {
 .btn-group-sm > .btn, .btn-sm {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
 }
 
 .badge {
@@ -430,6 +579,31 @@ function showAlert(message, type) {
 
 .fa-spin {
     animation: spin 1s linear infinite;
+}
+
+/* Alert positioning */
+.alert.position-fixed {
+    z-index: 9999;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Modal improvements */
+.modal-content {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .d-flex.gap-1 {
+        flex-direction: column;
+        gap: 0.25rem !important;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.25rem;
+    }
 }
 </style>
 {% endblock %}

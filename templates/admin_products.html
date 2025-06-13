@@ -375,12 +375,38 @@ function showAlert(message, type) {
             alertDiv.parentNode.removeChild(alertDiv);
         }
     }, 3000);
-}
 
 // Auto-refresh every 30 seconds (optional)
 // setInterval(() => {
 //     window.location.reload();
 // }, 30000);
+
+
+    // Add this script to your admin_products.html template
+document.addEventListener('DOMContentLoaded', function() {
+    // Debug the create product button
+    const createProductBtn = document.querySelector('a[href*="create_product"]');
+    
+    if (createProductBtn) {
+        console.log('Create Product button found:', createProductBtn);
+        console.log('Button href:', createProductBtn.href);
+        
+        // Add click event listener for debugging
+        createProductBtn.addEventListener('click', function(e) {
+            console.log('Create Product button clicked');
+            console.log('Target URL:', this.href);
+            
+            // Uncomment the next line to prevent navigation for testing
+            // e.preventDefault();
+        });
+    } else {
+        console.error('Create Product button not found!');
+    }
+    
+    // Test URL generation
+    console.log('Current location:', window.location.href);
+});
+    
 </script>
 
 <style>

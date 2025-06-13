@@ -1969,6 +1969,137 @@ def admin_enrollments():
     return render_template('admin_enrollments.html', enrollments=enrollments, IndividualClass=IndividualClass, GroupClass=GroupClass)
 
 
+
+# Add these routes to your Flask application after the create_class route..............................................................................................................................
+
+@app.route('/admin/edit_class/<class_type>/<int:class_id>', methods=['GET', 'POST'])
+@login_required
+def edit_class(class_type, class_id):
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get the class based on type
+    if class_type == 'individual':
+        class_obj = IndividualClass.query.get_or_404(class_id)
+    elif class_type == 'group':
+        class_obj = GroupClass.query.get_or_404(class_id)
+    else:
+        flash('Invalid class type!', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
+    if request.method == 'POST':
+        # Update class details
+        class_obj.name = request.form['name']
+        class_obj.description = request.form.get('description', '')
+        
+        # Update max_students for group classes
+        if class_type == 'group':
+            new_max_students = int(request.form.get('max_students', 10))
+            if new_max_students < len(class_obj.students):
+                flash(f'Cannot set max students to {new_max_students}. Current enrollment: {len(class_obj.students)}', 'danger')
+                return render_template('edit_class.html', class_obj=class_obj, class_type=class_type, students=User.query.filter_by(is_student=True).all())
+            class_obj.max_students = new_max_students
+        
+        # Update student enrollment
+        student_ids = request.form.getlist('students')
+        selected_students = User.query.filter(User.id.in_(student_ids)).all() if student_ids else []
+        
+        # For group classes, check enrollment limit
+        if class_type == 'group' and len(selected_students) > class_obj.max_students:
+            flash(f'Cannot enroll {len(selected_students)} students. Maximum allowed: {class_obj.max_students}', 'danger')
+            return render_template('edit_class.html', class_obj=class_obj, class_type=class_type, students=User.query.filter_by(is_student=True).all())
+        
+        # Update students list
+        class_obj.students.clear()
+        class_obj.students.extend(selected_students)
+        
+        try:
+            db.session.commit()
+            flash(f'{class_type.title()} class updated successfully!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating class: {str(e)}', 'danger')
+    
+    # Get all students for the form
+    students = User.query.filter_by(is_student=True).all()
+    return render_template('edit_class.html', class_obj=class_obj, class_type=class_type, students=students)
+
+
+@app.route('/admin/delete_class/<class_type>/<int:class_id>', methods=['POST'])
+@login_required
+def delete_class(class_type, class_id):
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get the class based on type
+    if class_type == 'individual':
+        class_obj = IndividualClass.query.get_or_404(class_id)
+    elif class_type == 'group':
+        class_obj = GroupClass.query.get_or_404(class_id)
+    else:
+        flash('Invalid class type!', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
+    class_name = class_obj.name
+    
+    try:
+        # Check if there are any learning materials associated with this class
+        materials_count = LearningMaterial.query.filter_by(
+            class_type=class_type,
+            actual_class_id=class_id
+        ).count()
+        
+        if materials_count > 0:
+            # You can choose to delete materials or prevent deletion
+            # Option 1: Delete associated materials
+            LearningMaterial.query.filter_by(
+                class_type=class_type,
+                actual_class_id=class_id
+            ).delete()
+            
+            # Option 2: Prevent deletion (uncomment below and comment above)
+            # flash(f'Cannot delete class "{class_name}". It has {materials_count} associated learning materials.', 'danger')
+            # return redirect(url_for('admin_dashboard'))
+        
+        # Check for any enrollments
+        enrollments_count = ClassEnrollment.query.filter_by(
+            class_id=class_id,
+            class_type=class_type
+        ).count()
+        
+        if enrollments_count > 0:
+            # Delete associated enrollments or prevent deletion
+            # Option 1: Delete enrollments
+            ClassEnrollment.query.filter_by(
+                class_id=class_id,
+                class_type=class_type
+            ).delete()
+            
+            # Option 2: Prevent deletion (uncomment below and comment above)
+            # flash(f'Cannot delete class "{class_name}". It has {enrollments_count} student enrollments.', 'danger')
+            # return redirect(url_for('admin_dashboard'))
+        
+        # Clear student relationships before deleting
+        class_obj.students.clear()
+        
+        # Delete the class
+        db.session.delete(class_obj)
+        db.session.commit()
+        
+        flash(f'{class_type.title()} class "{class_name}" deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting class: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin_dashboard'))
+
+# Add these routes to your Flask application after the create_class route............................................................................................................................../////////////////
+
+
 # ========================================
 # SAMPLE DATA CREATION
 # ========================================

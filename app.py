@@ -821,40 +821,257 @@ def create_product():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        short_description = request.form.get('short_description', '')
-        price = float(request.form['price'])
-        product_type = request.form['product_type']
-        category = request.form['category']
-        brand = request.form.get('brand', '')
-        sku = request.form.get('sku', '')
-        stock_quantity = int(request.form.get('stock_quantity', 0))
-        image_url = request.form.get('image_url', '')
-        featured = 'featured' in request.form
+        try:
+            # Debug: Print all form data
+            print("=== CREATE PRODUCT DEBUG ===")
+            print("Form data received:")
+            for key, value in request.form.items():
+                print(f"  {key}: '{value}'")
+            print("Files received:")
+            for key, file in request.files.items():
+                print(f"  {key}: {file.filename if file else 'None'}")
+            
+            # Get and validate required fields
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            product_type = request.form.get('product_type', '').strip()
+            category = request.form.get('category', '').strip()
+            
+            # Validate required fields
+            if not name:
+                flash('Product name is required!', 'danger')
+                print("ERROR: Missing product name")
+                return render_template('create_product.html')
+            
+            if not description:
+                flash('Product description is required!', 'danger')
+                print("ERROR: Missing description")
+                return render_template('create_product.html')
+            
+            if not product_type:
+                flash('Product type is required!', 'danger')
+                print("ERROR: Missing product type")
+                return render_template('create_product.html')
+            
+            if not category:
+                flash('Category is required!', 'danger')
+                print("ERROR: Missing category")
+                return render_template('create_product.html')
+            
+            # Get price with validation
+            try:
+                price_str = request.form.get('price', '0')
+                print(f"Price string received: '{price_str}'")
+                price = float(price_str) if price_str else 0.0
+                if price < 0:
+                    flash('Price cannot be negative!', 'danger')
+                    print(f"ERROR: Negative price: {price}")
+                    return render_template('create_product.html')
+                print(f"Price validated: {price}")
+            except (ValueError, TypeError) as e:
+                flash('Please enter a valid price!', 'danger')
+                print(f"ERROR: Invalid price format: {e}")
+                return render_template('create_product.html')
+            
+            # Get optional fields
+            short_description = request.form.get('short_description', '').strip()
+            brand = request.form.get('brand', '').strip()
+            sku = request.form.get('sku', '').strip()
+            image_url = request.form.get('image_url', '').strip()
+            
+            # Get stock quantity with validation
+            try:
+                stock_quantity_str = request.form.get('stock_quantity', '0')
+                print(f"Stock quantity string: '{stock_quantity_str}'")
+                stock_quantity = int(stock_quantity_str) if stock_quantity_str else 0
+                if stock_quantity < 0:
+                    stock_quantity = 0
+                print(f"Stock quantity validated: {stock_quantity}")
+            except (ValueError, TypeError) as e:
+                stock_quantity = 0
+                print(f"WARNING: Invalid stock quantity, defaulting to 0: {e}")
+            
+            # Get checkboxes
+            is_active = 'is_active' in request.form
+            featured = 'featured' in request.form
+            
+            print("Processed data:")
+            print(f"  name: '{name}'")
+            print(f"  description: '{description}'")
+            print(f"  short_description: '{short_description}'")
+            print(f"  price: {price}")
+            print(f"  product_type: '{product_type}'")
+            print(f"  category: '{category}'")
+            print(f"  brand: '{brand}'")
+            print(f"  sku: '{sku}'")
+            print(f"  stock_quantity: {stock_quantity}")
+            print(f"  image_url: '{image_url}'")
+            print(f"  is_active: {is_active}")
+            print(f"  featured: {featured}")
+            
+            # Check for duplicate SKU if provided
+            if sku:
+                existing_sku = Product.query.filter_by(sku=sku).first()
+                if existing_sku:
+                    flash(f'SKU "{sku}" already exists! Please use a different SKU.', 'danger')
+                    print(f"ERROR: Duplicate SKU: {sku}")
+                    return render_template('create_product.html')
+            
+            # Create product object
+            print("Creating product object...")
+            product = Product(
+                name=name,
+                description=description,
+                short_description=short_description,
+                price=price,
+                product_type=product_type,
+                category=category,
+                brand=brand if brand else None,
+                sku=sku if sku else None,
+                stock_quantity=stock_quantity,
+                image_url=image_url if image_url else None,
+                featured=featured,
+                is_active=is_active,
+                created_by=current_user.id
+            )
+            
+            print("Product object created successfully")
+            print(f"Product attributes: name={product.name}, price={product.price}, type={product.product_type}")
+            
+            # Save to database
+            print("Adding product to database...")
+            db.session.add(product)
+            
+            print("Flushing to check for errors...")
+            db.session.flush()  # This will catch constraint errors before commit
+            
+            print(f"Product added to session with ID: {product.id}")
+            
+            print("Committing to database...")
+            db.session.commit()
+            
+            print("Product successfully saved to database!")
+            flash('Product created successfully!', 'success')
+            return redirect(url_for('admin_products'))
+            
+        except Exception as e:
+            # Rollback on any error
+            db.session.rollback()
+            
+            # Debug: Print full error details
+            print("=== ERROR OCCURRED ===")
+            print(f"Error type: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+            
+            import traceback
+            print("Full traceback:")
+            print(traceback.format_exc())
+            
+            # User-friendly error message
+            error_message = str(e)
+            if 'UNIQUE constraint failed' in error_message:
+                if 'sku' in error_message.lower():
+                    flash('SKU already exists! Please use a different SKU.', 'danger')
+                elif 'name' in error_message.lower():
+                    flash('A product with this name already exists!', 'danger')
+                else:
+                    flash('A product with similar details already exists!', 'danger')
+            elif 'NOT NULL constraint failed' in error_message:
+                missing_field = error_message.split('.')[-1] if '.' in error_message else 'unknown field'
+                flash(f'Required field missing: {missing_field}', 'danger')
+            elif 'IntegrityError' in str(type(e)):
+                flash('Database integrity error. Please check all required fields.', 'danger')
+            else:
+                flash(f'Error creating product: {error_message}', 'danger')
+            
+            print("Returning to form with error")
+            return render_template('create_product.html')
+    
+    # GET request - show the form
+    print("Serving create product form (GET request)")
+    return render_template('create_product.html')
+
+# Add this debug route to test your Product model
+@app.route('/admin/debug/test-product-creation')
+@login_required
+def test_product_creation():
+    if not current_user.is_admin:
+        return "Access denied"
+    
+    try:
+        print("=== TESTING PRODUCT CREATION ===")
         
-        product = Product(
-            name=name,
-            description=description,
-            short_description=short_description,
-            price=price,
-            product_type=product_type,
-            category=category,
-            brand=brand,
-            sku=sku,
-            stock_quantity=stock_quantity,
-            image_url=image_url,
-            featured=featured,
+        # Test with minimal required fields
+        test_product = Product(
+            name=f"Test Product {datetime.now().strftime('%H%M%S')}",
+            description="This is a test product description",
+            price=10.00,
+            product_type="Digital",
+            category="Other",
             created_by=current_user.id
         )
         
-        db.session.add(product)
+        print(f"Test product created: {test_product}")
+        
+        db.session.add(test_product)
+        db.session.flush()
+        
+        print(f"Test product added to session with ID: {test_product.id}")
+        
         db.session.commit()
         
-        flash('Product created successfully!', 'success')
-        return redirect(url_for('admin_products'))
+        print("Test product successfully committed!")
+        return f"✅ Test product created successfully with ID: {test_product.id}"
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        error_details = f"""
+        ❌ Error creating test product:
+        
+        Error Type: {type(e).__name__}
+        Error Message: {str(e)}
+        
+        Full Traceback:
+        {traceback.format_exc()}
+        """
+        print(error_details)
+        return f"<pre>{error_details}</pre>"
+
+# Add this route to check your database schema
+@app.route('/admin/debug/check-product-schema')
+@login_required
+def check_product_schema():
+    if not current_user.is_admin:
+        return "Access denied"
     
-    return render_template('create_product.html')
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        
+        if 'product' in inspector.get_table_names():
+            columns = inspector.get_columns('product')
+            schema_info = {
+                'table_exists': True,
+                'columns': [],
+                'total_products': Product.query.count()
+            }
+            
+            for col in columns:
+                schema_info['columns'].append({
+                    'name': col['name'],
+                    'type': str(col['type']),
+                    'nullable': col['nullable'],
+                    'default': col['default']
+                })
+            
+            return f"<pre>{json.dumps(schema_info, indent=2)}</pre>"
+        else:
+            return "❌ Product table does not exist!"
+            
+    except Exception as e:
+        import traceback
+        return f"<pre>Error checking schema: {str(e)}\n\n{traceback.format_exc()}</pre>"
 
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
 @login_required

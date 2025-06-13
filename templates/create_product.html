@@ -1,42 +1,543 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create Product - Test</title>
-</head>
-<body>
-    <h1>Create Product</h1>
-    <p>If you can see this, the route is working!</p>
+{% extends "base.html" %}
+
+{% block title %}Create New Product - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-plus-circle me-2 text-success"></i>Create New Product</h2>
+                    <p class="text-muted mb-0">Add a new product to your store catalog</p>
+                </div>
+                <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Products
+                </a>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' or category == 'danger' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Main Form Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Product Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" onsubmit="return validateForm()" novalidate>
+                        <div class="row">
+                            <!-- Left Column -->
+                            <div class="col-md-8">
+                                <!-- Basic Information -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-tag me-2"></i>Basic Information
+                                    </h6>
+                                    
+                                    <!-- Product Name -->
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label fw-semibold">
+                                            Product Name <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-lg" id="name" name="name" 
+                                               placeholder="Enter product name..." required>
+                                        <div class="invalid-feedback">Please provide a product name.</div>
+                                    </div>
+                                    
+                                    <!-- Short Description -->
+                                    <div class="mb-3">
+                                        <label for="short_description" class="form-label fw-semibold">
+                                            Short Description
+                                        </label>
+                                        <input type="text" class="form-control" id="short_description" name="short_description" 
+                                               placeholder="Brief product summary (appears in listings)..." maxlength="200">
+                                        <div class="form-text">Maximum 200 characters</div>
+                                    </div>
+                                    
+                                    <!-- Full Description -->
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label fw-semibold">
+                                            Full Description <span class="text-danger">*</span>
+                                        </label>
+                                        <textarea class="form-control" id="description" name="description" rows="4" 
+                                                  placeholder="Detailed product description..." required></textarea>
+                                        <div class="invalid-feedback">Please provide a detailed description.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Pricing & Inventory -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-dollar-sign me-2"></i>Pricing & Inventory
+                                    </h6>
+                                    
+                                    <div class="row">
+                                        <!-- Price -->
+                                        <div class="col-md-6 mb-3">
+                                            <label for="price" class="form-label fw-semibold">
+                                                Price <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" id="price" name="price" 
+                                                       step="0.01" min="0" placeholder="0.00" required>
+                                                <div class="invalid-feedback">Please provide a valid price.</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Stock Quantity -->
+                                        <div class="col-md-6 mb-3">
+                                            <label for="stock_quantity" class="form-label fw-semibold">
+                                                Stock Quantity
+                                            </label>
+                                            <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" 
+                                                   min="0" value="0" placeholder="Available quantity">
+                                            <div class="form-text" id="stock-help">Set to 0 for digital products</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Product Details -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-cogs me-2"></i>Product Details
+                                    </h6>
+                                    
+                                    <div class="row">
+                                        <!-- Brand -->
+                                        <div class="col-md-6 mb-3">
+                                            <label for="brand" class="form-label fw-semibold">Brand</label>
+                                            <input type="text" class="form-control" id="brand" name="brand" 
+                                                   placeholder="Product brand or manufacturer">
+                                        </div>
+                                        
+                                        <!-- SKU -->
+                                        <div class="col-md-6 mb-3">
+                                            <label for="sku" class="form-label fw-semibold">
+                                                SKU <small class="text-muted">(Stock Keeping Unit)</small>
+                                            </label>
+                                            <input type="text" class="form-control" id="sku" name="sku" 
+                                                   placeholder="Auto-generated from name">
+                                            <div class="form-text">Leave blank to auto-generate</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="col-md-4">
+                                <!-- Product Image -->
+                                <div class="card bg-light mb-4">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-image me-2"></i>Product Image
+                                        </h6>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <div id="image-preview" class="mb-3">
+                                            <div class="border border-dashed border-secondary rounded p-4">
+                                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Image Preview</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="image_url" class="form-label fw-semibold">Image URL</label>
+                                            <input type="url" class="form-control" id="image_url" name="image_url" 
+                                                   placeholder="https://example.com/image.jpg">
+                                            <div class="form-text">Enter a direct link to product image</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Classification -->
+                                <div class="card bg-light mb-4">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-folder me-2"></i>Classification
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Product Type -->
+                                        <div class="mb-3">
+                                            <label for="product_type" class="form-label fw-semibold">
+                                                Product Type <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="product_type" name="product_type" required>
+                                                <option value="">Choose type...</option>
+                                                <option value="Physical">🏷️ Physical Product</option>
+                                                <option value="Digital">💾 Digital Product</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a product type.</div>
+                                        </div>
+                                        
+                                        <!-- Category -->
+                                        <div class="mb-3">
+                                            <label for="category" class="form-label fw-semibold">
+                                                Category <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="category" name="category" required>
+                                                <option value="">Choose category...</option>
+                                                <option value="Electronics">📱 Electronics</option>
+                                                <option value="Books">📚 Books & eBooks</option>
+                                                <option value="Accessories">🎧 Accessories</option>
+                                                <option value="Software">💻 Software</option>
+                                                <option value="Courses">🎓 Courses & Training</option>
+                                                <option value="Tools">🔧 Tools & Equipment</option>
+                                                <option value="Fashion">👕 Fashion & Apparel</option>
+                                                <option value="Health">🏥 Health & Wellness</option>
+                                                <option value="Sports">⚽ Sports & Outdoors</option>
+                                                <option value="Home">🏠 Home & Garden</option>
+                                                <option value="Other">📦 Other</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a category.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Product Options -->
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-toggle-on me-2"></i>Product Options
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                                            <label class="form-check-label fw-semibold" for="is_active">
+                                                <i class="fas fa-eye text-success me-1"></i>Active Product
+                                            </label>
+                                            <div class="form-text">Product will be visible to customers</div>
+                                        </div>
+                                        
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="featured" name="featured">
+                                            <label class="form-check-label fw-semibold" for="featured">
+                                                <i class="fas fa-star text-warning me-1"></i>Featured Product
+                                            </label>
+                                            <div class="form-text">Highlight in featured sections</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                    <div class="text-muted">
+                                        <small><i class="fas fa-info-circle me-1"></i>Fields marked with * are required</small>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ url_for('admin_products') }}" class="btn btn-secondary">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </a>
+                                        <button type="button" class="btn btn-outline-primary" onclick="resetForm()">
+                                            <i class="fas fa-undo me-2"></i>Reset
+                                        </button>
+                                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                            <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
+                                            <i class="fas fa-save me-2" id="submitIcon"></i>Create Product
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation and enhancements
+function validateForm() {
+    const form = document.querySelector('form');
+    const requiredFields = ['name', 'description', 'price', 'product_type', 'category'];
+    let isValid = true;
+
+    // Reset previous validation states
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+
+    // Validate required fields
+    requiredFields.forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        const value = field.value.trim();
+
+        if (!value) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.add('is-valid');
+        }
+    });
+
+    // Validate price
+    const priceField = document.getElementById('price');
+    const price = parseFloat(priceField.value);
+    if (isNaN(price) || price < 0) {
+        priceField.classList.add('is-invalid');
+        isValid = false;
+    }
+
+    if (!isValid) {
+        showAlert('Please fill in all required fields correctly.', 'danger');
+        return false;
+    }
+
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    const submitIcon = document.getElementById('submitIcon');
+    const submitSpinner = document.getElementById('submitSpinner');
+
+    submitBtn.disabled = true;
+    submitIcon.classList.add('d-none');
+    submitSpinner.classList.remove('d-none');
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating Product...';
+
+    return true;
+}
+
+// Auto-generate SKU from product name
+document.getElementById('name').addEventListener('input', function() {
+    const name = this.value.trim();
+    const skuField = document.getElementById('sku');
     
-    <form method="POST">
-        <label for="name">Product Name:</label>
-        <input type="text" id="name" name="name" required><br><br>
+    if (name && !skuField.value) {
+        const sku = name.toUpperCase()
+            .replace(/[^A-Z0-9\s]/g, '')
+            .replace(/\s+/g, '-')
+            .substring(0, 8);
         
-        <label for="description">Description:</label>
-        <textarea id="description" name="description" required></textarea><br><br>
-        
-        <label for="price">Price:</label>
-        <input type="number" id="price" name="price" step="0.01" required><br><br>
-        
-        <label for="product_type">Type:</label>
-        <select id="product_type" name="product_type" required>
-            <option value="">Select Type</option>
-            <option value="Physical">Physical</option>
-            <option value="Digital">Digital</option>
-        </select><br><br>
-        
-        <label for="category">Category:</label>
-        <select id="category" name="category" required>
-            <option value="">Select Category</option>
-            <option value="Electronics">Electronics</option>
-            <option value="Books">Books</option>
-            <option value="Other">Other</option>
-        </select><br><br>
-        
-        <button type="submit">Create Product</button>
-    </form>
+        if (sku) {
+            skuField.value = sku + '-001';
+        }
+    }
+});
+
+// Handle product type changes
+document.getElementById('product_type').addEventListener('change', function() {
+    const stockField = document.getElementById('stock_quantity');
+    const stockHelp = document.getElementById('stock-help');
     
-    <script>
-        console.log('Template loaded successfully');
-    </script>
-</body>
-</html>
+    if (this.value === 'Digital') {
+        stockField.value = '0';
+        stockField.disabled = true;
+        stockHelp.textContent = 'Digital products have unlimited stock';
+        stockField.parentElement.classList.add('text-muted');
+    } else {
+        stockField.disabled = false;
+        stockHelp.textContent = 'Enter available quantity';
+        stockField.parentElement.classList.remove('text-muted');
+    }
+});
+
+// Image URL preview
+document.getElementById('image_url').addEventListener('input', function() {
+    const url = this.value.trim();
+    const preview = document.getElementById('image-preview');
+    
+    if (url) {
+        preview.innerHTML = `
+            <img src="${url}" class="img-fluid rounded" style="max-height: 200px; object-fit: cover;"
+                 onerror="this.parentElement.innerHTML='<div class=\\'border border-dashed border-danger rounded p-4\\'><i class=\\'fas fa-exclamation-triangle fa-2x text-danger mb-2\\'></i><p class=\\'text-danger mb-0\\'>Invalid image URL</p></div>'">
+        `;
+    } else {
+        preview.innerHTML = `
+            <div class="border border-dashed border-secondary rounded p-4">
+                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-2"></i>
+                <p class="text-muted mb-0">Image Preview</p>
+            </div>
+        `;
+    }
+});
+
+// Real-time validation
+document.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
+    field.addEventListener('blur', function() {
+        if (this.value.trim() === '') {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+        } else {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        }
+    });
+});
+
+// Character counter for short description
+document.getElementById('short_description').addEventListener('input', function() {
+    const maxLength = 200;
+    const currentLength = this.value.length;
+    const formText = this.nextElementSibling;
+    
+    formText.textContent = `${currentLength}/${maxLength} characters`;
+    
+    if (currentLength > maxLength * 0.9) {
+        formText.classList.add('text-warning');
+    } else {
+        formText.classList.remove('text-warning');
+    }
+});
+
+// Reset form function
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
+        document.querySelector('form').reset();
+        
+        // Reset validation states
+        document.querySelectorAll('.is-valid, .is-invalid').forEach(el => {
+            el.classList.remove('is-valid', 'is-invalid');
+        });
+        
+        // Reset image preview
+        document.getElementById('image_url').dispatchEvent(new Event('input'));
+        
+        showAlert('Form has been reset.', 'info');
+    }
+}
+
+// Show alert function
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+
+// Initialize form
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Create Product form initialized');
+    
+    // Focus on the first field
+    document.getElementById('name').focus();
+    
+    // Initialize image preview
+    document.getElementById('image_url').dispatchEvent(new Event('input'));
+});
+</script>
+
+<style>
+.form-label.fw-semibold {
+    font-weight: 600 !important;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: #f8f9fa !important;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.is-valid {
+    border-color: #198754 !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.text-primary {
+    color: #0d6efd !important;
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Hover effects */
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+}
+
+.card:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .col-md-4 .card {
+        margin-bottom: 1rem;
+    }
+    
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spinner-border {
+    animation: spin 0.75s linear infinite;
+}
+</style>
+{% endblock %}

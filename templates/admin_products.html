@@ -1,432 +1,707 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Product Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .table-responsive {
+            border-radius: 0.375rem;
+        }
+        
+        .img-thumbnail {
+            border: 2px solid #dee2e6;
+        }
+        
+        .form-switch {
+            padding-left: 2.5em;
+        }
+        
+        .btn-group-sm > .btn, .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+        }
+        
+        .opacity-50 {
+            opacity: 0.5;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fa-spin {
+            animation: spin 1s linear infinite;
+        }
 
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-boxes me-2"></i>Manage Products</h2>
-                <a href="{{ url_for('#') }}" class="btn btn-success">
-                    <i class="fas fa-plus me-2"></i>Add New Product
-                </a>
+        /* Enhanced styles */
+        .stats-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .action-buttons {
+            opacity: 0.7;
+            transition: opacity 0.2s ease-in-out;
+        }
+        
+        .action-buttons:hover {
+            opacity: 1;
+        }
+        
+        .search-highlight {
+            background-color: #fff3cd;
+            padding: 0.1rem 0.2rem;
+            border-radius: 0.2rem;
+        }
+        
+        .bulk-actions {
+            display: none;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .bulk-actions.show {
+            display: block;
+        }
+        
+        .sort-indicator {
+            font-size: 0.8rem;
+            margin-left: 0.25rem;
+        }
+        
+        .product-row {
+            transition: background-color 0.2s ease-in-out;
+        }
+        
+        .product-row.selected {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container"></div>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-boxes me-2"></i>Manage Products</h2>
+                    <div>
+                        <button class="btn btn-outline-primary me-2" onclick="exportProducts()">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <button class="btn btn-success" onclick="openCreateProductModal()">
+                            <i class="fas fa-plus me-2"></i>Add New Product
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Enhanced Product Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white stats-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Total Products</h6>
+                                        <h3 id="total-products">125</h3>
+                                        <small class="opacity-75">+5 this week</small>
+                                    </div>
+                                    <i class="fas fa-boxes fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white stats-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Active Products</h6>
+                                        <h3 id="active-products">98</h3>
+                                        <small class="opacity-75">78% of total</small>
+                                    </div>
+                                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white stats-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Low Stock</h6>
+                                        <h3 id="low-stock">12</h3>
+                                        <small class="opacity-75">Needs attention</small>
+                                    </div>
+                                    <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white stats-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Digital Products</h6>
+                                        <h3 id="digital-products">32</h3>
+                                        <small class="opacity-75">26% of total</small>
+                                    </div>
+                                    <i class="fas fa-download fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Filters and Search -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Search products..." 
+                                           oninput="performSearch()">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="categoryFilter" onchange="applyFilters()">
+                                    <option value="">All Categories</option>
+                                    <option value="Electronics">Electronics</option>
+                                    <option value="Clothing">Clothing</option>
+                                    <option value="Books">Books</option>
+                                    <option value="Home">Home & Garden</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="statusFilter" onchange="applyFilters()">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="typeFilter" onchange="applyFilters()">
+                                    <option value="">All Types</option>
+                                    <option value="Physical">Physical</option>
+                                    <option value="Digital">Digital</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-primary" onclick="applyFilters()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions -->
+                <div class="bulk-actions" id="bulkActions">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span id="selectedCount">0 products selected</span>
+                        <div>
+                            <button class="btn btn-sm btn-success me-2" onclick="bulkAction('activate')">
+                                <i class="fas fa-check me-1"></i>Activate Selected
+                            </button>
+                            <button class="btn btn-sm btn-secondary me-2" onclick="bulkAction('deactivate')">
+                                <i class="fas fa-pause me-1"></i>Deactivate Selected
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')">
+                                <i class="fas fa-trash me-1"></i>Delete Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Products Table -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="text-muted">Showing <span id="showing-count">10</span> of <span id="total-count">125</span> products</span>
+                            </div>
+                            <div>
+                                <select class="form-select form-select-sm" id="pageSize" onchange="changePageSize()" style="width: auto; display: inline-block;">
+                                    <option value="10">10 per page</option>
+                                    <option value="25">25 per page</option>
+                                    <option value="50">50 per page</option>
+                                    <option value="100">100 per page</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="40">
+                                            <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th width="80">Image</th>
+                                        <th class="sortable" onclick="sortTable('name')">
+                                            Product Details
+                                            <i class="fas fa-sort sort-indicator" id="sort-name"></i>
+                                        </th>
+                                        <th width="120" class="sortable" onclick="sortTable('price')">
+                                            Price
+                                            <i class="fas fa-sort sort-indicator" id="sort-price"></i>
+                                        </th>
+                                        <th width="100">Stock</th>
+                                        <th width="100">Type</th>
+                                        <th width="100">Status</th>
+                                        <th width="150">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productTableBody">
+                                    <!-- Products will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
+                                <small class="text-muted">Page <span id="current-page">1</span> of <span id="total-pages">13</span></small>
+                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0" id="pagination">
+                                    <!-- Pagination will be populated here -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Product Statistics Cards -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Total Products</h6>
-                                    <h3>{{ products|length }}</h3>
-                                </div>
-                                <i class="fas fa-boxes fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Enhanced Product Details Modal -->
+    <div class="modal fade" id="productModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Product Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="col-md-3">
-                    <div class="card bg-success text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Active Products</h6>
-                                    <h3>{{ products|selectattr('is_active')|list|length }}</h3>
-                                </div>
-                                <i class="fas fa-check-circle fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
+                <div class="modal-body" id="productModalBody">
+                    <!-- Product details will be loaded here -->
                 </div>
-                <div class="col-md-3">
-                    <div class="card bg-warning text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Low Stock</h6>
-                                    <h3>{{ products|selectattr('stock_quantity', 'lt', 10)|selectattr('product_type', 'equalto', 'Physical')|list|length }}</h3>
-                                </div>
-                                <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-info text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Digital Products</h6>
-                                    <h3>{{ products|selectattr('product_type', 'equalto', 'Digital')|list|length }}</h3>
-                                </div>
-                                <i class="fas fa-download fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="editCurrentProduct()">Edit Product</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Filters and Search -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" name="category">
-                                <option value="">All Categories</option>
-                                {% for category in products|map(attribute='category')|unique %}
-                                    <option value="{{ category }}" {% if request.args.get('category') == category %}selected{% endif %}>
-                                        {{ category }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select" name="status">
-                                <option value="">All Status</option>
-                                <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
-                                <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Inactive</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-outline-primary">
-                                    <i class="fas fa-search"></i> Filter
-                                </button>
-                                <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-times"></i> Clear
-                                </a>
+    <!-- Quick Create Product Modal -->
+    <div class="modal fade" id="createProductModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Quick Add Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickCreateForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Product Name *</label>
+                                    <input type="text" class="form-control" name="name" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Price *</label>
+                                    <input type="number" class="form-control" name="price" step="0.01" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Category</label>
+                                    <select class="form-select" name="category">
+                                        <option value="">Select Category</option>
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Clothing">Clothing</option>
+                                        <option value="Books">Books</option>
+                                        <option value="Home">Home & Garden</option>
+                                    </select>
+                                </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Product Type</label>
+                                    <select class="form-select" name="product_type">
+                                        <option value="Physical">Physical</option>
+                                        <option value="Digital">Digital</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Stock Quantity</label>
+                                    <input type="number" class="form-control" name="stock_quantity" min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Brand</label>
+                                    <input type="text" class="form-control" name="brand">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Short Description</label>
+                            <textarea class="form-control" name="short_description" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
-            </div>
-
-            <!-- Products Table -->
-            <div class="card">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="80">Image</th>
-                                    <th>Product Details</th>
-                                    <th width="120">Price</th>
-                                    <th width="100">Stock</th>
-                                    <th width="100">Type</th>
-                                    <th width="100">Status</th>
-                                    <th width="150">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for product in products %}
-                                <tr id="product-{{ product.id }}" {% if not product.is_active %}class="table-secondary"{% endif %}>
-                                    <td>
-                                        {% if product.image_url %}
-                                            <img src="{{ product.image_url }}" alt="{{ product.name }}" 
-                                                 class="img-thumbnail" style="height: 50px; width: 50px; object-fit: cover;"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                            <div style="display:none;" class="text-center">
-                                                <i class="fas fa-image text-muted"></i>
-                                            </div>
-                                        {% else %}
-                                            <div class="text-center">
-                                                <i class="fas fa-box-open fa-2x text-muted"></i>
-                                            </div>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div>
-                                            <h6 class="mb-1">{{ product.name }}</h6>
-                                            <small class="text-muted">
-                                                {% if product.category %}
-                                                    <span class="badge bg-light text-dark">{{ product.category }}</span>
-                                                {% endif %}
-                                                {% if product.brand %}
-                                                    <span class="badge bg-outline-secondary">{{ product.brand }}</span>
-                                                {% endif %}
-                                            </small>
-                                            {% if product.short_description %}
-                                                <p class="mb-0 small text-muted">{{ product.short_description[:50] }}{% if product.short_description|length > 50 %}...{% endif %}</p>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <strong>
-                                            {% if product.price == 0 %}
-                                                <span class="text-success">FREE</span>
-                                            {% else %}
-                                                ${{ "%.2f"|format(product.price) }}
-                                            {% endif %}
-                                        </strong>
-                                    </td>
-                                    <td>
-                                        {% if product.product_type == 'Digital' %}
-                                            <span class="badge bg-info">Digital</span>
-                                        {% elif product.stock_quantity == 0 %}
-                                            <span class="badge bg-danger">Out of Stock</span>
-                                        {% elif product.stock_quantity < 10 %}
-                                            <span class="badge bg-warning text-dark">{{ product.stock_quantity or 0 }}</span>
-                                        {% else %}
-                                            <span class="badge bg-success">{{ product.stock_quantity or 0 }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge {% if product.product_type == 'Digital' %}bg-primary{% else %}bg-secondary{% endif %}">
-                                            {{ product.product_type or 'Physical' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   id="status-{{ product.id }}" 
-                                                   {% if product.is_active %}checked{% endif %}
-                                                   onchange="toggleProductStatus({{ product.id }}, this.checked)">
-                                            <label class="form-check-label small" for="status-{{ product.id }}">
-                                                <span class="badge bg-{% if product.is_active %}success{% else %}secondary{% endif %}" 
-                                                      id="status-badge-{{ product.id }}">
-                                                    {% if product.is_active %}Active{% else %}Inactive{% endif %}
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <!-- View Button -->
-                                            <button class="btn btn-sm btn-outline-info" onclick="viewProduct({{ product.id }})" title="View Details">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            
-                                            <!-- Edit Button -->
-                                            <a href="{{ url_for('edit_product', product_id=product.id) }}" 
-                                               class="btn btn-sm btn-primary" title="Edit Product">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            
-                                            <!-- Delete Button -->
-                                            <button class="btn btn-sm btn-danger" 
-                                                    onclick="confirmDelete({{ product.id }}, '{{ product.name }}')" 
-                                                    title="Delete Product">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">
-                                        <i class="fas fa-box-open fa-3x mb-3"></i>
-                                        <h5>No products found</h5>
-                                        <p>Create your first product to get started!</p>
-                                        <a href="{{ url_for('create_product') }}" class="btn btn-primary">
-                                            <i class="fas fa-plus me-2"></i>Add New Product
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitQuickCreate()">Create Product</button>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Product Details Modal -->
-<div class="modal fade" id="productModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Product Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="productModalBody">
-                <!-- Product details will be loaded here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Hidden form for delete operations -->
-<form id="deleteForm" method="POST" style="display: none;">
-    <input type="hidden" name="_method" value="DELETE">
-</form>
-
-<script>
-// Toggle product status via AJAX
-function toggleProductStatus(productId, isActive) {
-    fetch(`/admin/toggle-product-status/${productId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ is_active: isActive })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const badge = document.getElementById(`status-badge-${productId}`);
-            const row = document.getElementById(`product-${productId}`);
-            
-            if (isActive) {
-                badge.textContent = 'Active';
-                badge.className = 'badge bg-success';
-                row.classList.remove('table-secondary');
-            } else {
-                badge.textContent = 'Inactive';
-                badge.className = 'badge bg-secondary';
-                row.classList.add('table-secondary');
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample data - replace with actual data from backend
+        let products = [
+            {
+                id: 1,
+                name: "iPhone 15 Pro",
+                price: 999.99,
+                category: "Electronics",
+                brand: "Apple",
+                product_type: "Physical",
+                stock_quantity: 25,
+                is_active: true,
+                image_url: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=100&h=100&fit=crop",
+                short_description: "Latest iPhone with advanced camera system"
+            },
+            {
+                id: 2,
+                name: "Digital Marketing Course",
+                price: 49.99,
+                category: "Education",
+                brand: "CourseHub",
+                product_type: "Digital",
+                stock_quantity: null,
+                is_active: true,
+                image_url: null,
+                short_description: "Complete digital marketing course with certificates"
+            },
+            {
+                id: 3,
+                name: "Gaming Laptop",
+                price: 1299.99,
+                category: "Electronics",
+                brand: "ASUS",
+                product_type: "Physical",
+                stock_quantity: 5,
+                is_active: false,
+                image_url: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=100&h=100&fit=crop",
+                short_description: "High-performance gaming laptop"
             }
-            
-            showAlert('Product status updated successfully!', 'success');
-        } else {
-            showAlert('Failed to update product status', 'danger');
-            // Revert checkbox
-            document.getElementById(`status-${productId}`).checked = !isActive;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('Error updating product status', 'danger');
-        // Revert checkbox
-        document.getElementById(`status-${productId}`).checked = !isActive;
-    });
-}
+        ];
 
-// View product details
-function viewProduct(productId) {
-    fetch(`/admin/product/${productId}/details`)
-    .then(response => response.json())
-    .then(product => {
-        const modalBody = document.getElementById('productModalBody');
-        modalBody.innerHTML = `
-            <div class="row">
-                <div class="col-md-4">
-                    ${product.image_url ? 
-                        `<img src="${product.image_url}" class="img-fluid rounded" alt="${product.name}">` :
-                        '<div class="text-center p-4 bg-light rounded"><i class="fas fa-box-open fa-4x text-muted"></i></div>'
-                    }
-                </div>
-                <div class="col-md-8">
-                    <h4>${product.name}</h4>
-                    <p class="text-muted">${product.description || 'No description available'}</p>
-                    
-                    <div class="row">
-                        <div class="col-6">
-                            <strong>Price:</strong> $${product.price.toFixed(2)}<br>
-                            <strong>Category:</strong> ${product.category || 'N/A'}<br>
-                            <strong>Type:</strong> ${product.product_type || 'Physical'}
+        let filteredProducts = [...products];
+        let selectedProducts = new Set();
+        let currentSort = { field: null, direction: 'asc' };
+        let currentPage = 1;
+        let pageSize = 10;
+
+        // Initialize the interface
+        document.addEventListener('DOMContentLoaded', function() {
+            renderProducts();
+            updateStats();
+        });
+
+        function renderProducts() {
+            const tbody = document.getElementById('productTableBody');
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+            tbody.innerHTML = paginatedProducts.map(product => `
+                <tr class="product-row ${selectedProducts.has(product.id) ? 'selected' : ''}" 
+                    id="product-${product.id}" ${!product.is_active ? 'style="opacity: 0.7;"' : ''}>
+                    <td>
+                        <input type="checkbox" class="form-check-input product-checkbox" 
+                               value="${product.id}" ${selectedProducts.has(product.id) ? 'checked' : ''}
+                               onchange="toggleProductSelection(${product.id})">
+                    </td>
+                    <td>
+                        ${product.image_url ? 
+                            `<img src="${product.image_url}" alt="${product.name}" 
+                                 class="img-thumbnail" style="height: 50px; width: 50px; object-fit: cover;">` :
+                            '<div class="text-center"><i class="fas fa-box-open fa-2x text-muted"></i></div>'
+                        }
+                    </td>
+                    <td>
+                        <div>
+                            <h6 class="mb-1">${product.name}</h6>
+                            <small class="text-muted">
+                                ${product.category ? `<span class="badge bg-light text-dark">${product.category}</span>` : ''}
+                                ${product.brand ? `<span class="badge bg-outline-secondary">${product.brand}</span>` : ''}
+                            </small>
+                            ${product.short_description ? 
+                                `<p class="mb-0 small text-muted">${product.short_description.length > 50 ? 
+                                    product.short_description.substring(0, 50) + '...' : product.short_description}</p>` : ''
+                            }
                         </div>
-                        <div class="col-6">
-                            <strong>Stock:</strong> ${product.product_type === 'Digital' ? 'Digital' : product.stock_quantity}<br>
-                            <strong>Brand:</strong> ${product.brand || 'N/A'}<br>
-                            <strong>SKU:</strong> ${product.sku || 'N/A'}
-                        </div>
-                    </div>
-                    
-                    <div class="mt-3">
-                        <span class="badge ${product.is_active ? 'bg-success' : 'bg-secondary'}">
-                            ${product.is_active ? 'Active' : 'Inactive'}
+                    </td>
+                    <td>
+                        <strong>
+                            ${product.price === 0 ? 
+                                '<span class="text-success">FREE</span>' : 
+                                `$${product.price.toFixed(2)}`
+                            }
+                        </strong>
+                    </td>
+                    <td>
+                        ${product.product_type === 'Digital' ? 
+                            '<span class="badge bg-info">Digital</span>' :
+                            product.stock_quantity === 0 ? 
+                                '<span class="badge bg-danger">Out of Stock</span>' :
+                                product.stock_quantity < 10 ? 
+                                    `<span class="badge bg-warning text-dark">${product.stock_quantity}</span>` :
+                                    `<span class="badge bg-success">${product.stock_quantity}</span>`
+                        }
+                    </td>
+                    <td>
+                        <span class="badge ${product.product_type === 'Digital' ? 'bg-primary' : 'bg-secondary'}">
+                            ${product.product_type || 'Physical'}
                         </span>
-                        ${product.featured ? '<span class="badge bg-warning text-dark ms-2">Featured</span>' : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        new bootstrap.Modal(document.getElementById('productModal')).show();
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('Error loading product details', 'danger');
-    });
-}
+                    </td>
+                    <td>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="status-${product.id}" 
+                                   ${product.is_active ? 'checked' : ''}
+                                   onchange="toggleProductStatus(${product.id}, this.checked)">
+                            <label class="form-check-label small" for="status-${product.id}">
+                                <span class="badge bg-${product.is_active ? 'success' : 'secondary'}" 
+                                      id="status-badge-${product.id}">
+                                    ${product.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1 action-buttons">
+                            <button class="btn btn-sm btn-outline-info" onclick="viewProduct(${product.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="editProduct(${product.id})" title="Edit Product">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDelete(${product.id}, '${product.name}')" title="Delete Product">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
 
-// Confirm delete
-function confirmDelete(productId, productName) {
-    if (confirm(`Are you sure you want to delete "${productName}"?\n\nThis action cannot be undone.`)) {
-        const form = document.getElementById('deleteForm');
-        form.action = `/admin/delete_product/${productId}`;
-        form.submit();
-    }
-}
-
-// Show alert messages
-function showAlert(message, type) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(alertDiv);
-    
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.parentNode.removeChild(alertDiv);
+            updatePagination();
+            updateBulkActions();
         }
-    }, 3000);
-}
 
-// Auto-refresh every 30 seconds (optional)
-// setInterval(() => {
-//     window.location.reload();
-// }, 30000);
-</script>
+        function updateStats() {
+            document.getElementById('total-products').textContent = products.length;
+            document.getElementById('active-products').textContent = products.filter(p => p.is_active).length;
+            document.getElementById('low-stock').textContent = products.filter(p => p.product_type === 'Physical' && p.stock_quantity < 10).length;
+            document.getElementById('digital-products').textContent = products.filter(p => p.product_type === 'Digital').length;
+        }
 
-<style>
-.table-responsive {
-    border-radius: 0.375rem;
-}
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            applyFilters();
+        }
 
-.img-thumbnail {
-    border: 2px solid #dee2e6;
-}
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const type = document.getElementById('typeFilter').value;
 
-.form-switch {
-    padding-left: 2.5em;
-}
+            filteredProducts = products.filter(product => {
+                const matchesSearch = !search || 
+                    product.name.toLowerCase().includes(search) ||
+                    (product.category && product.category.toLowerCase().includes(search)) ||
+                    (product.brand && product.brand.toLowerCase().includes(search));
+                
+                const matchesCategory = !category || product.category === category;
+                const matchesStatus = !status || 
+                    (status === 'active' && product.is_active) ||
+                    (status === 'inactive' && !product.is_active);
+                const matchesType = !type || product.product_type === type;
 
-.btn-group-sm > .btn, .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
+                return matchesSearch && matchesCategory && matchesStatus && matchesType;
+            });
 
-.badge {
-    font-size: 0.75rem;
-}
+            currentPage = 1;
+            renderProducts();
+        }
 
-.opacity-50 {
-    opacity: 0.5;
-}
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            filteredProducts = [...products];
+            currentPage = 1;
+            renderProducts();
+        }
 
-/* Hover effects */
-.table tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.05);
-}
+        function toggleProductSelection(productId) {
+            if (selectedProducts.has(productId)) {
+                selectedProducts.delete(productId);
+            } else {
+                selectedProducts.add(productId);
+            }
+            renderProducts();
+        }
 
-/* Loading animation */
-.loading {
-    opacity: 0.6;
-    pointer-events: none;
-}
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll').checked;
+            const visibleProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            
+            if (selectAll) {
+                visibleProducts.forEach(p => selectedProducts.add(p.id));
+            } else {
+                visibleProducts.forEach(p => selectedProducts.delete(p.id));
+            }
+            renderProducts();
+        }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+        function updateBulkActions() {
+            const bulkActions = document.getElementById('bulkActions');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedProducts.size > 0) {
+                bulkActions.classList.add('show');
+                selectedCount.textContent = `${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} selected`;
+            } else {
+                bulkActions.classList.remove('show');
+            }
+        }
 
-.fa-spin {
-    animation: spin 1s linear infinite;
-}
-</style>
-{% endblock %}
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredProducts.length / pageSize);
+            document.getElementById('current-page').textContent = currentPage;
+            document.getElementById('total-pages').textContent = totalPages;
+            document.getElementById('showing-count').textContent = Math.min(filteredProducts.length, pageSize);
+            document.getElementById('total-count').textContent = filteredProducts.length;
+
+            const pagination = document.getElementById('pagination');
+            let paginationHTML = '';
+
+            // Previous button
+            paginationHTML += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">&laquo;</a>
+                </li>
+            `;
+
+            // Page numbers
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                paginationHTML += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+
+            // Next button
+            paginationHTML += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">&raquo;</a>
+                </li>
+            `;
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredProducts.length / pageSize);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderProducts();
+            }
+        }
+
+        function changePageSize() {
+            pageSize = parseInt(document.getElementById('pageSize').value);
+            currentPage = 1;
+            renderProducts();
+        }
+
+        function toggleProductStatus(productId, isActive) {
+            // Simulate API call
+            setTimeout(() => {
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    product.is_active = isActive;
+                    showToast(`Product status updated successfully!`, 'success');
+                    renderProducts();
+                    updateStats();
+                }
+            }, 500);
+        }
+
+        function viewProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                const modalBody = document.getElementById('productModalBody');
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            ${product.image_url ? 
+                                `<img src="${product.image_url}" class="img-fluid rounded" alt="${product.name}">` :
+                                '<div class="text-center p-4 bg-light rounded"><i class="fas fa-box-open fa-4x text-muted"></i></div>'
+                            }
+                        </div>
+                        <div class="col-md-8">
+                            <h4>${product.name}</h4>
+                            <p class="text-muted">${product.short_description || 'No description available'}</p>
+                            
+                            <div class="row">

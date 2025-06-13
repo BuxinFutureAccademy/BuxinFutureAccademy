@@ -55,18 +55,29 @@
     <div class="row">
         {% for course in courses %}
             <div class="col-md-4 mb-4">
-                <div class="card h-100 course-card">
+                <div class="card h-100 course-card {% if not course.is_active %}coming-soon-card{% endif %}">
                     <div class="position-relative">
                         {% if course.image_url %}
-                            <img src="{{ course.image_url }}" class="card-img-top" alt="{{ course.title }}" style="height: 200px; object-fit: cover;">
+                            <img src="{{ course.image_url }}" class="card-img-top {% if not course.is_active %}grayscale{% endif %}" alt="{{ course.title }}" style="height: 200px; object-fit: cover;">
                         {% else %}
-                            <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center {% if not course.is_active %}grayscale{% endif %}" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                 <i class="fas fa-graduation-cap fa-3x text-white"></i>
                             </div>
                         {% endif %}
                         
+                        <!-- Coming Soon Overlay -->
+                        {% if not course.is_active %}
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center coming-soon-overlay">
+                                <div class="text-center text-white">
+                                    <i class="fas fa-clock fa-2x mb-2"></i>
+                                    <h5 class="fw-bold">COMING SOON</h5>
+                                    <small>Expected: Q2 2024</small>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
                         <!-- Video count overlay -->
-                        {% if course.get_video_count() > 0 %}
+                        {% if course.get_video_count() > 0 and course.is_active %}
                             <div class="position-absolute top-0 end-0 m-2">
                                 <span class="badge bg-dark bg-opacity-75">
                                     <i class="fas fa-play me-1"></i>{{ course.get_video_count() }} videos
@@ -76,71 +87,116 @@
                         
                         <!-- Level badge -->
                         <div class="position-absolute top-0 start-0 m-2">
-                            <span class="badge bg-primary">{{ course.level }}</span>
+                            {% if course.is_active %}
+                                <span class="badge bg-primary">{{ course.level }}</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-clock me-1"></i>Coming Soon
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
                     
                     <div class="card-body d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <span class="badge bg-info">{{ course.category }}</span>
-                            {% if course.get_total_duration() %}
+                            {% if course.get_total_duration() and course.is_active %}
                                 <span class="badge bg-secondary">
                                     <i class="fas fa-clock me-1"></i>{{ course.get_total_duration() }}
+                                </span>
+                            {% elif not course.is_active %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-hourglass-half me-1"></i>In Development
                                 </span>
                             {% endif %}
                         </div>
                         
-                        <h5 class="card-title">{{ course.title }}</h5>
+                        <h5 class="card-title {% if not course.is_active %}text-muted{% endif %}">
+                            {{ course.title }}
+                            {% if not course.is_active %}
+                                <i class="fas fa-lock ms-2 text-warning"></i>
+                            {% endif %}
+                        </h5>
                         <p class="card-text text-muted">{{ course.short_description or course.description[:100] + '...' }}</p>
                         
                         <!-- Course stats -->
-                        <div class="course-stats mb-3">
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <div class="stat-item">
-                                        <i class="fas fa-users text-primary"></i>
-                                        <small class="d-block text-muted">{{ course.get_enrolled_count() }} enrolled</small>
+                        {% if course.is_active %}
+                            <div class="course-stats mb-3">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="stat-item">
+                                            <i class="fas fa-users text-primary"></i>
+                                            <small class="d-block text-muted">{{ course.get_enrolled_count() }} enrolled</small>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="stat-item">
-                                        <i class="fas fa-calendar text-info"></i>
-                                        <small class="d-block text-muted">{{ course.duration_weeks }} weeks</small>
+                                    <div class="col-4">
+                                        <div class="stat-item">
+                                            <i class="fas fa-calendar text-info"></i>
+                                            <small class="d-block text-muted">{{ course.duration_weeks }} weeks</small>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="stat-item">
-                                        {% if course.get_video_count() > 0 %}
-                                            <i class="fas fa-video text-success"></i>
-                                            <small class="d-block text-muted">{{ course.get_video_count() }} lessons</small>
-                                        {% else %}
-                                            <i class="fas fa-book text-warning"></i>
-                                            <small class="d-block text-muted">Text-based</small>
-                                        {% endif %}
+                                    <div class="col-4">
+                                        <div class="stat-item">
+                                            {% if course.get_video_count() > 0 %}
+                                                <i class="fas fa-video text-success"></i>
+                                                <small class="d-block text-muted">{{ course.get_video_count() }} lessons</small>
+                                            {% else %}
+                                                <i class="fas fa-book text-warning"></i>
+                                                <small class="d-block text-muted">Text-based</small>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        {% else %}
+                            <!-- Coming Soon Stats -->
+                            <div class="course-stats mb-3 text-center">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="stat-item">
+                                            <i class="fas fa-bell text-warning fa-2x mb-2"></i>
+                                            <h6 class="text-muted">Get notified when available</h6>
+                                            <small class="text-muted">Expected Duration: {{ course.duration_weeks }} weeks</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
                         
                         <div class="mt-auto">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="h4 text-success mb-0">
-                                    {% if course.price == 0 %}
-                                        <span class="badge bg-success">FREE</span>
-                                    {% else %}
-                                        GMD {{ "%.2f"|format(course.price) }}
+                                {% if course.is_active %}
+                                    <span class="h4 text-success mb-0">
+                                        {% if course.price == 0 %}
+                                            <span class="badge bg-success">FREE</span>
+                                        {% else %}
+                                            GMD {{ "%.2f"|format(course.price) }}
+                                        {% endif %}
+                                    </span>
+                                    {% if course.materials %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-download me-1"></i>{{ course.materials|length }} materials
+                                        </small>
                                     {% endif %}
-                                </span>
-                                {% if course.materials %}
+                                {% else %}
+                                    <span class="h5 text-muted mb-0">
+                                        <i class="fas fa-clock me-2"></i>Coming Soon
+                                    </span>
                                     <small class="text-muted">
-                                        <i class="fas fa-download me-1"></i>{{ course.materials|length }} materials
+                                        <i class="fas fa-calendar me-1"></i>Q2 2024
                                     </small>
                                 {% endif %}
                             </div>
                             
-                            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary w-100">
-                                <i class="fas fa-eye me-2"></i>View Details
-                            </a>
+                            {% if course.is_active %}
+                                <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary w-100">
+                                    <i class="fas fa-eye me-2"></i>View Details
+                                </a>
+                            {% else %}
+                                <button class="btn btn-outline-warning w-100" onclick="notifyMe({{ course.id }}, '{{ course.title }}')">
+                                    <i class="fas fa-bell me-2"></i>Notify Me When Available
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -158,6 +214,53 @@
             </div>
         {% endfor %}
     </div>
+
+    <!-- Coming Soon Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h3><i class="fas fa-rocket me-2 text-primary"></i>More Courses Coming Soon!</h3>
+                    <p class="text-muted">We're constantly developing new courses to help you advance your skills. Stay tuned for exciting new content!</p>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="coming-soon-preview">
+                                <i class="fas fa-robot fa-3x text-primary mb-2"></i>
+                                <h5>AI & Machine Learning</h5>
+                                <small class="text-muted">Coming Q2 2024</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="coming-soon-preview">
+                                <i class="fas fa-mobile-alt fa-3x text-success mb-2"></i>
+                                <h5>Mobile App Development</h5>
+                                <small class="text-muted">Coming Q3 2024</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="coming-soon-preview">
+                                <i class="fas fa-shield-alt fa-3x text-danger mb-2"></i>
+                                <h5>Cybersecurity Fundamentals</h5>
+                                <small class="text-muted">Coming Q3 2024</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="coming-soon-preview">
+                                <i class="fas fa-cloud fa-3x text-info mb-2"></i>
+                                <h5>Cloud Computing</h5>
+                                <small class="text-muted">Coming Q4 2024</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-outline-primary mt-3" onclick="subscribeToUpdates()">
+                        <i class="fas fa-envelope me-2"></i>Subscribe for Updates
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -170,6 +273,25 @@
 .course-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.coming-soon-card {
+    opacity: 0.8;
+    position: relative;
+}
+
+.coming-soon-card:hover {
+    transform: translateY(-3px);
+    opacity: 1;
+}
+
+.coming-soon-overlay {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+}
+
+.grayscale {
+    filter: grayscale(50%);
 }
 
 .stat-item {
@@ -191,5 +313,101 @@
     margin: 1rem 0;
     padding: 0.75rem 0;
 }
+
+.coming-soon-preview {
+    padding: 1rem;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.coming-soon-preview:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Pulse animation for coming soon badges */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.badge.bg-warning {
+    animation: pulse 2s infinite;
+}
 </style>
+
+<script>
+function notifyMe(courseId, courseTitle) {
+    // Check if notifications are supported
+    if ('Notification' in window) {
+        // Request permission if not granted
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(function(permission) {
+                if (permission === 'granted') {
+                    showNotificationSuccess(courseTitle);
+                }
+            });
+        } else if (Notification.permission === 'granted') {
+            showNotificationSuccess(courseTitle);
+        }
+    }
+    
+    // You can also save this to your backend for email notifications
+    // fetch('/api/notify-course/' + courseId, {method: 'POST'})
+    
+    // Show success message
+    showNotificationSuccess(courseTitle);
+}
+
+function showNotificationSuccess(courseTitle) {
+    // Create a temporary alert
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Success!</strong> You'll be notified when "${courseTitle}" is available.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 3000);
+}
+
+function subscribeToUpdates() {
+    // Simple subscription form
+    const email = prompt('Enter your email to subscribe for course updates:');
+    if (email && email.includes('@')) {
+        // You can send this to your backend
+        // fetch('/api/subscribe', {method: 'POST', body: JSON.stringify({email})})
+        
+        alert('Thank you! You\'ll receive updates about new courses.');
+    } else if (email) {
+        alert('Please enter a valid email address.');
+    }
+}
+
+// Add smooth scrolling for coming soon section
+document.addEventListener('DOMContentLoaded', function() {
+    // Add a "See Coming Soon" button in the header if needed
+    const header = document.querySelector('h2');
+    if (header) {
+        const comingSoonBtn = document.createElement('a');
+        comingSoonBtn.href = '#coming-soon';
+        comingSoonBtn.className = 'btn btn-outline-warning btn-sm ms-3';
+        comingSoonBtn.innerHTML = '<i class="fas fa-clock me-1"></i>Coming Soon';
+        comingSoonBtn.onclick = function(e) {
+            e.preventDefault();
+            document.querySelector('.card.bg-light').scrollIntoView({behavior: 'smooth'});
+        };
+        header.appendChild(comingSoonBtn);
+    }
+});
+</script>
 {% endblock %}

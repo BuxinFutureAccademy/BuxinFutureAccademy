@@ -1,277 +1,42 @@
-
-{% extends "base.html" %}
-
-{% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h4><i class="fas fa-plus me-2"></i>Create New Product</h4>
-                </div>
-                <div class="card-body">
-                    <!-- Debug: Show flash messages -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-
-                    <form method="POST" enctype="multipart/form-data" onsubmit="return validateForm()">
-                        <!-- CSRF Token (if you're using Flask-WTF) -->
-                        <!-- {{ csrf_token() }} -->
-                        
-                        <!-- Product Name -->
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Product Name *</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
-                            <div class="invalid-feedback">Please provide a product name.</div>
-                        </div>
-                        
-                        <!-- Description -->
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Description *</label>
-                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-                            <div class="invalid-feedback">Please provide a description.</div>
-                        </div>
-                        
-                        <!-- Short Description -->
-                        <div class="mb-3">
-                            <label for="short_description" class="form-label">Short Description</label>
-                            <textarea class="form-control" id="short_description" name="short_description" rows="2" placeholder="Brief summary of the product"></textarea>
-                        </div>
-                        
-                        <div class="row">
-                            <!-- Price -->
-                            <div class="col-md-6 mb-3">
-                                <label for="price" class="form-label">Price *</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">GMD</span>
-                                    <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
-                                    <div class="invalid-feedback">Please provide a valid price.</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Stock Quantity -->
-                            <div class="col-md-6 mb-3">
-                                <label for="stock_quantity" class="form-label">Stock Quantity</label>
-                                <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" min="0" value="0">
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <!-- Product Type -->
-                            <div class="col-md-6 mb-3">
-                                <label for="product_type" class="form-label">Product Type *</label>
-                                <select class="form-select" id="product_type" name="product_type" required>
-                                    <option value="">Select Type</option>
-                                    <option value="Physical">Physical Product</option>
-                                    <option value="Digital">Digital Product</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a product type.</div>
-                            </div>
-                            
-                            <!-- Category -->
-                            <div class="col-md-6 mb-3">
-                                <label for="category" class="form-label">Category *</label>
-                                <select class="form-select" id="category" name="category" required>
-                                    <option value="">Select Category</option>
-                                    <option value="Electronics">Electronics</option>
-                                    <option value="Books">Books</option>
-                                    <option value="Accessories">Accessories</option>
-                                    <option value="Software">Software</option>
-                                    <option value="Courses">Courses</option>
-                                    <option value="Tools">Tools</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a category.</div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <!-- Brand -->
-                            <div class="col-md-6 mb-3">
-                                <label for="brand" class="form-label">Brand</label>
-                                <input type="text" class="form-control" id="brand" name="brand" placeholder="Product brand (optional)">
-                            </div>
-                            
-                            <!-- SKU -->
-                            <div class="col-md-6 mb-3">
-                                <label for="sku" class="form-label">SKU</label>
-                                <input type="text" class="form-control" id="sku" name="sku" placeholder="Stock Keeping Unit (optional)">
-                            </div>
-                        </div>
-                        
-                        <!-- Image URL -->
-                        <div class="mb-3">
-                            <label for="image_url" class="form-label">Product Image URL</label>
-                            <input type="url" class="form-control" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
-                            <div class="form-text">Enter a URL for the product image</div>
-                        </div>
-                        
-                        <!-- Checkboxes -->
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
-                                <label class="form-check-label" for="is_active">Active Product</label>
-                            </div>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="featured" name="featured">
-                                <label class="form-check-label" for="featured">Featured Product</label>
-                            </div>
-                        </div>
-                        
-                        <!-- Submit Buttons -->
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('admin_products') }}" class="btn btn-secondary me-md-2">
-                                <i class="fas fa-times me-2"></i>Cancel
-                            </a>
-                            <button type="submit" class="btn btn-success" id="submitBtn">
-                                <span class="spinner-border spinner-border-sm d-none" id="submitSpinner"></span>
-                                <i class="fas fa-save me-2" id="submitIcon"></i>Create Product
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-// Debug: Log form data before submission
-function validateForm() {
-    const form = document.querySelector('form');
-    const formData = new FormData(form);
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Product - Test</title>
+</head>
+<body>
+    <h1>Create Product</h1>
+    <p>If you can see this, the route is working!</p>
     
-    console.log('=== FORM DEBUG INFO ===');
-    console.log('Form action:', form.action);
-    console.log('Form method:', form.method);
-    console.log('Form data:');
-    
-    for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}: ${value}`);
-    }
-    
-    // Check required fields
-    const requiredFields = ['name', 'description', 'price', 'product_type', 'category'];
-    let isValid = true;
-    
-    requiredFields.forEach(field => {
-        const element = document.getElementById(field);
-        const value = formData.get(field);
+    <form method="POST">
+        <label for="name">Product Name:</label>
+        <input type="text" id="name" name="name" required><br><br>
         
-        if (!value || value.trim() === '') {
-            console.error(`Missing required field: ${field}`);
-            element.classList.add('is-invalid');
-            isValid = false;
-        } else {
-            element.classList.remove('is-invalid');
-            element.classList.add('is-valid');
-        }
-    });
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required></textarea><br><br>
+        
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="price" step="0.01" required><br><br>
+        
+        <label for="product_type">Type:</label>
+        <select id="product_type" name="product_type" required>
+            <option value="">Select Type</option>
+            <option value="Physical">Physical</option>
+            <option value="Digital">Digital</option>
+        </select><br><br>
+        
+        <label for="category">Category:</label>
+        <select id="category" name="category" required>
+            <option value="">Select Category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Books">Books</option>
+            <option value="Other">Other</option>
+        </select><br><br>
+        
+        <button type="submit">Create Product</button>
+    </form>
     
-    if (!isValid) {
-        alert('Please fill in all required fields marked with *');
-        return false;
-    }
-    
-    // Show loading state
-    const submitBtn = document.getElementById('submitBtn');
-    const submitIcon = document.getElementById('submitIcon');
-    const submitSpinner = document.getElementById('submitSpinner');
-    
-    submitBtn.disabled = true;
-    submitIcon.classList.add('d-none');
-    submitSpinner.classList.remove('d-none');
-    
-    return true;
-}
-
-// Auto-generate SKU based on product name
-document.getElementById('name').addEventListener('input', function() {
-    const name = this.value;
-    const sku = name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10);
-    if (sku && !document.getElementById('sku').value) {
-        document.getElementById('sku').value = sku + '-001';
-    }
-});
-
-// Hide/show stock quantity based on product type
-document.getElementById('product_type').addEventListener('change', function() {
-    const stockField = document.getElementById('stock_quantity');
-    const stockLabel = document.querySelector('label[for="stock_quantity"]');
-    
-    if (this.value === 'Digital') {
-        stockField.value = '0';
-        stockField.disabled = true;
-        stockLabel.textContent = 'Stock Quantity (Digital - N/A)';
-    } else {
-        stockField.disabled = false;
-        stockLabel.textContent = 'Stock Quantity';
-    }
-});
-
-// Real-time validation feedback
-document.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
-    field.addEventListener('blur', function() {
-        if (this.value.trim() === '') {
-            this.classList.add('is-invalid');
-            this.classList.remove('is-valid');
-        } else {
-            this.classList.remove('is-invalid');
-            this.classList.add('is-valid');
-        }
-    });
-});
-
-// Debug: Check if form is properly set up
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    console.log('=== FORM SETUP DEBUG ===');
-    console.log('Form found:', !!form);
-    console.log('Form method:', form ? form.method : 'N/A');
-    console.log('Form action:', form ? form.action : 'N/A');
-    console.log('Form enctype:', form ? form.enctype : 'N/A');
-    
-    // Check if all required fields exist
-    const requiredFields = ['name', 'description', 'price', 'product_type', 'category'];
-    requiredFields.forEach(field => {
-        const element = document.getElementById(field);
-        console.log(`Field '${field}':`, !!element);
-    });
-});
-</script>
-
-<style>
-.is-valid {
-    border-color: #198754;
-}
-
-.is-invalid {
-    border-color: #dc3545;
-}
-
-.invalid-feedback {
-    display: none;
-    width: 100%;
-    margin-top: 0.25rem;
-    font-size: 0.875em;
-    color: #dc3545;
-}
-
-.is-invalid ~ .invalid-feedback {
-    display: block;
-}
-
-.spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
-}
-</style>
-{% endblock %}
+    <script>
+        console.log('Template loaded successfully');
+    </script>
+</body>
+</html>

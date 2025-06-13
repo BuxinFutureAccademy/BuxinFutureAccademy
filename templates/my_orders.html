@@ -42,7 +42,7 @@
                                                 </div>
                                             </td>
                                             <td>{{ order.quantity }}</td>
-                                            <td>${{ "%.2f"|format(order.total_amount) }}</td>
+                                            <td>GMD {{ "%.2f"|format(order.total_amount) }}</td>
                                             <td>
                                                 {% if order.status == 'completed' %}
                                                     <span class="badge bg-success">Completed</span>

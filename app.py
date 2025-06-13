@@ -802,15 +802,6 @@ def edit_course(course_id):
 # PRODUCT MANAGEMENT ROUTES
 # ========================================
 
-@app.route('/admin/products')
-@login_required
-def admin_products():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    
-    products = Product.query.order_by(Product.created_at.desc()).all()
-    return render_template('admin_products.html', products=products)
 
 @app.route('/admin/create_product', methods=['GET', 'POST'])
 @login_required
@@ -936,49 +927,334 @@ def create_product():
     return render_template('create_product.html')
 
 
-@app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
+# Add these routes to your Flask app.py file
+
+@app.route('/admin/toggle-product-status/<int:product_id>', methods=['POST'])
 @login_required
-def edit_product(product_id):
+def toggle_product_status(product_id):
+    """Toggle product active/inactive status via AJAX"""
     if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
+        return {'success': False, 'error': 'Access denied'}, 403
     
-    product = Product.query.get_or_404(product_id)
-    
-    if request.method == 'POST':
-        product.name = request.form['name']
-        product.description = request.form['description']
-        product.short_description = request.form.get('short_description', '')
-        product.price = float(request.form['price'])
-        product.product_type = request.form['product_type']
-        product.category = request.form['category']
-        product.brand = request.form.get('brand', '')
-        product.sku = request.form.get('sku', '')
-        product.stock_quantity = int(request.form.get('stock_quantity', 0))
-        product.image_url = request.form.get('image_url', '')
-        product.featured = 'featured' in request.form
-        product.is_active = 'is_active' in request.form
+    try:
+        product = Product.query.get_or_404(product_id)
+        data = request.get_json()
+        
+        if data is None:
+            return {'success': False, 'error': 'No JSON data received'}, 400
+        
+        new_status = data.get('is_active', False)
+        product.is_active = new_status
         
         db.session.commit()
         
-        flash('Product updated successfully!', 'success')
-        return redirect(url_for('admin_products'))
-    
-    return render_template('edit_product.html', product=product)
+        return {
+            'success': True, 
+            'message': f'Product {"activated" if new_status else "deactivated"} successfully',
+            'is_active': new_status
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error toggling product status: {e}")
+        return {'success': False, 'error': str(e)}, 500
 
+@app.route('/admin/product/<int:product_id>/details')
+@login_required
+def product_details(product_id):
+    """Get product details for modal view"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        product = Product.query.get_or_404(product_id)
+        
+        # Get sales count (you might need to adjust this based on your order model)
+        sales_count = ProductOrder.query.filter_by(
+            product_id=product_id, 
+            status='completed'
+        ).count() if hasattr(globals().get('ProductOrder', None), 'product_id') else 0
+        
+        return {
+            'id': product.id,
+            'name': product.name,
+            'description': product.description,
+            'short_description': product.short_description,
+            'price': float(product.price),
+            'category': product.category,
+            'product_type': product.product_type,
+            'stock_quantity': product.stock_quantity,
+            'brand': product.brand,
+            'sku': product.sku,
+            'image_url': product.image_url,
+            'is_active': product.is_active,
+            'featured': product.featured,
+            'created_at': product.created_at.isoformat() if product.created_at else None,
+            'sales_count': sales_count
+        }
+        
+    except Exception as e:
+        print(f"Error getting product details: {e}")
+        return {'error': str(e)}, 500
+
+# Update your existing admin_products route to handle filtering
+@app.route('/admin/products')
+@login_required
+def admin_products():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    search = request.args.get('search', '').strip()
+    category = request.args.get('category', '').strip()
+    status = request.args.get('status', '').strip()
+    
+    # Start with base query
+    query = Product.query
+    
+    # Apply filters
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Product.name.like(search_filter),
+                Product.description.like(search_filter),
+                Product.brand.like(search_filter),
+                Product.sku.like(search_filter)
+            )
+        )
+    
+    if category:
+        query = query.filter_by(category=category)
+    
+    if status == 'active':
+        query = query.filter_by(is_active=True)
+    elif status == 'inactive':
+        query = query.filter_by(is_active=False)
+    
+    # Order by creation date (newest first)
+    products = query.order_by(Product.created_at.desc()).all()
+    
+    return render_template('admin_products.html', products=products)
+
+# Update your existing delete_product route to handle the form submission
 @app.route('/admin/delete_product/<int:product_id>', methods=['POST'])
 @login_required
 def delete_product(product_id):
+    """Delete a product"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
 
-    product = Product.query.get_or_404(product_id)
-    db.session.delete(product)
-    db.session.commit()
-
-    flash('Product deleted successfully!', 'success')
+    try:
+        product = Product.query.get_or_404(product_id)
+        product_name = product.name
+        
+        # Check if there are any orders for this product
+        orders_count = ProductOrder.query.filter_by(product_id=product_id).count() if hasattr(globals().get('ProductOrder', None), 'product_id') else 0
+        
+        if orders_count > 0:
+            flash(f'Cannot delete "{product_name}" because it has {orders_count} associated orders. Deactivate it instead.', 'warning')
+            return redirect(url_for('admin_products'))
+        
+        # Check if there are any cart items for this product
+        cart_items_count = ProductCartItem.query.filter_by(product_id=product_id).count() if hasattr(globals().get('ProductCartItem', None), 'product_id') else 0
+        
+        if cart_items_count > 0:
+            # Remove from carts first
+            ProductCartItem.query.filter_by(product_id=product_id).delete()
+        
+        # Delete the product
+        db.session.delete(product)
+        db.session.commit()
+        
+        flash(f'Product "{product_name}" deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting product: {str(e)}', 'danger')
+        print(f"Error deleting product {product_id}: {e}")
+    
     return redirect(url_for('admin_products'))
+
+# Add a route to handle bulk actions (optional enhancement)
+@app.route('/admin/products/bulk-action', methods=['POST'])
+@login_required
+def bulk_product_action():
+    """Handle bulk actions on multiple products"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        data = request.get_json()
+        action = data.get('action')
+        product_ids = data.get('product_ids', [])
+        
+        if not action or not product_ids:
+            return {'success': False, 'error': 'Missing action or product IDs'}, 400
+        
+        products = Product.query.filter(Product.id.in_(product_ids)).all()
+        
+        if action == 'activate':
+            for product in products:
+                product.is_active = True
+            message = f'Activated {len(products)} products'
+            
+        elif action == 'deactivate':
+            for product in products:
+                product.is_active = False
+            message = f'Deactivated {len(products)} products'
+            
+        elif action == 'feature':
+            for product in products:
+                product.featured = True
+            message = f'Featured {len(products)} products'
+            
+        elif action == 'unfeature':
+            for product in products:
+                product.featured = False
+            message = f'Unfeatured {len(products)} products'
+            
+        elif action == 'delete':
+            # Check for orders first
+            products_with_orders = []
+            for product in products:
+                orders_count = ProductOrder.query.filter_by(product_id=product.id).count() if hasattr(globals().get('ProductOrder', None), 'product_id') else 0
+                if orders_count > 0:
+                    products_with_orders.append(product.name)
+            
+            if products_with_orders:
+                return {
+                    'success': False, 
+                    'error': f'Cannot delete products with orders: {", ".join(products_with_orders)}'
+                }, 400
+            
+            # Delete products
+            for product in products:
+                # Remove from carts first
+                ProductCartItem.query.filter_by(product_id=product.id).delete()
+                db.session.delete(product)
+            
+            message = f'Deleted {len(products)} products'
+            
+        else:
+            return {'success': False, 'error': 'Invalid action'}, 400
+        
+        db.session.commit()
+        return {'success': True, 'message': message}
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in bulk action: {e}")
+        return {'success': False, 'error': str(e)}, 500
+
+# Add a route to get product statistics (optional enhancement)
+@app.route('/admin/products/stats')
+@login_required
+def product_stats():
+    """Get product statistics for dashboard"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        total_products = Product.query.count()
+        active_products = Product.query.filter_by(is_active=True).count()
+        inactive_products = Product.query.filter_by(is_active=False).count()
+        featured_products = Product.query.filter_by(featured=True).count()
+        digital_products = Product.query.filter_by(product_type='Digital').count()
+        physical_products = Product.query.filter_by(product_type='Physical').count()
+        
+        # Low stock products (physical products with stock < 10)
+        low_stock_products = Product.query.filter(
+            Product.product_type == 'Physical',
+            Product.stock_quantity < 10,
+            Product.stock_quantity > 0
+        ).count()
+        
+        # Out of stock products
+        out_of_stock_products = Product.query.filter(
+            Product.product_type == 'Physical',
+            Product.stock_quantity == 0
+        ).count()
+        
+        # Categories
+        categories = db.session.query(Product.category, db.func.count(Product.id)).group_by(Product.category).all()
+        category_stats = [{'name': cat[0], 'count': cat[1]} for cat in categories if cat[0]]
+        
+        return {
+            'total_products': total_products,
+            'active_products': active_products,
+            'inactive_products': inactive_products,
+            'featured_products': featured_products,
+            'digital_products': digital_products,
+            'physical_products': physical_products,
+            'low_stock_products': low_stock_products,
+            'out_of_stock_products': out_of_stock_products,
+            'category_stats': category_stats
+        }
+        
+    except Exception as e:
+        print(f"Error getting product stats: {e}")
+        return {'error': str(e)}, 500
+
+# Add a route to export products (optional enhancement)
+@app.route('/admin/products/export')
+@login_required
+def export_products():
+    """Export products to CSV"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        import csv
+        from io import StringIO
+        from flask import Response
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'ID', 'Name', 'Description', 'Short Description', 'Price', 
+            'Product Type', 'Category', 'Brand', 'SKU', 'Stock Quantity',
+            'Image URL', 'Is Active', 'Featured', 'Created At'
+        ])
+        
+        # Write product data
+        products = Product.query.order_by(Product.created_at.desc()).all()
+        for product in products:
+            writer.writerow([
+                product.id,
+                product.name,
+                product.description,
+                product.short_description,
+                product.price,
+                product.product_type,
+                product.category,
+                product.brand,
+                product.sku,
+                product.stock_quantity,
+                product.image_url,
+                'Yes' if product.is_active else 'No',
+                'Yes' if product.featured else 'No',
+                product.created_at.strftime('%Y-%m-%d %H:%M:%S') if product.created_at else ''
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=products_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+        
+    except Exception as e:
+        flash(f'Error exporting products: {str(e)}', 'danger')
+        return redirect(url_for('admin_products'))
 
 # ========================================
 # ORDER MANAGEMENT ROUTES

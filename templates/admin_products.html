@@ -36,7 +36,7 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ product.name }}</td>
-                                    <td>${{ "%.2f"|format(product.price) }}</td>
+                                    <td>GMD{{ "%.2f"|format(product.price) }}</td>
                                     <td>{{ product.stock }}</td>
                                     <td>
                                         <span class="badge bg-{% if product.is_active %}success{% else %}secondary{% endif %}">

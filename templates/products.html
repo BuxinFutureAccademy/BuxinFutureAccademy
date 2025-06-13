@@ -86,7 +86,7 @@
                         <p class="card-text text-muted">{{ product.short_description or product.description[:100] + '...' }}</p>
                         <div class="mt-auto">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="h5 text-success mb-0">${{ "%.2f"|format(product.price) }}</span>
+                                <span class="h5 text-success mb-0">GMD {{ "%.2f"|format(product.price) }}</span>
                                 {% if product.product_type == 'Physical' %}
                                     {% if product.stock_quantity > 0 %}
                                         <small class="text-success">{{ product.stock_quantity }} in stock</small>

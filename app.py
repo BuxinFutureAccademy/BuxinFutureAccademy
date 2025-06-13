@@ -1117,47 +1117,6 @@ def delete_product(product_id):
     return redirect(url_for('admin_products'))
 
 
-@app.route('/admin/product/<int:product_id>/details')
-@login_required
-def product_details(product_id):
-    """Get product details for modal view"""
-    if not current_user.is_admin:
-        return {'error': 'Access denied'}, 403
-    
-    try:
-        product = Product.query.get_or_404(product_id)
-        
-        # Get sales count (safely handle if ProductOrder doesn't exist)
-        sales_count = 0
-        try:
-            sales_count = ProductOrder.query.filter_by(
-                product_id=product_id, 
-                status='completed'
-            ).count()
-        except:
-            pass  # Table might not exist or have different structure
-        
-        return {
-            'id': product.id,
-            'name': product.name,
-            'description': product.description,
-            'short_description': product.short_description,
-            'price': float(product.price),
-            'category': product.category,
-            'product_type': product.product_type,
-            'stock_quantity': product.stock_quantity,
-            'brand': product.brand,
-            'sku': product.sku,
-            'image_url': product.image_url,
-            'is_active': product.is_active,
-            'featured': product.featured,
-            'created_at': product.created_at.isoformat() if product.created_at else None,
-            'sales_count': sales_count
-        }
-        
-    except Exception as e:
-        print(f"Error getting product details: {e}")
-        return {'error': str(e)}, 500
 
 @app.route('/admin/products/bulk-action', methods=['POST'])
 @login_required
@@ -1445,9 +1404,6 @@ def import_products():
     # GET request - show import form
     return render_template('import_products.html')
 
-# ========================================
-# END PRODUCT MANAGEMENT ROUTES
-# ========================================
 # ========================================
 # ORDER MANAGEMENT ROUTES
 # ========================================

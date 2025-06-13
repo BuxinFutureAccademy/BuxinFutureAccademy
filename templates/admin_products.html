@@ -6,34 +6,20 @@
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-boxes me-2"></i>Manage Products</h2>
-                <div>
-                    <button class="btn btn-outline-primary me-2" onclick="exportProducts()">
-                        <i class="fas fa-download me-2"></i>Export
-                    </button>
-                    <a href="{{ url_for('create_product') }}" class="btn btn-success">
-                        <i class="fas fa-plus me-2"></i>Add New Product
-                    </a>
-                </div>
+                <a href="{{ url_for('create_product') }}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Add New Product
+                </a>
             </div>
 
-            <!-- Enhanced Product Statistics Cards -->
+            <!-- Product Statistics Cards -->
             <div class="row mb-4">
                 <div class="col-md-3">
-                    <div class="card bg-primary text-white stats-card">
+                    <div class="card bg-primary text-white">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">Total Products</h6>
                                     <h3>{{ products|length }}</h3>
-                                    <small class="opacity-75">
-                                        {% set week_ago = moment().subtract(days=7) if moment else none %}
-                                        {% if week_ago %}
-                                            {% set recent_products = products|selectattr('created_at', 'gt', week_ago) %}
-                                            +{{ recent_products|list|length }} this week
-                                        {% else %}
-                                            All products
-                                        {% endif %}
-                                    </small>
                                 </div>
                                 <i class="fas fa-boxes fa-2x opacity-50"></i>
                             </div>
@@ -41,15 +27,12 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card bg-success text-white stats-card">
+                    <div class="card bg-success text-white">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">Active Products</h6>
                                     <h3>{{ products|selectattr('is_active')|list|length }}</h3>
-                                    <small class="opacity-75">
-                                        {{ "%.0f"|format((products|selectattr('is_active')|list|length / products|length * 100) if products|length > 0 else 0) }}% of total
-                                    </small>
                                 </div>
                                 <i class="fas fa-check-circle fa-2x opacity-50"></i>
                             </div>
@@ -57,13 +40,12 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card bg-warning text-white stats-card">
+                    <div class="card bg-warning text-white">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">Low Stock</h6>
                                     <h3>{{ products|selectattr('stock_quantity', 'lt', 10)|selectattr('product_type', 'equalto', 'Physical')|list|length }}</h3>
-                                    <small class="opacity-75">Needs attention</small>
                                 </div>
                                 <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
                             </div>
@@ -71,15 +53,12 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card bg-info text-white stats-card">
+                    <div class="card bg-info text-white">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">Digital Products</h6>
                                     <h3>{{ products|selectattr('product_type', 'equalto', 'Digital')|list|length }}</h3>
-                                    <small class="opacity-75">
-                                        {{ "%.0f"|format((products|selectattr('product_type', 'equalto', 'Digital')|list|length / products|length * 100) if products|length > 0 else 0) }}% of total
-                                    </small>
                                 </div>
                                 <i class="fas fa-download fa-2x opacity-50"></i>
                             </div>
@@ -88,23 +67,17 @@
                 </div>
             </div>
 
-            <!-- Enhanced Filters and Search -->
+            <!-- Filters and Search -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="GET" class="row g-3" id="filterForm">
+                    <form method="GET" class="row g-3">
                         <div class="col-md-4">
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="search" id="searchInput" 
-                                       placeholder="Search products..." value="{{ request.args.get('search', '') }}">
-                                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+                            <input type="text" class="form-control" name="search" placeholder="Search products..." value="{{ request.args.get('search', '') }}">
                         </div>
-                        <div class="col-md-2">
-                            <select class="form-select" name="category" id="categoryFilter">
+                        <div class="col-md-3">
+                            <select class="form-select" name="category">
                                 <option value="">All Categories</option>
-                                {% for category in products|map(attribute='category')|unique|sort %}
+                                {% for category in products|map(attribute='category')|unique %}
                                     <option value="{{ category }}" {% if request.args.get('category') == category %}selected{% endif %}>
                                         {{ category }}
                                     </option>
@@ -112,20 +85,13 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <select class="form-select" name="status" id="statusFilter">
+                            <select class="form-select" name="status">
                                 <option value="">All Status</option>
                                 <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
                                 <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Inactive</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <select class="form-select" name="type" id="typeFilter">
-                                <option value="">All Types</option>
-                                <option value="Physical" {% if request.args.get('type') == 'Physical' %}selected{% endif %}>Physical</option>
-                                <option value="Digital" {% if request.args.get('type') == 'Digital' %}selected{% endif %}>Digital</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-outline-primary">
                                     <i class="fas fa-search"></i> Filter
@@ -139,66 +105,25 @@
                 </div>
             </div>
 
-            <!-- Bulk Actions (Hidden by default) -->
-            <div class="bulk-actions" id="bulkActions" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span id="selectedCount">0 products selected</span>
-                    <div>
-                        <button class="btn btn-sm btn-success me-2" onclick="bulkAction('activate')">
-                            <i class="fas fa-check me-1"></i>Activate Selected
-                        </button>
-                        <button class="btn btn-sm btn-secondary me-2" onclick="bulkAction('deactivate')">
-                            <i class="fas fa-pause me-1"></i>Deactivate Selected
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')">
-                            <i class="fas fa-trash me-1"></i>Delete Selected
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Enhanced Products Table -->
+            <!-- Products Table -->
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <span class="text-muted">Showing {{ products|length }} products</span>
-                        </div>
-                        <div>
-                            <select class="form-select form-select-sm" id="sortSelect" onchange="applySorting()" style="width: auto; display: inline-block;">
-                                <option value="created_at_desc" {% if request.args.get('sort') == 'created_at_desc' %}selected{% endif %}>Newest First</option>
-                                <option value="created_at_asc" {% if request.args.get('sort') == 'created_at_asc' %}selected{% endif %}>Oldest First</option>
-                                <option value="name_asc" {% if request.args.get('sort') == 'name_asc' %}selected{% endif %}>Name A-Z</option>
-                                <option value="name_desc" {% if request.args.get('sort') == 'name_desc' %}selected{% endif %}>Name Z-A</option>
-                                <option value="price_asc" {% if request.args.get('sort') == 'price_asc' %}selected{% endif %}>Price Low-High</option>
-                                <option value="price_desc" {% if request.args.get('sort') == 'price_desc' %}selected{% endif %}>Price High-Low</option>
-                            </select>
-                        </div>
-                    </div>
-                    
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th width="40">
-                                        <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
-                                    </th>
                                     <th width="80">Image</th>
                                     <th>Product Details</th>
                                     <th width="120">Price</th>
                                     <th width="100">Stock</th>
                                     <th width="100">Type</th>
                                     <th width="100">Status</th>
-                                    <th width="180">Actions</th>
+                                    <th width="150">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for product in products %}
-                                <tr id="product-{{ product.id }}" class="product-row {% if not product.is_active %}table-secondary{% endif %}">
-                                    <td>
-                                        <input type="checkbox" class="form-check-input product-checkbox" 
-                                               value="{{ product.id }}" onchange="toggleProductSelection({{ product.id }})">
-                                    </td>
+                                <tr id="product-{{ product.id }}" {% if not product.is_active %}class="table-secondary"{% endif %}>
                                     <td>
                                         {% if product.image_url %}
                                             <img src="{{ product.image_url }}" alt="{{ product.name }}" 
@@ -223,17 +148,9 @@
                                                 {% if product.brand %}
                                                     <span class="badge bg-outline-secondary">{{ product.brand }}</span>
                                                 {% endif %}
-                                                {% if product.featured %}
-                                                    <span class="badge bg-warning text-dark">Featured</span>
-                                                {% endif %}
                                             </small>
                                             {% if product.short_description %}
-                                                <p class="mb-0 small text-muted">
-                                                    {{ product.short_description[:50] }}{% if product.short_description|length > 50 %}...{% endif %}
-                                                </p>
-                                            {% endif %}
-                                            {% if product.sku %}
-                                                <small class="text-muted">SKU: {{ product.sku }}</small>
+                                                <p class="mb-0 small text-muted">{{ product.short_description[:50] }}{% if product.short_description|length > 50 %}...{% endif %}</p>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -245,9 +162,6 @@
                                                 ${{ "%.2f"|format(product.price) }}
                                             {% endif %}
                                         </strong>
-                                        {% if product.get_sales_count() > 0 %}
-                                            <br><small class="text-muted">{{ product.get_sales_count() }} sold</small>
-                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if product.product_type == 'Digital' %}
@@ -280,17 +194,11 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="d-flex gap-1 action-buttons">
+                                        <div class="d-flex gap-1">
                                             <!-- View Button -->
                                             <button class="btn btn-sm btn-outline-info" onclick="viewProduct({{ product.id }})" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            
-                                            <!-- Store Link Button -->
-                                            <a href="{{ url_for('product_detail', product_id=product.id) }}" 
-                                               class="btn btn-sm btn-outline-primary" title="View in Store" target="_blank">
-                                                <i class="fas fa-external-link-alt"></i>
-                                            </a>
                                             
                                             <!-- Edit Button -->
                                             <a href="{{ url_for('edit_product', product_id=product.id) }}" 
@@ -298,16 +206,9 @@
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             
-                                            <!-- Clone Button -->
-                                            <button class="btn btn-sm btn-outline-success" 
-                                                    onclick="cloneProduct({{ product.id }})" 
-                                                    title="Clone Product">
-                                                <i class="fas fa-copy"></i>
-                                            </button>
-                                            
                                             <!-- Delete Button -->
                                             <button class="btn btn-sm btn-danger" 
-                                                    onclick="confirmDelete({{ product.id }}, '{{ product.name|replace("'", "\\'") }}')" 
+                                                    onclick="confirmDelete({{ product.id }}, '{{ product.name }}')" 
                                                     title="Delete Product">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -316,14 +217,10 @@
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">
+                                    <td colspan="7" class="text-center text-muted py-4">
                                         <i class="fas fa-box-open fa-3x mb-3"></i>
                                         <h5>No products found</h5>
-                                        <p>{% if request.args.get('search') or request.args.get('category') or request.args.get('status') or request.args.get('type') %}
-                                            Try adjusting your search filters.
-                                           {% else %}
-                                            Create your first product to get started!
-                                           {% endif %}</p>
+                                        <p>Create your first product to get started!</p>
                                         <a href="{{ url_for('create_product') }}" class="btn btn-primary">
                                             <i class="fas fa-plus me-2"></i>Add New Product
                                         </a>
@@ -339,7 +236,7 @@
     </div>
 </div>
 
-<!-- Enhanced Product Details Modal -->
+<!-- Product Details Modal -->
 <div class="modal fade" id="productModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -352,14 +249,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="editCurrentProduct()">Edit Product</button>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Toast Container -->
-<div class="toast-container position-fixed top-0 end-0 p-3"></div>
 
 <!-- Hidden form for delete operations -->
 <form id="deleteForm" method="POST" style="display: none;">
@@ -367,12 +260,9 @@
 </form>
 
 <script>
-let selectedProducts = new Set();
-let currentProductId = null;
-
-// Enhanced product status toggle
+// Toggle product status via AJAX
 function toggleProductStatus(productId, isActive) {
-    fetch(`{{ url_for('toggle_product_status', product_id=0) }}`.replace('0', productId), {
+    fetch(`/admin/toggle-product-status/${productId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -395,24 +285,24 @@ function toggleProductStatus(productId, isActive) {
                 row.classList.add('table-secondary');
             }
             
-            showToast('Product status updated successfully!', 'success');
+            showAlert('Product status updated successfully!', 'success');
         } else {
-            showToast('Failed to update product status', 'danger');
+            showAlert('Failed to update product status', 'danger');
             // Revert checkbox
             document.getElementById(`status-${productId}`).checked = !isActive;
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('Error updating product status', 'danger');
+        showAlert('Error updating product status', 'danger');
         // Revert checkbox
         document.getElementById(`status-${productId}`).checked = !isActive;
     });
 }
 
-// Enhanced product viewer
+// View product details
 function viewProduct(productId) {
-    fetch(`{{ url_for('product_details', product_id=0) }}`.replace('0', productId))
+    fetch(`/admin/product/${productId}/details`)
     .then(response => response.json())
     .then(product => {
         const modalBody = document.getElementById('productModalBody');
@@ -428,401 +318,78 @@ function viewProduct(productId) {
                     <h4>${product.name}</h4>
                     <p class="text-muted">${product.description || 'No description available'}</p>
                     
-                    <div class="row mb-3">
+                    <div class="row">
                         <div class="col-6">
-                            <strong>Price:</strong> ${product.price === 0 ? 'FREE' : '$' + product.price.toFixed(2)}<br>
+                            <strong>Price:</strong> $${product.price.toFixed(2)}<br>
                             <strong>Category:</strong> ${product.category || 'N/A'}<br>
                             <strong>Type:</strong> ${product.product_type || 'Physical'}
                         </div>
                         <div class="col-6">
-                            <strong>Stock:</strong> ${product.product_type === 'Digital' ? 'Digital' : (product.stock_quantity || 0)}<br>
+                            <strong>Stock:</strong> ${product.product_type === 'Digital' ? 'Digital' : product.stock_quantity}<br>
                             <strong>Brand:</strong> ${product.brand || 'N/A'}<br>
                             <strong>SKU:</strong> ${product.sku || 'N/A'}
                         </div>
                     </div>
                     
-                    <div class="mb-3">
+                    <div class="mt-3">
                         <span class="badge ${product.is_active ? 'bg-success' : 'bg-secondary'}">
                             ${product.is_active ? 'Active' : 'Inactive'}
                         </span>
                         ${product.featured ? '<span class="badge bg-warning text-dark ms-2">Featured</span>' : ''}
                     </div>
-                    
-                    <div class="d-flex gap-2">
-                        <a href="${window.location.origin}{{ url_for('product_detail', product_id=0) }}".replace('0', product.id) 
-                           class="btn btn-outline-primary btn-sm" target="_blank">
-                            <i class="fas fa-external-link-alt me-1"></i>View in Store
-                        </a>
-                        <a href="${window.location.origin}{{ url_for('edit_product', product_id=0) }}".replace('0', product.id) 
-                           class="btn btn-primary btn-sm">
-                            <i class="fas fa-edit me-1"></i>Edit Product
-                        </a>
-                    </div>
                 </div>
             </div>
         `;
         
-        currentProductId = product.id;
         new bootstrap.Modal(document.getElementById('productModal')).show();
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('Error loading product details', 'danger');
+        showAlert('Error loading product details', 'danger');
     });
 }
 
-// Product selection functions
-function toggleProductSelection(productId) {
-    const checkbox = document.querySelector(`input[value="${productId}"]`);
-    const row = document.getElementById(`product-${productId}`);
-    
-    if (checkbox.checked) {
-        selectedProducts.add(productId);
-        row.classList.add('selected');
-    } else {
-        selectedProducts.delete(productId);
-        row.classList.remove('selected');
-    }
-    
-    updateBulkActions();
-    updateSelectAllCheckbox();
-}
-
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.product-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-        const productId = parseInt(checkbox.value);
-        const row = document.getElementById(`product-${productId}`);
-        
-        if (selectAll.checked) {
-            selectedProducts.add(productId);
-            row.classList.add('selected');
-        } else {
-            selectedProducts.delete(productId);
-            row.classList.remove('selected');
-        }
-    });
-    
-    updateBulkActions();
-}
-
-function updateSelectAllCheckbox() {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.product-checkbox');
-    const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
-    
-    if (checkedBoxes.length === 0) {
-        selectAll.indeterminate = false;
-        selectAll.checked = false;
-    } else if (checkedBoxes.length === checkboxes.length) {
-        selectAll.indeterminate = false;
-        selectAll.checked = true;
-    } else {
-        selectAll.indeterminate = true;
-        selectAll.checked = false;
-    }
-}
-
-function updateBulkActions() {
-    const bulkActions = document.getElementById('bulkActions');
-    const selectedCount = document.getElementById('selectedCount');
-    
-    if (selectedProducts.size > 0) {
-        bulkActions.style.display = 'block';
-        selectedCount.textContent = `${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} selected`;
-    } else {
-        bulkActions.style.display = 'none';
-    }
-}
-
-// Bulk actions
-function bulkAction(action) {
-    if (selectedProducts.size === 0) {
-        showToast('Please select products first', 'warning');
-        return;
-    }
-    
-    let message = '';
-    switch(action) {
-        case 'activate':
-            message = `Are you sure you want to activate ${selectedProducts.size} selected products?`;
-            break;
-        case 'deactivate':
-            message = `Are you sure you want to deactivate ${selectedProducts.size} selected products?`;
-            break;
-        case 'delete':
-            message = `Are you sure you want to delete ${selectedProducts.size} selected products? This action cannot be undone.`;
-            break;
-    }
-    
-    if (confirm(message)) {
-        // Send request to backend for bulk action
-        fetch('{{ url_for("bulk_product_action") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: action,
-                product_ids: Array.from(selectedProducts)
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast(data.message || `Bulk ${action} operation completed!`, 'success');
-                // Refresh the page to show updated data
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                showToast(data.error || 'Operation failed', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Error performing bulk operation', 'danger');
-        });
-        
-        selectedProducts.clear();
-        updateBulkActions();
-    }
-}
-
-// Enhanced search and filter functions
-function clearSearch() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('filterForm').submit();
-}
-
-function applySorting() {
-    const sortValue = document.getElementById('sortSelect').value;
-    const url = new URL(window.location);
-    url.searchParams.set('sort', sortValue);
-    window.location = url;
-}
-
-// Product cloning
-function cloneProduct(productId) {
-    if (confirm('Create a copy of this product?')) {
-        fetch('{{ url_for("clone_product", product_id=0) }}'.replace('0', productId), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Product cloned successfully!', 'success');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                showToast('Error cloning product', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Error cloning product', 'danger');
-        });
-    }
-}
-
-// Enhanced delete confirmation
+// Confirm delete
 function confirmDelete(productId, productName) {
-    if (confirm(`Are you sure you want to delete "${productName}"?\n\nThis action cannot be undone and will also remove:\n- Any related orders\n- Shopping cart items\n- Sales history\n\nContinue with deletion?`)) {
+    if (confirm(`Are you sure you want to delete "${productName}"?\n\nThis action cannot be undone.`)) {
         const form = document.getElementById('deleteForm');
-        form.action = `{{ url_for('delete_product', product_id=0) }}`.replace('0', productId);
+        form.action = `/admin/delete_product/${productId}`;
         form.submit();
     }
 }
 
-// Export functionality
-function exportProducts() {
-    // Create CSV export
-    const rows = document.querySelectorAll('tbody tr');
-    let csv = 'Product Name,Category,Type,Price,Stock,Status,Brand,SKU\n';
-    
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length > 7) { // Make sure it's a product row, not the "no products" row
-            const name = cells[2].querySelector('h6')?.textContent.trim() || '';
-            const badges = cells[2].querySelectorAll('.badge');
-            const category = badges[0]?.textContent.trim() || '';
-            const brand = badges[1]?.textContent.trim() || '';
-            const type = cells[5].textContent.trim();
-            const price = cells[3].textContent.trim().replace(/\$/g, '');
-            const stock = cells[4].textContent.trim();
-            const status = cells[6].textContent.trim();
-            const sku = cells[2].textContent.includes('SKU:') ? 
-                       cells[2].textContent.split('SKU:')[1].trim() : '';
-            
-            csv += `"${name}","${category}","${type}","${price}","${stock}","${status}","${brand}","${sku}"\n`;
-        }
-    });
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `products_export_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    
-    showToast('Products exported successfully!', 'success');
-}
-
-// Enhanced toast notifications
-function showToast(message, type = 'info') {
-    const toastContainer = document.querySelector('.toast-container');
-    const toastId = 'toast-' + Date.now();
-    
-    const toastHTML = `
-        <div class="toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="fas fa-${type === 'success' ? 'check-circle text-success' : 
-                                 type === 'danger' ? 'exclamation-circle text-danger' : 
-                                 type === 'warning' ? 'exclamation-triangle text-warning' : 
-                                 'info-circle text-info'} me-2"></i>
-                <strong class="me-auto">Product Manager</strong>
-                <small class="text-muted">just now</small>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
+// Show alert messages
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    const toast = new bootstrap.Toast(document.getElementById(toastId));
-    toast.show();
+    document.body.appendChild(alertDiv);
     
-    // Auto remove after 5 seconds
     setTimeout(() => {
-        const toastElement = document.getElementById(toastId);
-        if (toastElement) {
-            toastElement.remove();
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
         }
-    }, 5000);
+    }, 3000);
 }
 
-// Edit current product in modal
-function editCurrentProduct() {
-    if (currentProductId) {
-        window.location.href = `{{ url_for('edit_product', product_id=0) }}`.replace('0', currentProductId);
-    }
-}
-
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    // Show flash messages as toasts
-    {% for category, message in get_flashed_messages(with_categories=true) %}
-        showToast('{{ message|safe }}', '{{ "danger" if category == "error" else category }}');
-    {% endfor %}
-    
-    // Auto-refresh stats every 30 seconds (optional)
-    // setInterval(() => {
-    //     fetch(window.location.href + '?ajax=stats')
-    //     .then(response => response.json())
-    //     .then(data => {
-    //         // Update stats cards
-    //     });
-    // }, 30000);
-});
-
-// Real-time search (debounced)
-let searchTimeout;
-document.getElementById('searchInput').addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        document.getElementById('filterForm').submit();
-    }, 500);
-});
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // Ctrl/Cmd + A to select all
-    if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.target.matches('input, textarea')) {
-        e.preventDefault();
-        document.getElementById('selectAll').click();
-    }
-    
-    // Escape to clear selection
-    if (e.key === 'Escape') {
-        selectedProducts.clear();
-        document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
-        document.querySelectorAll('.product-row').forEach(row => row.classList.remove('selected'));
-        updateBulkActions();
-        updateSelectAllCheckbox();
-    }
-    
-    // Ctrl/Cmd + E to export
-    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        exportProducts();
-    }
-});
+// Auto-refresh every 30 seconds (optional)
+// setInterval(() => {
+//     window.location.reload();
+// }, 30000);
 </script>
 
 <style>
-.stats-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    cursor: pointer;
-}
-
-.stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.action-buttons {
-    opacity: 0.7;
-    transition: opacity 0.2s ease-in-out;
-}
-
-.action-buttons:hover {
-    opacity: 1;
-}
-
-.bulk-actions {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.product-row {
-    transition: all 0.2s ease-in-out;
-}
-
-.product-row.selected {
-    background-color: rgba(13, 110, 253, 0.1) !important;
-    border-left: 3px solid #0d6efd;
-}
-
-.product-row:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
 .table-responsive {
     border-radius: 0.375rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .img-thumbnail {
     border: 2px solid #dee2e6;
-    transition: transform 0.2s ease-in-out;
-}
-
-.img-thumbnail:hover {
-    transform: scale(1.1);
 }
 
 .form-switch {
@@ -842,24 +409,15 @@ document.addEventListener('keydown', function(e) {
     opacity: 0.5;
 }
 
-/* Loading states */
+/* Hover effects */
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Loading animation */
 .loading {
     opacity: 0.6;
     pointer-events: none;
-}
-
-.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -867,127 +425,8 @@ document.addEventListener('keydown', function(e) {
     100% { transform: rotate(360deg); }
 }
 
-/* Search highlighting */
-.search-highlight {
-    background-color: #fff3cd;
-    padding: 0.1rem 0.2rem;
-    border-radius: 0.2rem;
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .action-buttons {
-        flex-direction: column;
-        gap: 0.25rem !important;
-    }
-    
-    .stats-card {
-        margin-bottom: 1rem;
-    }
-    
-    .table-responsive {
-        font-size: 0.875rem;
-    }
-    
-    .btn-sm {
-        padding: 0.125rem 0.25rem;
-        font-size: 0.75rem;
-    }
-}
-
-/* Print styles */
-@media print {
-    .action-buttons,
-    .bulk-actions,
-    .btn,
-    .form-switch {
-        display: none !important;
-    }
-    
-    .table {
-        font-size: 0.8rem;
-    }
-    
-    .stats-card {
-        break-inside: avoid;
-    }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .stats-card:hover {
-        box-shadow: 0 4px 15px rgba(255,255,255,0.1);
-    }
-    
-    .bulk-actions {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-        border-color: #4a5568;
-    }
-    
-    .search-highlight {
-        background-color: #744210;
-        color: #fefcbf;
-    }
-}
-
-/* Animation for new products */
-@keyframes slideInFromTop {
-    0% {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.product-row.new-product {
-    animation: slideInFromTop 0.5s ease-out;
-}
-
-/* Status indicator animations */
-.badge {
-    transition: all 0.3s ease;
-}
-
-.form-switch .form-check-input:checked {
-    background-color: #198754;
-    border-color: #198754;
-}
-
-.form-switch .form-check-input:focus {
-    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-}
-
-/* Tooltip improvements */
-[title] {
-    position: relative;
-}
-
-/* Enhanced focus states for accessibility */
-.btn:focus,
-.form-control:focus,
-.form-select:focus,
-.form-check-input:focus {
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-/* Loading skeleton for slow connections */
-.skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
+.fa-spin {
+    animation: spin 1s linear infinite;
 }
 </style>
-
 {% endblock %}

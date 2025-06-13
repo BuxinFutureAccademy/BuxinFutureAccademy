@@ -812,48 +812,32 @@ def admin_products():
     products = Product.query.order_by(Product.created_at.desc()).all()
     return render_template('admin_products.html', products=products)
 
-@app.route('/admin/create_product', methods=['GET', 'POST'])
+@app.route('/admin/create_product_test', methods=['GET', 'POST'])
 @login_required
-def create_product():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        short_description = request.form.get('short_description', '')
-        price = float(request.form['price'])
-        product_type = request.form['product_type']
-        category = request.form['category']
-        brand = request.form.get('brand', '')
-        sku = request.form.get('sku', '')
-        stock_quantity = int(request.form.get('stock_quantity', 0))
-        image_url = request.form.get('image_url', '')
-        featured = 'featured' in request.form
+def create_product_test():
+    try:
+        if not current_user.is_admin:
+            return "Access denied", 403
         
-        product = Product(
-            name=name,
-            description=description,
-            short_description=short_description,
-            price=price,
-            product_type=product_type,
-            category=category,
-            brand=brand,
-            sku=sku,
-            stock_quantity=stock_quantity,
-            image_url=image_url,
-            featured=featured,
-            created_by=current_user.id
+        # Return simple HTML without template
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head><title>Test</title></head>
+        <body>
+            <h1>Create Product Test Page</h1>
+            <p>If you see this, the route works!</p>
+            <p>User: {}</p>
+            <p>Is Admin: {}</p>
+        </body>
+        </html>
+        """.format(
+            current_user.username if current_user.is_authenticated else 'None',
+            current_user.is_admin if current_user.is_authenticated else 'N/A'
         )
         
-        db.session.add(product)
-        db.session.commit()
-        
-        flash('Product created successfully!', 'success')
-        return redirect(url_for('admin_products'))
-    
-    return render_template('create_product.html')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
 
 
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])

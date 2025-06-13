@@ -797,66 +797,190 @@ body::before {
                 </div>
             </div>
 
-            <!-- Manage Classes Tab -->
-            <div class="tab-content" id="manage-classes">
-                <div class="row">
-                    <div class="col-lg-6 mb-4">
-                        <div class="modern-card">
-                            <div class="modern-card-header">
-                                <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
-                            </div>
-                            <div class="modern-card-body">
-                                {% for class in individual_classes %}
-                                    <div class="class-item">
-                                        <h6 class="class-name">{{ class.name }}</h6>
-                                        <p class="class-description">{{ class.description or 'No description provided' }}</p>
-                                        <div class="class-students">
-                                            <i class="fas fa-users me-1"></i>{{ class.students|length }} student(s) enrolled
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="empty-state">
-                                        <i class="fas fa-user-plus"></i>
-                                        <h5>No individual classes created yet</h5>
-                                        <p>Create your first individual class to get started.</p>
-                                        <a href="{{ url_for('create_class') }}" class="btn btn-primary">Create First Class</a>
-                                    </div>
-                                {% endfor %}
-                            </div>
+            <!-- 2. MISSING: Updated Manage Classes Tab with Edit/Delete functionality -->
+<!-- Replace the current manage-classes tab with this: -->
+<div class="tab-content" id="manage-classes">
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
+                </div>
+                <div class="modern-card-body">
+                    {% if individual_classes %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Class Name</th>
+                                        <th>Students</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for class in individual_classes %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>{{ class.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ class.description or 'No description' }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ class.students|length }} students</span>
+                                        </td>
+                                        <td>{{ class.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('edit_class', class_type='individual', class_id=class.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteModal{{ class.id }}individual">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Delete Modal for Individual Class -->
+                                            <div class="modal fade" id="deleteModal{{ class.id }}individual" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Delete Individual Class</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Are you sure you want to delete <strong>"{{ class.name }}"</strong>?</p>
+                                                            <div class="alert alert-warning">
+                                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                                <small>This will delete all associated learning materials and enrollments.</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <form method="POST" action="{{ url_for('delete_class', class_type='individual', class_id=class.id) }}" style="display: inline;">
+                                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-plus"></i>
+                            <h5>No individual classes created yet</h5>
+                            <p>Create your first individual class to get started.</p>
+                            <a href="{{ url_for('create_class') }}" class="modern-btn">Create First Class</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
-                    <div class="col-lg-6 mb-4">
-                        <div class="modern-card">
-                            <div class="modern-card-header warning">
-                                <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
-                            </div>
-                            <div class="modern-card-body">
-                                {% for class in group_classes %}
-                                    <div class="class-item">
-                                        <h6 class="class-name">{{ class.name }}</h6>
-                                        <p class="class-description">{{ class.description or 'No description provided' }}</p>
-                                        <div class="class-students">
-                                            <i class="fas fa-users me-1"></i>{{ class.students|length }}/{{ class.max_students }} students
-                                            <div class="progress mt-2">
+        <div class="col-lg-6 mb-4">
+            <div class="modern-card">
+                <div class="modern-card-header warning">
+                    <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
+                </div>
+                <div class="modern-card-body">
+                    {% if group_classes %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Class Name</th>
+                                        <th>Enrollment</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for class in group_classes %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>{{ class.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ class.description or 'No description' }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ class.students|length }}/{{ class.max_students }}</span>
+                                            {% if class.students|length >= class.max_students %}
+                                                <span class="badge bg-danger">Full</span>
+                                            {% endif %}
+                                            <div class="progress mt-1" style="height: 3px;">
                                                 <div class="progress-bar" role="progressbar" 
                                                      style="width: {{ (class.students|length / class.max_students * 100) if class.max_students > 0 else 0 }}%"></div>
                                             </div>
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="empty-state">
-                                        <i class="fas fa-users"></i>
-                                        <h5>No group classes created yet</h5>
-                                        <p>Create your first group class to get started.</p>
-                                        <a href="{{ url_for('create_class') }}" class="btn btn-warning">Create First Group</a>
-                                    </div>
-                                {% endfor %}
-                            </div>
+                                        </td>
+                                        <td>{{ class.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('edit_class', class_type='group', class_id=class.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteModal{{ class.id }}group">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Delete Modal for Group Class -->
+                                            <div class="modal fade" id="deleteModal{{ class.id }}group" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Delete Group Class</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Are you sure you want to delete <strong>"{{ class.name }}"</strong>?</p>
+                                                            <div class="alert alert-warning">
+                                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                                <small>This will delete all associated learning materials and enrollments.</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <form method="POST" action="{{ url_for('delete_class', class_type='group', class_id=class.id) }}" style="display: inline;">
+                                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <h5>No group classes created yet</h5>
+                            <p>Create your first group class to get started.</p>
+                            <a href="{{ url_for('create_class') }}" class="modern-btn">Create First Group</a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
+</div>
 
             <!-- Stats Cards -->
             <div class="row mt-4 g-4">
@@ -1166,190 +1290,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<!-- 2. MISSING: Updated Manage Classes Tab with Edit/Delete functionality -->
-<!-- Replace the current manage-classes tab with this: -->
-<div class="tab-content" id="manage-classes">
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="modern-card">
-                <div class="modern-card-header">
-                    <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
-                </div>
-                <div class="modern-card-body">
-                    {% if individual_classes %}
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Class Name</th>
-                                        <th>Students</th>
-                                        <th>Created</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for class in individual_classes %}
-                                    <tr>
-                                        <td>
-                                            <div>
-                                                <strong>{{ class.name }}</strong>
-                                                <br>
-                                                <small class="text-muted">{{ class.description or 'No description' }}</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info">{{ class.students|length }} students</span>
-                                        </td>
-                                        <td>{{ class.created_at.strftime('%Y-%m-%d') }}</td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ url_for('edit_class', class_type='individual', class_id=class.id) }}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#deleteModal{{ class.id }}individual">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                            
-                                            <!-- Delete Modal for Individual Class -->
-                                            <div class="modal fade" id="deleteModal{{ class.id }}individual" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Delete Individual Class</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <p>Are you sure you want to delete <strong>"{{ class.name }}"</strong>?</p>
-                                                            <div class="alert alert-warning">
-                                                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                                                <small>This will delete all associated learning materials and enrollments.</small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            <form method="POST" action="{{ url_for('delete_class', class_type='individual', class_id=class.id) }}" style="display: inline;">
-                                                                <button type="submit" class="btn btn-danger">Delete</button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-user-plus"></i>
-                            <h5>No individual classes created yet</h5>
-                            <p>Create your first individual class to get started.</p>
-                            <a href="{{ url_for('create_class') }}" class="modern-btn">Create First Class</a>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
 
-        <div class="col-lg-6 mb-4">
-            <div class="modern-card">
-                <div class="modern-card-header warning">
-                    <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
-                </div>
-                <div class="modern-card-body">
-                    {% if group_classes %}
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Class Name</th>
-                                        <th>Enrollment</th>
-                                        <th>Created</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for class in group_classes %}
-                                    <tr>
-                                        <td>
-                                            <div>
-                                                <strong>{{ class.name }}</strong>
-                                                <br>
-                                                <small class="text-muted">{{ class.description or 'No description' }}</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info">{{ class.students|length }}/{{ class.max_students }}</span>
-                                            {% if class.students|length >= class.max_students %}
-                                                <span class="badge bg-danger">Full</span>
-                                            {% endif %}
-                                            <div class="progress mt-1" style="height: 3px;">
-                                                <div class="progress-bar" role="progressbar" 
-                                                     style="width: {{ (class.students|length / class.max_students * 100) if class.max_students > 0 else 0 }}%"></div>
-                                            </div>
-                                        </td>
-                                        <td>{{ class.created_at.strftime('%Y-%m-%d') }}</td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ url_for('edit_class', class_type='group', class_id=class.id) }}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#deleteModal{{ class.id }}group">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                            
-                                            <!-- Delete Modal for Group Class -->
-                                            <div class="modal fade" id="deleteModal{{ class.id }}group" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Delete Group Class</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <p>Are you sure you want to delete <strong>"{{ class.name }}"</strong>?</p>
-                                                            <div class="alert alert-warning">
-                                                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                                                <small>This will delete all associated learning materials and enrollments.</small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            <form method="POST" action="{{ url_for('delete_class', class_type='group', class_id=class.id) }}" style="display: inline;">
-                                                                <button type="submit" class="btn btn-danger">Delete</button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-users"></i>
-                            <h5>No group classes created yet</h5>
-                            <p>Create your first group class to get started.</p>
-                            <a href="{{ url_for('create_class') }}" class="modern-btn">Create First Group</a>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- 3. MISSING: Additional CSS for table styling -->
 <style>

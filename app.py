@@ -815,22 +815,124 @@ def admin_products():
 @app.route('/admin/create_product', methods=['GET', 'POST'])
 @login_required
 def create_product():
-    print(f"DEBUG: create_product route accessed")
-    print(f"DEBUG: User authenticated: {current_user.is_authenticated}")
-    print(f"DEBUG: User is admin: {current_user.is_admin if current_user.is_authenticated else 'N/A'}")
-    print(f"DEBUG: Request method: {request.method}")
-    
     if not current_user.is_admin:
-        print("DEBUG: Access denied - user is not admin")
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
     
-    print("DEBUG: Admin access granted, rendering template")
-    
     if request.method == 'POST':
-        print("DEBUG: Processing POST request")
-        # ... rest of your POST logic
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            short_description = request.form.get('short_description', '').strip()
+            price = request.form.get('price', '0')
+            product_type = request.form.get('product_type', '').strip()
+            category = request.form.get('category', '').strip()
+            brand = request.form.get('brand', '').strip()
+            sku = request.form.get('sku', '').strip()
+            stock_quantity = request.form.get('stock_quantity', '0')
+            image_url = request.form.get('image_url', '').strip()
+            is_active = 'is_active' in request.form
+            featured = 'featured' in request.form
+            
+            # Validate required fields
+            if not all([name, description, price, product_type, category]):
+                flash('Please fill in all required fields (Name, Description, Price, Type, Category).', 'danger')
+                return render_template('create_product.html')
+            
+            # Validate and convert price
+            try:
+                price = float(price)
+                if price < 0:
+                    flash('Price must be a positive number.', 'danger')
+                    return render_template('create_product.html')
+            except ValueError:
+                flash('Please enter a valid price.', 'danger')
+                return render_template('create_product.html')
+            
+            # Validate and convert stock quantity
+            try:
+                stock_quantity = int(stock_quantity)
+                if stock_quantity < 0:
+                    flash('Stock quantity must be a positive number.', 'danger')
+                    return render_template('create_product.html')
+            except ValueError:
+                flash('Please enter a valid stock quantity.', 'danger')
+                return render_template('create_product.html')
+            
+            # Auto-generate SKU if not provided
+            if not sku:
+                # Create SKU from product name
+                base_sku = name.upper().replace(' ', '-').replace('&', 'AND')
+                # Remove special characters and limit length
+                base_sku = ''.join(c for c in base_sku if c.isalnum() or c == '-')[:10]
+                
+                # Check if SKU exists and make it unique
+                counter = 1
+                sku = f"{base_sku}-{counter:03d}"
+                while Product.query.filter_by(sku=sku).first():
+                    counter += 1
+                    sku = f"{base_sku}-{counter:03d}"
+            else:
+                # Check if provided SKU already exists
+                existing_product = Product.query.filter_by(sku=sku).first()
+                if existing_product:
+                    flash(f'SKU "{sku}" already exists. Please choose a different SKU.', 'danger')
+                    return render_template('create_product.html')
+            
+            # For digital products, set stock to 0
+            if product_type == 'Digital':
+                stock_quantity = 0
+            
+            # Validate image URL if provided
+            if image_url:
+                try:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(image_url)
+                    if not all([parsed.scheme, parsed.netloc]):
+                        flash('Please enter a valid image URL.', 'warning')
+                        image_url = ''
+                except:
+                    flash('Please enter a valid image URL.', 'warning')
+                    image_url = ''
+            
+            # Create the product
+            product = Product(
+                name=name,
+                description=description,
+                short_description=short_description,
+                price=price,
+                product_type=product_type,
+                category=category,
+                brand=brand,
+                sku=sku,
+                stock_quantity=stock_quantity,
+                image_url=image_url,
+                is_active=is_active,
+                featured=featured,
+                created_by=current_user.id
+            )
+            
+            # Save to database
+            db.session.add(product)
+            db.session.commit()
+            
+            # Success message
+            flash(f'Product "{product.name}" created successfully!', 'success')
+            
+            # Redirect to products list or stay on create page
+            if request.form.get('action') == 'save_and_new':
+                return redirect(url_for('create_product'))
+            else:
+                return redirect(url_for('admin_products'))
+                
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating product: {str(e)}', 'danger')
+            print(f"Error creating product: {e}")
+            return render_template('create_product.html')
     
+    # GET request - show the form
     return render_template('create_product.html')
 
 

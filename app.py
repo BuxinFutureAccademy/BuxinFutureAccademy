@@ -812,7 +812,7 @@ def admin_products():
     products = Product.query.order_by(Product.created_at.desc()).all()
     return render_template('admin_products.html', products=products)
 
-@app.route('/admin/create_product_test', methods=['GET', 'POST'])
+@app.route('/admin/create_product', methods=['GET', 'POST'])
 @login_required
 def create_product_test():
     try:

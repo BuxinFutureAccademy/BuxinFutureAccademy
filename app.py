@@ -2278,8 +2278,6 @@ def admin_enrollments():
 
 
 
-# Add these routes to your Flask application after the create_class route..............................................................................................................................
-
 @app.route('/admin/edit_class/<class_type>/<int:class_id>', methods=['GET', 'POST'])
 @login_required
 def edit_class(class_type, class_id):
@@ -2405,7 +2403,6 @@ def delete_class(class_type, class_id):
     
     return redirect(url_for('admin_dashboard'))
 
-# Add these routes to your Flask application after the create_class route............................................................................................................................../////////////////................
 
 # Add these routes to handle the new features:
 
@@ -2447,7 +2444,6 @@ def product_details(product_id):
         'is_active': product.is_active,
         'featured': product.featured
     }
-...........................................................................................................................................................................................................................
 
 # ========================================
 # SAMPLE DATA CREATION
@@ -2644,7 +2640,7 @@ def create_sample_data():
         print(f"Error creating sample data: {e}")
         db.session.rollback()
 
-........................................................................................................................................................................................
+
 @app.route('/api/notify-course/<int:course_id>', methods=['POST'])
 def notify_course(course_id):
     # Save user interest in course
@@ -2655,7 +2651,7 @@ def notify_course(course_id):
 def subscribe_updates():
     # Save email for course updates
     pass
-..............................................................................................................................................................................................
+
 # ========================================
 # APPLICATION STARTUP
 # ========================================

@@ -41,7 +41,7 @@
                                 <div class="col-8">
                                     <h6>{{ order.course.title }}</h6>
                                     <p class="text-muted mb-1">{{ order.course.short_description[:50] }}...</p>
-                                    <p class="text-success mb-1"><strong>${{ "%.2f"|format(order.amount) }}</strong></p>
+                                    <p class="text-success mb-1"><strong>GMD {{ "%.2f"|format(order.amount) }}</strong></p>
                                     <p class="text-muted mb-0"><small>{{ order.purchased_at.strftime('%Y-%m-%d %H:%M') }}</small></p>
                                 </div>
                             </div>

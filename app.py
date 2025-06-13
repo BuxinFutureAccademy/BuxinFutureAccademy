@@ -1857,11 +1857,18 @@ def available_classes():
 @app.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])
 @login_required
 def enroll_class(class_type, class_id):
+    # Validate class type
+    if class_type not in ['individual', 'group']:
+        flash('Invalid class type!', 'danger')
+        return redirect(url_for('available_classes'))
+    
+    # Get the class object based on type
     if class_type == 'individual':
         class_obj = IndividualClass.query.get_or_404(class_id)
     else:
         class_obj = GroupClass.query.get_or_404(class_id)
     
+    # Check if user is already enrolled
     existing_enrollment = ClassEnrollment.query.filter_by(
         user_id=current_user.id,
         class_id=class_id,
@@ -1873,58 +1880,138 @@ def enroll_class(class_type, class_id):
         flash('You are already enrolled in this class!', 'info')
         return redirect(url_for('student_dashboard'))
     
+    # Check if there's a pending enrollment
+    pending_enrollment = ClassEnrollment.query.filter_by(
+        user_id=current_user.id,
+        class_id=class_id,
+        class_type=class_type,
+        status='pending'
+    ).first()
+    
+    if pending_enrollment:
+        flash('You already have a pending enrollment for this class. Please wait for admin approval.', 'info')
+        return redirect(url_for('student_dashboard'))
+    
+    # Set dynamic pricing based on class type
+    if class_type == 'individual':
+        class_fee = 100.00  # $100 for individual classes
+        currency = '$'
+        fee_display = f'${class_fee:.0f}'
+    else:
+        class_fee = 1000.00  # D1000 for group classes
+        currency = 'D'
+        fee_display = f'D{class_fee:.0f}'
+    
     if request.method == 'POST':
+        # Get form data
         payment_method = request.form.get('payment_method')
-        full_name = request.form.get('full_name')
-        phone = request.form.get('phone')
-        email = request.form.get('email')
-        address = request.form.get('address')
+        full_name = request.form.get('full_name', '').strip()
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+        address = request.form.get('address', '').strip()
         
-        payment_proof = request.files.get('payment_proof')
-        proof_filename = None
-        if payment_proof and allowed_file(payment_proof.filename):
-            filename = secure_filename(payment_proof.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-            filename = timestamp + filename
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            payment_proof.save(filepath)
-            proof_filename = filename
+        # Validate required fields
+        if not all([payment_method, full_name, phone, email, address]):
+            flash('All fields are required!', 'danger')
+            return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
         
+        # Validate payment method
         valid_methods = ['bank_transfer', 'wave', 'western_union', 'moneygram', 'ria']
         if payment_method not in valid_methods:
             flash('Please select a valid payment method', 'danger')
             return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
         
-        enrollment = ClassEnrollment(
-            user_id=current_user.id,
-            class_id=class_id,
-            class_type=class_type,
-            amount=100.00,
-            status='pending',
-            payment_method=payment_method,
-            transaction_id=str(uuid.uuid4())[:8],
-            customer_name=full_name,
-            customer_phone=phone,
-            customer_email=email,
-            customer_address=address,
-            payment_proof=proof_filename
-        )
+        # Handle payment proof upload
+        payment_proof = request.files.get('payment_proof')
+        proof_filename = None
         
-        db.session.add(enrollment)
+        if payment_proof and payment_proof.filename:
+            if allowed_file(payment_proof.filename):
+                try:
+                    # Check file size (max 5MB)
+                    payment_proof.seek(0, 2)  # Seek to end
+                    file_size = payment_proof.tell()
+                    payment_proof.seek(0)  # Seek back to beginning
+                    
+                    if file_size > 5 * 1024 * 1024:  # 5MB limit
+                        flash('Payment proof file is too large. Maximum size is 5MB.', 'danger')
+                        return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
+                    
+                    # Save the file
+                    filename = secure_filename(payment_proof.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                    unique_filename = f"{timestamp}enrollment_{class_type}_{class_id}_{current_user.id}_{filename}"
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                    payment_proof.save(filepath)
+                    proof_filename = unique_filename
+                    
+                except Exception as e:
+                    flash(f'Error uploading payment proof: {str(e)}', 'danger')
+                    return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
+            else:
+                flash('Invalid file type for payment proof. Please upload an image or PDF file.', 'danger')
+                return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
+        else:
+            flash('Payment proof is required!', 'danger')
+            return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
         
+        # Check group class capacity before enrollment
         if class_type == 'group':
             if len(class_obj.students) >= class_obj.max_students:
                 flash('This group class is already full!', 'danger')
                 return redirect(url_for('available_classes'))
-            class_obj.students.append(current_user)
-        else:
-            class_obj.students.append(current_user)
         
-        db.session.commit()
-        
-        flash('Enrollment submitted successfully! Our team will verify your payment and you will receive access once confirmed.', 'success')
-        return redirect(url_for('student_dashboard'))
+        try:
+            # Create enrollment record
+            enrollment = ClassEnrollment(
+                user_id=current_user.id,
+                class_id=class_id,
+                class_type=class_type,
+                amount=class_fee,  # Dynamic amount based on class type
+                status='pending',
+                payment_method=payment_method,
+                transaction_id=str(uuid.uuid4())[:8].upper(),
+                customer_name=full_name,
+                customer_phone=phone,
+                customer_email=email,
+                customer_address=address,
+                payment_proof=proof_filename
+            )
+            
+            db.session.add(enrollment)
+            db.session.commit()
+            
+            # Send notification email to admin (optional)
+            try:
+                admin_users = User.query.filter_by(is_admin=True).all()
+                if admin_users:
+                    subject = f"New Class Enrollment - {class_obj.name}"
+                    message = f"""
+A new enrollment has been submitted:
+
+Class: {class_obj.name} ({class_type.title()})
+Student: {full_name} ({current_user.username})
+Email: {email}
+Phone: {phone}
+Amount: {fee_display}
+Payment Method: {payment_method.replace('_', ' ').title()}
+Transaction ID: {enrollment.transaction_id}
+
+Please review and approve the enrollment in the admin dashboard.
+"""
+                    send_bulk_email(admin_users, subject, message)
+            except Exception as e:
+                print(f"Failed to send admin notification: {e}")
+            
+            flash(f'Enrollment submitted successfully! You will receive access to the class once our team verifies your payment of {fee_display}.', 'success')
+            return redirect(url_for('student_dashboard'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error processing enrollment: {str(e)}', 'danger')
+            return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
     
+    # Payment methods configuration
     payment_methods = [
         {
             'id': 'bank_transfer',
@@ -1956,7 +2043,10 @@ def enroll_class(class_type, class_id):
     return render_template('enroll_class.html',
                          class_obj=class_obj,
                          class_type=class_type,
-                         payment_methods=payment_methods)
+                         payment_methods=payment_methods,
+                         class_fee=class_fee,
+                         currency=currency,
+                         fee_display=fee_display)
 
 @app.route('/admin/enrollments')
 @login_required

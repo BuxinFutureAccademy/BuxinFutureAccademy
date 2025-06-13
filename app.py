@@ -1116,35 +1116,6 @@ def delete_product(product_id):
     
     return redirect(url_for('admin_products'))
 
-@app.route('/admin/toggle-product-status/<int:product_id>', methods=['POST'])
-@login_required
-def toggle_product_status(product_id):
-    """Toggle product active/inactive status via AJAX"""
-    if not current_user.is_admin:
-        return {'success': False, 'error': 'Access denied'}, 403
-    
-    try:
-        product = Product.query.get_or_404(product_id)
-        data = request.get_json()
-        
-        if data is None:
-            return {'success': False, 'error': 'No JSON data received'}, 400
-        
-        new_status = data.get('is_active', False)
-        product.is_active = new_status
-        
-        db.session.commit()
-        
-        return {
-            'success': True, 
-            'message': f'Product {"activated" if new_status else "deactivated"} successfully',
-            'is_active': new_status
-        }
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error toggling product status: {e}")
-        return {'success': False, 'error': str(e)}, 500
 
 @app.route('/admin/product/<int:product_id>/details')
 @login_required

@@ -1131,17 +1131,405 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 {% endblock %}d-6">
-                    <div class="stat-card primary">
-                        <i class="fas fa-users stat-icon"></i>
-                        <div class="stat-number" data-count="{{ students|length }}">{{ students|length }}</div>
-                        <div class="stat-label">Total Students</div>
-                    </div>
+                  <!-- MISSING SECTIONS TO ADD TO YOUR ADMIN DASHBOARD -->
+
+<!-- 1. MISSING: Complete Stats Cards Section -->
+<!-- Replace the incomplete stats section with this: -->
+<div class="row mt-4 g-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card primary">
+            <i class="fas fa-users stat-icon"></i>
+            <div class="stat-number" data-count="{{ students|length }}">{{ students|length }}</div>
+            <div class="stat-label">Total Students</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card success">
+            <i class="fas fa-user stat-icon"></i>
+            <div class="stat-number" data-count="{{ individual_classes|length }}">{{ individual_classes|length }}</div>
+            <div class="stat-label">Individual Classes</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card warning">
+            <i class="fas fa-users stat-icon"></i>
+            <div class="stat-number" data-count="{{ group_classes|length }}">{{ group_classes|length }}</div>
+            <div class="stat-label">Group Classes</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card info">
+            <i class="fas fa-book stat-icon"></i>
+            <div class="stat-number" data-count="{{ materials|length }}">{{ materials|length }}</div>
+            <div class="stat-label">Materials Shared</div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. MISSING: Updated Manage Classes Tab with Edit/Delete functionality -->
+<!-- Replace the current manage-classes tab with this: -->
+<div class="tab-content" id="manage-classes">
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-card success">
-                        <i class="fas fa-user stat-icon"></i>
-                        <div class="stat-number" data-count="{{ individual_classes|length }}">{{ individual_classes|length }}</div>
-                        <div class="stat-label">Individual Classes</div>
-                    </div>
+                <div class="modern-card-body">
+                    {% if individual_classes %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Class Name</th>
+                                        <th>Students</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for class in individual_classes %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>{{ class.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ class.description or 'No description' }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ class.students|length }} students</span>
+                                        </td>
+                                        <td>{{ class.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('edit_class', class_type='individual', class_id=class.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteModal{{ class.id }}individual">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Delete Modal for Individual Class -->
+                                            <div class="modal fade" id="deleteModal{{ class.id }}individual" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Delete Individual Class</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Are you sure you want to delete <strong>"{{ class.name }}"</strong>?</p>
+                                                            <div class="alert alert-warning">
+                                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                                <small>This will delete all associated learning materials and enrollments.</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <form method="POST" action="{{ url_for('delete_class', class_type='individual', class_id=class.id) }}" style="display: inline;">
+                                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-plus"></i>
+                            <h5>No individual classes created yet</h5>
+                            <p>Create your first individual class to get started.</p>
+                            <a href="{{ url_for('create_class') }}" class="modern-btn">Create First Class</a>
+                        </div>
+                    {% endif %}
                 </div>
-                <div class="col-lg-3 col-m
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="modern-card">
+                <div class="modern-card-header warning">
+                    <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
+                </div>
+                <div class="modern-card-body">
+                    {% if group_classes %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Class Name</th>
+                                        <th>Enrollment</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for class in group_classes %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>{{ class.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ class.description or 'No description' }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ class.students|length }}/{{ class.max_students }}</span>
+                                            {% if class.students|length >= class.max_students %}
+                                                <span class="badge bg-danger">Full</span>
+                                            {% endif %}
+                                            <div class="progress mt-1" style="height: 3px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ (class.students|length / class.max_students * 100) if class.max_students > 0 else 0 }}%"></div>
+                                            </div>
+                                        </td>
+                                        <td>{{ class.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('edit_class', class_type='group', class_id=class.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteModal{{ class.id }}group">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Delete Modal for Group Class -->
+                                            <div class="modal fade" id="deleteModal{{ class.id }}group" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Delete Group Class</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Are you sure you want to delete <strong>"{{ class.name }}"</strong>?</p>
+                                                            <div class="alert alert-warning">
+                                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                                <small>This will delete all associated learning materials and enrollments.</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <form method="POST" action="{{ url_for('delete_class', class_type='group', class_id=class.id) }}" style="display: inline;">
+                                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <h5>No group classes created yet</h5>
+                            <p>Create your first group class to get started.</p>
+                            <a href="{{ url_for('create_class') }}" class="modern-btn">Create First Group</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. MISSING: Additional CSS for table styling -->
+<style>
+/* Add these styles to your existing CSS */
+
+/* Table Styling */
+.table-responsive {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.table {
+    margin-bottom: 0;
+    color: var(--admin-dark);
+}
+
+.table th {
+    background: rgba(102, 126, 234, 0.1);
+    border: none;
+    font-weight: 600;
+    padding: 1rem;
+    color: var(--admin-dark);
+}
+
+.table td {
+    border: none;
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    background: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.01);
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 25px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: none;
+}
+
+.btn-outline-primary {
+    color: var(--admin-primary);
+    border-color: var(--admin-primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--admin-primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-outline-danger {
+    color: var(--admin-danger);
+    border-color: var(--admin-danger);
+}
+
+.btn-outline-danger:hover {
+    background: var(--admin-danger);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.bg-info {
+    background: var(--gradient-info) !important;
+}
+
+.bg-danger {
+    background: var(--gradient-danger) !important;
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border-radius: 20px;
+    border: none;
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--gradient-primary);
+    color: white;
+    border-radius: 20px 20px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--glass-border);
+    border-radius: 0 0 20px 20px;
+}
+
+.alert-warning {
+    background: rgba(255, 234, 167, 0.2);
+    border: 1px solid var(--admin-warning);
+    border-radius: 15px;
+}
+
+@media (max-width: 768px) {
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+</style>
+
+<!-- 4. MISSING: JavaScript for table interactions -->
+<script>
+// Add this to your existing JavaScript
+
+// Table row hover effects
+document.addEventListener('DOMContentLoaded', function() {
+    const tableRows = document.querySelectorAll('.table tbody tr');
+    
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+
+// Enhanced progress bar animations for tables
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+    
+    const animateProgressBars = () => {
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 500);
+        });
+    };
+    
+    // Animate progress bars when they come into view
+    const progressObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateProgressBars();
+                progressObserver.unobserve(entry.target);
+            }
+        });
+    });
+    
+    progressBars.forEach(bar => {
+        progressObserver.observe(bar.closest('tr') || bar.closest('.class-item'));
+    });
+});
+</script>

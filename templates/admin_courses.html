@@ -213,6 +213,13 @@
                                                             data-course-id="{{ course.id }}" title="Quick View">
                                                         <i class="fas fa-info"></i>
                                                     </button>
+                                                    <button class="btn btn-sm btn-outline-danger delete-course-btn" 
+                                                            data-course-id="{{ course.id }}" 
+                                                            data-course-title="{{ course.title }}"
+                                                            data-enrolled-count="{{ course.get_enrolled_count() }}"
+                                                            title="Delete Course">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -255,6 +262,55 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCourseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Course
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                
+                <p>Are you sure you want to delete the course <strong id="courseToDelete"></strong>?</p>
+                
+                <div class="course-delete-info">
+                    <h6>This will permanently delete:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-graduation-cap text-primary me-2"></i>The course itself</li>
+                        <li><i class="fas fa-play text-success me-2"></i>All course videos</li>
+                        <li><i class="fas fa-file text-warning me-2"></i>All course materials</li>
+                        <li><i class="fas fa-shopping-cart text-info me-2"></i>All pending cart items</li>
+                        <li><i class="fas fa-receipt text-secondary me-2"></i>Pending/failed purchases</li>
+                    </ul>
+                </div>
+                
+                <div id="enrollmentWarning" class="alert alert-danger d-none">
+                    <i class="fas fa-users me-2"></i>
+                    <strong>Cannot Delete:</strong> This course has <span id="enrolledStudents"></span> enrolled students. 
+                    You should deactivate the course instead of deleting it.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <form id="deleteCourseForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-2"></i>Yes, Delete Course
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .content-stats {
     min-width: 120px;
@@ -287,6 +343,14 @@
 .badge {
     font-size: 0.75rem;
 }
+
+.course-delete-info ul li {
+    padding: 2px 0;
+}
+
+.course-delete-info ul li i {
+    width: 20px;
+}
 </style>
 
 <script>
@@ -297,6 +361,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('.course-details-btn')) {
             const courseId = e.target.closest('.course-details-btn').getAttribute('data-course-id');
             showCourseDetails(courseId);
+        }
+        
+        // Handle delete course buttons
+        if (e.target.closest('.delete-course-btn')) {
+            const btn = e.target.closest('.delete-course-btn');
+            const courseId = btn.getAttribute('data-course-id');
+            const courseTitle = btn.getAttribute('data-course-title');
+            const enrolledCount = parseInt(btn.getAttribute('data-enrolled-count'));
+            showDeleteConfirmation(courseId, courseTitle, enrolledCount);
         }
     });
 });
@@ -349,6 +422,37 @@ function showCourseDetails(courseId) {
             </div>
         `;
     }, 1000);
+}
+
+function showDeleteConfirmation(courseId, courseTitle, enrolledCount) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteCourseModal'));
+    const form = document.getElementById('deleteCourseForm');
+    const warningDiv = document.getElementById('enrollmentWarning');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    // Set course title
+    document.getElementById('courseToDelete').textContent = courseTitle;
+    
+    // Set form action
+    form.action = `/admin/delete_course/${courseId}`;
+    
+    // Show/hide warning and disable button if there are enrolled students
+    if (enrolledCount > 0) {
+        document.getElementById('enrolledStudents').textContent = enrolledCount;
+        warningDiv.classList.remove('d-none');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-ban me-2"></i>Cannot Delete';
+        confirmBtn.classList.remove('btn-danger');
+        confirmBtn.classList.add('btn-secondary');
+    } else {
+        warningDiv.classList.add('d-none');
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-trash me-2"></i>Yes, Delete Course';
+        confirmBtn.classList.remove('btn-secondary');
+        confirmBtn.classList.add('btn-danger');
+    }
+    
+    modal.show();
 }
 </script>
 {% endblock %}

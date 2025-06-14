@@ -22,19 +22,33 @@
                         <div class="col-md-3">
                             <label for="category" class="form-label">Category</label>
                             <select class="form-select" id="category" name="category">
-                                <option value="">All Categories</option>
+                                <option value="">🎯 All Categories</option>
+                                <option value="Artificial Intelligence" {% if 'Artificial Intelligence' == selected_category %}selected{% endif %}>🤖 Artificial Intelligence</option>
+                                <option value="Machine Learning" {% if 'Machine Learning' == selected_category %}selected{% endif %}>🧠 Machine Learning</option>
+                                <option value="Electronics Engineering" {% if 'Electronics Engineering' == selected_category %}selected{% endif %}>⚡ Electronics Engineering</option>
+                                <option value="Microcontrollers" {% if 'Microcontrollers' == selected_category %}selected{% endif %}>🔌 Microcontrollers</option>
+                                <option value="Web Development" {% if 'Web Development' == selected_category %}selected{% endif %}>🌐 Web Development</option>
+                                <option value="Programming" {% if 'Programming' == selected_category %}selected{% endif %}>💻 Programming</option>
+                                <option value="Data Science" {% if 'Data Science' == selected_category %}selected{% endif %}>📊 Data Science</option>
+                                <option value="Digital Marketing" {% if 'Digital Marketing' == selected_category %}selected{% endif %}>📈 Digital Marketing</option>
+                                <option value="UI/UX Design" {% if 'UI/UX Design' == selected_category %}selected{% endif %}>🎨 UI/UX Design</option>
+                                <option value="Robotics" {% if 'Robotics' == selected_category %}selected{% endif %}>🤖 Robotics</option>
+                                <option value="IoT Development" {% if 'IoT Development' == selected_category %}selected{% endif %}>🌐 IoT Development</option>
+                                <option value="Mobile Development" {% if 'Mobile Development' == selected_category %}selected{% endif %}>📱 Mobile Development</option>
                                 {% for cat in categories %}
-                                    <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+                                    {% if cat not in ['Artificial Intelligence', 'Machine Learning', 'Electronics Engineering', 'Microcontrollers', 'Web Development', 'Programming', 'Data Science', 'Digital Marketing', 'UI/UX Design', 'Robotics', 'IoT Development', 'Mobile Development'] %}
+                                        <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+                                    {% endif %}
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-3">
                             <label for="level" class="form-label">Level</label>
                             <select class="form-select" id="level" name="level">
-                                <option value="">All Levels</option>
-                                <option value="Beginner" {% if selected_level == 'Beginner' %}selected{% endif %}>Beginner</option>
-                                <option value="Intermediate" {% if selected_level == 'Intermediate' %}selected{% endif %}>Intermediate</option>
-                                <option value="Advanced" {% if selected_level == 'Advanced' %}selected{% endif %}>Advanced</option>
+                                <option value="">📚 All Levels</option>
+                                <option value="Beginner" {% if selected_level == 'Beginner' %}selected{% endif %}>🌱 Beginner</option>
+                                <option value="Intermediate" {% if selected_level == 'Intermediate' %}selected{% endif %}>📈 Intermediate</option>
+                                <option value="Advanced" {% if selected_level == 'Advanced' %}selected{% endif %}>🚀 Advanced</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -51,17 +65,76 @@
         </div>
     </div>
     
-    <!-- Courses Grid -->
+    <!-- Course Categories Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">🎓 Featured Course Categories</h5>
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="category-showcase">
+                                <i class="fas fa-robot fa-2x mb-2"></i>
+                                <h6>🤖 AI & Machine Learning</h6>
+                                <small>Build intelligent systems</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="category-showcase">
+                                <i class="fas fa-microchip fa-2x mb-2"></i>
+                                <h6>⚡ Electronics & Microcontrollers</h6>
+                                <small>Hardware programming & circuits</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="category-showcase">
+                                <i class="fas fa-globe fa-2x mb-2"></i>
+                                <h6>🌐 Web Development</h6>
+                                <small>Modern web applications</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="category-showcase">
+                                <i class="fas fa-wifi fa-2x mb-2"></i>
+                                <h6>🔌 IoT & Robotics</h6>
+                                <small>Connected devices & automation</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Courses Grid - 4 Columns -->
     <div class="row">
         {% for course in courses %}
-            <div class="col-md-4 mb-4">
+            <div class="col-lg-3 col-md-6 mb-4">
                 <div class="card h-100 course-card {% if not course.is_active %}coming-soon-card{% endif %}">
                     <div class="position-relative">
                         {% if course.image_url %}
-                            <img src="{{ course.image_url }}" class="card-img-top {% if not course.is_active %}grayscale{% endif %}" alt="{{ course.title }}" style="height: 200px; object-fit: cover;">
+                            <img src="{{ course.image_url }}" class="card-img-top {% if not course.is_active %}grayscale{% endif %}" alt="{{ course.title }}" style="height: 180px; object-fit: cover;">
                         {% else %}
-                            <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center {% if not course.is_active %}grayscale{% endif %}" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                <i class="fas fa-graduation-cap fa-3x text-white"></i>
+                            <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center {% if not course.is_active %}grayscale{% endif %}" style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                {% if course.category == 'Artificial Intelligence' %}
+                                    <i class="fas fa-brain fa-3x text-white"></i>
+                                {% elif course.category == 'Machine Learning' %}
+                                    <i class="fas fa-robot fa-3x text-white"></i>
+                                {% elif course.category == 'Electronics Engineering' %}
+                                    <i class="fas fa-bolt fa-3x text-white"></i>
+                                {% elif course.category == 'Microcontrollers' %}
+                                    <i class="fas fa-microchip fa-3x text-white"></i>
+                                {% elif course.category == 'Web Development' %}
+                                    <i class="fas fa-globe fa-3x text-white"></i>
+                                {% elif course.category == 'Robotics' %}
+                                    <i class="fas fa-robot fa-3x text-white"></i>
+                                {% elif course.category == 'IoT Development' %}
+                                    <i class="fas fa-wifi fa-3x text-white"></i>
+                                {% elif course.category == 'Mobile Development' %}
+                                    <i class="fas fa-mobile-alt fa-3x text-white"></i>
+                                {% else %}
+                                    <i class="fas fa-graduation-cap fa-3x text-white"></i>
+                                {% endif %}
                             </div>
                         {% endif %}
                         
@@ -70,8 +143,8 @@
                             <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center coming-soon-overlay">
                                 <div class="text-center text-white">
                                     <i class="fas fa-clock fa-2x mb-2"></i>
-                                    <h5 class="fw-bold">COMING SOON</h5>
-                                    <small>Expected: Q2 2024</small>
+                                    <h6 class="fw-bold">COMING SOON</h6>
+                                    <small>Expected: Q3 2025</small>
                                 </div>
                             </div>
                         {% endif %}
@@ -80,7 +153,7 @@
                         {% if course.get_video_count() > 0 and course.is_active %}
                             <div class="position-absolute top-0 end-0 m-2">
                                 <span class="badge bg-dark bg-opacity-75">
-                                    <i class="fas fa-play me-1"></i>{{ course.get_video_count() }} videos
+                                    <i class="fas fa-play me-1"></i>{{ course.get_video_count() }}
                                 </span>
                             </div>
                         {% endif %}
@@ -88,7 +161,13 @@
                         <!-- Level badge -->
                         <div class="position-absolute top-0 start-0 m-2">
                             {% if course.is_active %}
-                                <span class="badge bg-primary">{{ course.level }}</span>
+                                {% if course.level == 'Beginner' %}
+                                    <span class="badge bg-success">🌱 {{ course.level }}</span>
+                                {% elif course.level == 'Intermediate' %}
+                                    <span class="badge bg-warning">📈 {{ course.level }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger">🚀 {{ course.level }}</span>
+                                {% endif %}
                             {% else %}
                                 <span class="badge bg-warning text-dark">
                                     <i class="fas fa-clock me-1"></i>Coming Soon
@@ -98,51 +177,80 @@
                     </div>
                     
                     <div class="card-body d-flex flex-column">
+                        <!-- Category Badge with Emoji -->
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge bg-info">{{ course.category }}</span>
+                            <span class="badge bg-info category-badge">
+                                {% if course.category == 'Artificial Intelligence' %}
+                                    🤖 AI
+                                {% elif course.category == 'Machine Learning' %}
+                                    🧠 ML
+                                {% elif course.category == 'Electronics Engineering' %}
+                                    ⚡ Electronics
+                                {% elif course.category == 'Microcontrollers' %}
+                                    🔌 MCU
+                                {% elif course.category == 'Web Development' %}
+                                    🌐 Web
+                                {% elif course.category == 'Robotics' %}
+                                    🤖 Robotics
+                                {% elif course.category == 'IoT Development' %}
+                                    📡 IoT
+                                {% elif course.category == 'Mobile Development' %}
+                                    📱 Mobile
+                                {% elif course.category == 'Programming' %}
+                                    💻 Programming
+                                {% elif course.category == 'Data Science' %}
+                                    📊 Data Science
+                                {% elif course.category == 'Digital Marketing' %}
+                                    📈 Marketing
+                                {% elif course.category == 'UI/UX Design' %}
+                                    🎨 Design
+                                {% else %}
+                                    {{ course.category }}
+                                {% endif %}
+                            </span>
                             {% if course.get_total_duration() and course.is_active %}
                                 <span class="badge bg-secondary">
                                     <i class="fas fa-clock me-1"></i>{{ course.get_total_duration() }}
                                 </span>
                             {% elif not course.is_active %}
                                 <span class="badge bg-warning text-dark">
-                                    <i class="fas fa-hourglass-half me-1"></i>In Development
+                                    <i class="fas fa-hourglass-half me-1"></i>In Dev
                                 </span>
                             {% endif %}
                         </div>
                         
-                        <h5 class="card-title {% if not course.is_active %}text-muted{% endif %}">
+                        <h6 class="card-title {% if not course.is_active %}text-muted{% endif %}">
                             {{ course.title }}
                             {% if not course.is_active %}
                                 <i class="fas fa-lock ms-2 text-warning"></i>
                             {% endif %}
-                        </h5>
-                        <p class="card-text text-muted">{{ course.short_description or course.description[:100] + '...' }}</p>
+                        </h6>
+                        <p class="card-text text-muted small">{{ course.short_description or course.description[:80] + '...' }}</p>
                         
                         <!-- Course stats -->
                         {% if course.is_active %}
                             <div class="course-stats mb-3">
-                                <div class="row text-center">
+                                <div class="row text-center small">
                                     <div class="col-4">
                                         <div class="stat-item">
                                             <i class="fas fa-users text-primary"></i>
-                                            <small class="d-block text-muted">{{ course.get_enrolled_count() }} enrolled</small>
+                                            <small class="d-block text-muted">{{ course.get_enrolled_count() }}</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="stat-item">
                                             <i class="fas fa-calendar text-info"></i>
-                                            <small class="d-block text-muted">{{ course.duration_weeks }} weeks</small>
+                                            <small class="d-block text-muted">{{ course.duration_weeks }}w</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="stat-item">
                                             {% if course.get_video_count() > 0 %}
                                                 <i class="fas fa-video text-success"></i>
-                                                <small class="d-block text-muted">{{ course.get_video_count() }} lessons</small>
+                                                <small class="d-block text-muted">{{ course.get_video_count() }}</small>
                                             {% else %}
                                                 <i class="fas fa-book text-warning"></i>
-                                                <small class="d-block text-muted">Text-based</small>
+                                                <small class="d-block text-muted">Text</small>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -151,50 +259,46 @@
                         {% else %}
                             <!-- Coming Soon Stats -->
                             <div class="course-stats mb-3 text-center">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="stat-item">
-                                            <i class="fas fa-bell text-warning fa-2x mb-2"></i>
-                                            <h6 class="text-muted">Get notified when available</h6>
-                                            <small class="text-muted">Expected Duration: {{ course.duration_weeks }} weeks</small>
-                                        </div>
-                                    </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-bell text-warning fa-lg mb-1"></i>
+                                    <h6 class="text-muted small">Get notified</h6>
+                                    <small class="text-muted">{{ course.duration_weeks }} weeks</small>
                                 </div>
                             </div>
                         {% endif %}
                         
                         <div class="mt-auto">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 {% if course.is_active %}
-                                    <span class="h4 text-success mb-0">
+                                    <span class="h6 text-success mb-0">
                                         {% if course.price == 0 %}
                                             <span class="badge bg-success">FREE</span>
                                         {% else %}
-                                            GMD {{ "%.2f"|format(course.price) }}
+                                            ${{ "%.0f"|format(course.price) }}
                                         {% endif %}
                                     </span>
                                     {% if course.materials %}
                                         <small class="text-muted">
-                                            <i class="fas fa-download me-1"></i>{{ course.materials|length }} materials
+                                            <i class="fas fa-download me-1"></i>{{ course.materials|length }}
                                         </small>
                                     {% endif %}
                                 {% else %}
-                                    <span class="h5 text-muted mb-0">
-                                        <i class="fas fa-clock me-2"></i>Coming Soon
+                                    <span class="h6 text-muted mb-0">
+                                        <i class="fas fa-clock me-1"></i>Soon
                                     </span>
                                     <small class="text-muted">
-                                        <i class="fas fa-calendar me-1"></i>Q2 2024
+                                        Q3 2025
                                     </small>
                                 {% endif %}
                             </div>
                             
                             {% if course.is_active %}
-                                <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary w-100">
-                                    <i class="fas fa-eye me-2"></i>View Details
+                                <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-eye me-1"></i>View
                                 </a>
                             {% else %}
-                                <button class="btn btn-outline-warning w-100" onclick="notifyMe({{ course.id }}, '{{ course.title }}')">
-                                    <i class="fas fa-bell me-2"></i>Notify Me When Available
+                                <button class="btn btn-outline-warning btn-sm w-100" onclick="notifyMe({{ course.id }}, '{{ course.title }}')">
+                                    <i class="fas fa-bell me-1"></i>Notify Me
                                 </button>
                             {% endif %}
                         </div>
@@ -220,42 +324,42 @@
         <div class="col-12">
             <div class="card bg-light">
                 <div class="card-body text-center">
-                    <h3><i class="fas fa-rocket me-2 text-primary"></i>More Courses Coming Soon!</h3>
+                    <h3><i class="fas fa-rocket me-2 text-primary"></i>🚀 More Courses Coming Soon!</h3>
                     <p class="text-muted">We're constantly developing new courses to help you advance your skills. Stay tuned for exciting new content!</p>
                     
                     <div class="row mt-4">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="coming-soon-preview">
-                                <i class="fas fa-robot fa-3x text-primary mb-2"></i>
-                                <h5>AI & Machine Learning</h5>
-                                <small class="text-muted">Coming Q2 2024</small>
+                                <i class="fas fa-brain fa-3x text-primary mb-2"></i>
+                                <h6>🤖 Advanced AI & Deep Learning</h6>
+                                <small class="text-muted">Coming Q3 2025</small>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="coming-soon-preview">
-                                <i class="fas fa-mobile-alt fa-3x text-success mb-2"></i>
-                                <h5>Mobile App Development</h5>
-                                <small class="text-muted">Coming Q3 2024</small>
+                                <i class="fas fa-microchip fa-3x text-success mb-2"></i>
+                                <h6>⚡ Arduino & Raspberry Pi Projects</h6>
+                                <small class="text-muted">Coming Q3 2025</small>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="coming-soon-preview">
                                 <i class="fas fa-shield-alt fa-3x text-danger mb-2"></i>
-                                <h5>Cybersecurity Fundamentals</h5>
-                                <small class="text-muted">Coming Q3 2024</small>
+                                <h6>🔒 Cybersecurity Fundamentals</h6>
+                                <small class="text-muted">Coming Q4 2025</small>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <div class="coming-soon-preview">
-                                <i class="fas fa-cloud fa-3x text-info mb-2"></i>
-                                <h5>Cloud Computing</h5>
-                                <small class="text-muted">Coming Q4 2024</small>
+                                <i class="fas fa-satellite fa-3x text-info mb-2"></i>
+                                <h6>📡 IoT & Smart Home Systems</h6>
+                                <small class="text-muted">Coming Q4 2025</small>
                             </div>
                         </div>
                     </div>
                     
                     <button class="btn btn-outline-primary mt-3" onclick="subscribeToUpdates()">
-                        <i class="fas fa-envelope me-2"></i>Subscribe for Updates
+                        <i class="fas fa-envelope me-2"></i>📧 Subscribe for Updates
                     </button>
                 </div>
             </div>
@@ -295,23 +399,28 @@
 }
 
 .stat-item {
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
 }
 
 .stat-item i {
-    font-size: 1.2rem;
-    margin-bottom: 0.25rem;
+    font-size: 1rem;
+    margin-bottom: 0.125rem;
 }
 
 .badge {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+}
+
+.category-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
 }
 
 .course-stats {
     border-top: 1px solid #e9ecef;
     border-bottom: 1px solid #e9ecef;
-    margin: 1rem 0;
-    padding: 0.75rem 0;
+    margin: 0.75rem 0;
+    padding: 0.5rem 0;
 }
 
 .coming-soon-preview {
@@ -324,6 +433,43 @@
     background-color: rgba(0, 123, 255, 0.1);
 }
 
+.category-showcase {
+    padding: 1rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.category-showcase:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Responsive adjustments for 4-column layout */
+@media (max-width: 1200px) {
+    .col-lg-3 {
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-md-6 {
+        margin-bottom: 1.5rem;
+    }
+    
+    .course-card .card-title {
+        font-size: 1rem;
+    }
+    
+    .course-card .card-text {
+        font-size: 0.85rem;
+    }
+}
+
 /* Pulse animation for coming soon badges */
 @keyframes pulse {
     0% { opacity: 1; }
@@ -333,6 +479,23 @@
 
 .badge.bg-warning {
     animation: pulse 2s infinite;
+}
+
+/* Enhanced card content spacing for 4-column layout */
+.course-card .card-body {
+    padding: 0.75rem;
+}
+
+.course-card .card-title {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+}
+
+.course-card .card-text {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
 }
 </style>
 
@@ -382,26 +545,49 @@ function showNotificationSuccess(courseTitle) {
 
 function subscribeToUpdates() {
     // Simple subscription form
-    const email = prompt('Enter your email to subscribe for course updates:');
+    const email = prompt('📧 Enter your email to subscribe for course updates:');
     if (email && email.includes('@')) {
         // You can send this to your backend
         // fetch('/api/subscribe', {method: 'POST', body: JSON.stringify({email})})
         
-        alert('Thank you! You\'ll receive updates about new courses.');
+        alert('🎉 Thank you! You\'ll receive updates about new courses.');
     } else if (email) {
-        alert('Please enter a valid email address.');
+        alert('❌ Please enter a valid email address.');
     }
 }
 
-// Add smooth scrolling for coming soon section
+// Add category filtering functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Add a "See Coming Soon" button in the header if needed
+    // Add click handlers for category showcase
+    document.querySelectorAll('.category-showcase').forEach(function(showcase) {
+        showcase.addEventListener('click', function() {
+            const categoryText = this.querySelector('h6').textContent;
+            let categoryValue = '';
+            
+            if (categoryText.includes('AI & Machine Learning')) {
+                categoryValue = 'Artificial Intelligence';
+            } else if (categoryText.includes('Electronics & Microcontrollers')) {
+                categoryValue = 'Electronics Engineering';
+            } else if (categoryText.includes('Web Development')) {
+                categoryValue = 'Web Development';
+            } else if (categoryText.includes('IoT & Robotics')) {
+                categoryValue = 'IoT Development';
+            }
+            
+            if (categoryValue) {
+                document.getElementById('category').value = categoryValue;
+                document.querySelector('form').submit();
+            }
+        });
+    });
+    
+    // Add smooth scrolling for coming soon section
     const header = document.querySelector('h2');
     if (header) {
         const comingSoonBtn = document.createElement('a');
         comingSoonBtn.href = '#coming-soon';
         comingSoonBtn.className = 'btn btn-outline-warning btn-sm ms-3';
-        comingSoonBtn.innerHTML = '<i class="fas fa-clock me-1"></i>Coming Soon';
+        comingSoonBtn.innerHTML = '<i class="fas fa-clock me-1"></i>🚀 Coming Soon';
         comingSoonBtn.onclick = function(e) {
             e.preventDefault();
             document.querySelector('.card.bg-light').scrollIntoView({behavior: 'smooth'});

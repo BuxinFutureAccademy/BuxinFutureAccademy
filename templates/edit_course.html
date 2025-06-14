@@ -4,92 +4,307 @@
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card">
                 <div class="card-header bg-warning text-dark">
-                    <h4><i class="fas fa-edit me-2"></i>Edit Course</h4>
+                    <h4><i class="fas fa-edit me-2"></i>✏️ Edit Course</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
-                        <div class="row">
-                            <div class="col-md-8 mb-3">
-                                <label for="title" class="form-label">Course Title *</label>
-                                <input type="text" class="form-control" id="title" name="title" 
-                                       value="{{ course.title }}" required>
+                    <form method="POST" id="editCourseForm">
+                        <!-- Course Preview -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                {% if course.image_url %}
+                                    <img src="{{ course.image_url }}" class="img-fluid rounded shadow-sm" 
+                                         alt="{{ course.title }}" style="max-height: 200px; width: 100%; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-gradient rounded d-flex align-items-center justify-content-center shadow-sm" 
+                                         style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <i class="fas fa-graduation-cap fa-3x text-white"></i>
+                                    </div>
+                                {% endif %}
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="price" class="form-label">Price ($) *</label>
-                                <input type="number" class="form-control" id="price" name="price" 
-                                       step="0.01" min="0" value="{{ course.price }}" required>
+                            <div class="col-md-8">
+                                <div class="course-stats">
+                                    <h5 class="text-muted mb-3">📊 Course Statistics</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="stat-card bg-primary text-white p-3 rounded mb-2">
+                                                <i class="fas fa-users fa-2x mb-2"></i>
+                                                <h4>{{ course.get_enrolled_count() }}</h4>
+                                                <small>Enrolled Students</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="stat-card bg-success text-white p-3 rounded mb-2">
+                                                <i class="fas fa-play fa-2x mb-2"></i>
+                                                <h4>{{ course.get_video_count() }}</h4>
+                                                <small>Video Lessons</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="stat-card bg-info text-white p-3 rounded">
+                                                <i class="fas fa-file fa-2x mb-2"></i>
+                                                <h4>{{ course.materials|length }}</h4>
+                                                <small>Course Materials</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="stat-card bg-warning text-dark p-3 rounded">
+                                                <i class="fas fa-clock fa-2x mb-2"></i>
+                                                <h4>{{ course.get_total_duration() or 'TBD' }}</h4>
+                                                <small>Total Duration</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Basic Course Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>📝 Basic Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label for="title" class="form-label">Course Title *</label>
+                                        <input type="text" class="form-control" id="title" name="title" 
+                                               value="{{ course.title }}" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="price" class="form-label">Price ($) *</label>
+                                        <input type="number" class="form-control" id="price" name="price" 
+                                               step="0.01" min="0" value="{{ course.price }}" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="short_description" class="form-label">Short Description</label>
+                                    <input type="text" class="form-control" id="short_description" name="short_description" 
+                                           value="{{ course.short_description or '' }}" maxlength="500"
+                                           placeholder="Brief description for course cards">
+                                    <div class="form-text">📏 Brief summary for course listings (max 500 characters)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Full Description *</label>
+                                    <textarea class="form-control" id="description" name="description" rows="5" 
+                                              placeholder="Detailed course description" required>{{ course.description }}</textarea>
+                                    <div class="form-text">📖 Detailed course description for the course page</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Course Categories and Settings -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>⚙️ Course Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="category" class="form-label">Category *</label>
+                                        <select class="form-select" id="category" name="category" required>
+                                            <option value="">🎯 Select Category</option>
+                                            <optgroup label="🤖 Technology & Engineering">
+                                                <option value="Artificial Intelligence" {% if course.category == 'Artificial Intelligence' %}selected{% endif %}>🤖 Artificial Intelligence</option>
+                                                <option value="Machine Learning" {% if course.category == 'Machine Learning' %}selected{% endif %}>🧠 Machine Learning</option>
+                                                <option value="Electronics Engineering" {% if course.category == 'Electronics Engineering' %}selected{% endif %}>⚡ Electronics Engineering</option>
+                                                <option value="Microcontrollers" {% if course.category == 'Microcontrollers' %}selected{% endif %}>🔌 Microcontrollers</option>
+                                                <option value="Robotics" {% if course.category == 'Robotics' %}selected{% endif %}>🤖 Robotics</option>
+                                                <option value="IoT Development" {% if course.category == 'IoT Development' %}selected{% endif %}>📡 IoT Development</option>
+                                            </optgroup>
+                                            <optgroup label="💻 Programming & Development">
+                                                <option value="Programming" {% if course.category == 'Programming' %}selected{% endif %}>💻 Programming</option>
+                                                <option value="Web Development" {% if course.category == 'Web Development' %}selected{% endif %}>🌐 Web Development</option>
+                                                <option value="Mobile Development" {% if course.category == 'Mobile Development' %}selected{% endif %}>📱 Mobile Development</option>
+                                                <option value="Data Science" {% if course.category == 'Data Science' %}selected{% endif %}>📊 Data Science</option>
+                                                <option value="Cybersecurity" {% if course.category == 'Cybersecurity' %}selected{% endif %}>🔒 Cybersecurity</option>
+                                                <option value="Cloud Computing" {% if course.category == 'Cloud Computing' %}selected{% endif %}>☁️ Cloud Computing</option>
+                                            </optgroup>
+                                            <optgroup label="🎨 Design & Creative">
+                                                <option value="UI/UX Design" {% if course.category == 'UI/UX Design' %}selected{% endif %}>🎨 UI/UX Design</option>
+                                                <option value="Graphic Design" {% if course.category == 'Graphic Design' %}selected{% endif %}>🖼️ Graphic Design</option>
+                                                <option value="3D Modeling" {% if course.category == '3D Modeling' %}selected{% endif %}>🎯 3D Modeling</option>
+                                                <option value="Photography" {% if course.category == 'Photography' %}selected{% endif %}>📸 Photography</option>
+                                                <option value="Video Editing" {% if course.category == 'Video Editing' %}selected{% endif %}>🎬 Video Editing</option>
+                                            </optgroup>
+                                            <optgroup label="📈 Business & Marketing">
+                                                <option value="Digital Marketing" {% if course.category == 'Digital Marketing' %}selected{% endif %}>📈 Digital Marketing</option>
+                                                <option value="Business Strategy" {% if course.category == 'Business Strategy' %}selected{% endif %}>💼 Business Strategy</option>
+                                                <option value="E-commerce" {% if course.category == 'E-commerce' %}selected{% endif %}>🛒 E-commerce</option>
+                                                <option value="Project Management" {% if course.category == 'Project Management' %}selected{% endif %}>📋 Project Management</option>
+                                                <option value="Financial Analysis" {% if course.category == 'Financial Analysis' %}selected{% endif %}>💰 Financial Analysis</option>
+                                            </optgroup>
+                                            <optgroup label="🎵 Arts & Media">
+                                                <option value="Music Production" {% if course.category == 'Music Production' %}selected{% endif %}>🎵 Music Production</option>
+                                                <option value="Animation" {% if course.category == 'Animation' %}selected{% endif %}>🎞️ Animation</option>
+                                                <option value="Content Creation" {% if course.category == 'Content Creation' %}selected{% endif %}>📝 Content Creation</option>
+                                                <option value="Digital Art" {% if course.category == 'Digital Art' %}selected{% endif %}>🎨 Digital Art</option>
+                                            </optgroup>
+                                            <optgroup label="🏗️ Engineering & Sciences">
+                                                <option value="Mechanical Engineering" {% if course.category == 'Mechanical Engineering' %}selected{% endif %}>⚙️ Mechanical Engineering</option>
+                                                <option value="Civil Engineering" {% if course.category == 'Civil Engineering' %}selected{% endif %}>🏗️ Civil Engineering</option>
+                                                <option value="Mathematics" {% if course.category == 'Mathematics' %}selected{% endif %}>🔢 Mathematics</option>
+                                                <option value="Physics" {% if course.category == 'Physics' %}selected{% endif %}>⚛️ Physics</option>
+                                                <option value="Chemistry" {% if course.category == 'Chemistry' %}selected{% endif %}>🧪 Chemistry</option>
+                                            </optgroup>
+                                            <optgroup label="🌍 Languages & Communication">
+                                                <option value="English Language" {% if course.category == 'English Language' %}selected{% endif %}>🇺🇸 English Language</option>
+                                                <option value="French Language" {% if course.category == 'French Language' %}selected{% endif %}>🇫🇷 French Language</option>
+                                                <option value="Spanish Language" {% if course.category == 'Spanish Language' %}selected{% endif %}>🇪🇸 Spanish Language</option>
+                                                <option value="Communication Skills" {% if course.category == 'Communication Skills' %}selected{% endif %}>💬 Communication Skills</option>
+                                                <option value="Public Speaking" {% if course.category == 'Public Speaking' %}selected{% endif %}>🎤 Public Speaking</option>
+                                            </optgroup>
+                                            <optgroup label="📚 Academic & General">
+                                                <option value="Study Skills" {% if course.category == 'Study Skills' %}selected{% endif %}>📖 Study Skills</option>
+                                                <option value="Research Methods" {% if course.category == 'Research Methods' %}selected{% endif %}>🔍 Research Methods</option>
+                                                <option value="Critical Thinking" {% if course.category == 'Critical Thinking' %}selected{% endif %}>🧩 Critical Thinking</option>
+                                                <!-- Legacy categories for backward compatibility -->
+                                                <option value="Design" {% if course.category == 'Design' %}selected{% endif %}>🎨 Design (Legacy)</option>
+                                                <option value="Marketing" {% if course.category == 'Marketing' %}selected{% endif %}>📈 Marketing (Legacy)</option>
+                                                <option value="Business" {% if course.category == 'Business' %}selected{% endif %}>💼 Business (Legacy)</option>
+                                                <option value="Music" {% if course.category == 'Music' %}selected{% endif %}>🎵 Music (Legacy)</option>
+                                                <option value="Other" {% if course.category == 'Other' %}selected{% endif %}>📦 Other</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="level" class="form-label">Level *</label>
+                                        <select class="form-select" id="level" name="level" required>
+                                            <option value="">📚 Select Level</option>
+                                            <option value="Beginner" {% if course.level == 'Beginner' %}selected{% endif %}>🌱 Beginner</option>
+                                            <option value="Intermediate" {% if course.level == 'Intermediate' %}selected{% endif %}>📈 Intermediate</option>
+                                            <option value="Advanced" {% if course.level == 'Advanced' %}selected{% endif %}>🚀 Advanced</option>
+                                            <option value="Expert" {% if course.level == 'Expert' %}selected{% endif %}>🏆 Expert</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="duration_weeks" class="form-label">Duration (weeks)</label>
+                                        <input type="number" class="form-control" id="duration_weeks" name="duration_weeks" 
+                                               value="{{ course.duration_weeks }}" min="1" max="52">
+                                        <div class="form-text">⏱️ Expected completion time</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="image_url" class="form-label">Course Image URL</label>
+                                    <input type="url" class="form-control" id="image_url" name="image_url" 
+                                           value="{{ course.image_url or '' }}" placeholder="https://example.com/image.jpg">
+                                    <div class="form-text">🖼️ Course thumbnail image (recommended: 400x300px)</div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                                   {% if course.is_active %}checked{% endif %}>
+                                            <label class="form-check-label" for="is_active">
+                                                ✅ Course is active (visible in store)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="featured" name="featured" 
+                                                   {% if course.featured %}checked{% endif %}>
+                                            <label class="form-check-label" for="featured">
+                                                ⭐ Featured course (appears in highlights)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Course Content Management -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-play me-2"></i>🎬 Course Content</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>📹 Video Lessons</h6>
+                                        {% if course.videos %}
+                                            <div class="list-group">
+                                                {% for video in course.videos %}
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>{{ loop.index }}. {{ video.title }}</strong>
+                                                            {% if video.duration %}
+                                                                <br><small class="text-muted">Duration: {{ video.duration }}</small>
+                                                            {% endif %}
+                                                        </div>
+                                                        <span class="badge bg-primary rounded-pill">
+                                                            <i class="fas fa-play"></i>
+                                                        </span>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-muted text-center py-3">
+                                                <i class="fas fa-video fa-2x mb-2"></i>
+                                                <p>No videos uploaded yet</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>📁 Course Materials</h6>
+                                        {% if course.materials %}
+                                            <div class="list-group">
+                                                {% for material in course.materials %}
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>{{ material.title }}</strong>
+                                                            <br><small class="text-muted">{{ material.file_type.upper() }} - {{ material.get_file_size_mb() }} MB</small>
+                                                        </div>
+                                                        <span class="badge bg-info rounded-pill">
+                                                            <i class="fas fa-download"></i>
+                                                        </span>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-muted text-center py-3">
+                                                <i class="fas fa-file fa-2x mb-2"></i>
+                                                <p>No materials uploaded yet</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                <div class="text-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        To add or modify videos and materials, please create a new version of this course or contact technical support.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="short_description" class="form-label">Short Description</label>
-                            <input type="text" class="form-control" id="short_description" name="short_description" 
-                                   value="{{ course.short_description or '' }}" maxlength="500">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Full Description *</label>
-                            <textarea class="form-control" id="description" name="description" rows="5" required>{{ course.description }}</textarea>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="category" class="form-label">Category *</label>
-                                <select class="form-select" id="category" name="category" required>
-                                    <option value="">Select Category</option>
-                                    <option value="Programming" {% if course.category == 'Programming' %}selected{% endif %}>Programming</option>
-                                    <option value="Web Development" {% if course.category == 'Web Development' %}selected{% endif %}>Web Development</option>
-                                    <option value="Data Science" {% if course.category == 'Data Science' %}selected{% endif %}>Data Science</option>
-                                    <option value="Design" {% if course.category == 'Design' %}selected{% endif %}>Design</option>
-                                    <option value="Marketing" {% if course.category == 'Marketing' %}selected{% endif %}>Marketing</option>
-                                    <option value="Business" {% if course.category == 'Business' %}selected{% endif %}>Business</option>
-                                    <option value="Photography" {% if course.category == 'Photography' %}selected{% endif %}>Photography</option>
-                                    <option value="Music" {% if course.category == 'Music' %}selected{% endif %}>Music</option>
-                                    <option value="Other" {% if course.category == 'Other' %}selected{% endif %}>Other</option>
-                                </select>
+                        <div class="d-flex gap-2 justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-warning btn-lg" id="updateBtn">
+                                    <i class="fas fa-save me-2"></i>💾 Update Course
+                                </button>
+                                <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-arrow-left me-2"></i>⬅️ Back to Courses
+                                </a>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="level" class="form-label">Level *</label>
-                                <select class="form-select" id="level" name="level" required>
-                                    <option value="">Select Level</option>
-                                    <option value="Beginner" {% if course.level == 'Beginner' %}selected{% endif %}>Beginner</option>
-                                    <option value="Intermediate" {% if course.level == 'Intermediate' %}selected{% endif %}>Intermediate</option>
-                                    <option value="Advanced" {% if course.level == 'Advanced' %}selected{% endif %}>Advanced</option>
-                                </select>
+                            <div>
+                                <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-lg" target="_blank">
+                                    <i class="fas fa-eye me-2"></i>👁️ Preview Course
+                                </a>
+                                {% if course.get_enrolled_count() == 0 %}
+                                    <button type="button" class="btn btn-outline-danger btn-lg" onclick="confirmDelete()">
+                                        <i class="fas fa-trash me-2"></i>🗑️ Delete Course
+                                    </button>
+                                {% endif %}
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="duration_weeks" class="form-label">Duration (weeks)</label>
-                                <input type="number" class="form-control" id="duration_weeks" name="duration_weeks" 
-                                       value="{{ course.duration_weeks }}" min="1" max="52">
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="image_url" class="form-label">Course Image URL</label>
-                            <input type="url" class="form-control" id="image_url" name="image_url" 
-                                   value="{{ course.image_url or '' }}">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
-                                       {% if course.is_active %}checked{% endif %}>
-                                <label class="form-check-label" for="is_active">
-                                    Course is active (visible in store)
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-warning">
-                                <i class="fas fa-save me-2"></i>Update Course
-                            </button>
-                            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Courses
-                            </a>
                         </div>
                     </form>
                 </div>
@@ -97,9 +312,232 @@
         </div>
     </div>
 </div>
-{% endblock %}
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<!-- Delete Confirmation Modal -->
+{% if course.get_enrolled_count() == 0 %}
+<div class="modal fade" id="deleteCourseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>🗑️ Delete Course
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                
+                <p>Are you sure you want to delete the course <strong>"{{ course.title }}"</strong>?</p>
+                
+                <div class="course-delete-info">
+                    <h6>This will permanently delete:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-graduation-cap text-primary me-2"></i>The course itself</li>
+                        <li><i class="fas fa-play text-success me-2"></i>All course videos ({{ course.get_video_count() }} videos)</li>
+                        <li><i class="fas fa-file text-warning me-2"></i>All course materials ({{ course.materials|length }} files)</li>
+                        <li><i class="fas fa-shopping-cart text-info me-2"></i>All pending cart items</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Yes, Delete Course
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.stat-card {
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-card h4 {
+    margin: 0;
+    font-weight: bold;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.list-group-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    border-left-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.card-header h5 {
+    font-weight: 600;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+optgroup {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+optgroup option {
+    font-weight: normal;
+    padding-left: 1rem;
+}
+
+.course-delete-info ul li {
+    padding: 2px 0;
+}
+
+.course-delete-info ul li i {
+    width: 20px;
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editCourseForm');
+    const updateBtn = document.getElementById('updateBtn');
+    
+    // Form submission handler
+    form.addEventListener('submit', function(e) {
+        // Validate required fields
+        const title = document.getElementById('title').value.trim();
+        const category = document.getElementById('category').value;
+        const level = document.getElementById('level').value;
+        const price = document.getElementById('price').value;
+        
+        if (!title || !category || !level || !price) {
+            e.preventDefault();
+            alert('❌ Please fill in all required fields (Title, Category, Level, Price)');
+            return;
+        }
+        
+        // Add loading state to submit button
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating Course...';
+        updateBtn.disabled = true;
+    });
+    
+    // Auto-save draft functionality
+    let saveTimeout;
+    const inputs = form.querySelectorAll('input, textarea, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDraft, 2000); // Save after 2 seconds of no typing
+        });
+    });
+    
+    function saveDraft() {
+        const formData = new FormData(form);
+        const draftData = {};
+        
+        for (let [key, value] of formData.entries()) {
+            if (typeof value === 'string') {
+                draftData[key] = value;
+            }
+        }
+        
+        localStorage.setItem('courseEditDraft_{{ course.id }}', JSON.stringify(draftData));
+        showTemporaryNotification('💾 Changes auto-saved', 'success');
+    }
+    
+    // Load draft if available
+    function loadDraft() {
+        const draftData = localStorage.getItem('courseEditDraft_{{ course.id }}');
+        if (draftData) {
+            try {
+                const data = JSON.parse(draftData);
+                Object.keys(data).forEach(key => {
+                    const field = form.querySelector(`[name="${key}"]`);
+                    if (field && field.type !== 'checkbox') {
+                        field.value = data[key];
+                    }
+                });
+                showTemporaryNotification('📄 Draft loaded', 'info');
+            } catch (e) {
+                console.log('No valid draft found');
+            }
+        }
+    }
+    
+    function showTemporaryNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+    
+    // Clear draft on successful submission
+    form.addEventListener('submit', function() {
+        localStorage.removeItem('courseEditDraft_{{ course.id }}');
+    });
+    
+    // Load draft on page load
+    // loadDraft(); // Uncomment if you want to enable draft loading
+});
+
+function confirmDelete() {
+    {% if course.get_enrolled_count() == 0 %}
+        const modal = new bootstrap.Modal(document.getElementById('deleteCourseModal'));
+        modal.show();
+    {% else %}
+        alert('❌ Cannot delete this course because it has enrolled students. Deactivate it instead.');
+    {% endif %}
+}
+
+// Image URL preview
+document.getElementById('image_url').addEventListener('input', function(e) {
+    const url = e.target.value;
+    if (url && url.match(/\.(jpeg|jpg|gif|png|webp)$/)) {
+        // You could add image preview functionality here
+        console.log('Valid image URL:', url);
+    }
+});
+
+// Price formatting
+document.getElementById('price').addEventListener('blur', function(e) {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+        e.target.value = value.toFixed(2);
+    }
+});
+</script>
+{% endblock %}

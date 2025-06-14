@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+{% extends "base.html" %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -299,7 +300,6 @@
             gap: 0.5rem;
             font-size: 0.9rem;
             font-weight: 500;
-            text-decoration: none;
         }
 
         .control-btn:hover {
@@ -313,18 +313,6 @@
             background: var(--gradient-primary);
             color: white;
             border-color: var(--ai-primary);
-        }
-
-        .control-btn.home-btn {
-            background: var(--gradient-success);
-            color: white;
-            border-color: var(--ai-success);
-        }
-
-        .control-btn.home-btn:hover {
-            background: var(--ai-success);
-            color: white;
-            transform: translateY(-1px) scale(1.05);
         }
 
         /* Messages Area */
@@ -635,19 +623,6 @@
             .chat-header {
                 padding: 1rem;
             }
-
-            .chat-controls {
-                gap: 0.5rem;
-            }
-
-            .control-btn {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.8rem;
-            }
-
-            .control-btn span {
-                display: none;
-            }
         }
 
         /* Voice Recording Animation */
@@ -689,6 +664,18 @@
             outline: 2px solid var(--ai-primary);
             outline-offset: 2px;
         }
+        .control-btn.home-btn {
+    background: var(--gradient-success);
+    color: white;
+    border-color: var(--ai-success);
+    text-decoration: none;
+}
+
+.control-btn.home-btn:hover {
+    background: var(--ai-success);
+    color: white;
+    transform: translateY(-1px) scale(1.05);
+}
     </style>
 </head>
 <body>
@@ -772,9 +759,9 @@
                 </div>
                 <div class="chat-controls">
                     <a href="{{ url_for('index') }}" class="control-btn home-btn">
-                        <i class="fas fa-home"></i>
-                        <span>Home</span>
-                    </a>
+                     <i class="fas fa-home"></i>
+                       <span>Home</span>
+                        </a>
                     <button class="control-btn" onclick="toggleDarkMode()">
                         <i class="fas fa-moon"></i>
                         <span>Dark Mode</span>
@@ -906,3 +893,594 @@
                     document.getElementById('messageInput').value = transcript;
                     document.getElementById('messageInput').dispatchEvent(new Event('input'));
                 };
+
+                recognition.onerror = function(event) {
+                    showToast('Voice recognition error: ' + event.error, 'error');
+                    stopVoiceRecording();
+                };
+
+                recognition.onend = function() {
+                    stopVoiceRecording();
+                };
+            }
+        }
+
+        function toggleVoiceRecording() {
+            if (!recognition) {
+                showToast('Voice recognition not supported in this browser', 'error');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function stopVoiceRecording() {
+            isRecording = false;
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.classList.remove('recording', 'voice-recording');
+            voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+
+            // Clear input and disable send button
+            messageInput.value = '';
+            messageInput.style.height = '56px';
+            document.getElementById('sendBtn').disabled = true;
+
+            // Add user message to chat
+            addMessage(message, 'user');
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                // Simulate AI response (replace with actual API call)
+                const response = await getAIResponse(message);
+                
+                // Remove typing indicator
+                hideTypingIndicator();
+                
+                // Add AI response to chat
+                addMessage(response, 'ai');
+                
+                // Save to conversation history
+                conversationHistory.push({
+                    user: message,
+                    ai: response,
+                    timestamp: new Date().toISOString()
+                });
+                saveConversationHistory();
+                
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('Sorry, I encountered an error. Please try again.', 'ai');
+                showToast('Failed to get AI response', 'error');
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatarIcon = sender === 'user' ? 'fas fa-user' : 'fas fa-robot';
+            const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <i class="${avatarIcon}"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        <p class="message-text">${formatMessage(text)}</p>
+                        ${sender === 'ai' ? `
+                        <div class="message-actions">
+                            <button class="action-btn" onclick="speakMessage(this)" data-message-id="${messageId}">
+                                <i class="fas fa-play"></i>
+                                <span>Play</span>
+                            </button>
+                            <button class="action-btn" onclick="copyMessage(this)">
+                                <i class="fas fa-copy"></i>
+                                <span>Copy</span>
+                            </button>
+                            <button class="action-btn" onclick="downloadMessage(this)">
+                                <i class="fas fa-download"></i>
+                                <span>Save</span>
+                            </button>
+                            <button class="action-btn" onclick="shareMessage(this)">
+                                <i class="fas fa-share"></i>
+                                <span>Share</span>
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            // Store message text as data attribute for TTS
+            messageDiv.setAttribute('data-message-text', text);
+            messageDiv.setAttribute('data-message-id', messageId);
+            
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function formatMessage(text) {
+            // Basic text formatting
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        async function getAIResponse(message) {
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+            
+            // Mock AI responses based on keywords
+            const responses = {
+                'hello': 'Hello! How can I help you with your studies today?',
+                'math': 'I\'d be happy to help with math! Whether it\'s algebra, calculus, geometry, or statistics, I can explain concepts, solve problems step-by-step, and provide practice examples. What specific math topic would you like to explore?',
+                'physics': 'Physics is fascinating! I can help you understand concepts like mechanics, thermodynamics, electromagnetism, quantum physics, and more. I can explain theories, solve problems, and provide real-world examples. What physics topic interests you?',
+                'chemistry': 'Chemistry is all about understanding matter and its interactions! I can help with organic chemistry, inorganic chemistry, physical chemistry, biochemistry, and more. Would you like help with a specific reaction, concept, or problem?',
+                'biology': 'Biology studies life in all its forms! I can assist with cell biology, genetics, ecology, anatomy, physiology, evolution, and more. What aspect of biology would you like to learn about?',
+                'history': 'History helps us understand our past and present! I can discuss different periods, civilizations, wars, cultural movements, and historical figures. What historical topic or period interests you?',
+                'literature': 'Literature opens up worlds of imagination and human experience! I can help analyze texts, discuss themes, explain literary devices, and explore different genres and authors. What literary work or concept would you like to explore?',
+                'programming': 'Programming is a powerful skill! I can help with various languages like Python, JavaScript, Java, C++, and more. I can explain concepts, help debug code, and suggest best practices. What programming topic can I assist you with?',
+                'default': 'That\'s an interesting question! Let me provide you with a comprehensive answer based on current knowledge and best practices. I\'ll break this down into clear, understandable parts to help you learn effectively.'
+            };
+            
+            const lowerMessage = message.toLowerCase();
+            let response = responses.default;
+            
+            for (const [key, value] of Object.entries(responses)) {
+                if (lowerMessage.includes(key)) {
+                    response = value;
+                    break;
+                }
+            }
+            
+            // Add some variation to make responses feel more natural
+            const variations = [
+                response,
+                `Great question! ${response}`,
+                `I'm excited to help with this! ${response}`,
+                `This is a topic I love discussing! ${response}`
+            ];
+            
+            return variations[Math.floor(Math.random() * variations.length)];
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai';
+            typingDiv.id = 'typingIndicator';
+            
+            typingDiv.innerHTML = `
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <i class="fas fa-robot"></i>
+                        <span>AI is thinking</span>
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function scrollToBottom() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Text-to-Speech functionality
+        function speakMessage(button) {
+            const messageElement = button.closest('.message');
+            const messageText = messageElement.getAttribute('data-message-text');
+            const messageId = messageElement.getAttribute('data-message-id');
+            
+            // Stop current audio if playing
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                resetAllPlayButtons();
+            }
+            
+            // Toggle play/pause
+            if (button.classList.contains('playing')) {
+                stopSpeech();
+                return;
+            }
+            
+            // Start new speech
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(messageText);
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                utterance.onstart = function() {
+                    button.classList.add('playing');
+                    button.innerHTML = '<i class="fas fa-pause"></i><span>Pause</span>';
+                };
+                
+                utterance.onend = function() {
+                    resetPlayButton(button);
+                };
+                
+                utterance.onerror = function() {
+                    resetPlayButton(button);
+                    showToast('Speech synthesis failed', 'error');
+                };
+                
+                speechSynthesis.speak(utterance);
+                currentAudio = { pause: () => speechSynthesis.cancel(), paused: false };
+            } else {
+                showToast('Text-to-speech not supported in this browser', 'error');
+            }
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window) {
+                speechSynthesis.cancel();
+            }
+            resetAllPlayButtons();
+        }
+
+        function resetPlayButton(button) {
+            button.classList.remove('playing');
+            button.innerHTML = '<i class="fas fa-play"></i><span>Play</span>';
+        }
+
+        function resetAllPlayButtons() {
+            document.querySelectorAll('.action-btn.playing').forEach(resetPlayButton);
+        }
+
+        // Copy functionality
+        function copyMessage(button) {
+            const messageElement = button.closest('.message');
+            const messageText = messageElement.getAttribute('data-message-text');
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(messageText).then(() => {
+                    showCopyFeedback(button);
+                }).catch(() => {
+                    fallbackCopy(messageText, button);
+                });
+            } else {
+                fallbackCopy(messageText, button);
+            }
+        }
+
+        function fallbackCopy(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyFeedback(button);
+            } catch (err) {
+                showToast('Copy failed', 'error');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopyFeedback(button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i><span>Copied!</span>';
+            button.style.background = 'var(--ai-success)';
+            button.style.color = 'white';
+            
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.style.background = '';
+                button.style.color = '';
+            }, 2000);
+        }
+
+        // Download individual message
+        function downloadMessage(button) {
+            const messageElement = button.closest('.message');
+            const messageText = messageElement.getAttribute('data-message-text');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            
+            const content = `AI Study Assistant Response\nGenerated: ${new Date().toLocaleString()}\n\n${messageText}`;
+            downloadFile(content, `ai-response-${timestamp}.txt`, 'text/plain');
+            
+            showToast('Message downloaded successfully!', 'success');
+        }
+
+        // Share functionality
+        function shareMessage(button) {
+            const messageElement = button.closest('.message');
+            const messageText = messageElement.getAttribute('data-message-text');
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'AI Study Assistant Response',
+                    text: messageText,
+                    url: window.location.href
+                }).catch(() => {
+                    fallbackShare(messageText);
+                });
+            } else {
+                fallbackShare(messageText);
+            }
+        }
+
+        function fallbackShare(text) {
+            copyMessage({ closest: () => ({ getAttribute: () => text }) });
+            showToast('Message copied to clipboard for sharing!', 'info');
+        }
+
+        // Export entire chat
+        function exportChat() {
+            if (conversationHistory.length === 0) {
+                showToast('No conversation to export', 'info');
+                return;
+            }
+            
+            const exportOptions = document.createElement('div');
+            exportOptions.className = 'toast';
+            exportOptions.innerHTML = `
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span>Export format:</span>
+                    <button onclick="exportAs('txt')" style="padding: 0.5rem 1rem; border: none; border-radius: 8px; background: var(--ai-primary); color: white; cursor: pointer;">TXT</button>
+                    <button onclick="exportAs('json')" style="padding: 0.5rem 1rem; border: none; border-radius: 8px; background: var(--ai-primary); color: white; cursor: pointer;">JSON</button>
+                    <button onclick="exportAs('pdf')" style="padding: 0.5rem 1rem; border: none; border-radius: 8px; background: var(--ai-primary); color: white; cursor: pointer;">PDF</button>
+                </div>
+            `;
+            
+            document.body.appendChild(exportOptions);
+            setTimeout(() => exportOptions.remove(), 5000);
+        }
+
+        function exportAs(format) {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            
+            switch (format) {
+                case 'txt':
+                    const txtContent = conversationHistory.map(entry => 
+                        `User: ${entry.user}\n\nAI: ${entry.ai}\n\n---\n\n`
+                    ).join('');
+                    downloadFile(txtContent, `ai-chat-${timestamp}.txt`, 'text/plain');
+                    break;
+                    
+                case 'json':
+                    const jsonContent = JSON.stringify(conversationHistory, null, 2);
+                    downloadFile(jsonContent, `ai-chat-${timestamp}.json`, 'application/json');
+                    break;
+                    
+                case 'pdf':
+                    generatePDF();
+                    break;
+            }
+            
+            document.querySelector('.toast')?.remove();
+            showToast(`Chat exported as ${format.toUpperCase()}!`, 'success');
+        }
+
+        function generatePDF() {
+            // Simple PDF generation using browser print
+            const printWindow = window.open('', '_blank');
+            const content = conversationHistory.map(entry => 
+                `<div style="margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px;">
+                    <h3 style="color: #667eea; margin-bottom: 1rem;">Question:</h3>
+                    <p style="margin-bottom: 1rem;">${entry.user}</p>
+                    <h3 style="color: #764ba2; margin-bottom: 1rem;">Answer:</h3>
+                    <p>${entry.ai}</p>
+                    <small style="color: #666; margin-top: 1rem; display: block;">
+                        ${new Date(entry.timestamp).toLocaleString()}
+                    </small>
+                </div>`
+            ).join('');
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>AI Study Chat Export</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
+                        h1 { color: #667eea; text-align: center; margin-bottom: 2rem; }
+                        h3 { margin: 0; }
+                        p { line-height: 1.6; }
+                    </style>
+                </head>
+                <body>
+                    <h1>AI Study Assistant Chat Export</h1>
+                    <p style="text-align: center; color: #666; margin-bottom: 3rem;">
+                        Generated on ${new Date().toLocaleString()}
+                    </p>
+                    ${content}
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Clear chat
+        function clearChat() {
+            if (conversationHistory.length === 0) {
+                showToast('Chat is already empty', 'info');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to clear the entire chat? This cannot be undone.')) {
+                conversationHistory = [];
+                saveConversationHistory();
+                
+                const messagesContainer = document.getElementById('messagesContainer');
+                messagesContainer.innerHTML = `
+                    <div class="message ai">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <p class="message-text">👋 Hello! I'm your AI Study Assistant. I can help you with any questions about your studies, provide explanations, solve problems, and much more. What would you like to learn about today?</p>
+                                <div class="message-actions">
+                                    <button class="action-btn" onclick="speakMessage(this)">
+                                        <i class="fas fa-play"></i>
+                                        Play
+                                    </button>
+                                    <button class="action-btn" onclick="copyMessage(this)">
+                                        <i class="fas fa-copy"></i>
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                showToast('Chat cleared successfully', 'success');
+            }
+        }
+
+        // Dark mode toggle
+        let isDarkMode = false;
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            const button = event.target.closest('.control-btn');
+            
+            if (isDarkMode) {
+                document.body.style.filter = 'invert(1) hue-rotate(180deg)';
+                button.innerHTML = '<i class="fas fa-sun"></i><span>Light Mode</span>';
+                button.classList.add('active');
+            } else {
+                document.body.style.filter = '';
+                button.innerHTML = '<i class="fas fa-moon"></i><span>Dark Mode</span>';
+                button.classList.remove('active');
+            }
+            
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+
+        // Local storage functions
+        function saveConversationHistory() {
+            localStorage.setItem('aiChatHistory', JSON.stringify(conversationHistory));
+        }
+
+        function loadConversationHistory() {
+            const saved = localStorage.getItem('aiChatHistory');
+            if (saved) {
+                conversationHistory = JSON.parse(saved);
+            }
+            
+            // Load dark mode preference
+            const darkMode = localStorage.getItem('darkMode');
+            if (darkMode === 'true') {
+                toggleDarkMode();
+            }
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <i class="${icons[type]}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'toastSlideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + K to focus input
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('messageInput').focus();
+            }
+            
+            // Ctrl/Cmd + E to export
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                exportChat();
+            }
+            
+            // Ctrl/Cmd + L to clear chat
+            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                e.preventDefault();
+                clearChat();
+            }
+            
+            // Escape to stop speech
+            if (e.key === 'Escape') {
+                stopSpeech();
+            }
+        });
+
+        // Initialize welcome message data
+        document.addEventListener('DOMContentLoaded', function() {
+            const welcomeMessage = document.querySelector('.message.ai');
+            if (welcomeMessage) {
+                welcomeMessage.setAttribute('data-message-text', '👋 Hello! I\'m your AI Study Assistant. I can help you with any questions about your studies, provide explanations, solve problems, and much more. What would you like to learn about today?');
+                welcomeMessage.setAttribute('data-message-id', 'welcome_msg');
+            }
+        });
+    </script>
+</body>
+</html>

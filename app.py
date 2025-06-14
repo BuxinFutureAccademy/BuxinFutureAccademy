@@ -799,6 +799,86 @@ def edit_course(course_id):
     return render_template('edit_course.html', course=course)
 
 
+# Add this route to your Flask application (app.py)
+# Place it in the COURSE MANAGEMENT ROUTES section
+
+@app.route('/admin/delete_course/<int:course_id>', methods=['POST'])
+@login_required
+def delete_course(course_id):
+    """Delete a course and its associated content"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        course = Course.query.get_or_404(course_id)
+        course_title = course.title
+        
+        # Check if there are any purchases for this course
+        purchases_count = Purchase.query.filter_by(course_id=course_id).count()
+        
+        if purchases_count > 0:
+            # Check if there are completed purchases
+            completed_purchases = Purchase.query.filter_by(course_id=course_id, status='completed').count()
+            if completed_purchases > 0:
+                flash(f'Cannot delete "{course_title}" because {completed_purchases} students have purchased this course. Deactivate it instead.', 'warning')
+                return redirect(url_for('admin_courses'))
+            else:
+                # Delete pending/failed purchases
+                Purchase.query.filter_by(course_id=course_id).delete()
+        
+        # Check if there are any cart items for this course
+        cart_items_count = CartItem.query.filter_by(course_id=course_id).count()
+        if cart_items_count > 0:
+            # Remove from all carts
+            CartItem.query.filter_by(course_id=course_id).delete()
+        
+        # Delete associated course videos
+        videos = CourseVideo.query.filter_by(course_id=course_id).all()
+        video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+        
+        for video in videos:
+            # Delete video file from filesystem
+            video_path = os.path.join(video_folder, video.video_filename)
+            try:
+                if os.path.exists(video_path):
+                    os.remove(video_path)
+            except Exception as e:
+                print(f"Warning: Could not delete video file {video.video_filename}: {e}")
+            
+            # Delete video record from database
+            db.session.delete(video)
+        
+        # Delete associated course materials
+        materials = CourseMaterial.query.filter_by(course_id=course_id).all()
+        materials_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
+        
+        for material in materials:
+            # Delete material file from filesystem
+            material_path = os.path.join(materials_folder, material.filename)
+            try:
+                if os.path.exists(material_path):
+                    os.remove(material_path)
+            except Exception as e:
+                print(f"Warning: Could not delete material file {material.filename}: {e}")
+            
+            # Delete material record from database
+            db.session.delete(material)
+        
+        # Finally, delete the course itself
+        db.session.delete(course)
+        db.session.commit()
+        
+        flash(f'Course "{course_title}" and all its content have been deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting course: {str(e)}', 'danger')
+        print(f"Error deleting course {course_id}: {e}")
+    
+    return redirect(url_for('admin_courses'))
+
+
 # ========================================
 # PRODUCT MANAGEMENT ROUTES (Keep these together)
 # ========================================

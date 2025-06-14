@@ -38,31 +38,80 @@
                             <div class="col-md-4 mb-3">
                                 <label for="category" class="form-label">Category *</label>
                                 <select class="form-select" id="category" name="category" required>
-                                    <option value="">Select Category</option>
-                                    <option value="Programming">Programming</option>
-                                    <option value="Web Development">Web Development</option>
-                                    <option value="Data Science">Data Science</option>
-                                    <option value="Design">Design</option>
-                                    <option value="Marketing">Marketing</option>
-                                    <option value="Business">Business</option>
-                                    <option value="Photography">Photography</option>
-                                    <option value="Music">Music</option>
-                                    <option value="Other">Other</option>
+                                    <option value="">🎯 Select Category</option>
+                                    <optgroup label="🤖 Technology & Engineering">
+                                        <option value="Artificial Intelligence">🤖 Artificial Intelligence</option>
+                                        <option value="Machine Learning">🧠 Machine Learning</option>
+                                        <option value="Electronics Engineering">⚡ Electronics Engineering</option>
+                                        <option value="Microcontrollers">🔌 Microcontrollers</option>
+                                        <option value="Robotics">🤖 Robotics</option>
+                                        <option value="IoT Development">📡 IoT Development</option>
+                                    </optgroup>
+                                    <optgroup label="💻 Programming & Development">
+                                        <option value="Programming">💻 Programming</option>
+                                        <option value="Web Development">🌐 Web Development</option>
+                                        <option value="Mobile Development">📱 Mobile Development</option>
+                                        <option value="Data Science">📊 Data Science</option>
+                                        <option value="Cybersecurity">🔒 Cybersecurity</option>
+                                        <option value="Cloud Computing">☁️ Cloud Computing</option>
+                                    </optgroup>
+                                    <optgroup label="🎨 Design & Creative">
+                                        <option value="UI/UX Design">🎨 UI/UX Design</option>
+                                        <option value="Graphic Design">🖼️ Graphic Design</option>
+                                        <option value="3D Modeling">🎯 3D Modeling</option>
+                                        <option value="Photography">📸 Photography</option>
+                                        <option value="Video Editing">🎬 Video Editing</option>
+                                    </optgroup>
+                                    <optgroup label="📈 Business & Marketing">
+                                        <option value="Digital Marketing">📈 Digital Marketing</option>
+                                        <option value="Business Strategy">💼 Business Strategy</option>
+                                        <option value="E-commerce">🛒 E-commerce</option>
+                                        <option value="Project Management">📋 Project Management</option>
+                                        <option value="Financial Analysis">💰 Financial Analysis</option>
+                                    </optgroup>
+                                    <optgroup label="🎵 Arts & Media">
+                                        <option value="Music Production">🎵 Music Production</option>
+                                        <option value="Animation">🎞️ Animation</option>
+                                        <option value="Content Creation">📝 Content Creation</option>
+                                        <option value="Digital Art">🎨 Digital Art</option>
+                                    </optgroup>
+                                    <optgroup label="🏗️ Engineering & Sciences">
+                                        <option value="Mechanical Engineering">⚙️ Mechanical Engineering</option>
+                                        <option value="Civil Engineering">🏗️ Civil Engineering</option>
+                                        <option value="Mathematics">🔢 Mathematics</option>
+                                        <option value="Physics">⚛️ Physics</option>
+                                        <option value="Chemistry">🧪 Chemistry</option>
+                                    </optgroup>
+                                    <optgroup label="🌍 Languages & Communication">
+                                        <option value="English Language">🇺🇸 English Language</option>
+                                        <option value="French Language">🇫🇷 French Language</option>
+                                        <option value="Spanish Language">🇪🇸 Spanish Language</option>
+                                        <option value="Communication Skills">💬 Communication Skills</option>
+                                        <option value="Public Speaking">🎤 Public Speaking</option>
+                                    </optgroup>
+                                    <optgroup label="📚 Academic & General">
+                                        <option value="Study Skills">📖 Study Skills</option>
+                                        <option value="Research Methods">🔍 Research Methods</option>
+                                        <option value="Critical Thinking">🧩 Critical Thinking</option>
+                                        <option value="Other">📦 Other</option>
+                                    </optgroup>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="level" class="form-label">Level *</label>
                                 <select class="form-select" id="level" name="level" required>
-                                    <option value="">Select Level</option>
-                                    <option value="Beginner">Beginner</option>
-                                    <option value="Intermediate">Intermediate</option>
-                                    <option value="Advanced">Advanced</option>
+                                    <option value="">📚 Select Level</option>
+                                    <option value="Beginner">🌱 Beginner</option>
+                                    <option value="Intermediate">📈 Intermediate</option>
+                                    <option value="Advanced">🚀 Advanced</option>
+                                    <option value="Expert">🏆 Expert</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="duration_weeks" class="form-label">Duration (weeks)</label>
                                 <input type="number" class="form-control" id="duration_weeks" name="duration_weeks" 
                                        value="4" min="1" max="52">
+                                <div class="form-text">Expected completion time</div>
                             </div>
                         </div>
                         
@@ -70,22 +119,52 @@
                             <label for="image_url" class="form-label">Course Image URL</label>
                             <input type="url" class="form-control" id="image_url" name="image_url" 
                                    placeholder="https://example.com/image.jpg">
-                            <div class="form-text">Optional: Provide a URL for the course thumbnail image</div>
+                            <div class="form-text">💡 Optional: Provide a URL for the course thumbnail image (recommended: 400x300px)</div>
+                        </div>
+
+                        <!-- Course Settings -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                    <label class="form-check-label" for="is_active">
+                                        ✅ Course is active (visible to students)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="featured" name="featured">
+                                    <label class="form-check-label" for="featured">
+                                        ⭐ Featured course (appears in highlights)
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Video Upload Section -->
                         <div class="card mb-4">
                             <div class="card-header bg-light">
                                 <h5 class="card-title mb-0">
-                                    <i class="fas fa-video me-2"></i>Course Videos
+                                    <i class="fas fa-video me-2"></i>📹 Course Videos
                                 </h5>
                             </div>
                             <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Video Guidelines:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV</li>
+                                        <li>Maximum file size: 500MB per video</li>
+                                        <li>Recommended resolution: 1920x1080 (Full HD)</li>
+                                        <li>Videos will be processed and optimized after upload</li>
+                                    </ul>
+                                </div>
                                 <div id="videoContainer">
                                     <!-- Video upload forms will be added here -->
                                 </div>
                                 <button type="button" class="btn btn-outline-primary" id="addVideoBtn">
-                                    <i class="fas fa-plus me-2"></i>Add Video Lesson
+                                    <i class="fas fa-plus me-2"></i>📹 Add Video Lesson
                                 </button>
                             </div>
                         </div>
@@ -94,25 +173,37 @@
                         <div class="card mb-4">
                             <div class="card-header bg-light">
                                 <h5 class="card-title mb-0">
-                                    <i class="fas fa-file-alt me-2"></i>Course Materials
+                                    <i class="fas fa-file-alt me-2"></i>📚 Course Materials
                                 </h5>
                             </div>
                             <div class="card-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Material Guidelines:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Supported formats: PDF, DOC, DOCX, PPT, PPTX, ZIP, TXT</li>
+                                        <li>Maximum file size: 10MB per file</li>
+                                        <li>Materials will be available for download by enrolled students</li>
+                                    </ul>
+                                </div>
                                 <div class="mb-3">
-                                    <label for="course_materials" class="form-label">Upload Additional Materials</label>
+                                    <label for="course_materials" class="form-label">📎 Upload Additional Materials</label>
                                     <input type="file" class="form-control" id="course_materials" name="course_materials" 
                                            multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.txt">
-                                    <div class="form-text">Upload PDFs, documents, presentations, or zip files (Max 10MB each)</div>
+                                    <div class="form-text">Upload supplementary materials, assignments, or resources</div>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary" id="submitBtn">
-                                <i class="fas fa-save me-2"></i>Create Course
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>🚀 Create Course
                             </button>
-                            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Courses
+                            <button type="submit" name="action" value="save_and_new" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-plus me-2"></i>💾 Save & Create Another
+                            </button>
+                            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>⬅️ Back to Courses
                             </a>
                         </div>
                     </form>
@@ -126,14 +217,26 @@
 <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Uploading Course Content</h5>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-upload me-2"></i>📤 Uploading Course Content
+                </h5>
             </div>
             <div class="modal-body">
-                <div class="progress mb-3">
-                    <div class="progress-bar" role="progressbar" style="width: 0%" id="uploadProgress"></div>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%" id="uploadProgress">0%</div>
                 </div>
-                <div id="uploadStatus">Preparing upload...</div>
+                <div id="uploadStatus" class="text-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Preparing upload...
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Please don't close this window while uploading. Large files may take several minutes.
+                    </small>
+                </div>
             </div>
         </div>
     </div>
@@ -141,32 +244,98 @@
 
 <style>
 .video-item {
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background-color: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.video-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1);
 }
 
 .video-preview {
     max-width: 200px;
     max-height: 150px;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .file-info {
     font-size: 0.875rem;
     color: #6c757d;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
 }
 
 .remove-video {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
 }
 
 .video-item-wrapper {
     position: relative;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.card-header {
+    border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.alert {
+    border: none;
+    border-left: 4px solid;
+}
+
+.alert-info {
+    border-left-color: #17a2b8;
+    background-color: rgba(23, 162, 184, 0.1);
+}
+
+.alert-warning {
+    border-left-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+optgroup {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+optgroup option {
+    font-weight: normal;
+    padding-left: 1rem;
+}
+
+.form-select option {
+    padding: 0.5rem 0.75rem;
+}
+
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    font-weight: bold;
+    transition: width 0.3s ease;
 }
 </style>
 
@@ -189,56 +358,68 @@ document.addEventListener('DOMContentLoaded', function() {
         videoDiv.className = 'video-item-wrapper';
         videoDiv.innerHTML = `
             <div class="video-item" id="video-${videoCount}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">📹 Video Lesson #${videoCount}</h6>
+                    ${videoCount > 1 ? `
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-video" 
+                            onclick="removeVideo(${videoCount})" title="Remove this video">
+                        <i class="fas fa-times"></i> Remove
+                    </button>
+                    ` : '<span class="badge bg-primary">Required</span>'}
+                </div>
+                
                 <div class="row">
                     <div class="col-md-6">
-                        <label for="video_title_${videoCount}" class="form-label">Lesson Title *</label>
+                        <label for="video_title_${videoCount}" class="form-label">📝 Lesson Title *</label>
                         <input type="text" class="form-control" name="video_titles" 
-                               id="video_title_${videoCount}" placeholder="e.g., Introduction to Python" required>
+                               id="video_title_${videoCount}" placeholder="e.g., Introduction to Python Basics" required>
                     </div>
                     <div class="col-md-3">
-                        <label for="video_order_${videoCount}" class="form-label">Order</label>
+                        <label for="video_order_${videoCount}" class="form-label">📊 Order</label>
                         <input type="number" class="form-control" name="video_orders" 
                                id="video_order_${videoCount}" value="${videoCount}" min="1">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Duration (optional)</label>
+                        <label class="form-label">⏱️ Duration (optional)</label>
                         <input type="text" class="form-control" name="video_durations" 
-                               placeholder="e.g., 15:30" pattern="[0-9]{1,2}:[0-9]{2}">
+                               placeholder="e.g., 15:30" pattern="[0-9]{1,3}:[0-9]{2}">
                     </div>
                 </div>
                 
                 <div class="row mt-3">
                     <div class="col-md-12">
-                        <label for="video_file_${videoCount}" class="form-label">Video File *</label>
+                        <label for="video_file_${videoCount}" class="form-label">🎬 Video File *</label>
                         <input type="file" class="form-control video-file-input" 
                                name="video_files" id="video_file_${videoCount}" 
                                accept=".mp4,.avi,.mov,.wmv,.flv,.webm,.mkv" required>
-                        <div class="form-text">Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV (Max 500MB)</div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Supported: MP4, AVI, MOV, WMV, FLV, WebM, MKV (Max 500MB)
+                        </div>
                     </div>
                 </div>
 
                 <div class="row mt-3">
                     <div class="col-md-12">
-                        <label for="video_description_${videoCount}" class="form-label">Lesson Description</label>
+                        <label for="video_description_${videoCount}" class="form-label">📄 Lesson Description</label>
                         <textarea class="form-control" name="video_descriptions" 
                                   id="video_description_${videoCount}" rows="2" 
-                                  placeholder="Brief description of what this lesson covers"></textarea>
+                                  placeholder="Brief description of what students will learn in this lesson"></textarea>
                     </div>
                 </div>
 
                 <div class="video-preview-container mt-3" style="display: none;">
-                    <video class="video-preview" controls>
-                        Your browser does not support the video tag.
-                    </video>
-                    <div class="file-info mt-2"></div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <video class="video-preview" controls>
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="file-info"></div>
+                        </div>
+                    </div>
                 </div>
-
-                ${videoCount > 1 ? `
-                <button type="button" class="btn btn-sm btn-outline-danger remove-video" 
-                        onclick="removeVideo(${videoCount})">
-                    <i class="fas fa-times"></i>
-                </button>
-                ` : ''}
             </div>
         `;
 
@@ -255,16 +436,41 @@ document.addEventListener('DOMContentLoaded', function() {
     courseForm.addEventListener('submit', function(e) {
         const videoFiles = document.querySelectorAll('.video-file-input');
         let hasLargeFiles = false;
+        let hasInvalidFiles = false;
         
         videoFiles.forEach(input => {
-            if (input.files[0] && input.files[0].size > 500 * 1024 * 1024) { // 500MB
-                hasLargeFiles = true;
+            if (input.files[0]) {
+                if (input.files[0].size > 500 * 1024 * 1024) { // 500MB
+                    hasLargeFiles = true;
+                }
+                // Check file type
+                const allowedTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo', 'video/x-flv', 'video/webm', 'video/x-matroska'];
+                if (!allowedTypes.includes(input.files[0].type) && !input.files[0].name.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i)) {
+                    hasInvalidFiles = true;
+                }
             }
         });
 
         if (hasLargeFiles) {
             e.preventDefault();
-            alert('Please ensure all video files are under 500MB');
+            alert('❌ Please ensure all video files are under 500MB. Consider compressing large videos.');
+            return;
+        }
+
+        if (hasInvalidFiles) {
+            e.preventDefault();
+            alert('❌ Please upload only supported video formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV');
+            return;
+        }
+
+        // Validate required fields
+        const title = document.getElementById('title').value.trim();
+        const category = document.getElementById('category').value;
+        const level = document.getElementById('level').value;
+        
+        if (!title || !category || !level) {
+            e.preventDefault();
+            alert('❌ Please fill in all required fields (Title, Category, Level)');
             return;
         }
 
@@ -281,13 +487,33 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             showUploadProgress();
             uploadWithProgress(formData);
+        } else {
+            // Add loading state to submit button
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Course...';
+            submitBtn.disabled = true;
         }
     });
 });
 
 function removeVideo(videoId) {
-    const videoElement = document.getElementById(`video-${videoId}`);
-    videoElement.parentElement.remove();
+    if (confirm('🗑️ Are you sure you want to remove this video lesson?')) {
+        const videoElement = document.getElementById(`video-${videoId}`);
+        videoElement.parentElement.remove();
+        
+        // Update video numbers
+        updateVideoNumbers();
+    }
+}
+
+function updateVideoNumbers() {
+    const videoItems = document.querySelectorAll('.video-item');
+    videoItems.forEach((item, index) => {
+        const title = item.querySelector('h6');
+        if (title) {
+            title.textContent = `📹 Video Lesson #${index + 1}`;
+        }
+    });
 }
 
 function previewVideo(input, videoId) {
@@ -302,10 +528,21 @@ function previewVideo(input, videoId) {
         video.src = url;
         
         const fileSize = (file.size / (1024 * 1024)).toFixed(2); // MB
+        const fileSizeGB = (file.size / (1024 * 1024 * 1024)).toFixed(2); // GB
+        const displaySize = fileSize > 1024 ? `${fileSizeGB} GB` : `${fileSize} MB`;
+        
         fileInfo.innerHTML = `
-            <strong>File:</strong> ${file.name}<br>
-            <strong>Size:</strong> ${fileSize} MB<br>
-            <strong>Type:</strong> ${file.type}
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>📁 File:</strong> ${file.name}<br>
+                    <strong>📏 Size:</strong> ${displaySize}<br>
+                    <strong>🎬 Type:</strong> ${file.type || 'Video file'}
+                </div>
+                <div class="col-md-6">
+                    <strong>📅 Modified:</strong> ${new Date(file.lastModified).toLocaleDateString()}<br>
+                    <strong>✅ Status:</strong> <span class="text-success">Ready to upload</span>
+                </div>
+            </div>
         `;
 
         previewContainer.style.display = 'block';
@@ -314,6 +551,14 @@ function previewVideo(input, videoId) {
         video.addEventListener('loadeddata', function() {
             URL.revokeObjectURL(url);
         });
+
+        // Add file size warning if too large
+        if (file.size > 400 * 1024 * 1024) { // 400MB warning
+            const warning = document.createElement('div');
+            warning.className = 'alert alert-warning mt-2';
+            warning.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Large File:</strong> This file is quite large and may take longer to upload.';
+            fileInfo.appendChild(warning);
+        }
     }
 }
 
@@ -332,27 +577,67 @@ function uploadWithProgress(formData) {
             const percentComplete = (e.loaded / e.total) * 100;
             progressBar.style.width = percentComplete + '%';
             progressBar.textContent = Math.round(percentComplete) + '%';
-            statusDiv.textContent = `Uploading... ${Math.round(percentComplete)}% complete`;
+            
+            if (percentComplete < 25) {
+                statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>📤 Uploading files...';
+            } else if (percentComplete < 75) {
+                statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>⚙️ Processing videos...';
+            } else if (percentComplete < 95) {
+                statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>💾 Saving course data...';
+            } else {
+                statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>🏁 Finalizing...';
+            }
         }
     });
 
     xhr.addEventListener('load', function() {
         if (xhr.status === 200) {
-            statusDiv.textContent = 'Upload completed successfully!';
+            progressBar.className = 'progress-bar bg-success';
+            statusDiv.innerHTML = '<i class="fas fa-check-circle text-success me-2"></i>✅ Course created successfully!';
             setTimeout(() => {
                 window.location.href = "{{ url_for('admin_courses') }}";
             }, 2000);
         } else {
-            statusDiv.textContent = 'Upload failed. Please try again.';
+            progressBar.className = 'progress-bar bg-danger';
+            statusDiv.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-2"></i>❌ Upload failed. Please try again.';
         }
     });
 
     xhr.addEventListener('error', function() {
-        statusDiv.textContent = 'Upload failed. Please check your connection and try again.';
+        progressBar.className = 'progress-bar bg-danger';
+        statusDiv.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-2"></i>❌ Upload failed. Please check your connection and try again.';
     });
 
     xhr.open('POST', window.location.href);
     xhr.send(formData);
 }
+
+// Auto-save draft functionality (optional)
+function saveDraft() {
+    const formData = new FormData(document.getElementById('courseForm'));
+    const draftData = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string') {
+            draftData[key] = value;
+        }
+    }
+    
+    localStorage.setItem('courseDraft', JSON.stringify(draftData));
+    
+    // Show temporary notification
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    notification.innerHTML = '<i class="fas fa-save me-2"></i>💾 Draft saved automatically';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Auto-save every 30 seconds
+setInterval(saveDraft, 30000);
 </script>
 {% endblock %}

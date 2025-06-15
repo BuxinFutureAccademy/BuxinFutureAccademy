@@ -2377,6 +2377,100 @@ def bulk_message():
 
 # Add this test route to verify upload process
 
+# Add this temporary route to test video playback with existing videos
+@app.route('/course_video_bypass/<filename>')
+@login_required
+def course_video_bypass(filename):
+    """Bypass route for testing - serves videos without database check"""
+    
+    # Find the video file directly
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    video_file_path = os.path.join(video_folder, filename)
+    
+    # Check if file actually exists
+    if not os.path.exists(video_file_path):
+        return f"""
+        <div style="padding: 20px; font-family: Arial;">
+            <h1>File Not Found</h1>
+            <p><strong>Looking for:</strong> {filename}</p>
+            <p><strong>Path:</strong> {video_file_path}</p>
+            <p><strong>Available files:</strong></p>
+            <ul>
+        """ + ''.join([f'<li>{f}</li>' for f in os.listdir(video_folder)]) + """
+            </ul>
+            <p><a href="/video-debug">← Back to Debug</a></p>
+        </div>
+        """, 404
+    
+    try:
+        # Serve the video file directly
+        return send_from_directory(
+            video_folder, 
+            filename, 
+            mimetype='video/mp4',
+            as_attachment=False
+        )
+    except Exception as e:
+        return f"Error serving video: {e}", 500
+
+# Add a test player page
+@app.route('/test-player')
+@login_required
+def test_player():
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    # Get available video files
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    available_files = []
+    
+    if os.path.exists(video_folder):
+        available_files = [f for f in os.listdir(video_folder) if f.endswith(('.mp4', '.avi', '.mov'))]
+    
+    if not available_files:
+        return """
+        <h1>No Video Files Available</h1>
+        <p>Upload a test video first at <a href="/test-upload">/test-upload</a></p>
+        """
+    
+    # Create a simple video player page
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Video Player Test</title>
+        <style>
+            body { font-family: Arial; padding: 20px; }
+            video { max-width: 800px; width: 100%; }
+            .video-item { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        </style>
+    </head>
+    <body>
+        <h1>Video Player Test</h1>
+        <p>Available video files:</p>
+    """
+    
+    for video_file in available_files:
+        html += f"""
+        <div class="video-item">
+            <h3>{video_file}</h3>
+            <video controls>
+                <source src="/course_video_bypass/{video_file}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p><a href="/course_video_bypass/{video_file}" target="_blank">Direct link</a></p>
+        </div>
+        """
+    
+    html += """
+        <p><a href="/test-upload">Upload another test video</a></p>
+        <p><a href="/video-debug">Back to debug</a></p>
+    </body>
+    </html>
+    """
+    
+    return html
+
 @app.route('/test-upload', methods=['GET', 'POST'])
 @login_required
 def test_upload():
@@ -2510,7 +2604,7 @@ def course_video(filename):
     except Exception as e:
         print(f"Error serving video {filename}: {e}")
         return f"Error serving video: {e}", 500
-
+#..................................................................................................................................................
 @app.route('/course_material/<filename>')
 @login_required
 def course_material(filename):

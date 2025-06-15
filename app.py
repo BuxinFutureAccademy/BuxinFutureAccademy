@@ -3970,52 +3970,16 @@ def create_sample_data():
         db.session.rollback()
 
 # ========================================
-# DATABASE INITIALIZATION FUNCTION
-# ========================================
-
-def init_database():
-    """Initialize database tables and sample data"""
-    try:
-        print("Creating database tables...")
-        db.create_all()
-        print("Database tables created successfully")
-        
-        print("Creating sample data...")
-        create_sample_data()
-        print("Sample data created successfully")
-        
-        return True
-    except Exception as e:
-        print(f"Error initializing database: {e}")
-        return False
-
-# ========================================
-# LAZY DATABASE INITIALIZATION
-# ========================================
-
-_db_initialized = False
-
-def ensure_db_initialized():
-    """Ensure database is initialized only once"""
-    global _db_initialized
-    if not _db_initialized:
-        try:
-            with app.app_context():
-                init_database()
-                _db_initialized = True
-                print("✅ Database initialized successfully")
-        except Exception as e:
-            print(f"❌ Database initialization failed: {e}")
-
-# ========================================
 # ROUTES FOR DATABASE MANAGEMENT
 # ========================================
 
 @app.route('/init-db')
 def manual_init_db():
-    """Manual database initialization endpoint - ADMIN ONLY"""
+    """Manual database initialization endpoint"""
     try:
-        ensure_db_initialized()
+        with app.app_context():
+            db.create_all()
+            create_sample_data()
         return "✅ Database initialized successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
@@ -4024,13 +3988,9 @@ def manual_init_db():
 def health_check():
     """Health check endpoint"""
     try:
-        # Ensure database is initialized
-        ensure_db_initialized()
-        
         # Test database connection
-        with app.app_context():
-            db.session.execute(db.text('SELECT 1'))
-            user_count = User.query.count()
+        db.session.execute(db.text('SELECT 1'))
+        user_count = User.query.count()
         
         return {
             "status": "healthy", 
@@ -4046,13 +4006,26 @@ def health_check():
         }, 500
 
 # ========================================
-# INITIALIZE ON FIRST REQUEST
+# DATABASE INITIALIZATION ON STARTUP
 # ========================================
 
-@app.before_first_request
-def initialize_on_startup():
-    """Initialize database on first request"""
-    ensure_db_initialized()
+# Initialize database tables when the app starts
+with app.app_context():
+    try:
+        print("🔄 Initializing database...")
+        db.create_all()
+        print("✅ Database tables created")
+        
+        # Only create sample data if no admin user exists
+        if not User.query.filter_by(is_admin=True).first():
+            print("🔄 Creating sample data...")
+            create_sample_data()
+            print("✅ Sample data created")
+        else:
+            print("ℹ️ Admin user exists, skipping sample data creation")
+            
+    except Exception as e:
+        print(f"❌ Database initialization error: {e}")
 
 # ========================================
 # CREATE WSGI APPLICATION
@@ -4067,8 +4040,5 @@ application = app
 
 if __name__ == '__main__':
     # Only for local development
-    with app.app_context():
-        init_database()
-    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

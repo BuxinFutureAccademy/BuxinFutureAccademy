@@ -3973,19 +3973,17 @@ def cloudinary_test():
 # APPLICATION STARTUP
 # ========================================
 
-def create_app():
-    """Application factory pattern for production"""
+# Initialize database when the module loads (with proper context)
+try:
     with app.app_context():
-        try:
-            db.create_all()
-            create_sample_data()
-            print("Database initialized successfully")
-        except Exception as e:
-            print(f"Error initializing database: {e}")
-    return app
+        db.create_all()
+        create_sample_data()
+        print("✅ Database initialized successfully")
+except Exception as e:
+    print(f"❌ Error initializing database: {e}")
 
-# Create the app instance
-application = create_app()
+# Application instance for production
+application = app
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

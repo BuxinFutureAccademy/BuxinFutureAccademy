@@ -3787,6 +3787,351 @@ def create_sample_data():
         print(f"Error creating sample data: {e}")
         db.session.rollback()
 
+
+# Add these routes to your app.py file (copy and paste at the end of your routes)................................................................
+
+@app.route('/admin/migrate-batch')
+@login_required
+def migrate_batch():
+    """Migrate videos in small batches to avoid timeouts"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    # Get all videos that need migration
+    all_videos = CourseVideo.query.all()
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    
+    local_videos = []
+    for video in all_videos:
+        if not video.video_url:  # No Cloudinary URL
+            video_path = os.path.join(video_folder, video.video_filename)
+            if os.path.exists(video_path):
+                file_size = os.path.getsize(video_path) / (1024 * 1024)  # MB
+                course = Course.query.get(video.course_id)
+                local_videos.append({
+                    'video': video,
+                    'size': file_size,
+                    'course_name': course.title if course else "Unknown Course"
+                })
+    
+    if not local_videos:
+        return '''
+        <html><head><title>Migration Complete</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>🎉 All Videos Already Migrated!</h1>
+            <p>All your videos are safely stored on Cloudinary.</p>
+            <p><a href="/test-player">🎬 Test Videos</a> | <a href="/admin/courses">← Back to Courses</a></p>
+        </body></html>
+        '''
+    
+    # Sort by size (smallest first for faster initial success)
+    local_videos.sort(key=lambda x: x['size'])
+    
+    # Group into batches of 2-3 videos, keeping total under 60MB per batch
+    batches = []
+    current_batch = []
+    current_size = 0
+    
+    for video_data in local_videos:
+        if len(current_batch) >= 3 or (current_size + video_data['size']) > 60:
+            if current_batch:
+                batches.append(current_batch)
+            current_batch = [video_data]
+            current_size = video_data['size']
+        else:
+            current_batch.append(video_data)
+            current_size += video_data['size']
+    
+    if current_batch:
+        batches.append(current_batch)
+    
+    html = '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Batch Video Migration</title>
+        <style>
+            body { font-family: Arial; padding: 20px; background: #f8f9fa; }
+            .container { max-width: 1000px; margin: 0 auto; }
+            .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .batch { margin: 15px 0; padding: 15px; border: 1px solid #007bff; border-radius: 8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .video-item { margin: 5px 0; padding: 8px 12px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #007bff; }
+            .migrate-btn { background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; }
+            .migrate-btn:hover { background: #218838; }
+            .migrate-btn:disabled { background: #6c757d; cursor: not-allowed; }
+            .progress-container { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .progress-bar { width: 100%; background: #e9ecef; border-radius: 10px; padding: 3px; }
+            .progress-fill { width: 0%; background: linear-gradient(90deg, #28a745, #20c997); height: 24px; border-radius: 8px; transition: width 0.5s ease; text-align: center; line-height: 24px; color: white; font-weight: bold; }
+            .status-success { color: #28a745; font-weight: bold; }
+            .status-error { color: #dc3545; font-weight: bold; }
+            .status-progress { color: #007bff; font-weight: bold; }
+            .controls { text-align: center; margin: 20px 0; }
+            .start-btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+            .start-btn:hover { background: #0056b3; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚀 Smart Batch Video Migration</h1>
+                <p>Migrating <strong>''' + str(len(local_videos)) + '''</strong> videos to Cloudinary in <strong>''' + str(len(batches)) + '''</strong> optimized batches.</p>
+                <p><strong>Strategy:</strong> Upload 2-3 videos at a time (max 60MB per batch) to prevent timeouts.</p>
+            </div>
+            
+            <div class="progress-container">
+                <h3>📊 Migration Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill">0%</div>
+                </div>
+                <p id="progress-text" style="margin-top: 10px; text-align: center;">Ready to start migration</p>
+            </div>
+            
+            <div class="controls">
+                <button class="start-btn" onclick="startMigration()" id="start-btn">
+                    🚀 Start Automatic Migration
+                </button>
+                <p><small>Migration will start automatically and process each batch sequentially</small></p>
+            </div>
+    '''
+    
+    for i, batch in enumerate(batches):
+        batch_size = sum(v['size'] for v in batch)
+        html += f'''
+            <div class="batch" id="batch-{i}">
+                <h3>📦 Batch {i+1} ({len(batch)} videos, {batch_size:.1f} MB)</h3>
+        '''
+        
+        for video_data in batch:
+            html += f'''
+                <div class="video-item">
+                    <strong>{video_data["video"].title}</strong><br>
+                    <small>Course: {video_data["course_name"]} • Size: {video_data["size"]:.1f} MB</small>
+                </div>
+            '''
+        
+        html += f'''
+                <div style="margin-top: 10px;">
+                    <button class="migrate-btn" onclick="migrateBatch({i})" id="btn-{i}" disabled>
+                        ⏳ Waiting...
+                    </button>
+                    <span id="status-{i}" style="margin-left: 15px;"></span>
+                </div>
+            </div>
+        '''
+    
+    html += '''
+        </div>
+        
+        <script>
+        let completedBatches = 0;
+        const totalBatches = ''' + str(len(batches)) + ''';
+        let migrationStarted = false;
+        
+        function startMigration() {
+            if (migrationStarted) return;
+            migrationStarted = true;
+            
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').textContent = '🔄 Migration in Progress...';
+            document.getElementById('progress-text').textContent = 'Starting migration...';
+            
+            // Enable first batch button
+            document.getElementById('btn-0').disabled = false;
+            document.getElementById('btn-0').textContent = '🚀 Migrate Batch 1';
+            
+            // Start with first batch
+            setTimeout(() => migrateBatch(0), 500);
+        }
+        
+        async function migrateBatch(batchIndex) {
+            const btn = document.getElementById(`btn-${batchIndex}`);
+            const status = document.getElementById(`status-${batchIndex}`);
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Uploading...';
+            btn.style.background = '#ffc107';
+            status.innerHTML = '<span class="status-progress">📤 Uploading to Cloudinary...</span>';
+            
+            try {
+                const response = await fetch(`/admin/process-batch/${batchIndex}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.text();
+                    status.innerHTML = '<span class="status-success">✅ ' + result + '</span>';
+                    btn.textContent = '✅ Completed';
+                    btn.style.background = '#28a745';
+                    
+                    completedBatches++;
+                    updateProgress();
+                    
+                    // Enable and auto-start next batch after 3 seconds
+                    if (batchIndex + 1 < totalBatches) {
+                        const nextBtn = document.getElementById(`btn-${batchIndex + 1}`);
+                        nextBtn.disabled = false;
+                        nextBtn.textContent = `🚀 Migrate Batch ${batchIndex + 2}`;
+                        
+                        setTimeout(() => {
+                            migrateBatch(batchIndex + 1);
+                        }, 3000);
+                    }
+                    
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Migration error:', error);
+                status.innerHTML = '<span class="status-error">❌ Failed - <a href="#" onclick="migrateBatch(' + batchIndex + ')">Retry</a></span>';
+                btn.disabled = false;
+                btn.textContent = '🔄 Retry Batch ' + (batchIndex + 1);
+                btn.style.background = '#dc3545';
+            }
+        }
+        
+        function updateProgress() {
+            const percentage = Math.round((completedBatches / totalBatches) * 100);
+            const progressFill = document.getElementById('progress-fill');
+            progressFill.style.width = percentage + '%';
+            progressFill.textContent = percentage + '%';
+            
+            document.getElementById('progress-text').innerHTML = 
+                `<strong>${completedBatches} of ${totalBatches} batches completed</strong>`;
+            
+            if (completedBatches === totalBatches) {
+                document.getElementById('progress-text').innerHTML = 
+                    '<strong style="color: #28a745;">🎉 All videos migrated successfully!</strong><br>' +
+                    '<a href="/test-player" style="margin: 0 10px;">🎬 Test Videos</a> | ' +
+                    '<a href="/admin/courses">← Back to Courses</a>';
+                    
+                // Confetti effect (optional)
+                document.body.style.background = 'linear-gradient(45deg, #e8f5e8, #f0f8ff)';
+            }
+        }
+        </script>
+        
+        <div style="text-align: center; margin-top: 30px; padding: 20px;">
+            <p><a href="/admin/migrate-existing-videos">← Back to Migration Options</a></p>
+        </div>
+        
+    </body>
+    </html>
+    '''
+    
+    return html
+
+@app.route('/admin/process-batch/<int:batch_index>', methods=['POST'])
+@login_required
+def process_batch(batch_index):
+    """Process a single batch of videos"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    try:
+        # Get videos for this batch (same logic as migrate_batch)
+        all_videos = CourseVideo.query.all()
+        video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+        
+        local_videos = []
+        for video in all_videos:
+            if not video.video_url:
+                video_path = os.path.join(video_folder, video.video_filename)
+                if os.path.exists(video_path):
+                    file_size = os.path.getsize(video_path) / (1024 * 1024)
+                    local_videos.append({
+                        'video': video,
+                        'size': file_size
+                    })
+        
+        local_videos.sort(key=lambda x: x['size'])
+        
+        # Group into batches (same logic)
+        batches = []
+        current_batch = []
+        current_size = 0
+        
+        for video_data in local_videos:
+            if len(current_batch) >= 3 or (current_size + video_data['size']) > 60:
+                if current_batch:
+                    batches.append(current_batch)
+                current_batch = [video_data]
+                current_size = video_data['size']
+            else:
+                current_batch.append(video_data)
+                current_size += video_data['size']
+        
+        if current_batch:
+            batches.append(current_batch)
+        
+        if batch_index >= len(batches):
+            return "Invalid batch index", 400
+        
+        batch = batches[batch_index]
+        migrated_count = 0
+        errors = []
+        
+        for video_data in batch:
+            try:
+                video = video_data['video']
+                video_path = os.path.join(video_folder, video.video_filename)
+                
+                print(f"🚀 Migrating batch {batch_index + 1}: {video.title}")
+                
+                # Upload to Cloudinary
+                with open(video_path, 'rb') as file:
+                    upload_result = upload_video_to_cloudinary(file, video.course_id, video.id)
+                
+                if upload_result:
+                    # Update database
+                    video.video_url = upload_result['url']
+                    migrated_count += 1
+                    print(f"✅ Success: {video.title}")
+                else:
+                    errors.append(video.title)
+                    print(f"❌ Failed: {video.title}")
+                    
+            except Exception as e:
+                errors.append(f"{video.title}: {str(e)}")
+                print(f"❌ Error: {video.title} - {str(e)}")
+        
+        # Commit all successful migrations
+        if migrated_count > 0:
+            db.session.commit()
+        
+        if errors:
+            return f"{migrated_count} migrated, {len(errors)} failed"
+        else:
+            return f"{migrated_count} videos migrated successfully"
+            
+    except Exception as e:
+        print(f"❌ Batch processing error: {e}")
+        return f"Batch processing failed: {str(e)}", 500
+
+@app.route('/admin/migration-status')
+@login_required
+def migration_status():
+    """Get current migration status as JSON"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        all_videos = CourseVideo.query.all()
+        cloudinary_count = sum(1 for v in all_videos if v.video_url)
+        local_count = len(all_videos) - cloudinary_count
+        
+        return {
+            'total': len(all_videos),
+            'cloudinary': cloudinary_count,
+            'local': local_count,
+            'percentage': round((cloudinary_count / len(all_videos)) * 100) if all_videos else 0
+        }
+    except Exception as e:
+        return {'error': str(e)}, 500
+
 # ========================================
 # DATABASE INITIALIZATION FUNCTION
 # ========================================

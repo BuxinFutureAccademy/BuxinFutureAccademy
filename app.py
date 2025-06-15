@@ -3552,6 +3552,482 @@ def bulk_reupload():
     
     return html
 
+
+#...............................................................................................................................
+
+# 2. ADD THESE IMPORTS at the top of your app.py (after your existing imports)
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+# 3. ADD CLOUDINARY CONFIGURATION after your existing app.config settings
+# Add this after your WhatsApp config line:
+
+# Cloudinary Configuration
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', 'dfizb64hx'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY', '959475453929561'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET', 'bLYgaJv1YnTToGNN-xamKKC-9Ac')
+)
+
+# 4. ADD THIS HELPER FUNCTION (add anywhere in your app.py, I suggest after your other helper functions)
+def upload_video_to_cloudinary(video_file, course_id, video_index):
+    """Upload video to Cloudinary and return the URL"""
+    try:
+        # Create a unique public_id for the video
+        public_id = f"course_{course_id}_video_{video_index}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        print(f"🚀 Uploading to Cloudinary: {public_id}")
+        
+        # Upload to Cloudinary
+        result = cloudinary.uploader.upload(
+            video_file,
+            resource_type="video",
+            public_id=public_id,
+            folder="course_videos",
+            overwrite=True,
+            format="mp4"  # Convert to MP4 automatically
+        )
+        
+        print(f"✅ Cloudinary upload successful: {result['secure_url']}")
+        
+        return {
+            'url': result['secure_url'],
+            'public_id': result['public_id'],
+            'duration': result.get('duration', 0),
+            'size': result.get('bytes', 0)
+        }
+    except Exception as e:
+        print(f"❌ Cloudinary upload error: {e}")
+        return None
+
+# 5. IMPORTANT: Update your CourseVideo model to support both old and new systems
+# Find your CourseVideo class and make sure video_url is nullable:
+# (Your model already looks correct, but double-check that video_url can be None)
+
+# 6. REPLACE your course_video route 
+# Find @app.route('/course_video/<filename>') and replace the ENTIRE function with:
+
+@app.route('/course_video/<filename>')
+@login_required
+def course_video(filename):
+    """Serve video files from Cloudinary or local storage"""
+    
+    # Check if video exists in database
+    video = CourseVideo.query.filter_by(video_filename=filename).first()
+    if not video:
+        flash('Video not found in database', 'error')
+        return f"Video '{filename}' not found in database", 404
+    
+    # Check permissions (only if not admin)
+    if not current_user.is_admin:
+        purchase = Purchase.query.filter_by(
+            user_id=current_user.id,
+            course_id=video.course_id,
+            status='completed'
+        ).first()
+        
+        if not purchase and not video.is_preview:
+            flash('You need to purchase this course to access the videos.', 'warning')
+            return "Access denied - course not purchased", 403
+    
+    # If video has a Cloudinary URL, redirect to it
+    if video.video_url:
+        print(f"📹 Serving from Cloudinary: {video.video_url}")
+        return redirect(video.video_url)
+    
+    # Fallback to local file system (for videos not yet migrated)
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    video_file_path = os.path.join(video_folder, filename)
+    
+    if os.path.exists(video_file_path):
+        print(f"📁 Serving from local storage: {filename}")
+        return send_from_directory(
+            video_folder, 
+            filename, 
+            mimetype='video/mp4',
+            as_attachment=False
+        )
+    else:
+        # Video not found anywhere
+        error_msg = f"Video file missing: {filename}"
+        print(f"❌ ERROR: {error_msg}")
+        
+        return f"""
+        <div style="padding: 20px; font-family: Arial;">
+            <h1>Video Not Available</h1>
+            <p><strong>Video:</strong> {video.title}</p>
+            <p><strong>Status:</strong> Not found in Cloudinary or local storage</p>
+            <p><strong>Solutions:</strong></p>
+            <ul>
+                <li><a href="/admin/migrate-existing-videos">🔄 Check Migration Status</a></li>
+                <li><a href="/admin/reupload-videos">📤 Re-upload Missing Videos</a></li>
+            </ul>
+            <p><a href="/admin/courses">← Back to Courses</a></p>
+        </div>
+        """, 404
+
+# 7. UPDATE your create_course route to use Cloudinary for NEW videos
+# Find the video upload section in your create_course route and replace it with:
+
+# IN YOUR create_course ROUTE, REPLACE THIS SECTION:
+# Handle video uploads
+video_files = request.files.getlist('video_files')
+video_titles = request.form.getlist('video_titles')
+video_descriptions = request.form.getlist('video_descriptions')
+video_orders = request.form.getlist('video_orders')
+video_durations = request.form.getlist('video_durations')
+
+video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+os.makedirs(video_folder, exist_ok=True)
+
+for i, video_file in enumerate(video_files):
+    if video_file and video_file.filename and allowed_file(video_file.filename, 'video'):
+        video_file.seek(0, 2)
+        file_size = video_file.tell()
+        video_file.seek(0)
+        
+        if file_size > 500 * 1024 * 1024:
+            flash(f'Video file {video_file.filename} is too large. Maximum size is 500MB.', 'warning')
+            continue
+        
+        filename = secure_filename(video_file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+        unique_filename = f"{timestamp}{course.id}_{i+1}_{filename}"
+        
+        video_path = os.path.join(video_folder, unique_filename)
+        video_file.save(video_path)
+        
+        course_video = CourseVideo(
+            course_id=course.id,
+            title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
+            description=video_descriptions[i] if i < len(video_descriptions) else "",
+            video_filename=unique_filename,
+            duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
+            order_index=int(video_orders[i]) if i < len(video_orders) else i+1
+        )
+        
+        db.session.add(course_video)
+
+# WITH THIS CLOUDINARY VERSION:
+# Handle video uploads - CLOUDINARY VERSION
+video_files = request.files.getlist('video_files')
+video_titles = request.form.getlist('video_titles')
+video_descriptions = request.form.getlist('video_descriptions')
+video_orders = request.form.getlist('video_orders')
+video_durations = request.form.getlist('video_durations')
+
+for i, video_file in enumerate(video_files):
+    if video_file and video_file.filename and allowed_file(video_file.filename, 'video'):
+        video_file.seek(0, 2)
+        file_size = video_file.tell()
+        video_file.seek(0)
+        
+        if file_size > 500 * 1024 * 1024:  # 500MB
+            flash(f'Video file {video_file.filename} is too large. Maximum size is 500MB.', 'warning')
+            continue
+        
+        print(f"📤 Uploading {video_file.filename} to Cloudinary...")
+        
+        # Upload to Cloudinary instead of local storage
+        upload_result = upload_video_to_cloudinary(video_file, course.id, i+1)
+        
+        if upload_result:
+            # Create a fallback filename for compatibility
+            fallback_filename = f"cloudinary_{upload_result['public_id']}.mp4"
+            
+            course_video = CourseVideo(
+                course_id=course.id,
+                title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
+                description=video_descriptions[i] if i < len(video_descriptions) else "",
+                video_filename=fallback_filename,  # Fallback filename
+                video_url=upload_result['url'],  # Cloudinary URL
+                duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
+                order_index=int(video_orders[i]) if i < len(video_orders) else i+1
+            )
+            db.session.add(course_video)
+            print(f"✅ Video saved to database: {course_video.title}")
+        else:
+            flash(f'Failed to upload video: {video_file.filename}', 'danger')
+            print(f"❌ Failed to upload: {video_file.filename}")
+
+# 8. ADD THESE TEST AND MIGRATION ROUTES (add at the end of your routes)
+@app.route('/admin/cloudinary-test')
+@login_required
+def cloudinary_test():
+    """Test Cloudinary connection"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    try:
+        # Test Cloudinary connection
+        result = cloudinary.api.ping()
+        
+        html = '<html><head><title>Cloudinary Test</title>'
+        html += '<style>body { font-family: Arial; padding: 20px; }</style></head><body>'
+        html += '<h1>☁️ Cloudinary Connection Test</h1>'
+        html += '<p><strong>✅ Connection successful!</strong></p>'
+        html += f'<p><strong>Cloud Name:</strong> {cloudinary.config().cloud_name}</p>'
+        html += f'<p><strong>API Key:</strong> {cloudinary.config().api_key}</p>'
+        html += f'<p><strong>Status:</strong> {result.get("status", "OK")}</p>'
+        
+        # Test upload quota
+        try:
+            usage = cloudinary.api.usage()
+            storage_mb = usage.get("storage", {}).get("usage", 0) / 1024 / 1024
+            bandwidth_mb = usage.get("bandwidth", {}).get("usage", 0) / 1024 / 1024
+            
+            html += '<h3>📊 Usage Statistics:</h3>'
+            html += f'<p><strong>Storage used:</strong> {storage_mb:.1f} MB / 25,000 MB</p>'
+            html += f'<p><strong>Bandwidth used this month:</strong> {bandwidth_mb:.1f} MB / 25,000 MB</p>'
+            html += f'<p><strong>Storage remaining:</strong> {25000 - storage_mb:.1f} MB</p>'
+        except Exception as e:
+            html += f'<p><em>Could not fetch usage: {e}</em></p>'
+        
+        html += '<p><a href="/admin/migrate-existing-videos">🚀 Migrate Existing Videos</a></p>'
+        html += '<p><a href="/admin/courses">← Back to Courses</a></p>'
+        html += '</body></html>'
+        
+        return html
+        
+    except Exception as e:
+        return f'''
+        <html><head><title>Cloudinary Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; }}</style></head><body>
+        <h1>❌ Cloudinary Connection Failed</h1>
+        <p><strong>Error:</strong> {str(e)}</p>
+        <h3>💡 How to Fix:</h3>
+        <ol>
+            <li>Check environment variables on Render:
+                <ul>
+                    <li>CLOUDINARY_CLOUD_NAME=dfizb64hx</li>
+                    <li>CLOUDINARY_API_KEY=959475453929561</li>
+                    <li>CLOUDINARY_API_SECRET=bLYgaJv1YnTToGNN-xamKKC-9Ac</li>
+                </ul>
+            </li>
+            <li>Redeploy your app after adding variables</li>
+            <li>Check if cloudinary is in requirements.txt</li>
+        </ol>
+        <p><a href="/admin/courses">← Back to Courses</a></p>
+        </body></html>
+        '''
+
+
+# 7. ADD MIGRATION ROUTES for your existing videos
+
+@app.route('/admin/migrate-existing-videos')
+@login_required
+def migrate_existing_videos():
+    """Show existing videos and migrate them to Cloudinary"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    # Get all videos that have local files but no Cloudinary URL
+    all_videos = CourseVideo.query.all()
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    
+    local_videos = []
+    cloudinary_videos = []
+    missing_videos = []
+    
+    for video in all_videos:
+        if video.video_url:  # Has Cloudinary URL
+            cloudinary_videos.append(video)
+        else:
+            video_path = os.path.join(video_folder, video.video_filename)
+            if os.path.exists(video_path):
+                local_videos.append(video)
+            else:
+                missing_videos.append(video)
+    
+    html = '<html><head><title>Migrate Videos to Cloudinary</title>'
+    html += '<style>'
+    html += 'body { font-family: Arial; padding: 20px; }'
+    html += '.video-item { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }'
+    html += '.local { border-color: #ffc107; background: #fff3cd; }'
+    html += '.cloudinary { border-color: #28a745; background: #d4edda; }'
+    html += '.missing { border-color: #dc3545; background: #f8d7da; }'
+    html += 'button { background: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 3px; cursor: pointer; }'
+    html += '.migrate-btn { background: #28a745; }'
+    html += '</style></head><body>'
+    
+    html += '<h1>🚀 Migrate Videos to Cloudinary</h1>'
+    
+    html += '<div style="background: #e3f2fd; padding: 15px; margin: 20px 0; border-radius: 5px;">'
+    html += '<h3>📊 Video Status:</h3>'
+    html += f'<p><strong>✅ Already on Cloudinary:</strong> {len(cloudinary_videos)}</p>'
+    html += f'<p><strong>📁 Local files (need migration):</strong> {len(local_videos)}</p>'
+    html += f'<p><strong>❌ Missing files:</strong> {len(missing_videos)}</p>'
+    html += '</div>'
+    
+    if local_videos:
+        html += '<h2>📁 Local Videos (Ready to Migrate)</h2>'
+        html += '<form method="POST" action="/admin/start-migration">'
+        
+        for video in local_videos:
+            course = Course.query.get(video.course_id)
+            course_name = course.title if course else "Unknown Course"
+            video_path = os.path.join(video_folder, video.video_filename)
+            file_size = os.path.getsize(video_path) / (1024 * 1024)  # MB
+            
+            html += f'<div class="video-item local">'
+            html += f'<input type="checkbox" name="video_ids" value="{video.id}" checked> '
+            html += f'<strong>{video.title}</strong><br>'
+            html += f'Course: {course_name}<br>'
+            html += f'File: {video.video_filename} ({file_size:.1f} MB)<br>'
+            html += f'<a href="/course_video_bypass/{video.video_filename}" target="_blank">🎬 Test Play</a>'
+            html += f'</div>'
+        
+        html += '<br><button type="submit" class="migrate-btn">🚀 Migrate Selected Videos to Cloudinary</button>'
+        html += '</form>'
+    
+    if cloudinary_videos:
+        html += '<h2>☁️ Videos Already on Cloudinary</h2>'
+        for video in cloudinary_videos:
+            course = Course.query.get(video.course_id)
+            course_name = course.title if course else "Unknown Course"
+            
+            html += f'<div class="video-item cloudinary">'
+            html += f'<strong>{video.title}</strong><br>'
+            html += f'Course: {course_name}<br>'
+            html += f'Cloudinary ID: {video.video_filename}<br>'
+            html += f'<a href="{video.video_url}" target="_blank">🎬 Play from Cloudinary</a>'
+            html += f'</div>'
+    
+    if missing_videos:
+        html += '<h2>❌ Missing Videos</h2>'
+        for video in missing_videos:
+            course = Course.query.get(video.course_id)
+            course_name = course.title if course else "Unknown Course"
+            
+            html += f'<div class="video-item missing">'
+            html += f'<strong>{video.title}</strong><br>'
+            html += f'Course: {course_name}<br>'
+            html += f'Status: File not found<br>'
+            html += f'<a href="/admin/reupload-videos">📤 Re-upload Missing Videos</a>'
+            html += f'</div>'
+    
+    html += '<p><a href="/admin/courses">← Back to Admin Courses</a></p>'
+    html += '</body></html>'
+    
+    return html
+
+@app.route('/admin/start-migration', methods=['POST'])
+@login_required
+def start_migration():
+    """Migrate selected videos to Cloudinary"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    video_ids = request.form.getlist('video_ids')
+    if not video_ids:
+        return "No videos selected", 400
+    
+    html = '<html><head><title>Migration Progress</title>'
+    html += '<style>body { font-family: Arial; padding: 20px; }</style>'
+    html += '</head><body>'
+    html += '<h1>🚀 Migration Progress</h1>'
+    
+    migrated_count = 0
+    errors = []
+    
+    for video_id in video_ids:
+        try:
+            video = CourseVideo.query.get(int(video_id))
+            if not video:
+                continue
+            
+            video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+            video_path = os.path.join(video_folder, video.video_filename)
+            
+            if not os.path.exists(video_path):
+                errors.append(f"File not found: {video.title}")
+                continue
+            
+            html += f'<p>🔄 Migrating: {video.title}...</p>'
+            
+            # Upload to Cloudinary
+            with open(video_path, 'rb') as file:
+                upload_result = upload_video_to_cloudinary(file, video.course_id, video.id)
+            
+            if upload_result:
+                # Update database record
+                video.video_url = upload_result['url']
+                # Keep the original filename for backward compatibility
+                # video.video_filename = upload_result['public_id']
+                
+                db.session.commit()
+                migrated_count += 1
+                html += f'<p>✅ Success: {video.title} migrated to Cloudinary</p>'
+            else:
+                errors.append(f"Upload failed: {video.title}")
+                html += f'<p>❌ Failed: {video.title}</p>'
+                
+        except Exception as e:
+            errors.append(f"Error with {video.title}: {str(e)}")
+            html += f'<p>❌ Error: {video.title} - {str(e)}</p>'
+    
+    html += f'<h2>📊 Migration Summary</h2>'
+    html += f'<p><strong>✅ Successfully migrated:</strong> {migrated_count} videos</p>'
+    html += f'<p><strong>❌ Errors:</strong> {len(errors)}</p>'
+    
+    if errors:
+        html += '<h3>Error Details:</h3><ul>'
+        for error in errors:
+            html += f'<li>{error}</li>'
+        html += '</ul>'
+    
+    html += '<p><a href="/admin/migrate-existing-videos">← Back to Migration Page</a></p>'
+    html += '<p><a href="/test-player">🎬 Test Migrated Videos</a></p>'
+    html += '</body></html>'
+    
+    return html
+
+@app.route('/admin/cloudinary-test')
+@login_required
+def cloudinary_test():
+    """Test Cloudinary connection"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    try:
+        # Test Cloudinary connection
+        result = cloudinary.api.ping()
+        
+        html = '<h1>☁️ Cloudinary Connection Test</h1>'
+        html += '<style>body { font-family: Arial; padding: 20px; }</style>'
+        html += f'<p><strong>✅ Connection successful!</strong></p>'
+        html += f'<p><strong>Cloud Name:</strong> {cloudinary.config().cloud_name}</p>'
+        html += f'<p><strong>API Key:</strong> {cloudinary.config().api_key}</p>'
+        html += f'<p><strong>Status:</strong> {result.get("status", "OK")}</p>'
+        
+        # Test upload quota
+        try:
+            usage = cloudinary.api.usage()
+            html += f'<h3>📊 Usage Statistics:</h3>'
+            html += f'<p><strong>Storage used:</strong> {usage.get("storage", {}).get("usage", 0) / 1024 / 1024:.1f} MB</p>'
+            html += f'<p><strong>Bandwidth used this month:</strong> {usage.get("bandwidth", {}).get("usage", 0) / 1024 / 1024:.1f} MB</p>'
+        except:
+            html += '<p><em>Could not fetch usage statistics</em></p>'
+        
+        html += '<p><a href="/admin/migrate-existing-videos">🚀 Start Migration</a></p>'
+        
+        return html
+        
+    except Exception as e:
+        return f'''
+        <h1>❌ Cloudinary Connection Failed</h1>
+        <style>body {{ font-family: Arial; padding: 20px; }}</style>
+        <p><strong>Error:</strong> {str(e)}</p>
+        <p><strong>Check:</strong></p>
+        <ul>
+            <li>Environment variables are set correctly</li>
+            <li>Cloud name, API key, and API secret are correct</li>
+            <li>Internet connection is working</li>
+        </ul>
+        <p><a href="/admin/courses">← Back to Courses</a></p>
+        '''
+
 # ========================================
 # APPLICATION STARTUP
 # ========================================

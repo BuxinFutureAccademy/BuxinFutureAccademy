@@ -2545,65 +2545,6 @@ def test_upload():
     '''
 
 
-# Replace your current course_video route with this improved version:
-
-@app.route('/course_video/<filename>')
-@login_required
-def course_video(filename):
-    """Serve video files with better error handling"""
-    
-    # Check if video exists in database
-    video = CourseVideo.query.filter_by(video_filename=filename).first()
-    if not video:
-        flash('Video not found in database', 'error')
-        return f"Video '{filename}' not found in database", 404
-    
-    # Check permissions (only if not admin)
-    if not current_user.is_admin:
-        purchase = Purchase.query.filter_by(
-            user_id=current_user.id,
-            course_id=video.course_id,
-            status='completed'
-        ).first()
-        
-        if not purchase and not video.is_preview:
-            flash('You need to purchase this course to access the videos.', 'warning')
-            return "Access denied - course not purchased", 403
-    
-    # Find the video file
-    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
-    video_file_path = os.path.join(video_folder, filename)
-    
-    # Check if file actually exists
-    if not os.path.exists(video_file_path):
-        error_msg = f"Video file missing on server: {filename}"
-        print(f"ERROR: {error_msg}")
-        print(f"Looking for file at: {video_file_path}")
-        print(f"Video folder contents: {os.listdir(video_folder) if os.path.exists(video_folder) else 'Folder does not exist'}")
-        
-        # Return a helpful error page instead of just 404
-        return f"""
-        <div style="padding: 20px; font-family: Arial;">
-            <h1>Video File Missing</h1>
-            <p><strong>Video:</strong> {video.title}</p>
-            <p><strong>Filename:</strong> {filename}</p>
-            <p><strong>Issue:</strong> The video file was uploaded but is no longer available on the server.</p>
-            <p><strong>Reason:</strong> This happens because Render's file system is temporary.</p>
-            <p><a href="/admin/courses">← Back to Courses</a></p>
-        </div>
-        """, 404
-    
-    try:
-        # Serve the video file
-        return send_from_directory(
-            video_folder, 
-            filename, 
-            mimetype='video/mp4',
-            as_attachment=False
-        )
-    except Exception as e:
-        print(f"Error serving video {filename}: {e}")
-        return f"Error serving video: {e}", 500
 #..................................................................................................................................................
 @app.route('/course_material/<filename>')
 @login_required

@@ -2375,11 +2375,96 @@ def bulk_message():
 # FILE SERVING ROUTES
 # ========================================
 
+# Add this test route to verify upload process
+
+@app.route('/test-upload', methods=['GET', 'POST'])
+@login_required
+def test_upload():
+    if not current_user.is_admin:
+        return "Only admin can test uploads", 403
+    
+    if request.method == 'POST':
+        if 'test_video' not in request.files:
+            return "No file uploaded", 400
+        
+        file = request.files['test_video']
+        if file.filename == '':
+            return "No file selected", 400
+        
+        if file:
+            filename = secure_filename(file.filename)
+            test_filename = f"test_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+            
+            video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+            file_path = os.path.join(video_folder, test_filename)
+            
+            try:
+                # Save the file
+                file.save(file_path)
+                
+                # Check if it was saved
+                file_exists = os.path.exists(file_path)
+                file_size = os.path.getsize(file_path) if file_exists else 0
+                
+                # List all files in video folder
+                all_files = os.listdir(video_folder) if os.path.exists(video_folder) else []
+                
+                result = f"""
+                <h1>Test Upload Result</h1>
+                <p><strong>File uploaded:</strong> {test_filename}</p>
+                <p><strong>File saved to:</strong> {file_path}</p>
+                <p><strong>File exists:</strong> {'✅ YES' if file_exists else '❌ NO'}</p>
+                <p><strong>File size:</strong> {file_size / (1024*1024):.1f} MB</p>
+                
+                <h2>All files in video folder:</h2>
+                <ul>
+                """
+                
+                for f in all_files:
+                    result += f"<li>{f}</li>"
+                
+                result += f"""
+                </ul>
+                
+                <h2>Test Video Link:</h2>
+                <p><a href="/course_video/{test_filename}" target="_blank">Try to play: {test_filename}</a></p>
+                
+                <p><a href="/test-upload">Upload another test video</a></p>
+                <p><a href="/video-debug">Check debug info</a></p>
+                """
+                
+                return result
+                
+            except Exception as e:
+                return f"Upload failed: {e}"
+    
+    # GET request - show upload form
+    return '''
+    <h1>Test Video Upload</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <p>Select a small video file (MP4, under 50MB):</p>
+        <input type="file" name="test_video" accept=".mp4,.avi,.mov" required>
+        <br><br>
+        <button type="submit">Upload Test Video</button>
+    </form>
+    <p><a href="/video-debug">← Back to Debug</a></p>
+    '''
+
+
+# Replace your current course_video route with this improved version:
+
 @app.route('/course_video/<filename>')
 @login_required
 def course_video(filename):
-    video = CourseVideo.query.filter_by(video_filename=filename).first_or_404()
+    """Serve video files with better error handling"""
     
+    # Check if video exists in database
+    video = CourseVideo.query.filter_by(video_filename=filename).first()
+    if not video:
+        flash('Video not found in database', 'error')
+        return f"Video '{filename}' not found in database", 404
+    
+    # Check permissions (only if not admin)
     if not current_user.is_admin:
         purchase = Purchase.query.filter_by(
             user_id=current_user.id,
@@ -2389,10 +2474,42 @@ def course_video(filename):
         
         if not purchase and not video.is_preview:
             flash('You need to purchase this course to access the videos.', 'warning')
-            return redirect(url_for('course_detail', course_id=video.course_id))
+            return "Access denied - course not purchased", 403
     
+    # Find the video file
     video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
-    return send_from_directory(video_folder, filename)
+    video_file_path = os.path.join(video_folder, filename)
+    
+    # Check if file actually exists
+    if not os.path.exists(video_file_path):
+        error_msg = f"Video file missing on server: {filename}"
+        print(f"ERROR: {error_msg}")
+        print(f"Looking for file at: {video_file_path}")
+        print(f"Video folder contents: {os.listdir(video_folder) if os.path.exists(video_folder) else 'Folder does not exist'}")
+        
+        # Return a helpful error page instead of just 404
+        return f"""
+        <div style="padding: 20px; font-family: Arial;">
+            <h1>Video File Missing</h1>
+            <p><strong>Video:</strong> {video.title}</p>
+            <p><strong>Filename:</strong> {filename}</p>
+            <p><strong>Issue:</strong> The video file was uploaded but is no longer available on the server.</p>
+            <p><strong>Reason:</strong> This happens because Render's file system is temporary.</p>
+            <p><a href="/admin/courses">← Back to Courses</a></p>
+        </div>
+        """, 404
+    
+    try:
+        # Serve the video file
+        return send_from_directory(
+            video_folder, 
+            filename, 
+            mimetype='video/mp4',
+            as_attachment=False
+        )
+    except Exception as e:
+        print(f"Error serving video {filename}: {e}")
+        return f"Error serving video: {e}", 500
 
 @app.route('/course_material/<filename>')
 @login_required

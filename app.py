@@ -3307,6 +3307,251 @@ def video_debug():
     html += '<div class="section"><a href="/admin/courses">← Back to Courses</a></div>'
     return html
 
+
+# Add these routes to your app.py file (after your existing routes)
+
+@app.route('/admin/reupload-videos')
+@login_required
+def reupload_videos():
+    """Show missing videos and allow re-upload"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    # Get all videos from database
+    all_videos = CourseVideo.query.all()
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    
+    missing_videos = []
+    existing_videos = []
+    
+    for video in all_videos:
+        video_path = os.path.join(video_folder, video.video_filename)
+        if os.path.exists(video_path):
+            existing_videos.append(video)
+        else:
+            missing_videos.append(video)
+    
+    html = '<html><head><title>Re-upload Missing Videos</title>'
+    html += '<style>'
+    html += 'body { font-family: Arial; padding: 20px; }'
+    html += '.video-item { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }'
+    html += '.missing { border-color: #dc3545; background: #f8d7da; }'
+    html += '.existing { border-color: #28a745; background: #d4edda; }'
+    html += '.upload-form { margin: 10px 0; }'
+    html += 'input[type="file"] { margin: 5px 0; }'
+    html += 'button { background: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 3px; cursor: pointer; }'
+    html += 'button:hover { background: #0056b3; }'
+    html += '.success { color: #28a745; }'
+    html += '.error { color: #dc3545; }'
+    html += '</style></head><body>'
+    
+    html += '<h1>Video Re-upload System</h1>'
+    
+    html += '<div style="background: #e3f2fd; padding: 15px; margin: 20px 0; border-radius: 5px;">'
+    html += '<h3>📊 Summary:</h3>'
+    html += f'<p><strong>Total videos in database:</strong> {len(all_videos)}</p>'
+    html += f'<p><strong>Missing video files:</strong> <span class="error">{len(missing_videos)}</span></p>'
+    html += f'<p><strong>Existing video files:</strong> <span class="success">{len(existing_videos)}</span></p>'
+    html += '</div>'
+    
+    if missing_videos:
+        html += '<h2>❌ Missing Videos (Need Re-upload)</h2>'
+        for video in missing_videos:
+            course = Course.query.get(video.course_id)
+            course_name = course.title if course else "Unknown Course"
+            
+            html += f'<div class="video-item missing">'
+            html += f'<h4>{video.title}</h4>'
+            html += f'<p><strong>Course:</strong> {course_name}</p>'
+            html += f'<p><strong>Expected filename:</strong> {video.video_filename}</p>'
+            html += f'<form method="POST" action="/admin/reupload-video/{video.id}" enctype="multipart/form-data" class="upload-form">'
+            html += f'<input type="file" name="video_file" accept=".mp4,.avi,.mov" required>'
+            html += f'<button type="submit">Re-upload Video</button>'
+            html += f'</form>'
+            html += f'</div>'
+    
+    if existing_videos:
+        html += '<h2>✅ Videos with Files Present</h2>'
+        for video in existing_videos:
+            course = Course.query.get(video.course_id)
+            course_name = course.title if course else "Unknown Course"
+            file_path = os.path.join(video_folder, video.video_filename)
+            file_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+            
+            html += f'<div class="video-item existing">'
+            html += f'<h4>{video.title}</h4>'
+            html += f'<p><strong>Course:</strong> {course_name}</p>'
+            html += f'<p><strong>Filename:</strong> {video.video_filename}</p>'
+            html += f'<p><strong>File size:</strong> {file_size:.1f} MB</p>'
+            html += f'<p><a href="/course_video_bypass/{video.video_filename}" target="_blank">🎬 Test Play</a></p>'
+            html += f'</div>'
+    
+    html += '<div style="margin: 30px 0; padding: 15px; background: #fff3cd; border-radius: 5px;">'
+    html += '<h3>💡 Instructions:</h3>'
+    html += '<ol>'
+    html += '<li>For each missing video, click "Choose File" and select the correct video file</li>'
+    html += '<li>Click "Re-upload Video" to upload the file</li>'
+    html += '<li>The file will be saved with the same filename as expected by the database</li>'
+    html += '<li>Test the video using the "Test Play" link after upload</li>'
+    html += '</ol>'
+    html += '</div>'
+    
+    html += '<p><a href="/admin/courses">← Back to Admin Courses</a></p>'
+    html += '<p><a href="/video-debug">🔍 Check Debug Info</a></p>'
+    html += '</body></html>'
+    
+    return html
+
+@app.route('/admin/reupload-video/<int:video_id>', methods=['POST'])
+@login_required
+def reupload_video(video_id):
+    """Handle individual video re-upload"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    video = CourseVideo.query.get_or_404(video_id)
+    
+    if 'video_file' not in request.files:
+        return "No file provided", 400
+    
+    file = request.files['video_file']
+    if file.filename == '':
+        return "No file selected", 400
+    
+    try:
+        video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+        
+        # Save with the exact filename expected by the database
+        file_path = os.path.join(video_folder, video.video_filename)
+        file.save(file_path)
+        
+        # Verify the file was saved
+        if os.path.exists(file_path):
+            file_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+            course = Course.query.get(video.course_id)
+            course_name = course.title if course else "Unknown Course"
+            
+            html = '<html><head><title>Video Re-uploaded</title>'
+            html += '<style>body { font-family: Arial; padding: 20px; }</style>'
+            html += '</head><body>'
+            html += '<h1>✅ Video Re-uploaded Successfully!</h1>'
+            html += f'<p><strong>Video:</strong> {video.title}</p>'
+            html += f'<p><strong>Course:</strong> {course_name}</p>'
+            html += f'<p><strong>Filename:</strong> {video.video_filename}</p>'
+            html += f'<p><strong>File size:</strong> {file_size:.1f} MB</p>'
+            
+            html += '<h3>Test the video:</h3>'
+            html += f'<video controls style="max-width: 500px; width: 100%;">'
+            html += f'<source src="/course_video_bypass/{video.video_filename}" type="video/mp4">'
+            html += 'Your browser does not support the video tag.'
+            html += '</video>'
+            
+            html += '<p><a href="/admin/reupload-videos">← Back to Re-upload Page</a></p>'
+            html += '<p><a href="/admin/courses">← Back to Admin Courses</a></p>'
+            html += '</body></html>'
+            
+            return html
+        else:
+            return "Error: File was not saved properly", 500
+            
+    except Exception as e:
+        return f"Upload failed: {str(e)}", 500
+
+@app.route('/admin/bulk-reupload', methods=['GET', 'POST'])
+@login_required
+def bulk_reupload():
+    """Allow bulk re-upload of multiple videos at once"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    if request.method == 'POST':
+        uploaded_count = 0
+        errors = []
+        
+        try:
+            # Get all uploaded files
+            for key in request.files:
+                if key.startswith('video_'):
+                    video_id = int(key.replace('video_', ''))
+                    file = request.files[key]
+                    
+                    if file and file.filename:
+                        video = CourseVideo.query.get(video_id)
+                        if video:
+                            try:
+                                video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+                                file_path = os.path.join(video_folder, video.video_filename)
+                                file.save(file_path)
+                                
+                                if os.path.exists(file_path):
+                                    uploaded_count += 1
+                                else:
+                                    errors.append(f"Failed to save {video.title}")
+                            except Exception as e:
+                                errors.append(f"Error uploading {video.title}: {str(e)}")
+            
+            result_html = '<html><head><title>Bulk Upload Results</title>'
+            result_html += '<style>body { font-family: Arial; padding: 20px; }</style>'
+            result_html += '</head><body>'
+            result_html += '<h1>📊 Bulk Upload Results</h1>'
+            result_html += f'<p><strong>✅ Successfully uploaded:</strong> {uploaded_count} videos</p>'
+            
+            if errors:
+                result_html += f'<p><strong>❌ Errors:</strong> {len(errors)}</p>'
+                result_html += '<ul>'
+                for error in errors:
+                    result_html += f'<li>{error}</li>'
+                result_html += '</ul>'
+            
+            result_html += '<p><a href="/admin/reupload-videos">← Back to Re-upload Page</a></p>'
+            result_html += '<p><a href="/test-player">🎬 Test Videos</a></p>'
+            result_html += '</body></html>'
+            
+            return result_html
+            
+        except Exception as e:
+            return f"Bulk upload failed: {str(e)}", 500
+    
+    # GET request - show bulk upload form
+    missing_videos = []
+    all_videos = CourseVideo.query.all()
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    
+    for video in all_videos:
+        video_path = os.path.join(video_folder, video.video_filename)
+        if not os.path.exists(video_path):
+            missing_videos.append(video)
+    
+    if not missing_videos:
+        return '<h1>✅ No Missing Videos</h1><p>All videos are present!</p><p><a href="/admin/courses">← Back to Courses</a></p>'
+    
+    html = '<html><head><title>Bulk Video Re-upload</title>'
+    html += '<style>body { font-family: Arial; padding: 20px; }'
+    html += '.video-row { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }'
+    html += 'input[type="file"] { width: 300px; }'
+    html += '</style></head><body>'
+    
+    html += '<h1>📦 Bulk Video Re-upload</h1>'
+    html += f'<p>Upload multiple videos at once. Found <strong>{len(missing_videos)}</strong> missing videos.</p>'
+    
+    html += '<form method="POST" enctype="multipart/form-data">'
+    for video in missing_videos:
+        course = Course.query.get(video.course_id)
+        course_name = course.title if course else "Unknown Course"
+        
+        html += '<div class="video-row">'
+        html += f'<strong>{video.title}</strong> ({course_name})<br>'
+        html += f'<input type="file" name="video_{video.id}" accept=".mp4,.avi,.mov">'
+        html += '</div>'
+    
+    html += '<br><button type="submit" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px;">📤 Upload All Videos</button>'
+    html += '</form>'
+    
+    html += '<p><a href="/admin/reupload-videos">← Back to Individual Upload</a></p>'
+    html += '</body></html>'
+    
+    return html
+
 # ========================================
 # APPLICATION STARTUP
 # ========================================

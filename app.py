@@ -882,6 +882,66 @@ def delete_course(course_id):
     return redirect(url_for('admin_courses'))
 
 
+@app.route('/course_video/<filename>')
+@login_required
+def course_video(filename):
+    """Serve video files from Cloudinary or local storage"""
+    
+    # Check if video exists in database
+    video = CourseVideo.query.filter_by(video_filename=filename).first()
+    if not video:
+        flash('Video not found in database', 'error')
+        return f"Video '{filename}' not found in database", 404
+    
+    # Check permissions (only if not admin)
+    if not current_user.is_admin:
+        purchase = Purchase.query.filter_by(
+            user_id=current_user.id,
+            course_id=video.course_id,
+            status='completed'
+        ).first()
+        
+        if not purchase and not video.is_preview:
+            flash('You need to purchase this course to access the videos.', 'warning')
+            return "Access denied - course not purchased", 403
+    
+    # If video has a Cloudinary URL, redirect to it
+    if video.video_url:
+        print(f"📹 Serving from Cloudinary: {video.video_url}")
+        return redirect(video.video_url)
+    
+    # Fallback to local file system (for videos not yet migrated)
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    video_file_path = os.path.join(video_folder, filename)
+    
+    if os.path.exists(video_file_path):
+        print(f"📁 Serving from local storage: {filename}")
+        return send_from_directory(
+            video_folder, 
+            filename, 
+            mimetype='video/mp4',
+            as_attachment=False
+        )
+    else:
+        # Video not found anywhere
+        error_msg = f"Video file missing: {filename}"
+        print(f"❌ ERROR: {error_msg}")
+        
+        return f"""
+        <div style="padding: 20px; font-family: Arial;">
+            <h1>Video Not Available</h1>
+            <p><strong>Video:</strong> {video.title}</p>
+            <p><strong>Status:</strong> Not found in Cloudinary or local storage</p>
+            <p><strong>Solutions:</strong></p>
+            <ul>
+                <li><a href="/admin/migrate-existing-videos">🔄 Check Migration Status</a></li>
+                <li><a href="/admin/reupload-videos">📤 Re-upload Missing Videos</a></li>
+            </ul>
+            <p><a href="/admin/courses">← Back to Courses</a></p>
+        </div>
+        """, 404
+
+
 # ========================================
 # PRODUCT MANAGEMENT ROUTES (Keep these together)
 # ========================================
@@ -3337,157 +3397,7 @@ def upload_video_to_cloudinary(video_file, course_id, video_index):
         print(f"❌ Cloudinary upload error: {e}")
         return None
 
-# 5. IMPORTANT: Update your CourseVideo model to support both old and new systems
-# Find your CourseVideo class and make sure video_url is nullable:
-# (Your model already looks correct, but double-check that video_url can be None)
 
-# 6. REPLACE your course_video route 
-# Find @app.route('/course_video/<filename>') and replace the ENTIRE function with:
-
-@app.route('/course_video/<filename>')
-@login_required
-def course_video(filename):
-    """Serve video files from Cloudinary or local storage"""
-    
-    # Check if video exists in database
-    video = CourseVideo.query.filter_by(video_filename=filename).first()
-    if not video:
-        flash('Video not found in database', 'error')
-        return f"Video '{filename}' not found in database", 404
-    
-    # Check permissions (only if not admin)
-    if not current_user.is_admin:
-        purchase = Purchase.query.filter_by(
-            user_id=current_user.id,
-            course_id=video.course_id,
-            status='completed'
-        ).first()
-        
-        if not purchase and not video.is_preview:
-            flash('You need to purchase this course to access the videos.', 'warning')
-            return "Access denied - course not purchased", 403
-    
-    # If video has a Cloudinary URL, redirect to it
-    if video.video_url:
-        print(f"📹 Serving from Cloudinary: {video.video_url}")
-        return redirect(video.video_url)
-    
-    # Fallback to local file system (for videos not yet migrated)
-    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
-    video_file_path = os.path.join(video_folder, filename)
-    
-    if os.path.exists(video_file_path):
-        print(f"📁 Serving from local storage: {filename}")
-        return send_from_directory(
-            video_folder, 
-            filename, 
-            mimetype='video/mp4',
-            as_attachment=False
-        )
-    else:
-        # Video not found anywhere
-        error_msg = f"Video file missing: {filename}"
-        print(f"❌ ERROR: {error_msg}")
-        
-        return f"""
-        <div style="padding: 20px; font-family: Arial;">
-            <h1>Video Not Available</h1>
-            <p><strong>Video:</strong> {video.title}</p>
-            <p><strong>Status:</strong> Not found in Cloudinary or local storage</p>
-            <p><strong>Solutions:</strong></p>
-            <ul>
-                <li><a href="/admin/migrate-existing-videos">🔄 Check Migration Status</a></li>
-                <li><a href="/admin/reupload-videos">📤 Re-upload Missing Videos</a></li>
-            </ul>
-            <p><a href="/admin/courses">← Back to Courses</a></p>
-        </div>
-        """, 404
-
-# 7. UPDATE your create_course route to use Cloudinary for NEW videos
-# Find the video upload section in your create_course route and replace it with:
-
-# IN YOUR create_course ROUTE, REPLACE THIS SECTION:
-# Handle video uploads
-video_files = request.files.getlist('video_files')
-video_titles = request.form.getlist('video_titles')
-video_descriptions = request.form.getlist('video_descriptions')
-video_orders = request.form.getlist('video_orders')
-video_durations = request.form.getlist('video_durations')
-
-video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
-os.makedirs(video_folder, exist_ok=True)
-
-for i, video_file in enumerate(video_files):
-    if video_file and video_file.filename and allowed_file(video_file.filename, 'video'):
-        video_file.seek(0, 2)
-        file_size = video_file.tell()
-        video_file.seek(0)
-        
-        if file_size > 500 * 1024 * 1024:
-            flash(f'Video file {video_file.filename} is too large. Maximum size is 500MB.', 'warning')
-            continue
-        
-        filename = secure_filename(video_file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-        unique_filename = f"{timestamp}{course.id}_{i+1}_{filename}"
-        
-        video_path = os.path.join(video_folder, unique_filename)
-        video_file.save(video_path)
-        
-        course_video = CourseVideo(
-            course_id=course.id,
-            title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
-            description=video_descriptions[i] if i < len(video_descriptions) else "",
-            video_filename=unique_filename,
-            duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
-            order_index=int(video_orders[i]) if i < len(video_orders) else i+1
-        )
-        
-        db.session.add(course_video)
-
-# WITH THIS CLOUDINARY VERSION:
-# Handle video uploads - CLOUDINARY VERSION
-video_files = request.files.getlist('video_files')
-video_titles = request.form.getlist('video_titles')
-video_descriptions = request.form.getlist('video_descriptions')
-video_orders = request.form.getlist('video_orders')
-video_durations = request.form.getlist('video_durations')
-
-for i, video_file in enumerate(video_files):
-    if video_file and video_file.filename and allowed_file(video_file.filename, 'video'):
-        video_file.seek(0, 2)
-        file_size = video_file.tell()
-        video_file.seek(0)
-        
-        if file_size > 500 * 1024 * 1024:  # 500MB
-            flash(f'Video file {video_file.filename} is too large. Maximum size is 500MB.', 'warning')
-            continue
-        
-        print(f"📤 Uploading {video_file.filename} to Cloudinary...")
-        
-        # Upload to Cloudinary instead of local storage
-        upload_result = upload_video_to_cloudinary(video_file, course.id, i+1)
-        
-        if upload_result:
-            # Create a fallback filename for compatibility
-            fallback_filename = f"cloudinary_{upload_result['public_id']}.mp4"
-            
-            course_video = CourseVideo(
-                course_id=course.id,
-                title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
-                description=video_descriptions[i] if i < len(video_descriptions) else "",
-                video_filename=fallback_filename,  # Fallback filename
-                video_url=upload_result['url'],  # Cloudinary URL
-                duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
-                order_index=int(video_orders[i]) if i < len(video_orders) else i+1
-            )
-            db.session.add(course_video)
-            print(f"✅ Video saved to database: {course_video.title}")
-        else:
-            flash(f'Failed to upload video: {video_file.filename}', 'danger')
-            print(f"❌ Failed to upload: {video_file.filename}")
-
-# 8. ADD THESE TEST AND MIGRATION ROUTES (add at the end of your routes)
 @app.route('/admin/cloudinary-test')
 @login_required
 def cloudinary_test():
@@ -3719,54 +3629,6 @@ def start_migration():
     
     return html
 
-@app.route('/admin/cloudinary-test')
-@login_required
-def cloudinary_test():
-    """Test Cloudinary connection"""
-    if not current_user.is_admin:
-        return "Admin only", 403
-    
-    try:
-        # Test Cloudinary connection
-        result = cloudinary.api.ping()
-        
-        html = '<h1>☁️ Cloudinary Connection Test</h1>'
-        html += '<style>body { font-family: Arial; padding: 20px; }</style>'
-        html += f'<p><strong>✅ Connection successful!</strong></p>'
-        html += f'<p><strong>Cloud Name:</strong> {cloudinary.config().cloud_name}</p>'
-        html += f'<p><strong>API Key:</strong> {cloudinary.config().api_key}</p>'
-        html += f'<p><strong>Status:</strong> {result.get("status", "OK")}</p>'
-        
-        # Test upload quota
-        try:
-            usage = cloudinary.api.usage()
-            html += f'<h3>📊 Usage Statistics:</h3>'
-            html += f'<p><strong>Storage used:</strong> {usage.get("storage", {}).get("usage", 0) / 1024 / 1024:.1f} MB</p>'
-            html += f'<p><strong>Bandwidth used this month:</strong> {usage.get("bandwidth", {}).get("usage", 0) / 1024 / 1024:.1f} MB</p>'
-        except:
-            html += '<p><em>Could not fetch usage statistics</em></p>'
-        
-        html += '<p><a href="/admin/migrate-existing-videos">🚀 Start Migration</a></p>'
-        
-        return html
-        
-    except Exception as e:
-        return f'''
-        <h1>❌ Cloudinary Connection Failed</h1>
-        <style>body {{ font-family: Arial; padding: 20px; }}</style>
-        <p><strong>Error:</strong> {str(e)}</p>
-        <p><strong>Check:</strong></p>
-        <ul>
-            <li>Environment variables are set correctly</li>
-            <li>Cloud name, API key, and API secret are correct</li>
-            <li>Internet connection is working</li>
-        </ul>
-        <p><a href="/admin/courses">← Back to Courses</a></p>
-        '''
-
-
-# Fix for the "Working outside of request context" error
-# Replace the bottom section of your app.py file with this:
 
 # ========================================
 # SAMPLE DATA CREATION - SIMPLIFIED VERSION
@@ -3798,15 +3660,253 @@ def create_sample_data():
         db.session.rollback()
 
 # ========================================
+# SAMPLE DATA CREATION - FIXED VERSION
+# ========================================
+
+def create_sample_data():
+    """Create sample admin user and data if they don't exist"""
+    try:
+        # Create admin user
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                first_name='Admin',
+                last_name='User',
+                is_admin=True,
+                is_student=False
+            )
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("Created admin user")
+        
+        # Create sample students
+        for i in range(1, 6):
+            student = User.query.filter_by(username=f'student{i}').first()
+            if not student:
+                student = User(
+                    username=f'student{i}',
+                    email=f'student{i}@example.com',
+                    first_name='Student',
+                    last_name=str(i),
+                    is_admin=False,
+                    is_student=True
+                )
+                student.set_password('password123')
+                db.session.add(student)
+
+        db.session.commit()
+
+        # Create sample classes only if admin exists
+        admin = User.query.filter_by(username='admin').first()
+        if admin:
+            individual_class = IndividualClass.query.first()
+            if not individual_class:
+                individual_class = IndividualClass(
+                    name='Python Basics',
+                    description='Individual Python programming class',
+                    teacher_id=admin.id
+                )
+                db.session.add(individual_class)
+            
+            group_class = GroupClass.query.first()
+            if not group_class:
+                group_class = GroupClass(
+                    name='Web Development Group',
+                    description='Group class for web development',
+                    teacher_id=admin.id,
+                    max_students=5
+                )
+                db.session.add(group_class)
+        
+        # Create sample courses
+        sample_courses = [
+            {
+                'title': 'Complete Python Bootcamp',
+                'description': 'Learn Python programming from scratch with hands-on projects and real-world applications.',
+                'short_description': 'Master Python programming with practical projects',
+                'price': 99.99,
+                'duration_weeks': 8,
+                'level': 'Beginner',
+                'category': 'Programming',
+                'image_url': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400'
+            },
+            {
+                'title': 'Advanced JavaScript & React',
+                'description': 'Build modern web applications with JavaScript ES6+ and React framework.',
+                'short_description': 'Create dynamic web apps with JavaScript and React',
+                'price': 149.99,
+                'duration_weeks': 12,
+                'level': 'Intermediate',
+                'category': 'Web Development',
+                'image_url': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400'
+            },
+            {
+                'title': 'Data Science with Python',
+                'description': 'Analyze data, create visualizations, and build machine learning models using Python.',
+                'short_description': 'Master data analysis and machine learning',
+                'price': 199.99,
+                'duration_weeks': 16,
+                'level': 'Advanced',
+                'category': 'Data Science',
+                'image_url': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400'
+            },
+            {
+                'title': 'Digital Marketing Fundamentals',
+                'description': 'Learn SEO, social media marketing, content strategy, and analytics.',
+                'short_description': 'Complete guide to digital marketing',
+                'price': 79.99,
+                'duration_weeks': 6,
+                'level': 'Beginner',
+                'category': 'Marketing',
+                'image_url': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'
+            },
+            {
+                'title': 'UI/UX Design Masterclass',
+                'description': 'Design beautiful and user-friendly interfaces using modern design principles.',
+                'short_description': 'Create stunning user interfaces and experiences',
+                'price': 129.99,
+                'duration_weeks': 10,
+                'level': 'Intermediate',
+                'category': 'Design',
+                'image_url': 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400'
+            }
+        ]
+        
+        # Only create courses if admin exists
+        if admin:
+            for course_data in sample_courses:
+                existing_course = Course.query.filter_by(title=course_data['title']).first()
+                if not existing_course:
+                    course = Course(
+                        title=course_data['title'],
+                        description=course_data['description'],
+                        short_description=course_data['short_description'],
+                        price=course_data['price'],
+                        duration_weeks=course_data['duration_weeks'],
+                        level=course_data['level'],
+                        category=course_data['category'],
+                        image_url=course_data['image_url'],
+                        created_by=admin.id
+                    )
+                    db.session.add(course)
+        
+        # Create sample products
+        sample_products = [
+            {
+                'name': 'Programming Fundamentals eBook',
+                'description': 'Comprehensive digital guide covering programming basics across multiple languages.',
+                'short_description': 'Essential programming guide for beginners',
+                'price': 29.99,
+                'product_type': 'Digital',
+                'category': 'Books',
+                'brand': 'TechBooks',
+                'sku': 'EBOOK-PROG-001',
+                'stock_quantity': 0,
+                'image_url': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400'
+            },
+            {
+                'name': 'Wireless Bluetooth Headphones',
+                'description': 'High-quality wireless headphones perfect for online learning and coding sessions.',
+                'short_description': 'Premium wireless headphones for students',
+                'price': 89.99,
+                'product_type': 'Physical',
+                'category': 'Electronics',
+                'brand': 'AudioTech',
+                'sku': 'HEADPHONE-BT-001',
+                'stock_quantity': 50,
+                'image_url': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'
+            },
+            {
+                'name': 'Ergonomic Laptop Stand',
+                'description': 'Adjustable aluminum laptop stand designed for comfortable studying and working.',
+                'short_description': 'Improve your workspace ergonomics',
+                'price': 49.99,
+                'product_type': 'Physical',
+                'category': 'Accessories',
+                'brand': 'WorkSpace',
+                'sku': 'STAND-LAP-001',
+                'stock_quantity': 30,
+                'image_url': 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400'
+            }
+        ]
+        
+        # Only create products if admin exists
+        if admin:
+            for product_data in sample_products:
+                existing_product = Product.query.filter_by(name=product_data['name']).first()
+                if not existing_product:
+                    product = Product(
+                        name=product_data['name'],
+                        description=product_data['description'],
+                        short_description=product_data['short_description'],
+                        price=product_data['price'],
+                        product_type=product_data['product_type'],
+                        category=product_data['category'],
+                        brand=product_data['brand'],
+                        sku=product_data['sku'],
+                        stock_quantity=product_data['stock_quantity'],
+                        image_url=product_data['image_url'],
+                        created_by=admin.id
+                    )
+                    db.session.add(product)
+        
+        db.session.commit()
+        print("Sample data created successfully")
+        
+    except Exception as e:
+        print(f"Error creating sample data: {e}")
+        db.session.rollback()
+
+# ========================================
+# DATABASE INITIALIZATION FUNCTION
+# ========================================
+
+def init_database():
+    """Initialize database tables and sample data"""
+    try:
+        print("Creating database tables...")
+        db.create_all()
+        print("Database tables created successfully")
+        
+        print("Creating sample data...")
+        create_sample_data()
+        print("Sample data created successfully")
+        
+        return True
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        return False
+
+# ========================================
+# LAZY DATABASE INITIALIZATION
+# ========================================
+
+_db_initialized = False
+
+def ensure_db_initialized():
+    """Ensure database is initialized only once"""
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            with app.app_context():
+                init_database()
+                _db_initialized = True
+                print("✅ Database initialized successfully")
+        except Exception as e:
+            print(f"❌ Database initialization failed: {e}")
+
+# ========================================
 # ROUTES FOR DATABASE MANAGEMENT
 # ========================================
 
 @app.route('/init-db')
 def manual_init_db():
-    """Manual database initialization endpoint"""
+    """Manual database initialization endpoint - ADMIN ONLY"""
     try:
-        db.create_all()
-        create_sample_data()
+        ensure_db_initialized()
         return "✅ Database initialized successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
@@ -3815,9 +3915,13 @@ def manual_init_db():
 def health_check():
     """Health check endpoint"""
     try:
+        # Ensure database is initialized
+        ensure_db_initialized()
+        
         # Test database connection
-        db.session.execute(db.text('SELECT 1'))
-        user_count = User.query.count()
+        with app.app_context():
+            db.session.execute(db.text('SELECT 1'))
+            user_count = User.query.count()
         
         return {
             "status": "healthy", 
@@ -3833,6 +3937,15 @@ def health_check():
         }, 500
 
 # ========================================
+# INITIALIZE ON FIRST REQUEST
+# ========================================
+
+@app.before_first_request
+def initialize_on_startup():
+    """Initialize database on first request"""
+    ensure_db_initialized()
+
+# ========================================
 # CREATE WSGI APPLICATION
 # ========================================
 
@@ -3846,8 +3959,7 @@ application = app
 if __name__ == '__main__':
     # Only for local development
     with app.app_context():
-        db.create_all()
-        create_sample_data()
+        init_database()
     
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

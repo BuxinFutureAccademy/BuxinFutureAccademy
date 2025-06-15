@@ -3693,9 +3693,28 @@ def create_sample_data():
                 )
                 db.session.add(group_class)
             
-            # Create sample courses
+            # Create sample courses with realistic data
             sample_courses = [
-                # Empty - no sample courses will be created
+                {
+                    'title': 'Introduction to Python',
+                    'description': 'Learn Python programming fundamentals',
+                    'short_description': 'Beginner-friendly Python course',
+                    'price': 49.99,
+                    'duration_weeks': 4,
+                    'level': 'Beginner',
+                    'category': 'Programming',
+                    'image_url': 'https://example.com/python-course.jpg'
+                },
+                {
+                    'title': 'Web Development with Flask',
+                    'description': 'Build web applications using Python Flask',
+                    'short_description': 'Hands-on Flask web development',
+                    'price': 79.99,
+                    'duration_weeks': 6,
+                    'level': 'Intermediate',
+                    'category': 'Web Development',
+                    'image_url': 'https://example.com/flask-course.jpg'
+                }
             ]
             
             for course_data in sample_courses:
@@ -3716,7 +3735,30 @@ def create_sample_data():
             
             # Create sample products
             sample_products = [
-                # Empty - no sample products will be created
+                {
+                    'name': 'Python Programming Book',
+                    'description': 'Comprehensive guide to Python programming',
+                    'short_description': 'Best-selling Python book',
+                    'price': 29.99,
+                    'product_type': 'Physical',
+                    'category': 'Books',
+                    'brand': 'Tech Publications',
+                    'sku': 'BOOK-PY-001',
+                    'stock_quantity': 100,
+                    'image_url': 'https://example.com/python-book.jpg'
+                },
+                {
+                    'name': 'Premium Course Bundle',
+                    'description': 'Access to all premium courses',
+                    'short_description': 'Unlimited course access',
+                    'price': 199.99,
+                    'product_type': 'Digital',
+                    'category': 'Subscriptions',
+                    'brand': 'Academy',
+                    'sku': 'DIGITAL-BUNDLE-001',
+                    'stock_quantity': 0,
+                    'image_url': 'https://example.com/bundle.jpg'
+                }
             ]
             
             for product_data in sample_products:
@@ -3788,13 +3830,23 @@ def ensure_db_initialized():
 # ========================================
 
 @app.route('/init-db')
+@login_required
 def manual_init_db():
     """Manual database initialization endpoint - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "❌ Access denied: Admin privileges required", 403
+    
     try:
         ensure_db_initialized()
         return "✅ Database initialized successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
+
+@app.cli.command("init-db")
+def init_db_command():
+    """Initialize the database (CLI command)"""
+    ensure_db_initialized()
+    print("Database initialized")
 
 @app.route('/health')
 def health_check():
@@ -3807,11 +3859,15 @@ def health_check():
         with app.app_context():
             db.session.execute(db.text('SELECT 1'))
             user_count = User.query.count()
+            courses_count = Course.query.count()
+            products_count = Product.query.count()
         
         return {
             "status": "healthy", 
             "database": "connected",
             "users": user_count,
+            "courses": courses_count,
+            "products": products_count,
             "timestamp": datetime.utcnow().isoformat()
         }, 200
     except Exception as e:
@@ -3822,12 +3878,11 @@ def health_check():
         }, 500
 
 # ========================================
-# INITIALIZE ON FIRST REQUEST
+# INITIALIZE DATABASE AT STARTUP
 # ========================================
 
-@app.before_first_request
-def initialize_on_startup():
-    """Initialize database on first request"""
+# Initialize database when app starts (for production)
+with app.app_context():
     ensure_db_initialized()
 
 # ========================================

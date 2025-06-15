@@ -3764,9 +3764,8 @@ def cloudinary_test():
 
 # Fix for "Working outside of request context" error
 # Replace the bottom section of your app.py file with this:
-
 # ========================================
-# APPLICATION STARTUP - FIXED VERSION
+# SAMPLE DATA CREATION - FIXED VERSION
 # ========================================
 
 def create_sample_data():
@@ -3967,30 +3966,70 @@ def create_sample_data():
         db.session.rollback()
 
 # ========================================
-# APPLICATION INITIALIZATION - FIXED
+# APPLICATION STARTUP - COMPLETELY FIXED
 # ========================================
 
-# Initialize database tables
-try:
-    with app.app_context():
+# Only initialize database with proper context handling
+def init_database():
+    """Initialize database with proper error handling"""
+    try:
         db.create_all()
         create_sample_data()
         print("✅ Database initialized successfully")
-except Exception as e:
-    print(f"❌ Error initializing database: {e}")
+        return True
+    except Exception as e:
+        print(f"❌ Error initializing database: {e}")
+        return False
 
 # ========================================
-# APPLICATION FACTORY FOR PRODUCTION
+# APPLICATION INSTANCE FOR PRODUCTION
 # ========================================
 
-def create_app():
-    """Application factory pattern for production"""
-    return app
-
-# Create the application instance
+# Create the WSGI application instance
 application = app
 
-# Run the app (for local development only)
+# Add a route to manually initialize database if needed
+@app.route('/init-db')
+def manual_init_db():
+    """Manual database initialization endpoint"""
+    try:
+        with app.app_context():
+            success = init_database()
+            if success:
+                return "✅ Database initialized successfully!"
+            else:
+                return "❌ Database initialization failed!", 500
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500
+
+# Initialize database when first request comes in
+@app.before_first_request
+def initialize_database():
+    """Initialize database on first request"""
+    try:
+        init_database()
+    except Exception as e:
+        print(f"Failed to initialize database on startup: {e}")
+
+# Alternative: Use a simple test route to trigger initialization
+@app.route('/health')
+def health_check():
+    """Health check endpoint that also ensures database is initialized"""
+    try:
+        # Try to query a user to test database connection
+        User.query.first()
+        return {"status": "healthy", "database": "connected"}, 200
+    except Exception as e:
+        # If database query fails, try to initialize
+        try:
+            init_database()
+            return {"status": "healthy", "database": "initialized"}, 200
+        except Exception as init_error:
+            return {"status": "error", "message": str(init_error)}, 500
+
+# For local development only
 if __name__ == '__main__':
+    with app.app_context():
+        init_database()
     port = int(os.environ.get('PORT', 5000))
-    application.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)

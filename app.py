@@ -3769,7 +3769,7 @@ def cloudinary_test():
 # Replace the bottom section of your app.py file with this:
 
 # ========================================
-# SAMPLE DATA CREATION - FIXED VERSION
+# SAMPLE DATA CREATION - SIMPLIFIED VERSION
 # ========================================
 
 def create_sample_data():
@@ -3791,179 +3791,7 @@ def create_sample_data():
             db.session.commit()
             print("Created admin user")
         
-        # Create sample students
-        for i in range(1, 6):
-            student = User.query.filter_by(username=f'student{i}').first()
-            if not student:
-                student = User(
-                    username=f'student{i}',
-                    email=f'student{i}@example.com',
-                    first_name='Student',
-                    last_name=str(i),
-                    is_admin=False,
-                    is_student=True
-                )
-                student.set_password('password123')
-                db.session.add(student)
-
-        db.session.commit()
-
-        # Create sample classes only if admin exists
-        admin = User.query.filter_by(username='admin').first()
-        if admin:
-            individual_class = IndividualClass.query.first()
-            if not individual_class:
-                individual_class = IndividualClass(
-                    name='Python Basics',
-                    description='Individual Python programming class',
-                    teacher_id=admin.id
-                )
-                db.session.add(individual_class)
-            
-            group_class = GroupClass.query.first()
-            if not group_class:
-                group_class = GroupClass(
-                    name='Web Development Group',
-                    description='Group class for web development',
-                    teacher_id=admin.id,
-                    max_students=5
-                )
-                db.session.add(group_class)
-        
-        # Create sample courses
-        sample_courses = [
-            {
-                'title': 'Complete Python Bootcamp',
-                'description': 'Learn Python programming from scratch with hands-on projects and real-world applications.',
-                'short_description': 'Master Python programming with practical projects',
-                'price': 99.99,
-                'duration_weeks': 8,
-                'level': 'Beginner',
-                'category': 'Programming',
-                'image_url': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400'
-            },
-            {
-                'title': 'Advanced JavaScript & React',
-                'description': 'Build modern web applications with JavaScript ES6+ and React framework.',
-                'short_description': 'Create dynamic web apps with JavaScript and React',
-                'price': 149.99,
-                'duration_weeks': 12,
-                'level': 'Intermediate',
-                'category': 'Web Development',
-                'image_url': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400'
-            },
-            {
-                'title': 'Data Science with Python',
-                'description': 'Analyze data, create visualizations, and build machine learning models using Python.',
-                'short_description': 'Master data analysis and machine learning',
-                'price': 199.99,
-                'duration_weeks': 16,
-                'level': 'Advanced',
-                'category': 'Data Science',
-                'image_url': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400'
-            },
-            {
-                'title': 'Digital Marketing Fundamentals',
-                'description': 'Learn SEO, social media marketing, content strategy, and analytics.',
-                'short_description': 'Complete guide to digital marketing',
-                'price': 79.99,
-                'duration_weeks': 6,
-                'level': 'Beginner',
-                'category': 'Marketing',
-                'image_url': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'
-            },
-            {
-                'title': 'UI/UX Design Masterclass',
-                'description': 'Design beautiful and user-friendly interfaces using modern design principles.',
-                'short_description': 'Create stunning user interfaces and experiences',
-                'price': 129.99,
-                'duration_weeks': 10,
-                'level': 'Intermediate',
-                'category': 'Design',
-                'image_url': 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400'
-            }
-        ]
-        
-        # Only create courses if admin exists
-        if admin:
-            for course_data in sample_courses:
-                existing_course = Course.query.filter_by(title=course_data['title']).first()
-                if not existing_course:
-                    course = Course(
-                        title=course_data['title'],
-                        description=course_data['description'],
-                        short_description=course_data['short_description'],
-                        price=course_data['price'],
-                        duration_weeks=course_data['duration_weeks'],
-                        level=course_data['level'],
-                        category=course_data['category'],
-                        image_url=course_data['image_url'],
-                        created_by=admin.id
-                    )
-                    db.session.add(course)
-        
-        # Create sample products
-        sample_products = [
-            {
-                'name': 'Programming Fundamentals eBook',
-                'description': 'Comprehensive digital guide covering programming basics across multiple languages.',
-                'short_description': 'Essential programming guide for beginners',
-                'price': 29.99,
-                'product_type': 'Digital',
-                'category': 'Books',
-                'brand': 'TechBooks',
-                'sku': 'EBOOK-PROG-001',
-                'stock_quantity': 0,
-                'image_url': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400'
-            },
-            {
-                'name': 'Wireless Bluetooth Headphones',
-                'description': 'High-quality wireless headphones perfect for online learning and coding sessions.',
-                'short_description': 'Premium wireless headphones for students',
-                'price': 89.99,
-                'product_type': 'Physical',
-                'category': 'Electronics',
-                'brand': 'AudioTech',
-                'sku': 'HEADPHONE-BT-001',
-                'stock_quantity': 50,
-                'image_url': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'
-            },
-            {
-                'name': 'Ergonomic Laptop Stand',
-                'description': 'Adjustable aluminum laptop stand designed for comfortable studying and working.',
-                'short_description': 'Improve your workspace ergonomics',
-                'price': 49.99,
-                'product_type': 'Physical',
-                'category': 'Accessories',
-                'brand': 'WorkSpace',
-                'sku': 'STAND-LAP-001',
-                'stock_quantity': 30,
-                'image_url': 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400'
-            }
-        ]
-        
-        # Only create products if admin exists
-        if admin:
-            for product_data in sample_products:
-                existing_product = Product.query.filter_by(name=product_data['name']).first()
-                if not existing_product:
-                    product = Product(
-                        name=product_data['name'],
-                        description=product_data['description'],
-                        short_description=product_data['short_description'],
-                        price=product_data['price'],
-                        product_type=product_data['product_type'],
-                        category=product_data['category'],
-                        brand=product_data['brand'],
-                        sku=product_data['sku'],
-                        stock_quantity=product_data['stock_quantity'],
-                        image_url=product_data['image_url'],
-                        created_by=admin.id
-                    )
-                    db.session.add(product)
-        
-        db.session.commit()
-        print("Sample data created successfully")
+        print("Sample data check completed")
         
     except Exception as e:
         print(f"Error creating sample data: {e}")
@@ -3977,9 +3805,8 @@ def create_sample_data():
 def manual_init_db():
     """Manual database initialization endpoint"""
     try:
-        with app.app_context():
-            db.create_all()
-            create_sample_data()
+        db.create_all()
+        create_sample_data()
         return "✅ Database initialized successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
@@ -4006,28 +3833,6 @@ def health_check():
         }, 500
 
 # ========================================
-# DATABASE INITIALIZATION ON STARTUP
-# ========================================
-
-# Initialize database tables when the app starts
-with app.app_context():
-    try:
-        print("🔄 Initializing database...")
-        db.create_all()
-        print("✅ Database tables created")
-        
-        # Only create sample data if no admin user exists
-        if not User.query.filter_by(is_admin=True).first():
-            print("🔄 Creating sample data...")
-            create_sample_data()
-            print("✅ Sample data created")
-        else:
-            print("ℹ️ Admin user exists, skipping sample data creation")
-            
-    except Exception as e:
-        print(f"❌ Database initialization error: {e}")
-
-# ========================================
 # CREATE WSGI APPLICATION
 # ========================================
 
@@ -4040,5 +3845,9 @@ application = app
 
 if __name__ == '__main__':
     # Only for local development
+    with app.app_context():
+        db.create_all()
+        create_sample_data()
+    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

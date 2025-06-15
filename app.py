@@ -3020,6 +3020,82 @@ def subscribe_updates():
     # Save email for course updates
     pass
 
+
+
+#...................................................................................
+# Add this route to your app.py file - just copy and paste it anywhere with your other routes
+
+@app.route('/video-debug')
+@login_required
+def video_debug():
+    if not current_user.is_admin:
+        return "Only admin can see this", 403
+    
+    # Check what's in the database
+    videos_in_db = CourseVideo.query.all()
+    
+    # Check upload folder
+    upload_folder = app.config.get('UPLOAD_FOLDER', 'Not configured')
+    video_folder = os.path.join(upload_folder, 'videos') if upload_folder != 'Not configured' else 'Not configured'
+    
+    html = '<h1>Video Debug Information</h1>'
+    html += '<style>body { font-family: Arial; margin: 20px; }'
+    html += '.section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }'
+    html += '.good { color: green; } .bad { color: red; }</style>'
+    
+    html += '<div class="section">'
+    html += '<h2>📊 Database Information</h2>'
+    html += f'<p>Videos in database: <strong>{len(videos_in_db)}</strong></p>'
+    
+    if videos_in_db:
+        html += "<ul>"
+        for video in videos_in_db:
+            html += f"<li><strong>{video.title}</strong> - File: {video.video_filename}</li>"
+        html += "</ul>"
+    else:
+        html += "<p class='bad'>❌ No videos found in database</p>"
+    
+    html += '</div>'
+    
+    # Folder info
+    html += '<div class="section">'
+    html += '<h2>📁 Folder Information</h2>'
+    html += f'<p>Upload folder setting: <code>{upload_folder}</code></p>'
+    html += f'<p>Video folder path: <code>{video_folder}</code></p>'
+    
+    folder_exists = os.path.exists(upload_folder) if upload_folder != 'Not configured' else False
+    video_folder_exists = os.path.exists(video_folder) if video_folder != 'Not configured' else False
+    
+    html += f'<p>Upload folder exists: <span class="{"good" if folder_exists else "bad"}">'
+    html += f'{"✅ YES" if folder_exists else "❌ NO"}</span></p>'
+    html += f'<p>Video folder exists: <span class="{"good" if video_folder_exists else "bad"}">'
+    html += f'{"✅ YES" if video_folder_exists else "❌ NO"}</span></p>'
+    html += '</div>'
+    
+    # File listing
+    if video_folder != 'Not configured' and os.path.exists(video_folder):
+        try:
+            files = os.listdir(video_folder)
+            html += '<div class="section">'
+            html += '<h2>📄 Files in Video Folder</h2>'
+            html += f'<p>Found {len(files)} files:</p>'
+            
+            if files:
+                html += '<ul>'
+                for file in files:
+                    file_path = os.path.join(video_folder, file)
+                    file_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+                    html += f'<li><strong>{file}</strong> ({file_size:.1f} MB)</li>'
+                html += '</ul>'
+            else:
+                html += '<p class="bad">❌ No files found</p>'
+            html += '</div>'
+        except Exception as e:
+            html += f'<div class="section"><p class="bad">Error reading folder: {e}</p></div>'
+    
+    html += '<div class="section"><a href="/admin/courses">← Back to Courses</a></div>'
+    return html
+
 # ========================================
 # APPLICATION STARTUP
 # ========================================

@@ -689,15 +689,12 @@ def create_course():
             db.session.add(course)
             db.session.flush()
             
-            # Handle video uploads
+            # Handle video uploads - CLOUDINARY VERSION
             video_files = request.files.getlist('video_files')
             video_titles = request.form.getlist('video_titles')
             video_descriptions = request.form.getlist('video_descriptions')
             video_orders = request.form.getlist('video_orders')
             video_durations = request.form.getlist('video_durations')
-            
-            video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
-            os.makedirs(video_folder, exist_ok=True)
             
             for i, video_file in enumerate(video_files):
                 if video_file and video_file.filename and allowed_file(video_file.filename, 'video'):
@@ -705,29 +702,35 @@ def create_course():
                     file_size = video_file.tell()
                     video_file.seek(0)
                     
-                    if file_size > 500 * 1024 * 1024:
+                    if file_size > 500 * 1024 * 1024:  # 500MB
                         flash(f'Video file {video_file.filename} is too large. Maximum size is 500MB.', 'warning')
                         continue
                     
-                    filename = secure_filename(video_file.filename)
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-                    unique_filename = f"{timestamp}{course.id}_{i+1}_{filename}"
+                    print(f"📤 Uploading {video_file.filename} to Cloudinary...")
                     
-                    video_path = os.path.join(video_folder, unique_filename)
-                    video_file.save(video_path)
+                    # Upload to Cloudinary instead of local storage
+                    upload_result = upload_video_to_cloudinary(video_file, course.id, i+1)
                     
-                    course_video = CourseVideo(
-                        course_id=course.id,
-                        title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
-                        description=video_descriptions[i] if i < len(video_descriptions) else "",
-                        video_filename=unique_filename,
-                        duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
-                        order_index=int(video_orders[i]) if i < len(video_orders) else i+1
-                    )
-                    
-                    db.session.add(course_video)
+                    if upload_result:
+                        # Create a fallback filename for compatibility
+                        fallback_filename = f"cloudinary_{upload_result['public_id']}.mp4"
+                        
+                        course_video = CourseVideo(
+                            course_id=course.id,
+                            title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
+                            description=video_descriptions[i] if i < len(video_descriptions) else "",
+                            video_filename=fallback_filename,  # Fallback filename
+                            video_url=upload_result['url'],  # Cloudinary URL
+                            duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
+                            order_index=int(video_orders[i]) if i < len(video_orders) else i+1
+                        )
+                        db.session.add(course_video)
+                        print(f"✅ Video saved to database: {course_video.title}")
+                    else:
+                        flash(f'Failed to upload video: {video_file.filename}', 'danger')
+                        print(f"❌ Failed to upload: {video_file.filename}")
             
-            # Handle course materials
+            # Handle course materials (keep local storage for materials)
             material_files = request.files.getlist('course_materials')
             materials_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
             os.makedirs(materials_folder, exist_ok=True)
@@ -3762,8 +3765,9 @@ def cloudinary_test():
         '''
 
 
-# Fix for "Working outside of request context" error
+# Fix for the "Working outside of request context" error
 # Replace the bottom section of your app.py file with this:
+
 # ========================================
 # SAMPLE DATA CREATION - FIXED VERSION
 # ========================================
@@ -3966,70 +3970,105 @@ def create_sample_data():
         db.session.rollback()
 
 # ========================================
-# APPLICATION STARTUP - COMPLETELY FIXED
+# DATABASE INITIALIZATION FUNCTION
 # ========================================
 
-# Only initialize database with proper context handling
 def init_database():
-    """Initialize database with proper error handling"""
+    """Initialize database tables and sample data"""
     try:
+        print("Creating database tables...")
         db.create_all()
+        print("Database tables created successfully")
+        
+        print("Creating sample data...")
         create_sample_data()
-        print("✅ Database initialized successfully")
+        print("Sample data created successfully")
+        
         return True
     except Exception as e:
-        print(f"❌ Error initializing database: {e}")
+        print(f"Error initializing database: {e}")
         return False
 
 # ========================================
-# APPLICATION INSTANCE FOR PRODUCTION
+# LAZY DATABASE INITIALIZATION
 # ========================================
 
-# Create the WSGI application instance
-application = app
+_db_initialized = False
 
-# Add a route to manually initialize database if needed
+def ensure_db_initialized():
+    """Ensure database is initialized only once"""
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            with app.app_context():
+                init_database()
+                _db_initialized = True
+                print("✅ Database initialized successfully")
+        except Exception as e:
+            print(f"❌ Database initialization failed: {e}")
+
+# ========================================
+# ROUTES FOR DATABASE MANAGEMENT
+# ========================================
+
 @app.route('/init-db')
 def manual_init_db():
-    """Manual database initialization endpoint"""
+    """Manual database initialization endpoint - ADMIN ONLY"""
     try:
-        with app.app_context():
-            success = init_database()
-            if success:
-                return "✅ Database initialized successfully!"
-            else:
-                return "❌ Database initialization failed!", 500
+        ensure_db_initialized()
+        return "✅ Database initialized successfully!", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
 
-# Initialize database when first request comes in
-@app.before_first_request
-def initialize_database():
-    """Initialize database on first request"""
-    try:
-        init_database()
-    except Exception as e:
-        print(f"Failed to initialize database on startup: {e}")
-
-# Alternative: Use a simple test route to trigger initialization
 @app.route('/health')
 def health_check():
-    """Health check endpoint that also ensures database is initialized"""
+    """Health check endpoint"""
     try:
-        # Try to query a user to test database connection
-        User.query.first()
-        return {"status": "healthy", "database": "connected"}, 200
+        # Ensure database is initialized
+        ensure_db_initialized()
+        
+        # Test database connection
+        with app.app_context():
+            db.session.execute(db.text('SELECT 1'))
+            user_count = User.query.count()
+        
+        return {
+            "status": "healthy", 
+            "database": "connected",
+            "users": user_count,
+            "timestamp": datetime.utcnow().isoformat()
+        }, 200
     except Exception as e:
-        # If database query fails, try to initialize
-        try:
-            init_database()
-            return {"status": "healthy", "database": "initialized"}, 200
-        except Exception as init_error:
-            return {"status": "error", "message": str(init_error)}, 500
+        return {
+            "status": "error", 
+            "message": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }, 500
 
-# For local development only
+# ========================================
+# INITIALIZE ON FIRST REQUEST
+# ========================================
+
+@app.before_first_request
+def initialize_on_startup():
+    """Initialize database on first request"""
+    ensure_db_initialized()
+
+# ========================================
+# CREATE WSGI APPLICATION
+# ========================================
+
+# This is the WSGI application that Gunicorn will use
+application = app
+
+# ========================================
+# LOCAL DEVELOPMENT ONLY
+# ========================================
+
 if __name__ == '__main__':
+    # Only for local development
     with app.app_context():
         init_database()
+    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

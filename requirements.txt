@@ -1,32 +1,30 @@
-# Core Flask dependencies
-Flask==2.3.3
-gunicorn==21.2.0
+# Core Flask Dependencies
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
 
 # Database
-Flask-SQLAlchemy==3.0.5
-psycopg2-binary==2.9.7
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
 
-# Authentication & Security
-Flask-Login==0.6.3
-Werkzeug==2.3.7
+# File handling and security
+Werkzeug==3.0.1
+cryptography==41.0.7
 
-# File handling
-Pillow==10.0.1
+# Cloud storage and uploads
+cloudinary==1.36.0
 
 # HTTP requests
 requests==2.31.0
 
-# Cloud storage
-cloudinary==1.36.0
+# System monitoring
+psutil==5.9.6
 
-# Email (if using SMTP)
-email-validator==2.0.0
+# WSGI server with optimizations
+gunicorn==21.2.0
 
-# Environment variables
-python-dotenv==1.0.0
-
-# Date/time handling
-python-dateutil==2.8.2
+# Email support
+email-validator==2.1.0
 
 # Additional utilities
-urllib3==2.0.7
+python-dotenv==1.0.0

@@ -2257,7 +2257,7 @@ def my_course_orders():
 @app.route('/learn/course/<int:course_id>')
 @login_required
 def learn_course(course_id):
-    """Enhanced learn course route with debugging"""
+    # Enhanced learn course route with debugging
     course = Course.query.get_or_404(course_id)
     
     print(f"🎓 Learn course accessed: {course.title} (ID: {course_id})")
@@ -2338,38 +2338,35 @@ def learn_course(course_id):
 @app.route('/debug/my-purchases')
 @login_required
 def debug_my_purchases():
-    """Debug route to check user's purchases"""
+    # Debug route to check user's purchases
     purchases = Purchase.query.filter_by(user_id=current_user.id).all()
     
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>My Purchases Debug</title>
-        <style>
-            body {{ font-family: Arial; padding: 20px; }}
-            table {{ width: 100%; border-collapse: collapse; }}
-            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-            th {{ background-color: #f2f2f2; }}
-            .good {{ color: green; }}
-            .warning {{ color: orange; }}
-            .bad {{ color: red; }}
-        </style>
-    </head>
-    <body>
-        <h1>🛒 My Purchases Debug</h1>
-        <p><strong>User:</strong> {current_user.username}</p>
-        <p><strong>Total Purchases:</strong> {len(purchases)}</p>
-        
-        <table>
-            <tr>
-                <th>Course</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Action</th>
-            </tr>
-    """
+    html = '<!DOCTYPE html>' + \
+           '<html>' + \
+           '<head>' + \
+           '<title>My Purchases Debug</title>' + \
+           '<style>' + \
+           'body { font-family: Arial; padding: 20px; }' + \
+           'table { width: 100%; border-collapse: collapse; }' + \
+           'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }' + \
+           'th { background-color: #f2f2f2; }' + \
+           '.good { color: green; }' + \
+           '.warning { color: orange; }' + \
+           '.bad { color: red; }' + \
+           '</style>' + \
+           '</head>' + \
+           '<body>' + \
+           '<h1>🛒 My Purchases Debug</h1>' + \
+           f'<p><strong>User:</strong> {current_user.username}</p>' + \
+           f'<p><strong>Total Purchases:</strong> {len(purchases)}</p>' + \
+           '<table>' + \
+           '<tr>' + \
+           '<th>Course</th>' + \
+           '<th>Status</th>' + \
+           '<th>Amount</th>' + \
+           '<th>Date</th>' + \
+           '<th>Action</th>' + \
+           '</tr>'
     
     for purchase in purchases:
         course = Course.query.get(purchase.course_id)
@@ -2381,23 +2378,18 @@ def debug_my_purchases():
         else:
             action = f'<a href="/course/{purchase.course_id}">👁️ View Course</a>'
         
-        html += f"""
-            <tr>
-                <td>{course_title}</td>
-                <td><span class="{status_class}">{purchase.status}</span></td>
-                <td>${purchase.amount}</td>
-                <td>{purchase.purchased_at.strftime('%Y-%m-%d %H:%M')}</td>
-                <td>{action}</td>
-            </tr>
-        """
+        html += '<tr>' + \
+                f'<td>{course_title}</td>' + \
+                f'<td><span class="{status_class}">{purchase.status}</span></td>' + \
+                f'<td>${purchase.amount}</td>' + \
+                f'<td>{purchase.purchased_at.strftime("%Y-%m-%d %H:%M")}</td>' + \
+                f'<td>{action}</td>' + \
+                '</tr>'
     
-    html += """
-        </table>
-        
-        <p><a href="/my_courses">← Back to My Courses</a></p>
-    </body>
-    </html>
-    """
+    html += '</table>' + \
+            '<p><a href="/my_courses">← Back to My Courses</a></p>' + \
+            '</body>' + \
+            '</html>'
     
     return html
 

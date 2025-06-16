@@ -299,3 +299,408 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.lesson-status .fa-check {
+    color: #198754;
+}
+
+.lesson-status .fa-play {
+    color: #0d6efd;
+}
+
+.lesson-status .fa-times {
+    color: #dc3545;
+}
+
+.progress-circle {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+}
+
+.video-item.completed .lesson-status .fa-play {
+    display: none;
+}
+
+.video-item.completed .lesson-status .fa-check {
+    display: inline;
+}
+
+.video-item.current {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+/* Video loading indicator */
+.video-container::before {
+    content: "Loading video...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 16px;
+    z-index: 1;
+    display: none;
+}
+
+.video-container.loading::before {
+    display: block;
+}
+
+/* Video unavailable styling */
+.video-item.unavailable {
+    background-color: #f8f9fa;
+    border-left: 4px solid #ffc107;
+}
+
+.video-item.unavailable .lesson-status .fa-times {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('courseVideo');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const videoItems = document.querySelectorAll('.video-item');
+    const currentVideoTitle = document.getElementById('currentVideoTitle');
+    const currentVideoDescription = document.getElementById('currentVideoDescription');
+    const videoCounter = document.getElementById('videoCounter');
+    const videoContainer = document.querySelector('.video-container');
+    
+    let currentVideoIndex = 0;
+    const totalVideos = {{ videos|length if videos else 0 }};
+    const videosData = {{ videos|tojson if videos else '[]' }};
+    
+    console.log('🎬 Video player initialization:');
+    console.log('Total videos:', totalVideos);
+    console.log('Videos data:', videosData);
+    
+    // Only initialize video functionality if videos exist
+    if (totalVideos > 0 && video) {
+        console.log(`Initializing video player with ${totalVideos} videos`);
+        
+        // Initialize first video as current
+        if (videoItems.length > 0) {
+            videoItems[0].classList.add('current');
+        }
+        
+        // Check if first video is available
+        if (!videosData[0] || !videosData[0].playback_url) {
+            console.warn('First video is not available');
+            findFirstAvailableVideo();
+        }
+        
+        // Video loading states
+        video.addEventListener('loadstart', function() {
+            videoContainer.classList.add('loading');
+            console.log('Video loading started');
+        });
+        
+        video.addEventListener('loadeddata', function() {
+            videoContainer.classList.remove('loading');
+            console.log('Video loaded successfully');
+        });
+        
+        video.addEventListener('error', function(e) {
+            videoContainer.classList.remove('loading');
+            console.error('Video error:', e);
+            console.error('Video source:', video.currentSrc);
+            
+            // Show enhanced error message
+            const currentVideo = videosData[currentVideoIndex];
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'alert alert-danger mt-3';
+            errorMsg.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Video Error:</strong> Unable to load "${currentVideo?.title || 'Unknown Video'}"
+                <br><small>Source type: ${currentVideo?.source_type || 'unknown'}</small>
+                <div class="mt-2">
+                    ${currentVideo?.playback_url ? `<a href="${currentVideo.playback_url}" target="_blank" class="btn btn-sm btn-outline-primary">Try Direct Link</a>` : ''}
+                    {% if current_user.is_admin %}
+                        <a href="/admin/debug-course-videos/{{ course.id }}" target="_blank" class="btn btn-sm btn-outline-warning">Debug Videos</a>
+                    {% endif %}
+                </div>
+            `;
+            
+            // Remove any existing error messages
+            const existingErrors = video.parentNode.querySelectorAll('.alert-danger');
+            existingErrors.forEach(err => err.remove());
+            
+            video.parentNode.appendChild(errorMsg);
+        });
+        
+        // Play/Pause functionality
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', function() {
+                if (video.paused) {
+                    video.play().catch(e => {
+                        console.error('Play error:', e);
+                        showNotification('Unable to play video. Please check your internet connection.', 'danger');
+                    });
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                } else {
+                    video.pause();
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                }
+            });
+        }
+        
+        // Fullscreen functionality
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', function() {
+                if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) {
+                    video.webkitRequestFullscreen();
+                } else if (video.msRequestFullscreen) {
+                    video.msRequestFullscreen();
+                }
+            });
+        }
+        
+        // Video ended event
+        video.addEventListener('ended', function() {
+            markVideoAsCompleted(currentVideoIndex);
+            if (currentVideoIndex < totalVideos - 1) {
+                setTimeout(() => {
+                    nextVideo();
+                }, 1000);
+            }
+        });
+        
+        // Video play/pause events
+        video.addEventListener('play', function() {
+            if (playPauseBtn) playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        });
+        
+        video.addEventListener('pause', function() {
+            if (playPauseBtn) playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        });
+        
+        // Navigation buttons
+        if (prevBtn) prevBtn.addEventListener('click', prevVideo);
+        if (nextBtn) nextBtn.addEventListener('click', nextVideo);
+        
+        // Curriculum item clicks
+        videoItems.forEach((item, index) => {
+            // Only make available videos clickable
+            const videoData = videosData[index];
+            if (videoData && videoData.playback_url) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loadVideo(index);
+                });
+            } else {
+                item.classList.add('unavailable');
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showNotification(`Video "${videoData?.title || 'Unknown'}" is not available`, 'warning');
+                });
+            }
+        });
+        
+        function findFirstAvailableVideo() {
+            for (let i = 0; i < videosData.length; i++) {
+                if (videosData[i] && videosData[i].playback_url) {
+                    console.log(`First available video found at index ${i}`);
+                    loadVideo(i);
+                    return;
+                }
+            }
+            console.warn('No available videos found');
+            showNotification('No videos are currently available for this course', 'warning');
+        }
+        
+        function loadVideo(index) {
+            if (index < 0 || index >= totalVideos) return;
+            
+            const videoData = videosData[index];
+            if (!videoData || !videoData.playback_url) {
+                console.warn(`Video at index ${index} is not available`);
+                showNotification(`Video "${videoData?.title || 'Unknown'}" is not available`, 'warning');
+                return;
+            }
+            
+            console.log(`Loading video ${index + 1}/${totalVideos}: ${videoData.title}`);
+            currentVideoIndex = index;
+            
+            // Show loading state
+            videoContainer.classList.add('loading');
+            
+            // Clear any existing error messages
+            const existingErrors = video.parentNode.querySelectorAll('.alert-danger');
+            existingErrors.forEach(err => err.remove());
+            
+            // Update video source
+            video.src = videoData.playback_url;
+            video.load();
+            
+            console.log('Video source:', videoData.playback_url);
+            console.log('Source type:', videoData.source_type);
+            
+            // Update UI
+            if (currentVideoTitle) currentVideoTitle.textContent = videoData.title;
+            if (currentVideoDescription) currentVideoDescription.textContent = videoData.description || 'No description available.';
+            if (videoCounter) videoCounter.textContent = `${index + 1} of ${totalVideos}`;
+            
+            // Update curriculum highlighting
+            videoItems.forEach(item => item.classList.remove('current'));
+            if (videoItems[index]) videoItems[index].classList.add('current');
+            
+            // Update navigation buttons
+            if (prevBtn) prevBtn.disabled = index === 0;
+            if (nextBtn) {
+                nextBtn.disabled = index === totalVideos - 1;
+                if (index === totalVideos - 1) {
+                    nextBtn.innerHTML = 'Complete Course<i class="fas fa-check ms-2"></i>';
+                } else {
+                    nextBtn.innerHTML = 'Next<i class="fas fa-chevron-right ms-2"></i>';
+                }
+            }
+        }
+        
+        function nextVideo() {
+            // Find next available video
+            for (let i = currentVideoIndex + 1; i < totalVideos; i++) {
+                if (videosData[i] && videosData[i].playback_url) {
+                    loadVideo(i);
+                    return;
+                }
+            }
+            console.log('No more available videos');
+        }
+        
+        function prevVideo() {
+            // Find previous available video
+            for (let i = currentVideoIndex - 1; i >= 0; i--) {
+                if (videosData[i] && videosData[i].playback_url) {
+                    loadVideo(i);
+                    return;
+                }
+            }
+            console.log('No previous available videos');
+        }
+        
+        function markVideoAsCompleted(index) {
+            const videoItem = videoItems[index];
+            if (videoItem) {
+                videoItem.classList.add('completed');
+                const statusIcon = videoItem.querySelector('.lesson-status i');
+                if (statusIcon) {
+                    statusIcon.className = 'fas fa-check';
+                }
+            }
+            updateProgress();
+        }
+        
+        function updateProgress() {
+            const completedVideos = document.querySelectorAll('.video-item.completed').length;
+            const availableVideos = videosData.filter(v => v && v.playback_url).length;
+            const percentage = availableVideos > 0 ? Math.round((completedVideos / availableVideos) * 100) : 0;
+            
+            const progressBar = document.getElementById('overallProgress');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const completedLessons = document.getElementById('completedLessons');
+            
+            if (progressBar) progressBar.style.width = percentage + '%';
+            if (progressPercentage) progressPercentage.textContent = percentage + '%';
+            if (completedLessons) completedLessons.textContent = completedVideos;
+        }
+        
+        // Save progress to localStorage (basic implementation)
+        function saveProgress() {
+            const courseId = {{ course.id }};
+            const completedVideos = Array.from(document.querySelectorAll('.video-item.completed'))
+                .map(item => parseInt(item.dataset.videoIndex));
+            localStorage.setItem(`course_${courseId}_progress`, JSON.stringify({
+                completedVideos: completedVideos,
+                currentVideo: currentVideoIndex
+            }));
+        }
+        
+        // Load progress from localStorage
+        function loadProgress() {
+            const courseId = {{ course.id }};
+            const saved = localStorage.getItem(`course_${courseId}_progress`);
+            if (saved) {
+                try {
+                    const progress = JSON.parse(saved);
+                    if (progress.completedVideos && Array.isArray(progress.completedVideos)) {
+                        progress.completedVideos.forEach(index => {
+                            if (index >= 0 && index < totalVideos) {
+                                markVideoAsCompleted(index);
+                            }
+                        });
+                    }
+                    if (progress.currentVideo && progress.currentVideo >= 0 && progress.currentVideo < totalVideos) {
+                        const videoData = videosData[progress.currentVideo];
+                        if (videoData && videoData.playback_url) {
+                            loadVideo(progress.currentVideo);
+                        } else {
+                            findFirstAvailableVideo();
+                        }
+                    } else {
+                        findFirstAvailableVideo();
+                    }
+                } catch (e) {
+                    console.log('Error loading progress:', e);
+                    findFirstAvailableVideo();
+                }
+            } else {
+                findFirstAvailableVideo();
+            }
+        }
+        
+        // Auto-save progress
+        video.addEventListener('timeupdate', function() {
+            if (video.currentTime > 10) { // Mark as started after 10 seconds
+                saveProgress();
+            }
+        });
+        
+        // Load saved progress on page load
+        loadProgress();
+        
+        // Debug info
+        console.log('Video player initialized successfully');
+        console.log('Available videos:', videosData.filter(v => v && v.playback_url).length);
+        console.log('Missing videos:', videosData.filter(v => !v || !v.playback_url).length);
+    } else {
+        console.log('No videos found or video element missing');
+    }
+});
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

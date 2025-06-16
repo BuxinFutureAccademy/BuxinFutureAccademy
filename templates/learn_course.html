@@ -370,6 +370,9 @@
 </style>
 
 <script>
+// Enhanced JavaScript for learn_course.html template
+// Replace the existing script section in your learn_course.html template with this:
+
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('courseVideo');
     const playPauseBtn = document.getElementById('playPauseBtn');
@@ -386,53 +389,63 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalVideos = {{ videos|length if videos else 0 }};
     const videosData = {{ videos|tojson if videos else '[]' }};
     
-    console.log('🎬 Video player initialization:');
+    console.log('🎬 Enhanced video player initialization:');
     console.log('Total videos:', totalVideos);
     console.log('Videos data:', videosData);
     
+    // Filter available videos
+    const availableVideos = videosData.filter(video => video.playback_url && video.available);
+    console.log('Available videos:', availableVideos.length);
+    
     // Only initialize video functionality if videos exist
-    if (totalVideos > 0 && video) {
-        console.log(`Initializing video player with ${totalVideos} videos`);
+    if (totalVideos > 0 && video && availableVideos.length > 0) {
+        console.log(`Initializing video player with ${availableVideos.length} available videos`);
         
-        // Initialize first video as current
+        // Find first available video
+        let firstAvailableIndex = 0;
+        for (let i = 0; i < videosData.length; i++) {
+            if (videosData[i].playback_url && videosData[i].available) {
+                firstAvailableIndex = i;
+                break;
+            }
+        }
+        
+        // Initialize with first available video
+        currentVideoIndex = firstAvailableIndex;
         if (videoItems.length > 0) {
-            videoItems[0].classList.add('current');
+            videoItems[currentVideoIndex].classList.add('current');
         }
         
-        // Check if first video is available
-        if (!videosData[0] || !videosData[0].playback_url) {
-            console.warn('First video is not available');
-            findFirstAvailableVideo();
-        }
-        
-        // Video loading states
+        // Enhanced video loading with better error handling
         video.addEventListener('loadstart', function() {
             videoContainer.classList.add('loading');
-            console.log('Video loading started');
+            console.log('Video loading started:', videosData[currentVideoIndex].title);
         });
         
         video.addEventListener('loadeddata', function() {
             videoContainer.classList.remove('loading');
-            console.log('Video loaded successfully');
+            console.log('Video loaded successfully:', videosData[currentVideoIndex].title);
         });
         
         video.addEventListener('error', function(e) {
             videoContainer.classList.remove('loading');
+            const currentVideo = videosData[currentVideoIndex];
             console.error('Video error:', e);
             console.error('Video source:', video.currentSrc);
+            console.error('Video data:', currentVideo);
             
             // Show enhanced error message
-            const currentVideo = videosData[currentVideoIndex];
             const errorMsg = document.createElement('div');
             errorMsg.className = 'alert alert-danger mt-3';
             errorMsg.innerHTML = `
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 <strong>Video Error:</strong> Unable to load "${currentVideo?.title || 'Unknown Video'}"
-                <br><small>Source type: ${currentVideo?.source_type || 'unknown'}</small>
+                <br><small>Source: ${currentVideo?.source_type || 'unknown'}</small>
                 <div class="mt-2">
-                    ${currentVideo?.playback_url ? `<a href="${currentVideo.playback_url}" target="_blank" class="btn btn-sm btn-outline-primary">Try Direct Link</a>` : ''}
+                    <button onclick="retryVideo()" class="btn btn-sm btn-outline-primary">🔄 Retry</button>
+                    <button onclick="skipVideo()" class="btn btn-sm btn-outline-warning">⏭️ Skip Video</button>
                     {% if current_user.is_admin %}
-                        <a href="/admin/debug-course-videos/{{ course.id }}" target="_blank" class="btn btn-sm btn-outline-warning">Debug Videos</a>
+                        <a href="/admin/debug-course-videos/{{ course.id }}" target="_blank" class="btn btn-sm btn-outline-info">🔧 Debug</a>
                     {% endif %}
                 </div>
             `;
@@ -452,10 +465,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.error('Play error:', e);
                         showNotification('Unable to play video. Please check your internet connection.', 'danger');
                     });
-                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 } else {
                     video.pause();
-                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                 }
             });
         }
@@ -476,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Video ended event
         video.addEventListener('ended', function() {
             markVideoAsCompleted(currentVideoIndex);
-            if (currentVideoIndex < totalVideos - 1) {
+            if (hasNextAvailableVideo()) {
                 setTimeout(() => {
                     nextVideo();
                 }, 1000);
@@ -498,15 +509,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Curriculum item clicks
         videoItems.forEach((item, index) => {
-            // Only make available videos clickable
             const videoData = videosData[index];
-            if (videoData && videoData.playback_url) {
+            if (videoData && videoData.playback_url && videoData.available) {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
                     loadVideo(index);
                 });
+                item.style.cursor = 'pointer';
             } else {
                 item.classList.add('unavailable');
+                item.style.cursor = 'not-allowed';
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
                     showNotification(`Video "${videoData?.title || 'Unknown'}" is not available`, 'warning');
@@ -514,29 +526,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        function findFirstAvailableVideo() {
-            for (let i = 0; i < videosData.length; i++) {
-                if (videosData[i] && videosData[i].playback_url) {
-                    console.log(`First available video found at index ${i}`);
-                    loadVideo(i);
-                    return;
-                }
-            }
-            console.warn('No available videos found');
-            showNotification('No videos are currently available for this course', 'warning');
-        }
-        
         function loadVideo(index) {
             if (index < 0 || index >= totalVideos) return;
             
             const videoData = videosData[index];
-            if (!videoData || !videoData.playback_url) {
+            if (!videoData || !videoData.playback_url || !videoData.available) {
                 console.warn(`Video at index ${index} is not available`);
                 showNotification(`Video "${videoData?.title || 'Unknown'}" is not available`, 'warning');
                 return;
             }
             
             console.log(`Loading video ${index + 1}/${totalVideos}: ${videoData.title}`);
+            console.log(`Source: ${videoData.source_type}, URL: ${videoData.playback_url}`);
             currentVideoIndex = index;
             
             // Show loading state
@@ -550,9 +551,6 @@ document.addEventListener('DOMContentLoaded', function() {
             video.src = videoData.playback_url;
             video.load();
             
-            console.log('Video source:', videoData.playback_url);
-            console.log('Source type:', videoData.source_type);
-            
             // Update UI
             if (currentVideoTitle) currentVideoTitle.textContent = videoData.title;
             if (currentVideoDescription) currentVideoDescription.textContent = videoData.description || 'No description available.';
@@ -563,11 +561,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (videoItems[index]) videoItems[index].classList.add('current');
             
             // Update navigation buttons
-            if (prevBtn) prevBtn.disabled = index === 0;
+            updateNavigationButtons();
+        }
+        
+        function updateNavigationButtons() {
+            if (prevBtn) prevBtn.disabled = !hasPreviousAvailableVideo();
             if (nextBtn) {
-                nextBtn.disabled = index === totalVideos - 1;
-                if (index === totalVideos - 1) {
-                    nextBtn.innerHTML = 'Complete Course<i class="fas fa-check ms-2"></i>';
+                nextBtn.disabled = !hasNextAvailableVideo();
+                if (!hasNextAvailableVideo() && isLastVideo()) {
+                    nextBtn.innerHTML = 'Course Complete!<i class="fas fa-check ms-2"></i>';
                 } else {
                     nextBtn.innerHTML = 'Next<i class="fas fa-chevron-right ms-2"></i>';
                 }
@@ -575,25 +577,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         function nextVideo() {
-            // Find next available video
             for (let i = currentVideoIndex + 1; i < totalVideos; i++) {
-                if (videosData[i] && videosData[i].playback_url) {
+                if (videosData[i] && videosData[i].playback_url && videosData[i].available) {
                     loadVideo(i);
                     return;
                 }
             }
             console.log('No more available videos');
+            showNotification('You have completed all available videos!', 'success');
         }
         
         function prevVideo() {
-            // Find previous available video
             for (let i = currentVideoIndex - 1; i >= 0; i--) {
-                if (videosData[i] && videosData[i].playback_url) {
+                if (videosData[i] && videosData[i].playback_url && videosData[i].available) {
                     loadVideo(i);
                     return;
                 }
             }
             console.log('No previous available videos');
+        }
+        
+        function hasNextAvailableVideo() {
+            for (let i = currentVideoIndex + 1; i < totalVideos; i++) {
+                if (videosData[i] && videosData[i].playback_url && videosData[i].available) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function hasPreviousAvailableVideo() {
+            for (let i = currentVideoIndex - 1; i >= 0; i--) {
+                if (videosData[i] && videosData[i].playback_url && videosData[i].available) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function isLastVideo() {
+            return currentVideoIndex === totalVideos - 1;
         }
         
         function markVideoAsCompleted(index) {
@@ -610,8 +633,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         function updateProgress() {
             const completedVideos = document.querySelectorAll('.video-item.completed').length;
-            const availableVideos = videosData.filter(v => v && v.playback_url).length;
-            const percentage = availableVideos > 0 ? Math.round((completedVideos / availableVideos) * 100) : 0;
+            const availableVideosCount = availableVideos.length;
+            const percentage = availableVideosCount > 0 ? Math.round((completedVideos / availableVideosCount) * 100) : 0;
             
             const progressBar = document.getElementById('overallProgress');
             const progressPercentage = document.getElementById('progressPercentage');
@@ -622,7 +645,23 @@ document.addEventListener('DOMContentLoaded', function() {
             if (completedLessons) completedLessons.textContent = completedVideos;
         }
         
-        // Save progress to localStorage (basic implementation)
+        // Global retry function
+        window.retryVideo = function() {
+            console.log('Retrying current video...');
+            loadVideo(currentVideoIndex);
+        };
+        
+        // Global skip function
+        window.skipVideo = function() {
+            console.log('Skipping current video...');
+            if (hasNextAvailableVideo()) {
+                nextVideo();
+            } else {
+                showNotification('No more videos to skip to.', 'info');
+            }
+        };
+        
+        // Save/load progress
         function saveProgress() {
             const courseId = {{ course.id }};
             const completedVideos = Array.from(document.querySelectorAll('.video-item.completed'))
@@ -633,7 +672,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }));
         }
         
-        // Load progress from localStorage
         function loadProgress() {
             const courseId = {{ course.id }};
             const saved = localStorage.getItem(`course_${courseId}_progress`);
@@ -647,41 +685,46 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         });
                     }
+                    // Load last video if it's available
                     if (progress.currentVideo && progress.currentVideo >= 0 && progress.currentVideo < totalVideos) {
                         const videoData = videosData[progress.currentVideo];
-                        if (videoData && videoData.playback_url) {
+                        if (videoData && videoData.playback_url && videoData.available) {
                             loadVideo(progress.currentVideo);
-                        } else {
-                            findFirstAvailableVideo();
+                            return;
                         }
-                    } else {
-                        findFirstAvailableVideo();
                     }
                 } catch (e) {
                     console.log('Error loading progress:', e);
-                    findFirstAvailableVideo();
                 }
-            } else {
-                findFirstAvailableVideo();
             }
+            
+            // Load first available video
+            loadVideo(firstAvailableIndex);
         }
         
         // Auto-save progress
         video.addEventListener('timeupdate', function() {
-            if (video.currentTime > 10) { // Mark as started after 10 seconds
+            if (video.currentTime > 10) {
                 saveProgress();
             }
         });
         
-        // Load saved progress on page load
+        // Initialize with saved progress
         loadProgress();
         
-        // Debug info
-        console.log('Video player initialized successfully');
-        console.log('Available videos:', videosData.filter(v => v && v.playback_url).length);
-        console.log('Missing videos:', videosData.filter(v => !v || !v.playback_url).length);
+        console.log('✅ Enhanced video player initialized successfully');
+        console.log(`📊 Stats: ${availableVideos.length} available, ${totalVideos - availableVideos.length} unavailable`);
+        
     } else {
-        console.log('No videos found or video element missing');
+        console.log('ℹ️ No videos available for playback');
+        
+        // Show appropriate message based on the situation
+        if (totalVideos === 0) {
+            console.log('📚 Text-based course detected');
+        } else {
+            console.log('⚠️ All videos are currently unavailable');
+            showNotification('Videos are being processed. Please check back later.', 'info');
+        }
     }
 });
 

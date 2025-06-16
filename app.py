@@ -23,46 +23,45 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Enhanced Database configuration for production (Replace your existing DB config)
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Replace your existing database configuration with this enhanced version
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     # Handle PostgreSQL URL for Render
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
     
-    # Enhanced SSL configuration for production stability
+    # Enhanced SSL configuration for production
     if 'localhost' not in DATABASE_URL and 'sqlite' not in DATABASE_URL:
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
             'pool_size': 5,
             'pool_timeout': 30,
-            'pool_recycle': 300,  # Recycle connections every 5 minutes
-            'pool_pre_ping': True,  # Test connections before use
-            'pool_reset_on_return': 'commit',  # Reset connections on return
+            'pool_recycle': 300,
+            'pool_pre_ping': True,
+            'pool_reset_on_return': 'commit',
             'connect_args': {
                 'sslmode': 'require',
                 'connect_timeout': 30,
                 'command_timeout': 30,
                 'application_name': 'techbuxin_flask_app',
-                # Handle SSL connection drops
-                'options': '-c statement_timeout=30000'  # 30 second statement timeout
+                'options': '-c statement_timeout=30000'
             }
         }
     
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-    print(f"✅ PostgreSQL configured for production")
+    print("✅ PostgreSQL configured for production")
 else:
     # Fallback to SQLite for local development
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///learning_management.db'
-    print("⚠️ Using SQLite for local development")
+    print("⚠️ Using SQLite for development")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Add database retry decorator
+# Add database retry functionality
 from functools import wraps
 import time
 
 def db_retry(max_retries=3, delay=1):
-    """Decorator to retry database operations"""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -73,7 +72,7 @@ def db_retry(max_retries=3, delay=1):
                     if attempt == max_retries - 1:
                         print(f"❌ Database operation failed after {max_retries} attempts: {e}")
                         raise
-                    print(f"⚠️ Database operation failed (attempt {attempt + 1}), retrying in {delay}s: {e}")
+                    print(f"⚠️ Retrying database operation (attempt {attempt + 1}): {e}")
                     time.sleep(delay)
             return None
         return wrapper
@@ -408,9 +407,24 @@ User.group_classes = db.relationship('GroupClass',
                                     secondary=group_class_students,
                                     back_populates='students', lazy='select')
 
+# Replace your existing @login_manager.user_loader function with this:
+
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    """Enhanced user loader with retry logic for database connection issues"""
+    max_retries = 3
+    
+    for attempt in range(max_retries):
+        try:
+            return User.query.get(int(user_id))
+        except Exception as e:
+            print(f"⚠️ User load attempt {attempt + 1} failed: {e}")
+            if attempt == max_retries - 1:
+                print(f"❌ Failed to load user {user_id} after {max_retries} attempts")
+                return None  # Force re-login instead of crashing
+            time.sleep(0.5)  # Brief delay before retry
+    
+    return None
 
 # ========================================
 # HELPER FUNCTIONS
@@ -4174,29 +4188,37 @@ cloudinary.config(
 
 # 4. ADD THIS HELPER FUNCTION (add anywhere in your app.py, I suggest after your other helper functions)
 def upload_video_to_cloudinary(video_file, course_id, video_index):
-    """Upload video to Cloudinary with enhanced error handling and memory optimization"""
+    """Enhanced video upload with better error handling and optimization"""
     
     try:
-        # Create a unique public_id for the video
+        # Create unique public_id
         public_id = f"course_{course_id}_video_{video_index}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         print(f"🚀 Uploading to Cloudinary: {public_id}")
         
-        # Get file size for progress tracking
+        # Get file size
         video_file.seek(0, 2)
         file_size = video_file.tell()
         video_file.seek(0)
-        print(f"📊 File size: {file_size / (1024*1024):.1f} MB")
+        file_size_mb = file_size / (1024 * 1024)
         
-        # Optimize upload based on file size
-        if file_size > 100 * 1024 * 1024:  # Files > 100MB
+        print(f"📊 File size: {file_size_mb:.1f} MB")
+        
+        # Optimize settings based on file size
+        if file_size_mb > 100:
             chunk_size = 10000000  # 10MB chunks for large files
             timeout = 240  # 4 minutes
+            print("📦 Using large file optimization")
+        elif file_size_mb > 50:
+            chunk_size = 8000000   # 8MB chunks for medium files
+            timeout = 180  # 3 minutes
+            print("📦 Using medium file optimization")
         else:
-            chunk_size = 6000000   # 6MB chunks for smaller files
+            chunk_size = 6000000   # 6MB chunks for small files
             timeout = 120  # 2 minutes
+            print("📦 Using small file optimization")
         
-        # Upload to Cloudinary with optimized settings
+        # Upload parameters
         upload_params = {
             'resource_type': "video",
             'public_id': public_id,
@@ -4205,16 +4227,13 @@ def upload_video_to_cloudinary(video_file, course_id, video_index):
             'format': "mp4",
             'timeout': timeout,
             'chunk_size': chunk_size,
-            # Optimize for faster upload
             'eager_async': True,
             'notification_url': None,
-            # Reduce processing load
-            'quality': "auto:good",
-            'fetch_format': "auto"
+            'quality': "auto:good"
         }
         
-        # Only add transformations for smaller files to reduce processing
-        if file_size < 50 * 1024 * 1024:  # < 50MB
+        # Only add transformations for smaller files
+        if file_size_mb < 50:
             upload_params['eager'] = [
                 {"width": 720, "height": 480, "crop": "scale", "quality": "auto:good"}
             ]
@@ -4223,7 +4242,7 @@ def upload_video_to_cloudinary(video_file, course_id, video_index):
         
         result = cloudinary.uploader.upload(video_file, **upload_params)
         
-        print(f"✅ Cloudinary upload successful: {result['secure_url']}")
+        print(f"✅ Upload successful: {result['secure_url']}")
         
         return {
             'url': result['secure_url'],
@@ -4233,10 +4252,10 @@ def upload_video_to_cloudinary(video_file, course_id, video_index):
         }
         
     except cloudinary.exceptions.Error as e:
-        print(f"❌ Cloudinary specific error: {e}")
+        print(f"❌ Cloudinary error: {e}")
         return None
     except Exception as e:
-        print(f"❌ General upload error: {e}")
+        print(f"❌ Upload error: {e}")
         return None
 
 # Add this helper function for memory management during uploads

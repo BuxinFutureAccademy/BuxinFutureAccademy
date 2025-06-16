@@ -25,6 +25,11 @@
                             <a href="{{ url_for('my_courses') }}" class="btn btn-light">
                                 <i class="fas fa-arrow-left me-2"></i>Back to My Courses
                             </a>
+                            {% if current_user.is_admin %}
+                                <a href="{{ url_for('debug_course_videos', course_id=course.id) }}" class="btn btn-warning" target="_blank">
+                                    <i class="fas fa-bug me-2"></i>Debug
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -43,19 +48,29 @@
                             <i class="fas fa-play text-primary me-2"></i>
                             <span id="currentVideoTitle">{{ videos[0].title }}</span>
                         </h5>
-                        <span class="badge bg-secondary" id="videoCounter">1 of {{ videos|length }}</span>
+                        <div>
+                            <span class="badge bg-secondary" id="videoCounter">1 of {{ videos|length }}</span>
+                            {% if current_user.is_admin and videos[0].source_type %}
+                                <span class="badge bg-info ms-2">{{ videos[0].source_type }}</span>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div class="video-container">
-                            <video id="courseVideo" class="w-100" controls style="max-height: 500px; background: #000;">
-                                <!-- Use Cloudinary URL if available, otherwise fallback to local route -->
-                                {% if videos[0].video_url %}
-                                    <source src="{{ videos[0].video_url }}" type="video/mp4">
-                                {% else %}
-                                    <source src="{{ url_for('course_video', filename=videos[0].video_filename) }}" type="video/mp4">
-                                {% endif %}
-                                Your browser does not support the video tag.
-                            </video>
+                            {% if videos[0].playback_url %}
+                                <video id="courseVideo" class="w-100" controls style="max-height: 500px; background: #000;">
+                                    <source src="{{ videos[0].playback_url }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            {% else %}
+                                <div class="alert alert-warning m-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Video Not Available:</strong> {{ videos[0].title }}
+                                    {% if current_user.is_admin %}
+                                        <br><small>Admin: No valid video source found. Check the debug panel.</small>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="card-footer">
@@ -167,25 +182,42 @@
                     <div class="card-body p-0">
                         <div class="list-group list-group-flush">
                             {% for video in videos %}
-                                <a href="#" class="list-group-item list-group-item-action video-item" 
+                                <a href="#" class="list-group-item list-group-item-action video-item 
+                                   {% if not video.playback_url %}list-group-item-secondary{% endif %}" 
                                    data-video-index="{{ loop.index0 }}"
-                                   data-video-src="{% if video.video_url %}{{ video.video_url }}{% else %}{{ url_for('course_video', filename=video.video_filename) }}{% endif %}"
+                                   data-video-src="{{ video.playback_url or '' }}"
                                    data-video-title="{{ video.title }}"
-                                   data-video-description="{{ video.description or 'No description available.' }}">
+                                   data-video-description="{{ video.description or 'No description available.' }}"
+                                   data-source-type="{{ video.source_type or 'unknown' }}">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-1">
                                                 <span class="lesson-number">{{ loop.index }}.</span>
                                                 {{ video.title }}
+                                                {% if not video.playback_url %}
+                                                    <i class="fas fa-exclamation-triangle text-warning ms-2" title="Video not available"></i>
+                                                {% endif %}
                                             </h6>
                                             {% if video.duration %}
                                                 <small class="text-muted">
                                                     <i class="fas fa-clock me-1"></i>{{ video.duration }}
                                                 </small>
                                             {% endif %}
+                                            {% if current_user.is_admin %}
+                                                <br><small class="text-muted">
+                                                    Source: {{ video.source_type or 'unknown' }}
+                                                    {% if video.source_type == 'local' and video.get('file_exists') == False %}
+                                                        <span class="text-danger">(file missing)</span>
+                                                    {% endif %}
+                                                </small>
+                                            {% endif %}
                                         </div>
                                         <div class="lesson-status">
-                                            <i class="fas fa-play text-muted"></i>
+                                            {% if video.playback_url %}
+                                                <i class="fas fa-play text-muted"></i>
+                                            {% else %}
+                                                <i class="fas fa-times text-danger"></i>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </a>
@@ -209,8 +241,8 @@
     </div>
 </div>
 
-<!-- Debug Info (Remove in production) -->
-{% if current_user.is_admin %}
+<!-- Debug Info (Admin Only) -->
+{% if current_user.is_admin and debug_info %}
 <div class="container-fluid mt-4">
     <div class="card bg-light">
         <div class="card-header">
@@ -220,25 +252,28 @@
             <div class="row">
                 <div class="col-md-6">
                     <strong>Course ID:</strong> {{ course.id }}<br>
-                    <strong>Total Videos:</strong> {{ videos|length if videos else 0 }}<br>
+                    <strong>Total Videos:</strong> {{ debug_info.total_videos }}<br>
                     <strong>Total Materials:</strong> {{ materials|length if materials else 0 }}
                 </div>
                 <div class="col-md-6">
-                    {% if videos and videos|length > 0 %}
-                        <strong>Video Sources:</strong>
-                        <ul class="small">
-                            {% for video in videos %}
-                                <li>{{ video.title }}: 
-                                    {% if video.video_url %}
-                                        <span class="text-success">Cloudinary</span>
-                                    {% else %}
-                                        <span class="text-warning">Local</span>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
+                    <strong>Video Sources:</strong><br>
+                    <ul class="small mb-0">
+                        <li>Cloudinary: {{ debug_info.cloudinary_videos }}</li>
+                        <li>Local: {{ debug_info.local_videos }}</li>
+                        <li>Missing: {{ debug_info.missing_videos }}</li>
+                        {% if debug_info.videos_with_missing_files > 0 %}
+                            <li class="text-danger">Missing files: {{ debug_info.videos_with_missing_files }}</li>
+                        {% endif %}
+                    </ul>
                 </div>
+            </div>
+            <div class="mt-3">
+                <a href="{{ url_for('debug_course_videos', course_id=course.id) }}" class="btn btn-sm btn-warning" target="_blank">
+                    <i class="fas fa-bug me-1"></i>Detailed Debug
+                </a>
+                <a href="{{ url_for('migrate_existing_videos') }}" class="btn btn-sm btn-info">
+                    <i class="fas fa-cloud-upload-alt me-1"></i>Check Migration
+                </a>
             </div>
         </div>
     </div>
@@ -256,291 +291,11 @@
     border-color: #0d6efd;
 }
 
-.list-group-item:hover {
+.list-group-item:hover:not(.list-group-item-secondary) {
     background-color: #f8f9fa;
 }
 
-.lesson-status .fa-check {
-    color: #198754;
+.list-group-item-secondary {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
-
-.lesson-status .fa-play {
-    color: #0d6efd;
-}
-
-.progress-circle {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto;
-}
-
-.video-item.completed .lesson-status .fa-play {
-    display: none;
-}
-
-.video-item.completed .lesson-status .fa-check {
-    display: inline;
-}
-
-.video-item.current {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196f3;
-}
-
-.bg-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-}
-
-/* Video loading indicator */
-.video-container::before {
-    content: "Loading video...";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 16px;
-    z-index: 1;
-    display: none;
-}
-
-.video-container.loading::before {
-    display: block;
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const video = document.getElementById('courseVideo');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const videoItems = document.querySelectorAll('.video-item');
-    const currentVideoTitle = document.getElementById('currentVideoTitle');
-    const currentVideoDescription = document.getElementById('currentVideoDescription');
-    const videoCounter = document.getElementById('videoCounter');
-    const videoContainer = document.querySelector('.video-container');
-    
-    let currentVideoIndex = 0;
-    const totalVideos = {{ videos|length if videos else 0 }};
-    
-    // Only initialize video functionality if videos exist
-    if (totalVideos > 0 && video) {
-        console.log(`Initializing video player with ${totalVideos} videos`);
-        
-        // Initialize first video as current
-        if (videoItems.length > 0) {
-            videoItems[0].classList.add('current');
-        }
-        
-        // Video loading states
-        video.addEventListener('loadstart', function() {
-            videoContainer.classList.add('loading');
-            console.log('Video loading started');
-        });
-        
-        video.addEventListener('loadeddata', function() {
-            videoContainer.classList.remove('loading');
-            console.log('Video loaded successfully');
-        });
-        
-        video.addEventListener('error', function(e) {
-            videoContainer.classList.remove('loading');
-            console.error('Video error:', e);
-            console.error('Video source:', video.currentSrc);
-            
-            // Show error message
-            const errorMsg = document.createElement('div');
-            errorMsg.className = 'alert alert-danger mt-3';
-            errorMsg.innerHTML = `
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Video Error:</strong> Unable to load video. 
-                <a href="${video.currentSrc}" target="_blank">Try direct link</a>
-            `;
-            video.parentNode.appendChild(errorMsg);
-        });
-        
-        // Play/Pause functionality
-        playPauseBtn.addEventListener('click', function() {
-            if (video.paused) {
-                video.play().catch(e => {
-                    console.error('Play error:', e);
-                    alert('Unable to play video. Please check your internet connection.');
-                });
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            } else {
-                video.pause();
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-            }
-        });
-        
-        // Fullscreen functionality
-        fullscreenBtn.addEventListener('click', function() {
-            if (video.requestFullscreen) {
-                video.requestFullscreen();
-            } else if (video.webkitRequestFullscreen) {
-                video.webkitRequestFullscreen();
-            } else if (video.msRequestFullscreen) {
-                video.msRequestFullscreen();
-            }
-        });
-        
-        // Video ended event
-        video.addEventListener('ended', function() {
-            markVideoAsCompleted(currentVideoIndex);
-            if (currentVideoIndex < totalVideos - 1) {
-                setTimeout(() => {
-                    nextVideo();
-                }, 1000);
-            }
-        });
-        
-        // Video play/pause events
-        video.addEventListener('play', function() {
-            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        });
-        
-        video.addEventListener('pause', function() {
-            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        });
-        
-        // Navigation buttons
-        prevBtn.addEventListener('click', prevVideo);
-        nextBtn.addEventListener('click', nextVideo);
-        
-        // Curriculum item clicks
-        videoItems.forEach((item, index) => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-                loadVideo(index);
-            });
-        });
-        
-        function loadVideo(index) {
-            if (index < 0 || index >= totalVideos) return;
-            
-            console.log(`Loading video ${index + 1}/${totalVideos}`);
-            currentVideoIndex = index;
-            const videoItem = videoItems[index];
-            const newVideoSrc = videoItem.dataset.videoSrc;
-            
-            // Show loading state
-            videoContainer.classList.add('loading');
-            
-            // Update video source
-            video.src = newVideoSrc;
-            video.load();
-            
-            console.log('Video source:', newVideoSrc);
-            
-            // Update UI
-            currentVideoTitle.textContent = videoItem.dataset.videoTitle;
-            currentVideoDescription.textContent = videoItem.dataset.videoDescription;
-            videoCounter.textContent = `${index + 1} of ${totalVideos}`;
-            
-            // Update curriculum highlighting
-            videoItems.forEach(item => item.classList.remove('current'));
-            videoItem.classList.add('current');
-            
-            // Update navigation buttons
-            prevBtn.disabled = index === 0;
-            nextBtn.disabled = index === totalVideos - 1;
-            
-            if (index === totalVideos - 1) {
-                nextBtn.innerHTML = 'Complete Course<i class="fas fa-check ms-2"></i>';
-            } else {
-                nextBtn.innerHTML = 'Next<i class="fas fa-chevron-right ms-2"></i>';
-            }
-        }
-        
-        function nextVideo() {
-            if (currentVideoIndex < totalVideos - 1) {
-                loadVideo(currentVideoIndex + 1);
-            }
-        }
-        
-        function prevVideo() {
-            if (currentVideoIndex > 0) {
-                loadVideo(currentVideoIndex - 1);
-            }
-        }
-        
-        function markVideoAsCompleted(index) {
-            const videoItem = videoItems[index];
-            if (videoItem) {
-                videoItem.classList.add('completed');
-                const statusIcon = videoItem.querySelector('.lesson-status i');
-                if (statusIcon) {
-                    statusIcon.className = 'fas fa-check';
-                }
-            }
-            updateProgress();
-        }
-        
-        function updateProgress() {
-            const completedVideos = document.querySelectorAll('.video-item.completed').length;
-            const percentage = Math.round((completedVideos / totalVideos) * 100);
-            
-            const progressBar = document.getElementById('overallProgress');
-            const progressPercentage = document.getElementById('progressPercentage');
-            const completedLessons = document.getElementById('completedLessons');
-            
-            if (progressBar) progressBar.style.width = percentage + '%';
-            if (progressPercentage) progressPercentage.textContent = percentage + '%';
-            if (completedLessons) completedLessons.textContent = completedVideos;
-        }
-        
-        // Save progress to localStorage (basic implementation)
-        function saveProgress() {
-            const courseId = {{ course.id }};
-            const completedVideos = Array.from(document.querySelectorAll('.video-item.completed'))
-                .map(item => parseInt(item.dataset.videoIndex));
-            localStorage.setItem(`course_${courseId}_progress`, JSON.stringify({
-                completedVideos: completedVideos,
-                currentVideo: currentVideoIndex
-            }));
-        }
-        
-        // Load progress from localStorage
-        function loadProgress() {
-            const courseId = {{ course.id }};
-            const saved = localStorage.getItem(`course_${courseId}_progress`);
-            if (saved) {
-                try {
-                    const progress = JSON.parse(saved);
-                    if (progress.completedVideos && Array.isArray(progress.completedVideos)) {
-                        progress.completedVideos.forEach(index => {
-                            if (index >= 0 && index < totalVideos) {
-                                markVideoAsCompleted(index);
-                            }
-                        });
-                    }
-                    if (progress.currentVideo && progress.currentVideo >= 0 && progress.currentVideo < totalVideos) {
-                        loadVideo(progress.currentVideo);
-                    }
-                } catch (e) {
-                    console.log('Error loading progress:', e);
-                }
-            }
-        }
-        
-        // Auto-save progress
-        video.addEventListener('timeupdate', function() {
-            if (video.currentTime > 10) { // Mark as started after 10 seconds
-                saveProgress();
-            }
-        });
-        
-        // Load saved progress on page load
-        loadProgress();
-        
-        // Debug info
-        console.log('Video player initialized successfully');
-        console.log('First video source:', video.src);
-    } else {
-        console.log('No videos found or video element missing');
-    }
-});
-</script>
-{% endblock %}

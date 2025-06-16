@@ -943,6 +943,396 @@ def course_video(filename):
 
 
 # ========================================
+# COMPLETE VIDEO MANAGEMENT ROUTES - CONFLICT-FREE VERSION
+# ========================================
+# Copy-paste these 4 routes into your app.py file after your existing course routes
+
+@app.route('/admin/add_video_to_course', methods=['POST'])
+@login_required
+def add_video_to_course():
+    """Add a new video to an existing course"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        course_id = request.form.get('course_id')
+        if not course_id:
+            return {'success': False, 'error': 'Course ID is required'}, 400
+        
+        course = Course.query.get_or_404(course_id)
+        
+        # Get form data
+        video_title = request.form.get('video_title', '').strip()
+        video_description = request.form.get('video_description', '').strip()
+        video_duration = request.form.get('video_duration', '').strip()
+        video_order = request.form.get('video_order', '1')
+        
+        if not video_title:
+            return {'success': False, 'error': 'Video title is required'}, 400
+        
+        # Handle video file upload
+        video_file = request.files.get('video_file')
+        if not video_file or video_file.filename == '':
+            return {'success': False, 'error': 'Video file is required'}, 400
+        
+        if not allowed_file(video_file.filename, 'video'):
+            return {'success': False, 'error': 'Invalid video file format'}, 400
+        
+        # Check file size (500MB limit)
+        video_file.seek(0, 2)
+        file_size = video_file.tell()
+        video_file.seek(0)
+        
+        if file_size > 500 * 1024 * 1024:  # 500MB
+            return {'success': False, 'error': 'Video file is too large. Maximum size is 500MB.'}, 400
+        
+        print(f"📤 Uploading video: {video_title} ({file_size / (1024*1024):.1f}MB)")
+        
+        # Upload to Cloudinary (using your existing function)
+        upload_result = upload_video_to_cloudinary(video_file, course.id, int(video_order))
+        
+        if not upload_result:
+            return {'success': False, 'error': 'Failed to upload video to Cloudinary'}, 500
+        
+        # Create video record in database
+        fallback_filename = f"cloudinary_{upload_result['public_id']}.mp4"
+        
+        course_video = CourseVideo(
+            course_id=course.id,
+            title=video_title,
+            description=video_description,
+            video_filename=fallback_filename,
+            video_url=upload_result['url'],
+            duration=video_duration if video_duration else None,
+            order_index=int(video_order)
+        )
+        
+        db.session.add(course_video)
+        db.session.commit()
+        
+        print(f"✅ Video added successfully: {video_title}")
+        
+        # Return video data for frontend
+        return {
+            'success': True,
+            'video': {
+                'id': course_video.id,
+                'title': course_video.title,
+                'description': course_video.description,
+                'duration': course_video.duration,
+                'order_index': course_video.order_index,
+                'video_url': course_video.video_url,
+                'video_filename': course_video.video_filename
+            }
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error adding video: {str(e)}")
+        return {'success': False, 'error': str(e)}, 500
+
+
+@app.route('/admin/delete_video/<int:video_id>', methods=['POST'])
+@login_required
+def delete_course_video_by_id(video_id):  # ✅ CONFLICT-FREE FUNCTION NAME
+    """Delete a single video from a course"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        video = CourseVideo.query.get_or_404(video_id)
+        video_title = video.title
+        
+        # Delete from Cloudinary if it's a Cloudinary video
+        if video.video_url and 'cloudinary.com' in video.video_url:
+            try:
+                import re
+                match = re.search(r'/course_videos/([^.]+)', video.video_url)
+                if match:
+                    public_id = f"course_videos/{match.group(1)}"
+                    cloudinary.uploader.destroy(public_id, resource_type="video")
+                    print(f"🗑️ Deleted from Cloudinary: {public_id}")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not delete from Cloudinary: {e}")
+        
+        # Delete local file if it exists (fallback)
+        elif video.video_filename and not video.video_url:
+            try:
+                video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+                video_path = os.path.join(video_folder, video.video_filename)
+                if os.path.exists(video_path):
+                    os.remove(video_path)
+                    print(f"🗑️ Deleted local file: {video.video_filename}")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not delete local file: {e}")
+        
+        # Delete video record from database
+        db.session.delete(video)
+        db.session.commit()
+        
+        print(f"✅ Video deleted successfully: {video_title}")
+        
+        return {'success': True, 'message': f'Video "{video_title}" deleted successfully'}
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error deleting video: {str(e)}")
+        return {'success': False, 'error': str(e)}, 500
+
+
+@app.route('/admin/edit_video/<int:video_id>', methods=['GET', 'POST'])
+@login_required
+def edit_course_video_by_id(video_id):  # ✅ CONFLICT-FREE FUNCTION NAME
+    """Edit video details (title, description, order, etc.)"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    video = CourseVideo.query.get_or_404(video_id)
+    
+    if request.method == 'POST':
+        try:
+            # Handle both JSON and form data
+            if request.is_json:
+                data = request.get_json()
+            else:
+                data = request.form
+            
+            # Update video details
+            new_title = data.get('title', '').strip()
+            new_description = data.get('description', '').strip()
+            new_duration = data.get('duration', '').strip()
+            new_order = data.get('order_index', video.order_index)
+            
+            if not new_title:
+                return {'success': False, 'error': 'Video title is required'}, 400
+            
+            # Update video fields
+            video.title = new_title
+            video.description = new_description
+            video.duration = new_duration if new_duration else None
+            video.order_index = int(new_order)
+            
+            db.session.commit()
+            
+            print(f"✅ Video updated successfully: {video.title}")
+            
+            return {
+                'success': True,
+                'message': f'Video "{video.title}" updated successfully',
+                'video': {
+                    'id': video.id,
+                    'title': video.title,
+                    'description': video.description,
+                    'duration': video.duration,
+                    'order_index': video.order_index
+                }
+            }
+            
+        except ValueError as e:
+            return {'success': False, 'error': 'Invalid order index'}, 400
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error updating video: {str(e)}")
+            return {'success': False, 'error': str(e)}, 500
+    
+    # GET request - return video data for editing
+    return {
+        'success': True,
+        'video': {
+            'id': video.id,
+            'title': video.title,
+            'description': video.description,
+            'duration': video.duration,
+            'order_index': video.order_index,
+            'course_id': video.course_id,
+            'video_url': video.video_url,
+            'video_filename': video.video_filename
+        }
+    }
+
+
+@app.route('/admin/delete_material/<int:material_id>', methods=['POST'])
+@login_required
+def delete_course_material_by_id(material_id):  # ✅ CONFLICT-FREE FUNCTION NAME
+    """Delete a single course material"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        material = CourseMaterial.query.get_or_404(material_id)
+        material_title = material.title
+        material_filename = material.filename
+        
+        # Delete file from filesystem
+        try:
+            materials_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
+            material_path = os.path.join(materials_folder, material_filename)
+            if os.path.exists(material_path):
+                os.remove(material_path)
+                print(f"🗑️ Deleted material file: {material_filename}")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not delete material file: {e}")
+        
+        # Delete record from database
+        db.session.delete(material)
+        db.session.commit()
+        
+        print(f"✅ Material deleted successfully: {material_title}")
+        
+        return {
+            'success': True, 
+            'message': f'Material "{material_title}" deleted successfully'
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error deleting material: {str(e)}")
+        return {'success': False, 'error': str(e)}, 500
+
+
+# ========================================
+# ADDITIONAL HELPER ROUTE - BONUS
+# ========================================
+
+@app.route('/admin/add_material_to_course', methods=['POST'])
+@login_required
+def add_material_to_course():
+    """Add a new material to an existing course - BONUS ROUTE"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        course_id = request.form.get('course_id')
+        if not course_id:
+            return {'success': False, 'error': 'Course ID is required'}, 400
+        
+        course = Course.query.get_or_404(course_id)
+        
+        # Get material title
+        material_title = request.form.get('material_title', '').strip()
+        
+        # Handle file upload
+        material_file = request.files.get('material_file')
+        if not material_file or material_file.filename == '':
+            return {'success': False, 'error': 'Material file is required'}, 400
+        
+        if not allowed_file(material_file.filename, 'material'):
+            return {'success': False, 'error': 'Invalid file format. Allowed: PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP'}, 400
+        
+        # Check file size (10MB limit for materials)
+        material_file.seek(0, 2)
+        file_size = material_file.tell()
+        material_file.seek(0)
+        
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            return {'success': False, 'error': 'File is too large. Maximum size is 10MB.'}, 400
+        
+        # Save file
+        filename = secure_filename(material_file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+        unique_filename = f"{timestamp}{course.id}_{filename}"
+        
+        materials_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
+        os.makedirs(materials_folder, exist_ok=True)
+        material_path = os.path.join(materials_folder, unique_filename)
+        material_file.save(material_path)
+        
+        # Create material record
+        course_material = CourseMaterial(
+            course_id=course.id,
+            title=material_title if material_title else filename.rsplit('.', 1)[0],
+            filename=unique_filename,
+            file_type=filename.rsplit('.', 1)[1].lower(),
+            file_size=file_size
+        )
+        
+        db.session.add(course_material)
+        db.session.commit()
+        
+        print(f"✅ Material added successfully: {course_material.title}")
+        
+        return {
+            'success': True,
+            'message': f'Material "{course_material.title}" added successfully',
+            'material': {
+                'id': course_material.id,
+                'title': course_material.title,
+                'filename': course_material.filename,
+                'file_type': course_material.file_type,
+                'file_size_mb': course_material.get_file_size_mb()
+            }
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error adding material: {str(e)}")
+        return {'success': False, 'error': str(e)}, 500
+
+
+# ========================================
+# BULK OPERATIONS - BONUS ROUTES
+# ========================================
+
+@app.route('/admin/reorder_videos', methods=['POST'])
+@login_required
+def reorder_course_videos():
+    """Reorder videos in a course - BONUS FEATURE"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        data = request.get_json()
+        video_orders = data.get('video_orders', [])  # List of {id: video_id, order: new_order}
+        
+        if not video_orders:
+            return {'success': False, 'error': 'No video orders provided'}, 400
+        
+        updated_count = 0
+        for item in video_orders:
+            video_id = item.get('id')
+            new_order = item.get('order')
+            
+            if video_id and new_order is not None:
+                video = CourseVideo.query.get(video_id)
+                if video:
+                    video.order_index = new_order
+                    updated_count += 1
+        
+        if updated_count > 0:
+            db.session.commit()
+            print(f"✅ Reordered {updated_count} videos")
+            return {'success': True, 'message': f'Reordered {updated_count} videos successfully'}
+        else:
+            return {'success': False, 'error': 'No valid videos found to reorder'}, 400
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error reordering videos: {str(e)}")
+        return {'success': False, 'error': str(e)}, 500
+
+
+@app.route('/admin/course/<int:course_id>/video_count')
+@login_required
+def get_course_video_count(course_id):
+    """Get current video count for a course - UTILITY ROUTE"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        course = Course.query.get_or_404(course_id)
+        video_count = CourseVideo.query.filter_by(course_id=course_id).count()
+        
+        return {
+            'success': True,
+            'course_id': course_id,
+            'video_count': video_count,
+            'course_title': course.title
+        }
+        
+    except Exception as e:
+        return {'success': False, 'error': str(e)}, 500
+
+# ========================================
 # PRODUCT MANAGEMENT ROUTES (Keep these together)
 # ========================================
 

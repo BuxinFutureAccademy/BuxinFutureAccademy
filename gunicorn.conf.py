@@ -1,63 +1,42 @@
 # gunicorn.conf.py
 import os
 
-# Worker configuration optimized for Render
+# Server socket
 bind = f"0.0.0.0:{os.environ.get('PORT', 10000)}"
-workers = 2  # Reduced for memory efficiency on Render
+backlog = 2048
+
+# Worker processes
+workers = 2
 worker_class = "sync"
 worker_connections = 1000
 
-# Critical: Extended timeouts for video uploads
-timeout = 300  # 5 minutes for video uploads (was 30s default)
+# CRITICAL: Extended timeout for video uploads
+timeout = 300  # 5 minutes instead of 30 seconds
 keepalive = 30
+
+# Worker lifecycle
 max_requests = 500
 max_requests_jitter = 50
+preload_app = True
 
-# Memory management to prevent crashes
+# Memory management
 worker_memory_limit = 400 * 1024 * 1024  # 400MB per worker
-max_worker_memory_usage = 300 * 1024 * 1024  # 300MB restart threshold
 
-# Logging configuration
+# Logging
 loglevel = "info"
 accesslog = "-"
 errorlog = "-"
 capture_output = True
-access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
-# Process naming for easier monitoring
-proc_name = "techbuxin_flask_app"
+# Process naming
+proc_name = "techbuxin_app"
 
-# Performance optimizations
-preload_app = True
-enable_stdio_inheritance = True
-reuse_port = True
-
-# Security and limits
-limit_request_line = 4094
-limit_request_fields = 100
-limit_request_field_size = 8190
-
-# Graceful handling of worker issues
+# Graceful worker management
 def worker_abort(worker):
-    """Handle worker timeout gracefully"""
-    worker.log.warning(f"Worker {worker.pid} timed out - likely during file upload")
+    worker.log.warning(f"Worker {worker.pid} timeout - likely video upload in progress")
 
 def when_ready(server):
-    """Called when server is ready"""
-    server.log.info("TechBuxin server ready - workers spawning")
-
-def worker_int(worker):
-    """Handle worker interrupt signals"""
-    worker.log.info(f"Worker {worker.pid} received interrupt signal")
-
-def pre_fork(server, worker):
-    """Called before worker fork"""
-    server.log.info(f"Pre-fork worker {worker.pid}")
+    server.log.info("TechBuxin server ready for connections")
 
 def post_fork(server, worker):
-    """Called after worker fork"""
-    server.log.info(f"Post-fork worker {worker.pid}")
-    
-def worker_exit(server, worker):
-    """Called when worker exits"""
-    server.log.info(f"Worker {worker.pid} exited")
+    server.log.info(f"Worker {worker.pid} spawned")

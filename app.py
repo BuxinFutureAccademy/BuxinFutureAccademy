@@ -945,27 +945,36 @@ def course_video(filename):
 # ========================================
 # COMPLETE VIDEO MANAGEMENT ROUTES - CONFLICT-FREE VERSION
 # ========================================
-# Copy-paste these 4 routes into your app.py file after your existing course routes
 
 @app.route('/admin/add_video_to_course', methods=['POST'])
 @login_required
 def add_video_to_course():
-    """Add a new video to an existing course"""
+    """Add a new video to an existing course - FIXED VERSION"""
     if not current_user.is_admin:
         return {'success': False, 'error': 'Access denied'}, 403
     
     try:
+        print("🎬 add_video_to_course route called")
+        
+        # Get course ID from form data
         course_id = request.form.get('course_id')
         if not course_id:
+            print("❌ No course_id provided")
             return {'success': False, 'error': 'Course ID is required'}, 400
         
+        print(f"📚 Course ID: {course_id}")
+        
+        # Verify course exists
         course = Course.query.get_or_404(course_id)
+        print(f"✅ Course found: {course.title}")
         
         # Get form data
         video_title = request.form.get('video_title', '').strip()
         video_description = request.form.get('video_description', '').strip()
         video_duration = request.form.get('video_duration', '').strip()
         video_order = request.form.get('video_order', '1')
+        
+        print(f"📝 Video details: {video_title}, Order: {video_order}")
         
         if not video_title:
             return {'success': False, 'error': 'Video title is required'}, 400
@@ -983,16 +992,21 @@ def add_video_to_course():
         file_size = video_file.tell()
         video_file.seek(0)
         
+        print(f"📁 File size: {file_size / (1024*1024):.1f}MB")
+        
         if file_size > 500 * 1024 * 1024:  # 500MB
             return {'success': False, 'error': 'Video file is too large. Maximum size is 500MB.'}, 400
         
-        print(f"📤 Uploading video: {video_title} ({file_size / (1024*1024):.1f}MB)")
+        print(f"📤 Starting Cloudinary upload for: {video_title}")
         
-        # Upload to Cloudinary (using your existing function)
+        # Upload to Cloudinary
         upload_result = upload_video_to_cloudinary(video_file, course.id, int(video_order))
         
         if not upload_result:
+            print("❌ Cloudinary upload failed")
             return {'success': False, 'error': 'Failed to upload video to Cloudinary'}, 500
+        
+        print(f"✅ Cloudinary upload successful: {upload_result['url']}")
         
         # Create video record in database
         fallback_filename = f"cloudinary_{upload_result['public_id']}.mp4"
@@ -1010,11 +1024,12 @@ def add_video_to_course():
         db.session.add(course_video)
         db.session.commit()
         
-        print(f"✅ Video added successfully: {video_title}")
+        print(f"✅ Video saved to database: {course_video.id}")
         
-        # Return video data for frontend
-        return {
+        # Return success response
+        response_data = {
             'success': True,
+            'message': f'Video "{video_title}" uploaded successfully',
             'video': {
                 'id': course_video.id,
                 'title': course_video.title,
@@ -1026,10 +1041,16 @@ def add_video_to_course():
             }
         }
         
+        print(f"📤 Sending response: {response_data}")
+        return response_data
+        
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Error adding video: {str(e)}")
-        return {'success': False, 'error': str(e)}, 500
+        error_msg = str(e)
+        print(f"❌ Error in add_video_to_course: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return {'success': False, 'error': error_msg}, 500
 
 
 @app.route('/admin/delete_video/<int:video_id>', methods=['POST'])
@@ -3902,35 +3923,123 @@ cloudinary.config(
 )
 
 # 4. ADD THIS HELPER FUNCTION (add anywhere in your app.py, I suggest after your other helper functions)
+# Enhanced upload_video_to_cloudinary function
+# Replace your existing function in app.py with this improved version:
+
 def upload_video_to_cloudinary(video_file, course_id, video_index):
-    """Upload video to Cloudinary and return the URL"""
+    """Upload video to Cloudinary and return the URL - ENHANCED VERSION"""
     try:
+        print(f"🚀 Starting Cloudinary upload...")
+        print(f"   Course ID: {course_id}")
+        print(f"   Video Index: {video_index}")
+        
+        # Reset file pointer to beginning
+        video_file.seek(0)
+        
         # Create a unique public_id for the video
-        public_id = f"course_{course_id}_video_{video_index}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        public_id = f"course_{course_id}_video_{video_index}_{timestamp}"
         
-        print(f"🚀 Uploading to Cloudinary: {public_id}")
+        print(f"📝 Public ID: {public_id}")
         
-        # Upload to Cloudinary
+        # Get file size for logging
+        video_file.seek(0, 2)
+        file_size = video_file.tell()
+        video_file.seek(0)
+        print(f"📁 File size: {file_size / (1024*1024):.1f}MB")
+        
+        # Upload to Cloudinary with optimized settings
+        upload_params = {
+            'resource_type': "video",
+            'public_id': public_id,
+            'folder': "course_videos",
+            'overwrite': True,
+            'format': "mp4",  # Convert to MP4 automatically
+            'quality': "auto",  # Optimize quality automatically
+            'fetch_format': "auto",  # Use best format for delivery
+            'flags': "progressive",  # Enable progressive streaming
+        }
+        
+        print(f"📤 Uploading to Cloudinary with params: {upload_params}")
+        
+        # Perform the upload
         result = cloudinary.uploader.upload(
             video_file,
-            resource_type="video",
-            public_id=public_id,
-            folder="course_videos",
-            overwrite=True,
-            format="mp4"  # Convert to MP4 automatically
+            **upload_params
         )
         
-        print(f"✅ Cloudinary upload successful: {result['secure_url']}")
+        print(f"✅ Cloudinary upload successful!")
+        print(f"   URL: {result.get('secure_url', 'No URL')}")
+        print(f"   Public ID: {result.get('public_id', 'No ID')}")
+        print(f"   Duration: {result.get('duration', 'Unknown')} seconds")
+        print(f"   Size: {result.get('bytes', 0) / (1024*1024):.1f}MB")
         
-        return {
+        # Return structured result
+        upload_data = {
             'url': result['secure_url'],
             'public_id': result['public_id'],
             'duration': result.get('duration', 0),
-            'size': result.get('bytes', 0)
+            'size': result.get('bytes', 0),
+            'format': result.get('format', 'mp4'),
+            'width': result.get('width', 0),
+            'height': result.get('height', 0)
         }
+        
+        return upload_data
+        
     except Exception as e:
-        print(f"❌ Cloudinary upload error: {e}")
+        print(f"❌ Cloudinary upload error: {str(e)}")
+        import traceback
+        print("Full traceback:")
+        traceback.print_exc()
         return None
+
+# Also add this helper function to check Cloudinary configuration:
+def check_cloudinary_config():
+    """Check if Cloudinary is properly configured"""
+    try:
+        config = cloudinary.config()
+        print(f"☁️ Cloudinary Configuration:")
+        print(f"   Cloud Name: {config.cloud_name}")
+        print(f"   API Key: {config.api_key}")
+        print(f"   API Secret: {'***' + config.api_secret[-4:] if config.api_secret else 'Not set'}")
+        
+        # Test connection
+        result = cloudinary.api.ping()
+        print(f"✅ Cloudinary connection test: {result}")
+        return True
+    except Exception as e:
+        print(f"❌ Cloudinary configuration error: {e}")
+        return False
+
+# Add this route for debugging Cloudinary
+@app.route('/admin/test-cloudinary')
+@login_required
+def test_cloudinary():
+    """Test Cloudinary connection - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    try:
+        config_ok = check_cloudinary_config()
+        
+        if config_ok:
+            return {
+                'status': 'success',
+                'message': 'Cloudinary is properly configured and accessible',
+                'cloud_name': cloudinary.config().cloud_name
+            }
+        else:
+            return {
+                'status': 'error', 
+                'message': 'Cloudinary configuration failed'
+            }, 500
+            
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': str(e)
+        }, 500
 
 
 @app.route('/admin/cloudinary-test')
@@ -4270,30 +4379,7 @@ def create_sample_data():
             
             # Create sample products
             sample_products = [
-                {
-                    'name': 'Python Programming Book',
-                    'description': 'Comprehensive guide to Python programming',
-                    'short_description': 'Best-selling Python book',
-                    'price': 29.99,
-                    'product_type': 'Physical',
-                    'category': 'Books',
-                    'brand': 'Tech Publications',
-                    'sku': 'BOOK-PY-001',
-                    'stock_quantity': 100,
-                    'image_url': 'https://example.com/python-book.jpg'
-                },
-                {
-                    'name': 'Premium Course Bundle',
-                    'description': 'Access to all premium courses',
-                    'short_description': 'Unlimited course access',
-                    'price': 199.99,
-                    'product_type': 'Digital',
-                    'category': 'Subscriptions',
-                    'brand': 'Academy',
-                    'sku': 'DIGITAL-BUNDLE-001',
-                    'stock_quantity': 0,
-                    'image_url': 'https://example.com/bundle.jpg'
-                }
+                
             ]
             
             for product_data in sample_products:

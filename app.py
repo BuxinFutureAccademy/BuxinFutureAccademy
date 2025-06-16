@@ -2333,66 +2333,6 @@ def learn_course(course_id):
     return render_template('learn_course.html', **context)
 
 
-
-
-@app.route('/debug/my-purchases')
-@login_required
-def debug_my_purchases():
-    # Debug route to check user's purchases
-    purchases = Purchase.query.filter_by(user_id=current_user.id).all()
-    
-    html = '<!DOCTYPE html>' + \
-           '<html>' + \
-           '<head>' + \
-           '<title>My Purchases Debug</title>' + \
-           '<style>' + \
-           'body { font-family: Arial; padding: 20px; }' + \
-           'table { width: 100%; border-collapse: collapse; }' + \
-           'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }' + \
-           'th { background-color: #f2f2f2; }' + \
-           '.good { color: green; }' + \
-           '.warning { color: orange; }' + \
-           '.bad { color: red; }' + \
-           '</style>' + \
-           '</head>' + \
-           '<body>' + \
-           '<h1>🛒 My Purchases Debug</h1>' + \
-           f'<p><strong>User:</strong> {current_user.username}</p>' + \
-           f'<p><strong>Total Purchases:</strong> {len(purchases)}</p>' + \
-           '<table>' + \
-           '<tr>' + \
-           '<th>Course</th>' + \
-           '<th>Status</th>' + \
-           '<th>Amount</th>' + \
-           '<th>Date</th>' + \
-           '<th>Action</th>' + \
-           '</tr>'
-    
-    for purchase in purchases:
-        course = Course.query.get(purchase.course_id)
-        course_title = course.title if course else "Unknown Course"
-        status_class = "good" if purchase.status == 'completed' else "warning" if purchase.status == 'pending' else "bad"
-        
-        if purchase.status == 'completed':
-            action = f'<a href="/learn/course/{purchase.course_id}">📚 Learn</a>'
-        else:
-            action = f'<a href="/course/{purchase.course_id}">👁️ View Course</a>'
-        
-        html += '<tr>' + \
-                f'<td>{course_title}</td>' + \
-                f'<td><span class="{status_class}">{purchase.status}</span></td>' + \
-                f'<td>${purchase.amount}</td>' + \
-                f'<td>{purchase.purchased_at.strftime("%Y-%m-%d %H:%M")}</td>' + \
-                f'<td>{action}</td>' + \
-                '</tr>'
-    
-    html += '</table>' + \
-            '<p><a href="/my_courses">← Back to My Courses</a></p>' + \
-            '</body>' + \
-            '</html>'
-    
-    return html
-
 # ========================================
 # PRODUCT STORE ROUTES
 # ========================================

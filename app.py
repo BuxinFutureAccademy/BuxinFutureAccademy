@@ -22,18 +22,75 @@ app = Flask(__name__)
 # Production configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
-# Database configuration for production
+# Enhanced Database configuration for production (Replace your existing DB config)
 DATABASE_URL = os.environ.get('DATABASE_URL')
+
 if DATABASE_URL:
     # Handle PostgreSQL URL for Render
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+    # Enhanced SSL configuration for production stability
+    if 'localhost' not in DATABASE_URL and 'sqlite' not in DATABASE_URL:
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_size': 5,
+            'pool_timeout': 30,
+            'pool_recycle': 300,  # Recycle connections every 5 minutes
+            'pool_pre_ping': True,  # Test connections before use
+            'pool_reset_on_return': 'commit',  # Reset connections on return
+            'connect_args': {
+                'sslmode': 'require',
+                'connect_timeout': 30,
+                'command_timeout': 30,
+                'application_name': 'techbuxin_flask_app',
+                # Handle SSL connection drops
+                'options': '-c statement_timeout=30000'  # 30 second statement timeout
+            }
+        }
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    print(f"✅ PostgreSQL configured for production")
 else:
     # Fallback to SQLite for local development
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///learning_management.db'
+    print("⚠️ Using SQLite for local development")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Add database retry decorator
+from functools import wraps
+import time
+
+def db_retry(max_retries=3, delay=1):
+    """Decorator to retry database operations"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        print(f"❌ Database operation failed after {max_retries} attempts: {e}")
+                        raise
+                    print(f"⚠️ Database operation failed (attempt {attempt + 1}), retrying in {delay}s: {e}")
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
+
+# Enhanced user loader with retry logic
+@login_manager.user_loader
+@db_retry(max_retries=3)
+def load_user(user_id):
+    try:
+        return User.query.get(int(user_id))
+    except Exception as e:
+        print(f"❌ Error loading user {user_id}: {e}")
+        # Return None to force re-login instead of crashing
+        return None
+        
+    
 
 # File upload configuration
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
@@ -4117,23 +4174,54 @@ cloudinary.config(
 
 # 4. ADD THIS HELPER FUNCTION (add anywhere in your app.py, I suggest after your other helper functions)
 def upload_video_to_cloudinary(video_file, course_id, video_index):
-    """Upload video to Cloudinary with enhanced error handling"""
+    """Upload video to Cloudinary with enhanced error handling and memory optimization"""
+    
     try:
         # Create a unique public_id for the video
         public_id = f"course_{course_id}_video_{video_index}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         print(f"🚀 Uploading to Cloudinary: {public_id}")
         
-        # Upload to Cloudinary with timeout and error handling
-        result = cloudinary.uploader.upload(
-            video_file,
-            resource_type="video",
-            public_id=public_id,
-            folder="course_videos",
-            overwrite=True,
-            format="mp4",
-            timeout=60  # 60 second timeout
-        )
+        # Get file size for progress tracking
+        video_file.seek(0, 2)
+        file_size = video_file.tell()
+        video_file.seek(0)
+        print(f"📊 File size: {file_size / (1024*1024):.1f} MB")
+        
+        # Optimize upload based on file size
+        if file_size > 100 * 1024 * 1024:  # Files > 100MB
+            chunk_size = 10000000  # 10MB chunks for large files
+            timeout = 240  # 4 minutes
+        else:
+            chunk_size = 6000000   # 6MB chunks for smaller files
+            timeout = 120  # 2 minutes
+        
+        # Upload to Cloudinary with optimized settings
+        upload_params = {
+            'resource_type': "video",
+            'public_id': public_id,
+            'folder': "course_videos",
+            'overwrite': True,
+            'format': "mp4",
+            'timeout': timeout,
+            'chunk_size': chunk_size,
+            # Optimize for faster upload
+            'eager_async': True,
+            'notification_url': None,
+            # Reduce processing load
+            'quality': "auto:good",
+            'fetch_format': "auto"
+        }
+        
+        # Only add transformations for smaller files to reduce processing
+        if file_size < 50 * 1024 * 1024:  # < 50MB
+            upload_params['eager'] = [
+                {"width": 720, "height": 480, "crop": "scale", "quality": "auto:good"}
+            ]
+        
+        print(f"📤 Starting upload with {chunk_size / 1024 / 1024:.1f}MB chunks...")
+        
+        result = cloudinary.uploader.upload(video_file, **upload_params)
         
         print(f"✅ Cloudinary upload successful: {result['secure_url']}")
         
@@ -4143,9 +4231,35 @@ def upload_video_to_cloudinary(video_file, course_id, video_index):
             'duration': result.get('duration', 0),
             'size': result.get('bytes', 0)
         }
-    except Exception as e:
-        print(f"❌ Cloudinary upload error: {e}")
+        
+    except cloudinary.exceptions.Error as e:
+        print(f"❌ Cloudinary specific error: {e}")
         return None
+    except Exception as e:
+        print(f"❌ General upload error: {e}")
+        return None
+
+# Add this helper function for memory management during uploads
+def cleanup_temp_files():
+    """Clean up temporary files to free memory"""
+    import gc
+    import tempfile
+    import shutil
+    
+    try:
+        # Force garbage collection
+        gc.collect()
+        
+        # Clean temp directory if possible
+        temp_dir = tempfile.gettempdir()
+        for filename in os.listdir(temp_dir):
+            if filename.startswith('tmp') and filename.endswith(('.mp4', '.avi', '.mov')):
+                try:
+                    os.remove(os.path.join(temp_dir, filename))
+                except:
+                    pass
+    except Exception as e:
+        print(f"⚠️ Cleanup warning: {e}")
 
 
 @app.route('/admin/cloudinary-test')
@@ -4378,6 +4492,71 @@ def start_migration():
     html += '</body></html>'
     
     return html
+
+#.............................................
+import psutil
+import gc
+
+@app.route('/admin/system-status')
+@login_required
+def system_status():
+    """Monitor system performance - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    try:
+        # Memory info
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        # Database connection pool info
+        engine = db.engine
+        pool = engine.pool
+        
+        status = {
+            "memory": {
+                "total": f"{memory.total / (1024**3):.1f} GB",
+                "available": f"{memory.available / (1024**3):.1f} GB",
+                "percent": f"{memory.percent}%",
+                "used": f"{memory.used / (1024**3):.1f} GB"
+            },
+            "disk": {
+                "total": f"{disk.total / (1024**3):.1f} GB",
+                "free": f"{disk.free / (1024**3):.1f} GB",
+                "used": f"{disk.used / (1024**3):.1f} GB",
+                "percent": f"{(disk.used/disk.total)*100:.1f}%"
+            },
+            "database": {
+                "pool_size": pool.size(),
+                "checked_in": pool.checkedin(),
+                "checked_out": pool.checkedout(),
+                "overflow": pool.overflow(),
+                "invalid": pool.invalid()
+            }
+        }
+        
+        html = f'''
+        <html><head><title>System Status</title>
+        <style>body {{ font-family: Arial; padding: 20px; }}</style></head>
+        <body>
+        <h1>🖥️ System Status</h1>
+        <h3>💾 Memory</h3>
+        <p>Total: {status["memory"]["total"]} | Used: {status["memory"]["used"]} | Available: {status["memory"]["available"]} | Usage: {status["memory"]["percent"]}</p>
+        
+        <h3>💿 Disk</h3>
+        <p>Total: {status["disk"]["total"]} | Used: {status["disk"]["used"]} | Free: {status["disk"]["free"]} | Usage: {status["disk"]["percent"]}</p>
+        
+        <h3>🗄️ Database Pool</h3>
+        <p>Pool Size: {status["database"]["pool_size"]} | Checked Out: {status["database"]["checked_out"]} | Available: {status["database"]["checked_in"]}</p>
+        
+        <p><a href="/admin/dashboard">← Back to Dashboard</a></p>
+        </body></html>
+        '''
+        
+        return html
+        
+    except Exception as e:
+        return f"Error getting system status: {e}"
 
 
 # ========================================

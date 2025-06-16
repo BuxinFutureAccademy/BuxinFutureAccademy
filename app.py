@@ -408,15 +408,7 @@ User.group_classes = db.relationship('GroupClass',
                                     back_populates='students', lazy='select')
 
 # Replace your existing @login_manager.user_loader function with this:
-# ... other imports and config ...
-
-# Initialize extensions (around line 165)
-db = SQLAlchemy(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-
-# Add user loader RIGHT HERE:
+# This is CORRECT - keep this one:
 @login_manager.user_loader
 def load_user(user_id):
     """Load user for Flask-Login"""
@@ -425,8 +417,6 @@ def load_user(user_id):
     except Exception as e:
         print(f"❌ Error loading user {user_id}: {e}")
         return None
-
-# ... rest of your code ...
 
 # ========================================
 # HELPER FUNCTIONS

@@ -658,7 +658,7 @@ def create_class():
         return redirect(url_for('admin_dashboard'))
     
     students = User.query.filter_by(is_student=True).all()
-    return render_template('create_class.html', students=students
+    return render_template('create_class.html', students=students}
 
 
 

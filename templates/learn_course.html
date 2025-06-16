@@ -48,7 +48,12 @@
                     <div class="card-body p-0">
                         <div class="video-container">
                             <video id="courseVideo" class="w-100" controls style="max-height: 500px; background: #000;">
-                                <source src="{{ url_for('course_video', filename=videos[0].video_filename) }}" type="video/mp4">
+                                <!-- Use Cloudinary URL if available, otherwise fallback to local route -->
+                                {% if videos[0].video_url %}
+                                    <source src="{{ videos[0].video_url }}" type="video/mp4">
+                                {% else %}
+                                    <source src="{{ url_for('course_video', filename=videos[0].video_filename) }}" type="video/mp4">
+                                {% endif %}
                                 Your browser does not support the video tag.
                             </video>
                         </div>
@@ -164,7 +169,7 @@
                             {% for video in videos %}
                                 <a href="#" class="list-group-item list-group-item-action video-item" 
                                    data-video-index="{{ loop.index0 }}"
-                                   data-video-src="{{ url_for('course_video', filename=video.video_filename) }}"
+                                   data-video-src="{% if video.video_url %}{{ video.video_url }}{% else %}{{ url_for('course_video', filename=video.video_filename) }}{% endif %}"
                                    data-video-title="{{ video.title }}"
                                    data-video-description="{{ video.description or 'No description available.' }}">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -203,6 +208,42 @@
         </div>
     </div>
 </div>
+
+<!-- Debug Info (Remove in production) -->
+{% if current_user.is_admin %}
+<div class="container-fluid mt-4">
+    <div class="card bg-light">
+        <div class="card-header">
+            <h6 class="mb-0">🔧 Debug Info (Admin Only)</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Course ID:</strong> {{ course.id }}<br>
+                    <strong>Total Videos:</strong> {{ videos|length if videos else 0 }}<br>
+                    <strong>Total Materials:</strong> {{ materials|length if materials else 0 }}
+                </div>
+                <div class="col-md-6">
+                    {% if videos and videos|length > 0 %}
+                        <strong>Video Sources:</strong>
+                        <ul class="small">
+                            {% for video in videos %}
+                                <li>{{ video.title }}: 
+                                    {% if video.video_url %}
+                                        <span class="text-success">Cloudinary</span>
+                                    {% else %}
+                                        <span class="text-warning">Local</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <style>
 .video-container {
@@ -249,6 +290,23 @@
 .bg-gradient {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
 }
+
+/* Video loading indicator */
+.video-container::before {
+    content: "Loading video...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 16px;
+    z-index: 1;
+    display: none;
+}
+
+.video-container.loading::before {
+    display: block;
+}
 </style>
 
 <script>
@@ -262,21 +320,54 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentVideoTitle = document.getElementById('currentVideoTitle');
     const currentVideoDescription = document.getElementById('currentVideoDescription');
     const videoCounter = document.getElementById('videoCounter');
+    const videoContainer = document.querySelector('.video-container');
     
     let currentVideoIndex = 0;
     const totalVideos = {{ videos|length if videos else 0 }};
     
     // Only initialize video functionality if videos exist
     if (totalVideos > 0 && video) {
+        console.log(`Initializing video player with ${totalVideos} videos`);
+        
         // Initialize first video as current
         if (videoItems.length > 0) {
             videoItems[0].classList.add('current');
         }
         
+        // Video loading states
+        video.addEventListener('loadstart', function() {
+            videoContainer.classList.add('loading');
+            console.log('Video loading started');
+        });
+        
+        video.addEventListener('loadeddata', function() {
+            videoContainer.classList.remove('loading');
+            console.log('Video loaded successfully');
+        });
+        
+        video.addEventListener('error', function(e) {
+            videoContainer.classList.remove('loading');
+            console.error('Video error:', e);
+            console.error('Video source:', video.currentSrc);
+            
+            // Show error message
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'alert alert-danger mt-3';
+            errorMsg.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Video Error:</strong> Unable to load video. 
+                <a href="${video.currentSrc}" target="_blank">Try direct link</a>
+            `;
+            video.parentNode.appendChild(errorMsg);
+        });
+        
         // Play/Pause functionality
         playPauseBtn.addEventListener('click', function() {
             if (video.paused) {
-                video.play();
+                video.play().catch(e => {
+                    console.error('Play error:', e);
+                    alert('Unable to play video. Please check your internet connection.');
+                });
                 playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
             } else {
                 video.pause();
@@ -329,12 +420,19 @@ document.addEventListener('DOMContentLoaded', function() {
         function loadVideo(index) {
             if (index < 0 || index >= totalVideos) return;
             
+            console.log(`Loading video ${index + 1}/${totalVideos}`);
             currentVideoIndex = index;
             const videoItem = videoItems[index];
+            const newVideoSrc = videoItem.dataset.videoSrc;
+            
+            // Show loading state
+            videoContainer.classList.add('loading');
             
             // Update video source
-            video.src = videoItem.dataset.videoSrc;
+            video.src = newVideoSrc;
             video.load();
+            
+            console.log('Video source:', newVideoSrc);
             
             // Update UI
             currentVideoTitle.textContent = videoItem.dataset.videoTitle;
@@ -436,6 +534,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Load saved progress on page load
         loadProgress();
+        
+        // Debug info
+        console.log('Video player initialized successfully');
+        console.log('First video source:', video.src);
+    } else {
+        console.log('No videos found or video element missing');
     }
 });
 </script>

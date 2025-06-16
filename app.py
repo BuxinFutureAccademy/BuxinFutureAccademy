@@ -2249,29 +2249,157 @@ def my_course_orders():
     
     return render_template('my_course_orders.html', orders=orders)
 
+# ========================================
+# ENHANCED LEARN COURSE ROUTE - ADD THIS TO YOUR app.py
+# ========================================
+# Replace your existing learn_course route with this enhanced version
+
 @app.route('/learn/course/<int:course_id>')
 @login_required
 def learn_course(course_id):
+    """Enhanced learn course route with debugging"""
     course = Course.query.get_or_404(course_id)
     
-    if not current_user.is_admin:
+    print(f"🎓 Learn course accessed: {course.title} (ID: {course_id})")
+    print(f"👤 User: {current_user.username} (Admin: {current_user.is_admin})")
+    
+    # Check if user has access to this course
+    has_access = False
+    access_reason = ""
+    
+    if current_user.is_admin:
+        has_access = True
+        access_reason = "Admin access"
+        print("✅ Access granted: Admin user")
+    else:
+        # Check if user has purchased this course
         purchase = Purchase.query.filter_by(
             user_id=current_user.id,
             course_id=course_id,
             status='completed'
         ).first()
         
-        if not purchase:
+        if purchase:
+            has_access = True
+            access_reason = f"Purchased on {purchase.purchased_at.strftime('%Y-%m-%d')}"
+            print(f"✅ Access granted: Course purchased on {purchase.purchased_at}")
+        else:
+            # Check for pending purchases
+            pending_purchase = Purchase.query.filter_by(
+                user_id=current_user.id,
+                course_id=course_id,
+                status='pending'
+            ).first()
+            
+            if pending_purchase:
+                print(f"⏳ Pending purchase found, created on {pending_purchase.purchased_at}")
+                flash('Your payment is being verified. You will have access once confirmed.', 'info')
+            else:
+                print("❌ No purchase found for this course")
+            
             flash('You need to purchase this course to access the learning content.', 'warning')
             return redirect(url_for('course_detail', course_id=course_id))
     
+    # Get course videos (ordered by order_index)
     videos = CourseVideo.query.filter_by(course_id=course_id).order_by(CourseVideo.order_index).all()
-    materials = CourseMaterial.query.filter_by(course_id=course_id).all()
+    print(f"📹 Found {len(videos)} videos for course")
     
-    return render_template('learn_course.html', 
-                         course=course, 
-                         videos=videos,
-                         materials=materials)
+    for i, video in enumerate(videos):
+        video_source = "Cloudinary" if video.video_url else "Local"
+        print(f"  Video {i+1}: {video.title} ({video_source})")
+        if video.video_url:
+            print(f"    Cloudinary URL: {video.video_url}")
+        else:
+            print(f"    Local filename: {video.video_filename}")
+    
+    # Get course materials
+    materials = CourseMaterial.query.filter_by(course_id=course_id).all()
+    print(f"📁 Found {len(materials)} materials for course")
+    
+    for material in materials:
+        print(f"  Material: {material.title} ({material.file_type})")
+    
+    # Prepare context for template
+    context = {
+        'course': course,
+        'videos': videos,
+        'materials': materials,
+        'has_access': has_access,
+        'access_reason': access_reason
+    }
+    
+    print(f"🎯 Rendering template with {len(videos)} videos and {len(materials)} materials")
+    
+    return render_template('learn_course.html', **context)
+
+
+
+
+@app.route('/debug/my-purchases')
+@login_required
+def debug_my_purchases():
+    """Debug route to check user's purchases"""
+    purchases = Purchase.query.filter_by(user_id=current_user.id).all()
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>My Purchases Debug</title>
+        <style>
+            body {{ font-family: Arial; padding: 20px; }}
+            table {{ width: 100%; border-collapse: collapse; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th {{ background-color: #f2f2f2; }}
+            .good {{ color: green; }}
+            .warning {{ color: orange; }}
+            .bad {{ color: red; }}
+        </style>
+    </head>
+    <body>
+        <h1>🛒 My Purchases Debug</h1>
+        <p><strong>User:</strong> {current_user.username}</p>
+        <p><strong>Total Purchases:</strong> {len(purchases)}</p>
+        
+        <table>
+            <tr>
+                <th>Course</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+    """
+    
+    for purchase in purchases:
+        course = Course.query.get(purchase.course_id)
+        course_title = course.title if course else "Unknown Course"
+        status_class = "good" if purchase.status == 'completed' else "warning" if purchase.status == 'pending' else "bad"
+        
+        if purchase.status == 'completed':
+            action = f'<a href="/learn/course/{purchase.course_id}">📚 Learn</a>'
+        else:
+            action = f'<a href="/course/{purchase.course_id}">👁️ View Course</a>'
+        
+        html += f"""
+            <tr>
+                <td>{course_title}</td>
+                <td><span class="{status_class}">{purchase.status}</span></td>
+                <td>${purchase.amount}</td>
+                <td>{purchase.purchased_at.strftime('%Y-%m-%d %H:%M')}</td>
+                <td>{action}</td>
+            </tr>
+        """
+    
+    html += """
+        </table>
+        
+        <p><a href="/my_courses">← Back to My Courses</a></p>
+    </body>
+    </html>
+    """
+    
+    return html
 
 # ========================================
 # PRODUCT STORE ROUTES

@@ -2257,7 +2257,7 @@ def my_course_orders():
 @app.route('/learn/course/<int:course_id>')
 @login_required
 def learn_course(course_id):
-    # Enhanced learn course route with debugging
+    # Enhanced learn course route with proper data preparation
     course = Course.query.get_or_404(course_id)
     
     print(f"🎓 Learn course accessed: {course.title} (ID: {course_id})")
@@ -2304,31 +2304,116 @@ def learn_course(course_id):
     videos = CourseVideo.query.filter_by(course_id=course_id).order_by(CourseVideo.order_index).all()
     print(f"📹 Found {len(videos)} videos for course")
     
-    for i, video in enumerate(videos):
-        video_source = "Cloudinary" if video.video_url else "Local"
-        print(f"  Video {i+1}: {video.title} ({video_source})")
-        if video.video_url:
-            print(f"    Cloudinary URL: {video.video_url}")
-        else:
-            print(f"    Local filename: {video.video_filename}")
-    
     # Get course materials
     materials = CourseMaterial.query.filter_by(course_id=course_id).all()
     print(f"📁 Found {len(materials)} materials for course")
     
+    # Prepare enhanced video data with proper playback URLs and availability
+    enhanced_videos = []
+    debug_info = {
+        'total_videos': len(videos),
+        'cloudinary_videos': 0,
+        'local_videos': 0,
+        'missing_videos': 0,
+        'videos_with_missing_files': 0
+    }
+    
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'videos')
+    
+    for i, video in enumerate(videos):
+        # Determine video source and availability
+        playback_url = None
+        source_type = 'unknown'
+        available = False
+        file_exists = False
+        
+        if video.video_url:
+            # Cloudinary video
+            playback_url = video.video_url
+            source_type = 'cloudinary'
+            available = True
+            debug_info['cloudinary_videos'] += 1
+            print(f"  Video {i+1}: {video.title} (Cloudinary) - ✅ Available")
+            print(f"    Cloudinary URL: {video.video_url}")
+        elif video.video_filename:
+            # Local video - check if file exists
+            video_path = os.path.join(video_folder, video.video_filename)
+            file_exists = os.path.exists(video_path)
+            
+            if file_exists:
+                playback_url = url_for('course_video', filename=video.video_filename)
+                source_type = 'local'
+                available = True
+                debug_info['local_videos'] += 1
+                print(f"  Video {i+1}: {video.title} (Local) - ✅ Available")
+                print(f"    Local file: {video.video_filename}")
+            else:
+                source_type = 'local'
+                available = False
+                debug_info['local_videos'] += 1
+                debug_info['videos_with_missing_files'] += 1
+                print(f"  Video {i+1}: {video.title} (Local) - ❌ File missing")
+                print(f"    Missing file: {video.video_filename}")
+        else:
+            # No video source at all
+            source_type = 'none'
+            available = False
+            debug_info['missing_videos'] += 1
+            print(f"  Video {i+1}: {video.title} - ❌ No source")
+        
+        # Create enhanced video object
+        enhanced_video = {
+            'id': video.id,
+            'title': video.title,
+            'description': video.description or '',
+            'duration': video.duration or '',
+            'order_index': video.order_index,
+            'video_filename': video.video_filename or '',
+            'video_url': video.video_url or '',
+            'playback_url': playback_url,
+            'source_type': source_type,
+            'available': available,
+            'file_exists': file_exists,
+            'is_preview': getattr(video, 'is_preview', False),
+            'course_id': video.course_id
+        }
+        enhanced_videos.append(enhanced_video)
+    
+    # Convert materials to enhanced format
+    enhanced_materials = []
     for material in materials:
         print(f"  Material: {material.title} ({material.file_type})")
+        material_data = {
+            'id': material.id,
+            'title': material.title,
+            'filename': material.filename,
+            'file_type': material.file_type,
+            'file_size_mb': material.get_file_size_mb(),
+            'course_id': material.course_id
+        }
+        enhanced_materials.append(material_data)
+    
+    # Add debug route if not exists
+    try:
+        url_for('debug_course_videos', course_id=course_id)
+        debug_route_exists = True
+    except:
+        debug_route_exists = False
     
     # Prepare context for template
     context = {
         'course': course,
-        'videos': videos,
-        'materials': materials,
+        'videos': enhanced_videos,  # Use enhanced videos with all needed properties
+        'materials': materials,  # Keep original for template compatibility
+        'enhanced_materials': enhanced_materials,  # Enhanced materials for JavaScript
         'has_access': has_access,
-        'access_reason': access_reason
+        'access_reason': access_reason,
+        'debug_info': debug_info if current_user.is_admin else None,
+        'debug_route_exists': debug_route_exists
     }
     
-    print(f"🎯 Rendering template with {len(videos)} videos and {len(materials)} materials")
+    print(f"🎯 Rendering template with {len(enhanced_videos)} enhanced videos and {len(materials)} materials")
+    print(f"📊 Debug info: {debug_info}")
     
     return render_template('learn_course.html', **context)
 

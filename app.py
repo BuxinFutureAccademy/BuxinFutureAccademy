@@ -155,6 +155,7 @@ class Course(db.Model):
     category = db.Column(db.String(100), nullable=False)
     image_url = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=True)
+    featured = db.Column(db.Boolean, default=False)  # ADD THIS LINE
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator = db.relationship('User', foreign_keys=[created_by], lazy='select')
@@ -784,22 +785,100 @@ def edit_course(course_id):
     course = Course.query.get_or_404(course_id)
     
     if request.method == 'POST':
-        course.title = request.form['title']
-        course.description = request.form['description']
-        course.short_description = request.form.get('short_description', '')
-        course.price = float(request.form['price'])
-        course.duration_weeks = int(request.form.get('duration_weeks', 4))
-        course.level = request.form['level']
-        course.category = request.form['category']
-        course.image_url = request.form.get('image_url', '')
-        course.is_active = 'is_active' in request.form
-        
-        db.session.commit()
-        
-        flash('Course updated successfully!', 'success')
-        return redirect(url_for('admin_courses'))
+        try:
+            # Get and validate form data
+            title = request.form.get('title', '').strip()
+            description = request.form.get('description', '').strip()
+            short_description = request.form.get('short_description', '').strip()
+            category = request.form.get('category', '').strip()
+            level = request.form.get('level', '').strip()
+            image_url = request.form.get('image_url', '').strip()
+            
+            # Validate required fields
+            if not all([title, description, category, level]):
+                flash('Please fill in all required fields.', 'danger')
+                return render_template('edit_course.html', course=course)
+            
+            # Handle price
+            try:
+                price = float(request.form.get('price', 0))
+                if price < 0:
+                    flash('Price must be positive.', 'danger')
+                    return render_template('edit_course.html', course=course)
+            except ValueError:
+                flash('Invalid price format.', 'danger')
+                return render_template('edit_course.html', course=course)
+            
+            # Handle duration
+            try:
+                duration_weeks = int(request.form.get('duration_weeks', 4))
+                if duration_weeks < 1: duration_weeks = 1
+                if duration_weeks > 52: duration_weeks = 52
+            except ValueError:
+                duration_weeks = 4
+            
+            # Update course (ONLY fields that exist in your model)
+            course.title = title
+            course.description = description
+            course.short_description = short_description
+            course.price = price
+            course.duration_weeks = duration_weeks
+            course.level = level
+            course.category = category
+            course.image_url = image_url if image_url else None
+            course.is_active = 'is_active' in request.form
+            
+            # Only try to set featured if it exists in the model
+            if hasattr(course, 'featured'):
+                course.featured = 'featured' in request.form
+            
+            db.session.commit()
+            flash(f'Course "{course.title}" updated successfully!', 'success')
+            return redirect(url_for('admin_courses'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Update failed: {str(e)}', 'danger')
+            return render_template('edit_course.html', course=course)
     
     return render_template('edit_course.html', course=course)
+
+
+# =====================================================
+# STEP 2: ADD ONLY THIS ONE SAFE MIGRATION ROUTE
+# (Add this anywhere in your admin routes section)
+# =====================================================
+
+@app.route('/admin/safe-migrate')
+@login_required  
+def safe_migrate():
+    """Safely add featured column only if it doesn't exist - NO DUPLICATES"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    try:
+        # Check if column already exists using SQLAlchemy inspector
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('course')]
+        
+        if 'featured' in columns:
+            return "✅ Featured column already exists. No action needed."
+        
+        # Add column only if it doesn't exist
+        with db.engine.connect() as conn:
+            if 'sqlite' in str(db.engine.url):
+                # SQLite syntax
+                conn.execute(db.text('ALTER TABLE course ADD COLUMN featured BOOLEAN DEFAULT 0'))
+            else:
+                # PostgreSQL/MySQL syntax  
+                conn.execute(db.text('ALTER TABLE course ADD COLUMN featured BOOLEAN DEFAULT FALSE'))
+            conn.commit()
+        
+        return "✅ Featured column added successfully!"
+        
+    except Exception as e:
+        return f"❌ Migration failed: {str(e)}"
 
 
 # Add this route to your Flask application (app.py)

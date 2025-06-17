@@ -2439,6 +2439,179 @@ def learn_course(course_id):
     return render_template('learn_course.html', **context)
 
 
+
+# ========================================
+# NEW COURSE STATUS TOGGLE ROUTES - ADD THESE TO YOUR app.py
+# ========================================
+# Add these routes in the COURSE MANAGEMENT ROUTES section
+
+@app.route('/admin/toggle-course-status/<int:course_id>', methods=['POST'])
+@login_required
+def toggle_course_status(course_id):
+    """Toggle course active/inactive status via AJAX"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied. Admin privileges required.'}, 403
+    
+    try:
+        # Get the course
+        course = Course.query.get_or_404(course_id)
+        
+        # Get the new status from request
+        data = request.get_json()
+        new_status = data.get('is_active', False)
+        
+        # Validate the status value
+        if not isinstance(new_status, bool):
+            return {'success': False, 'error': 'Invalid status value. Must be true or false.'}, 400
+        
+        # Update the course status
+        old_status = course.is_active
+        course.is_active = new_status
+        
+        # Commit the change
+        db.session.commit()
+        
+        # Log the change
+        action = "activated" if new_status else "deactivated"
+        print(f"✅ Course '{course.title}' (ID: {course_id}) {action} by admin {current_user.username}")
+        
+        # Return success response
+        response_data = {
+            'success': True,
+            'message': f'Course "{course.title}" {action} successfully!',
+            'course_id': course_id,
+            'new_status': new_status,
+            'old_status': old_status
+        }
+        
+        return response_data, 200
+        
+    except Exception as e:
+        # Rollback in case of error
+        db.session.rollback()
+        
+        error_message = str(e)
+        print(f"❌ Error toggling course status for course {course_id}: {error_message}")
+        
+        return {
+            'success': False, 
+            'error': f'Failed to update course status: {error_message}'
+        }, 500
+
+
+@app.route('/admin/bulk-toggle-courses', methods=['POST'])
+@login_required
+def bulk_toggle_courses():
+    """Bulk toggle multiple courses status"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied. Admin privileges required.'}, 403
+    
+    try:
+        # Get request data
+        data = request.get_json()
+        course_ids = data.get('course_ids', [])
+        new_status = data.get('is_active', False)
+        
+        # Validate input
+        if not course_ids:
+            return {'success': False, 'error': 'No course IDs provided.'}, 400
+        
+        if not isinstance(new_status, bool):
+            return {'success': False, 'error': 'Invalid status value. Must be true or false.'}, 400
+        
+        # Update courses
+        updated_courses = []
+        failed_courses = []
+        
+        for course_id in course_ids:
+            try:
+                course = Course.query.get(course_id)
+                if course:
+                    course.is_active = new_status
+                    updated_courses.append({
+                        'id': course.id,
+                        'title': course.title,
+                        'new_status': new_status
+                    })
+                else:
+                    failed_courses.append({'id': course_id, 'error': 'Course not found'})
+            except Exception as e:
+                failed_courses.append({'id': course_id, 'error': str(e)})
+        
+        # Commit all changes
+        if updated_courses:
+            db.session.commit()
+        
+        action = "activated" if new_status else "deactivated"
+        success_count = len(updated_courses)
+        
+        print(f"✅ Bulk operation: {success_count} courses {action} by admin {current_user.username}")
+        
+        response_data = {
+            'success': True,
+            'message': f'{success_count} course(s) {action} successfully!',
+            'updated_count': success_count,
+            'failed_count': len(failed_courses),
+            'updated_courses': updated_courses,
+            'failed_courses': failed_courses if failed_courses else None
+        }
+        
+        return response_data, 200
+        
+    except Exception as e:
+        # Rollback in case of error
+        db.session.rollback()
+        
+        error_message = str(e)
+        print(f"❌ Error in bulk course toggle: {error_message}")
+        
+        return {
+            'success': False, 
+            'error': f'Bulk operation failed: {error_message}'
+        }, 500
+
+
+@app.route('/admin/course-status-stats')
+@login_required
+def course_status_stats():
+    """Get course status statistics"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        total_courses = Course.query.count()
+        active_courses = Course.query.filter_by(is_active=True).count()
+        inactive_courses = Course.query.filter_by(is_active=False).count()
+        
+        # Get courses by category status
+        category_stats = db.session.query(
+            Course.category,
+            db.func.count(Course.id).label('total'),
+            db.func.sum(db.case([(Course.is_active == True, 1)], else_=0)).label('active'),
+            db.func.sum(db.case([(Course.is_active == False, 1)], else_=0)).label('inactive')
+        ).group_by(Course.category).all()
+        
+        category_data = []
+        for stat in category_stats:
+            category_data.append({
+                'category': stat.category,
+                'total': stat.total,
+                'active': stat.active,
+                'inactive': stat.inactive
+            })
+        
+        return {
+            'total_courses': total_courses,
+            'active_courses': active_courses,
+            'inactive_courses': inactive_courses,
+            'active_percentage': round((active_courses / total_courses) * 100, 1) if total_courses > 0 else 0,
+            'category_breakdown': category_data
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+
 # ========================================
 # PRODUCT STORE ROUTES
 # ========================================

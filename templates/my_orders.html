@@ -1,91 +1,658 @@
 {% extends "base.html" %}
 
+{% block title %}My Orders{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
+    <!-- Header -->
     <div class="row">
         <div class="col-md-12">
-            <h2><i class="fas fa-truck me-2"></i>My Orders</h2>
-            <p class="text-muted">Track your product orders</p>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-shopping-bag me-2"></i>My Orders</h2>
+                    <p class="text-muted">Track your product orders and access digital content</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('my_digital_products') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-download me-2"></i>Digital Products
+                    </a>
+                    <a href="{{ url_for('products') }}" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart me-2"></i>Browse Products
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
     
-    {% if orders %}
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Product</th>
-                                        <th>Quantity</th>
-                                        <th>Total</th>
-                                        <th>Status</th>
-                                        <th>Order Date</th>
-                                        <th>Tracking</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for order in orders %}
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    {% if order.product.image_url %}
-                                                        <img src="{{ order.product.image_url }}" alt="{{ order.product.name }}" 
-                                                             class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                                                    {% endif %}
-                                                    <div>
-                                                        <strong>{{ order.product.name }}</strong><br>
-                                                        <small class="text-muted">{{ order.product.category }}</small>
+    <!-- Order Statistics -->
+    {% if all_orders %}
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-shopping-bag fa-2x mb-2"></i>
+                        <h4 class="mb-0">{{ all_orders|length }}</h4>
+                        <small>Total Orders</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-download fa-2x mb-2"></i>
+                        <h4 class="mb-0">{{ digital_orders|length }}</h4>
+                        <small>Digital Products</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-truck fa-2x mb-2"></i>
+                        <h4 class="mb-0">{{ physical_orders|length }}</h4>
+                        <small>Physical Products</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h4 class="mb-0">{{ all_orders|selectattr("status", "equalto", "completed")|list|length }}</h4>
+                        <small>Completed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Orders Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="orderTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="all-orders-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#all-orders" type="button" role="tab">
+                                <i class="fas fa-list me-2"></i>All Orders ({{ all_orders|length }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="digital-orders-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#digital-orders" type="button" role="tab">
+                                <i class="fas fa-download me-2"></i>Digital ({{ digital_orders|length }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="physical-orders-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#physical-orders" type="button" role="tab">
+                                <i class="fas fa-truck me-2"></i>Physical ({{ physical_orders|length }})
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="card-body">
+                    <div class="tab-content" id="orderTabsContent">
+                        <!-- All Orders Tab -->
+                        <div class="tab-pane fade show active" id="all-orders" role="tabpanel">
+                            {% if all_orders %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Type</th>
+                                                <th>Quantity</th>
+                                                <th>Total</th>
+                                                <th>Status</th>
+                                                <th>Order Date</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for order in all_orders %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            {% if order.product.image_url %}
+                                                                <img src="{{ order.product.image_url }}" alt="{{ order.product.name }}" 
+                                                                     class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                                            {% else %}
+                                                                <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                                                     style="width: 50px; height: 50px;">
+                                                                    <i class="fas fa-{{ 'download' if order.product.product_type == 'Digital' else 'box' }} text-muted"></i>
+                                                                </div>
+                                                            {% endif %}
+                                                            <div>
+                                                                <strong>{{ order.product.name }}</strong><br>
+                                                                <small class="text-muted">{{ order.product.category }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        {% if order.product.product_type == 'Digital' %}
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-download me-1"></i>Digital
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-info">
+                                                                <i class="fas fa-box me-1"></i>Physical
+                                                            </span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ order.quantity }}</td>
+                                                    <td class="fw-semibold">${{ "%.2f"|format(order.total_amount) }}</td>
+                                                    <td>
+                                                        {% if order.status == 'completed' %}
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check-circle me-1"></i>Completed
+                                                            </span>
+                                                        {% elif order.status == 'pending' %}
+                                                            <span class="badge bg-warning">
+                                                                <i class="fas fa-clock me-1"></i>Processing
+                                                            </span>
+                                                        {% elif order.status == 'shipped' %}
+                                                            <span class="badge bg-info">
+                                                                <i class="fas fa-shipping-fast me-1"></i>Shipped
+                                                            </span>
+                                                        {% elif order.status == 'delivered' %}
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-home me-1"></i>Delivered
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">{{ order.status.title() }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ order.ordered_at.strftime('%b %d, %Y') }}</td>
+                                                    <td>
+                                                        <div class="btn-group" role="group">
+                                                            {% if order.product.product_type == 'Digital' and order.status == 'completed' %}
+                                                                <a href="{{ url_for('view_digital_product', order_id=order.id) }}" 
+                                                                   class="btn btn-success btn-sm" title="Access Digital Product">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                                <a href="{{ url_for('download_digital_product', order_id=order.id) }}" 
+                                                                   class="btn btn-outline-success btn-sm" title="Download">
+                                                                    <i class="fas fa-download"></i>
+                                                                </a>
+                                                            {% else %}
+                                                                {% if order.tracking_number %}
+                                                                    <button class="btn btn-outline-info btn-sm" 
+                                                                            onclick="showTrackingInfo('{{ order.tracking_number }}')" 
+                                                                            title="Track Package">
+                                                                        <i class="fas fa-truck"></i>
+                                                                    </button>
+                                                                {% endif %}
+                                                                <button class="btn btn-outline-secondary btn-sm" 
+                                                                        onclick="showOrderDetails({{ order.id }})" 
+                                                                        title="View Details">
+                                                                    <i class="fas fa-info-circle"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No orders yet</h5>
+                                    <p class="text-muted">Your order history will appear here after you make purchases.</p>
+                                    <a href="{{ url_for('products') }}" class="btn btn-primary">
+                                        <i class="fas fa-shopping-cart me-2"></i>Start Shopping
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Digital Orders Tab -->
+                        <div class="tab-pane fade" id="digital-orders" role="tabpanel">
+                            {% if digital_orders %}
+                                <div class="row">
+                                    {% for order in digital_orders %}
+                                        <div class="col-lg-6 col-xl-4 mb-4">
+                                            <div class="card h-100 border-success">
+                                                <div class="card-header bg-success text-white">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <small><i class="fas fa-download me-2"></i>Digital Product</small>
+                                                        <span class="badge bg-light text-dark">
+                                                            {% if order.status == 'completed' %}
+                                                                <i class="fas fa-check me-1"></i>Ready
+                                                            {% else %}
+                                                                <i class="fas fa-clock me-1"></i>{{ order.status.title() }}
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td>{{ order.quantity }}</td>
-                                            <td>GMD {{ "%.2f"|format(order.total_amount) }}</td>
-                                            <td>
-                                                {% if order.status == 'completed' %}
-                                                    <span class="badge bg-success">Completed</span>
-                                                {% elif order.status == 'pending' %}
-                                                    <span class="badge bg-warning">Processing</span>
-                                                {% elif order.status == 'shipped' %}
-                                                    <span class="badge bg-info">Shipped</span>
-                                                {% elif order.status == 'delivered' %}
-                                                    <span class="badge bg-success">Delivered</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">{{ order.status.title() }}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ order.ordered_at.strftime('%Y-%m-%d') }}</td>
-                                            <td>
-                                                {% if order.tracking_number %}
-                                                    <code>{{ order.tracking_number }}</code>
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
+                                                <div class="card-body">
+                                                    <!-- Product Image -->
+                                                    <div class="text-center mb-3">
+                                                        {% if order.product.image_url %}
+                                                            <img src="{{ order.product.image_url }}" 
+                                                                 alt="{{ order.product.name }}" 
+                                                                 class="img-fluid rounded" 
+                                                                 style="max-height: 120px; object-fit: cover;">
+                                                        {% else %}
+                                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                                                 style="height: 120px;">
+                                                                <i class="fas fa-download fa-3x text-muted"></i>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    
+                                                    <h6 class="card-title">{{ order.product.name }}</h6>
+                                                    <p class="text-muted small mb-3">
+                                                        Purchased: {{ order.ordered_at.strftime('%b %d, %Y') }}
+                                                    </p>
+                                                    
+                                                    {% if order.status == 'completed' %}
+                                                        <div class="d-grid gap-2">
+                                                            <a href="{{ url_for('view_digital_product', order_id=order.id) }}" 
+                                                               class="btn btn-success">
+                                                                <i class="fas fa-eye me-2"></i>Access Product
+                                                            </a>
+                                                            <a href="{{ url_for('download_digital_product', order_id=order.id) }}" 
+                                                               class="btn btn-outline-success">
+                                                                <i class="fas fa-download me-2"></i>Download
+                                                            </a>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="alert alert-warning text-center">
+                                                            <i class="fas fa-clock me-2"></i>
+                                                            Payment being verified
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="card-footer bg-light text-center">
+                                                    <small class="text-muted">
+                                                        Order #{{ order.id }} • ${{ "%.2f"|format(order.total_amount) }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
                                     {% endfor %}
-                                </tbody>
-                            </table>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Digital Product Access</h6>
+                                    <p class="mb-0">Digital products are available for immediate download after payment verification. You have lifetime access to re-download your products.</p>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-download fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No digital products</h5>
+                                    <p class="text-muted">You haven't purchased any digital products yet.</p>
+                                    <a href="{{ url_for('products', type='Digital') }}" class="btn btn-success">
+                                        <i class="fas fa-download me-2"></i>Browse Digital Products
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Physical Orders Tab -->
+                        <div class="tab-pane fade" id="physical-orders" role="tabpanel">
+                            {% if physical_orders %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Total</th>
+                                                <th>Status</th>
+                                                <th>Order Date</th>
+                                                <th>Tracking</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for order in physical_orders %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            {% if order.product.image_url %}
+                                                                <img src="{{ order.product.image_url }}" alt="{{ order.product.name }}" 
+                                                                     class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                                            {% else %}
+                                                                <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                                                     style="width: 50px; height: 50px;">
+                                                                    <i class="fas fa-box text-muted"></i>
+                                                                </div>
+                                                            {% endif %}
+                                                            <div>
+                                                                <strong>{{ order.product.name }}</strong><br>
+                                                                <small class="text-muted">{{ order.product.category }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ order.quantity }}</td>
+                                                    <td class="fw-semibold">${{ "%.2f"|format(order.total_amount) }}</td>
+                                                    <td>
+                                                        {% if order.status == 'completed' %}
+                                                            <span class="badge bg-success">Completed</span>
+                                                        {% elif order.status == 'pending' %}
+                                                            <span class="badge bg-warning">Processing</span>
+                                                        {% elif order.status == 'shipped' %}
+                                                            <span class="badge bg-info">Shipped</span>
+                                                        {% elif order.status == 'delivered' %}
+                                                            <span class="badge bg-success">Delivered</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">{{ order.status.title() }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ order.ordered_at.strftime('%b %d, %Y') }}</td>
+                                                    <td>
+                                                        {% if order.tracking_number %}
+                                                            <code class="bg-light px-2 py-1 rounded">{{ order.tracking_number }}</code>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group" role="group">
+                                                            {% if order.tracking_number %}
+                                                                <button class="btn btn-outline-info btn-sm" 
+                                                                        onclick="showTrackingInfo('{{ order.tracking_number }}')" 
+                                                                        title="Track Package">
+                                                                    <i class="fas fa-truck"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                            <button class="btn btn-outline-secondary btn-sm" 
+                                                                    onclick="showOrderDetails({{ order.id }})" 
+                                                                    title="View Details">
+                                                                <i class="fas fa-info-circle"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-truck me-2"></i>Shipping Information</h6>
+                                    <p class="mb-0">Physical products are shipped after payment verification. Tracking information will be provided once your order is dispatched.</p>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-truck fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No physical orders</h5>
+                                    <p class="text-muted">You haven't ordered any physical products yet.</p>
+                                    <a href="{{ url_for('products', type='Physical') }}" class="btn btn-info">
+                                        <i class="fas fa-box me-2"></i>Browse Physical Products
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    {% else %}
-        <div class="row">
-            <div class="col-12">
-                <div class="text-center text-muted">
-                    <i class="fas fa-clipboard-list fa-3x mb-3"></i>
-                    <h4>No orders found</h4>
-                    <p>Your order history will appear here after you make purchases.</p>
-                    <a href="{{ url_for('products') }}" class="btn btn-primary">
-                        <i class="fas fa-box me-2"></i>Browse Products
-                    </a>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderDetailsModalLabel">
+                    <i class="fas fa-info-circle me-2"></i>Order Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
             </div>
         </div>
-    {% endif %}
+    </div>
 </div>
+
+<!-- Tracking Info Modal -->
+<div class="modal fade" id="trackingModal" tabindex="-1" aria-labelledby="trackingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="trackingModalLabel">
+                    <i class="fas fa-truck me-2"></i>Package Tracking
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="trackingContent">
+                <!-- Tracking info will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show order details
+function showOrderDetails(orderId) {
+    const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+    const content = document.getElementById('orderDetailsContent');
+    
+    // Show loading
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading order details...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Simulate loading order details (replace with actual API call)
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Order Information</h6>
+                    <p><strong>Order ID:</strong> #${orderId}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-success">Completed</span></p>
+                    <p><strong>Payment Method:</strong> Bank Transfer</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Shipping Information</h6>
+                    <p><strong>Address:</strong> Customer Address</p>
+                    <p><strong>Estimated Delivery:</strong> 3-5 business days</p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p class="text-muted">Need help with your order?</p>
+                <a href="mailto:support@buxinfuture.com?subject=Order%20${orderId}" class="btn btn-outline-primary">
+                    <i class="fas fa-envelope me-2"></i>Contact Support
+                </a>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Show tracking information
+function showTrackingInfo(trackingNumber) {
+    const modal = new bootstrap.Modal(document.getElementById('trackingModal'));
+    const content = document.getElementById('trackingContent');
+    
+    content.innerHTML = `
+        <div class="text-center mb-4">
+            <h5>Tracking Number: <code>${trackingNumber}</code></h5>
+        </div>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-marker bg-success"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Order Confirmed</h6>
+                    <p class="text-muted small mb-0">Your order has been confirmed and is being prepared</p>
+                    <small class="text-muted">2 days ago</small>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-marker bg-primary"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">Package Shipped</h6>
+                    <p class="text-muted small mb-0">Package is on its way to you</p>
+                    <small class="text-muted">1 day ago</small>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-marker bg-secondary"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">In Transit</h6>
+                    <p class="text-muted small mb-0">Expected delivery in 1-2 business days</p>
+                    <small class="text-muted">Estimated</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="#" class="btn btn-outline-info">
+                <i class="fas fa-external-link-alt me-2"></i>Track on Carrier Website
+            </a>
+        </div>
+    `;
+    
+    modal.show();
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+
+<style>
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.nav-tabs .nav-link.active {
+    background-color: transparent;
+    border-bottom-color: #0d6efd;
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.3s ease;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.badge {
+    font-size: 0.75em;
+    font-weight: 500;
+}
+
+.btn-group .btn {
+    border-radius: 0.25rem;
+    margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Timeline styles */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -36px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -31px;
+    top: 15px;
+    bottom: -20px;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-content {
+    padding-left: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .nav-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .nav-tabs .nav-link {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+        margin-bottom: 2px;
+        border-radius: 0.25rem !important;
+    }
+}
+
+/* Loading animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-pane {
+    animation: fadeIn 0.5s ease-in-out;
+}
+</style>
 {% endblock %}

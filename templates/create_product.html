@@ -276,23 +276,10 @@
                                         <button type="button" class="btn btn-outline-primary" onclick="resetForm()">
                                             <i class="fas fa-undo me-2"></i>Reset
                                         </button>
-                                        <div class="btn-group">
-                                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
-                                                <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
-                                                <i class="fas fa-save me-2" id="submitIcon"></i>Create Product
-                                            </button>
-                                            <button type="button" class="btn btn-success btn-lg dropdown-toggle dropdown-toggle-split" 
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span class="visually-hidden">Toggle Dropdown</span>
-                                            </button>
-                                            <ul class="dropdown-menu">
-                                                <li>
-                                                    <button type="submit" class="dropdown-item" name="action" value="save_and_new">
-                                                        <i class="fas fa-plus me-2"></i>Save & Create Another
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
+                                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                            <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
+                                            <i class="fas fa-save me-2" id="submitIcon"></i>Create Product
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -318,8 +305,9 @@ function validateForm() {
     // Validate required fields
     requiredFields.forEach(fieldName => {
         const field = document.getElementById(fieldName);
+        if (!field) return;
+        
         const value = field.value.trim();
-
         if (!value) {
             field.classList.add('is-invalid');
             isValid = false;
@@ -330,32 +318,38 @@ function validateForm() {
 
     // Validate price
     const priceField = document.getElementById('price');
-    const price = parseFloat(priceField.value);
-    if (isNaN(price) || price < 0) {
-        priceField.classList.add('is-invalid');
-        showAlert('Please enter a valid price (0 or greater).', 'danger');
-        isValid = false;
+    if (priceField) {
+        const price = parseFloat(priceField.value);
+        if (isNaN(price) || price < 0) {
+            priceField.classList.add('is-invalid');
+            showAlert('Please enter a valid price (0 or greater).', 'danger');
+            isValid = false;
+        }
     }
 
     // Validate stock quantity
     const stockField = document.getElementById('stock_quantity');
-    const stock = parseInt(stockField.value);
-    if (isNaN(stock) || stock < 0) {
-        stockField.classList.add('is-invalid');
-        showAlert('Please enter a valid stock quantity (0 or greater).', 'danger');
-        isValid = false;
+    if (stockField) {
+        const stock = parseInt(stockField.value);
+        if (isNaN(stock) || stock < 0) {
+            stockField.classList.add('is-invalid');
+            showAlert('Please enter a valid stock quantity (0 or greater).', 'danger');
+            isValid = false;
+        }
     }
 
     // Validate image URL if provided
     const imageUrlField = document.getElementById('image_url');
-    const imageUrl = imageUrlField.value.trim();
-    if (imageUrl) {
-        try {
-            new URL(imageUrl);
-        } catch {
-            imageUrlField.classList.add('is-invalid');
-            showAlert('Please enter a valid image URL.', 'danger');
-            isValid = false;
+    if (imageUrlField) {
+        const imageUrl = imageUrlField.value.trim();
+        if (imageUrl) {
+            try {
+                new URL(imageUrl);
+            } catch {
+                imageUrlField.classList.add('is-invalid');
+                showAlert('Please enter a valid image URL.', 'danger');
+                isValid = false;
+            }
         }
     }
 
@@ -374,80 +368,344 @@ function validateForm() {
     const submitIcon = document.getElementById('submitIcon');
     const submitSpinner = document.getElementById('submitSpinner');
 
-    submitBtn.disabled = true;
-    submitIcon.classList.add('d-none');
-    submitSpinner.classList.remove('d-none');
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating Product...';
+    if (submitBtn && submitIcon && submitSpinner) {
+        submitBtn.disabled = true;
+        submitIcon.classList.add('d-none');
+        submitSpinner.classList.remove('d-none');
+    }
 
     return true;
 }
 
 // Auto-generate SKU from product name
-document.getElementById('name').addEventListener('input', function() {
-    const name = this.value.trim();
+document.addEventListener('DOMContentLoaded', function() {
+    const nameField = document.getElementById('name');
     const skuField = document.getElementById('sku');
     
-    if (name && !skuField.value) {
-        const sku = name.toUpperCase()
-            .replace(/[^A-Z0-9\s]/g, '')
-            .replace(/\s+/g, '-')
-            .substring(0, 8);
-        
-        if (sku) {
-            skuField.value = sku + '-001';
-        }
+    if (nameField && skuField) {
+        nameField.addEventListener('input', function() {
+            const name = this.value.trim();
+            
+            if (name && !skuField.value) {
+                const sku = name.toUpperCase()
+                    .replace(/[^A-Z0-9\s]/g, '')
+                    .replace(/\s+/g, '-')
+                    .substring(0, 8);
+                
+                if (sku) {
+                    skuField.value = sku + '-001';
+                }
+            }
+        });
     }
-});
 
-// Handle product type changes
-document.getElementById('product_type').addEventListener('change', function() {
+    // Handle product type changes
+    const productTypeField = document.getElementById('product_type');
     const stockField = document.getElementById('stock_quantity');
     const stockHelp = document.getElementById('stock-help');
     const digitalSection = document.getElementById('digital-files-section');
     
-    if (this.value === 'Digital') {
-        stockField.value = '0';
-        stockField.disabled = true;
-        stockHelp.textContent = 'Digital products have unlimited stock';
-        stockField.parentElement.classList.add('text-muted');
-        digitalSection.style.display = 'block';
-    } else {
-        stockField.disabled = false;
-        stockHelp.textContent = 'Enter available quantity';
-        stockField.parentElement.classList.remove('text-muted');
-        digitalSection.style.display = 'none';
+    if (productTypeField) {
+        productTypeField.addEventListener('change', function() {
+            if (this.value === 'Digital') {
+                if (stockField) {
+                    stockField.value = '0';
+                    stockField.disabled = true;
+                    stockField.parentElement.classList.add('text-muted');
+                }
+                if (stockHelp) {
+                    stockHelp.textContent = 'Digital products have unlimited stock';
+                }
+                if (digitalSection) {
+                    digitalSection.style.display = 'block';
+                }
+            } else {
+                if (stockField) {
+                    stockField.disabled = false;
+                    stockField.parentElement.classList.remove('text-muted');
+                }
+                if (stockHelp) {
+                    stockHelp.textContent = 'Enter available quantity';
+                }
+                if (digitalSection) {
+                    digitalSection.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // Handle digital file selection
+    const digitalFilesField = document.getElementById('digital_files');
+    const fileList = document.getElementById('file-list');
+    
+    if (digitalFilesField && fileList) {
+        digitalFilesField.addEventListener('change', function() {
+            const files = this.files;
+            
+            if (files.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+            
+            let html = '<h6>Selected Files:</h6><ul class="list-group">';
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const size = (file.size / (1024 * 1024)).toFixed(2);
+                const icon = getFileIcon(file.name);
+                
+                html += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="${icon} me-2"></i>
+                            <strong>${file.name}</strong>
+                            <br><small class="text-muted">${size} MB</small>
+                        </div>
+                        ${size > 100 ? '<span class="badge bg-danger">Too Large</span>' : '<span class="badge bg-success">Ready</span>'}
+                    </li>
+                `;
+            }
+            
+            html += '</ul>';
+            fileList.innerHTML = html;
+        });
+    }
+
+    // Image URL preview
+    const imageUrlField = document.getElementById('image_url');
+    const imagePreview = document.getElementById('image-preview');
+    
+    if (imageUrlField && imagePreview) {
+        imageUrlField.addEventListener('input', function() {
+            const url = this.value.trim();
+            
+            if (url) {
+                imagePreview.innerHTML = `
+                    <img src="${url}" class="img-fluid rounded" style="max-height: 200px; object-fit: cover;"
+                         onerror="this.parentElement.innerHTML='<div class=\\'border border-dashed border-danger rounded p-4\\'><i class=\\'fas fa-exclamation-triangle fa-2x text-danger mb-2\\'></i><p class=\\'text-danger mb-0\\'>Invalid image URL</p></div>'">
+                `;
+            } else {
+                imagePreview.innerHTML = `
+                    <div class="border border-dashed border-secondary rounded p-4">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Image Preview</p>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // Character counter for short description
+    const shortDescField = document.getElementById('short_description');
+    if (shortDescField) {
+        shortDescField.addEventListener('input', function() {
+            const maxLength = 200;
+            const currentLength = this.value.length;
+            const formText = this.nextElementSibling;
+            
+            if (formText) {
+                formText.textContent = `${currentLength}/${maxLength} characters`;
+                
+                if (currentLength > maxLength * 0.9) {
+                    formText.classList.add('text-warning');
+                } else {
+                    formText.classList.remove('text-warning');
+                }
+            }
+        });
+    }
+
+    // Real-time validation for required fields
+    document.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim() === '') {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+    });
+
+    // Focus on the first field
+    if (nameField) {
+        nameField.focus();
+    }
+
+    // Initialize image preview
+    if (imageUrlField) {
+        imageUrlField.dispatchEvent(new Event('input'));
     }
 });
 
-// Handle digital file selection
-document.getElementById('digital_files').addEventListener('change', function() {
-    const fileList = document.getElementById('file-list');
-    const files = this.files;
+// Get file icon based on extension
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const iconMap = {
+        'pdf': 'fas fa-file-pdf text-danger',
+        'zip': 'fas fa-file-archive text-warning',
+        'rar': 'fas fa-file-archive text-warning',
+        '7z': 'fas fa-file-archive text-warning',
+        'doc': 'fas fa-file-word text-primary',
+        'docx': 'fas fa-file-word text-primary',
+        'txt': 'fas fa-file-alt text-secondary',
+        'mp4': 'fas fa-file-video text-info',
+        'mp3': 'fas fa-file-audio text-success',
+        'jpg': 'fas fa-file-image text-warning',
+        'jpeg': 'fas fa-file-image text-warning',
+        'png': 'fas fa-file-image text-warning'
+    };
+    return iconMap[ext] || 'fas fa-file text-secondary';
+}
+
+// Reset form function
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
+        const form = document.querySelector('form');
+        if (form) {
+            form.reset();
+            
+            // Reset validation states
+            document.querySelectorAll('.is-valid, .is-invalid').forEach(el => {
+                el.classList.remove('is-valid', 'is-invalid');
+            });
+            
+            // Reset image preview
+            const imageUrlField = document.getElementById('image_url');
+            if (imageUrlField) {
+                imageUrlField.dispatchEvent(new Event('input'));
+            }
+            
+            // Hide digital section
+            const digitalSection = document.getElementById('digital-files-section');
+            if (digitalSection) {
+                digitalSection.style.display = 'none';
+            }
+            
+            // Clear file list
+            const fileList = document.getElementById('file-list');
+            if (fileList) {
+                fileList.innerHTML = '';
+            }
+            
+            showAlert('Form has been reset.', 'info');
+        }
+    }
+}
+
+// Show alert function
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
     
-    if (files.length === 0) {
-        fileList.innerHTML = '';
-        return;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+.form-label.fw-semibold {
+    font-weight: 600 !important;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: #f8f9fa !important;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.is-valid {
+    border-color: #198754 !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.text-primary {
+    color: #0d6efd !important;
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Hover effects */
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+}
+
+.card:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .col-md-4 .card {
+        margin-bottom: 1rem;
     }
     
-    let html = '<h6>Selected Files:</h6><ul class="list-group">';
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const size = (file.size / (1024 * 1024)).toFixed(2);
-        const icon = getFileIcon(file.name);
-        
-        html += `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <i class="${icon} me-2"></i>
-                    <strong>${file.name}</strong>
-                    <br><small class="text-muted">${size} MB</small>
-                </div>
-                ${size > 100 ? '<span class="badge bg-danger">Too Large</span>' : '<span class="badge bg-success">Ready</span>'}
-            </li>
-        `;
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem !important;
     }
     
-    html += '</ul>';
-    fileList.innerHTML = html;
-});
+    .btn {
+        width: 100%;
+    }
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spinner-border {
+    animation: spin 0.75s linear infinite;
+}
+</style>
+{% endblock %}

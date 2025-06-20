@@ -2037,6 +2037,43 @@ def import_products():
     # GET request - show import form
     return render_template('import_products.html')
 
+#//////////////////////////////////////////////////////////////////
+# Add this route to your app.py file
+
+@app.route('/my_digital_products')
+@login_required
+def my_digital_products():
+    """Show user's purchased digital products"""
+    # Get completed orders for digital products
+    digital_orders = ProductOrder.query.filter_by(
+        user_id=current_user.id,
+        status='completed'
+    ).join(Product).filter(
+        Product.product_type == 'Digital'
+    ).order_by(ProductOrder.ordered_at.desc()).all()
+    
+    return render_template('my_digital_products.html', orders=digital_orders)
+
+
+# Add this route to your app.py file
+
+@app.route('/view_digital_product/<int:order_id>')
+@login_required
+def view_digital_product(order_id):
+    """View a specific digital product"""
+    # Verify user owns this digital product
+    order = ProductOrder.query.filter_by(
+        id=order_id,
+        user_id=current_user.id,
+        status='completed'
+    ).join(Product).filter(
+        Product.product_type == 'Digital'
+    ).first_or_404()
+    
+    return render_template('view_digital_product.html', order=order)
+
+
+
 # ========================================
 # ORDER MANAGEMENT ROUTES
 # ========================================

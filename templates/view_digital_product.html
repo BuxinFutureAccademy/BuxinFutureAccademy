@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>{{ order.product.name }}</h2>
+                    <p class="text-muted mb-0">Digital Product Access</p>
+                </div>
+                <a href="{{ url_for('my_digital_products') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to My Products
+                </a>
+            </div>
+
+            <!-- Product Details -->
+            <div class="card mb-4">
+                {% if order.product.image_url %}
+                    <img src="{{ order.product.image_url }}" class="card-img-top" 
+                         style="height: 300px; object-fit: cover;" alt="{{ order.product.name }}">
+                {% endif %}
+                <div class="card-body">
+                    <h4 class="card-title">{{ order.product.name }}</h4>
+                    <p class="card-text">{{ order.product.description }}</p>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6>Product Information</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Category:</strong> {{ order.product.category }}</li>
+                                <li><strong>Brand:</strong> {{ order.product.brand or 'N/A' }}</li>
+                                <li><strong>SKU:</strong> {{ order.product.sku }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Purchase Information</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Purchase Date:</strong> {{ order.ordered_at.strftime('%Y-%m-%d %H:%M') }}</li>
+                                <li><strong>Amount Paid:</strong> GMD {{ "%.2f"|format(order.total_amount) }}</li>
+                                <li><strong>Order ID:</strong> #{{ order.id }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Content Access -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-download me-2"></i>Digital Content Access</h5>
+                </div>
+                <div class="card-body text-center">
+                    <i class="fas fa-file-download fa-3x text-primary mb-3"></i>
+                    <h5>Your Digital Product is Ready!</h5>
+                    <p class="text-muted">This is your purchased digital product. Contact support for download links or access instructions.</p>
+                    
+                    <!-- You can add actual download links or embed content here -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Access Instructions:</strong><br>
+                        For download links or access to your digital content, please contact our support team with your Order ID: <strong>#{{ order.id }}</strong>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="mailto:support@buxinfuture.com?subject=Digital Product Access - Order #{{ order.id }}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-envelope me-2"></i>Contact Support
+                        </a>
+                        
+                        <a href="https://web.whatsapp.com/send?phone=+919319038312&text=Hello, I need access to my digital product. Order ID: #{{ order.id }}" 
+                           target="_blank" class="btn btn-success">
+                            <i class="fab fa-whatsapp me-2"></i>WhatsApp Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

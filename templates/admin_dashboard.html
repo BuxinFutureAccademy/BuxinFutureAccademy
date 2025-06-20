@@ -670,6 +670,12 @@ body::before {
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="sidebar-nav-link" href="{{ url_for('create_class') }}">
+                        <i class="fas fa-plus"></i>
+                        <span class="nav-text">Create Class</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="sidebar-nav-link" href="#" data-tab="manage-classes">
                         <i class="fas fa-chalkboard-teacher"></i>
                         <span class="nav-text">Manage Classes</span>
@@ -681,12 +687,6 @@ body::before {
                         <span class="nav-text">Manage Courses</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="sidebar-nav-link" href="{{ url_for('create_course') }}">
-                        <i class="fas fa-truck"></i>
-                        <span class="nav-text">Create Course</span>
-                    </a>
-                      
                 <li class="nav-item">
                     <a class="sidebar-nav-link" href="{{ url_for('admin_course_orders') }}">
                         <i class="fas fa-shopping-cart"></i>

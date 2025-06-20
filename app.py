@@ -305,6 +305,26 @@ class ProductCartItem(db.Model):
     def get_total_price(self):
         return self.product.price * self.quantity
 
+
+#////////////////////////////////////////////////////////////////////////////
+
+class DigitalProductFile(db.Model):
+    """Model for digital product files"""
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_type = db.Column(db.String(50))
+    file_size = db.Column(db.Integer)
+    download_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    product = db.relationship('Product', backref=db.backref('digital_files', lazy=True))
+    
+    def get_file_size_mb(self):
+        return round(self.file_size / (1024 * 1024), 2) if self.file_size else 0
+
+
+
 class LearningMaterial(db.Model):
     """Model for learning materials shared in classes"""
     id = db.Column(db.Integer, primary_key=True)
@@ -1489,6 +1509,10 @@ def admin_products():
     
     return render_template('admin_products.html', products=products)
 
+# Replace your existing create_product route with this updated version
+
+#///////////////////////////////////////////////////////////////////////////////////////////////////
+
 @app.route('/admin/create_product', methods=['GET', 'POST'])
 @login_required
 def create_product():
@@ -1540,19 +1564,15 @@ def create_product():
             
             # Auto-generate SKU if not provided
             if not sku:
-                # Create SKU from product name
                 base_sku = name.upper().replace(' ', '-').replace('&', 'AND')
-                # Remove special characters and limit length
                 base_sku = ''.join(c for c in base_sku if c.isalnum() or c == '-')[:10]
                 
-                # Check if SKU exists and make it unique
                 counter = 1
                 sku = f"{base_sku}-{counter:03d}"
                 while Product.query.filter_by(sku=sku).first():
                     counter += 1
                     sku = f"{base_sku}-{counter:03d}"
             else:
-                # Check if provided SKU already exists
                 existing_product = Product.query.filter_by(sku=sku).first()
                 if existing_product:
                     flash(f'SKU "{sku}" already exists. Please choose a different SKU.', 'danger')
@@ -1591,27 +1611,57 @@ def create_product():
                 created_by=current_user.id
             )
             
-            # Save to database
+            # Save to database first
             db.session.add(product)
+            db.session.flush()  # Get the product ID
+            
+            # Handle digital product file uploads
+            if product_type == 'Digital':
+                digital_files = request.files.getlist('digital_files')
+                digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
+                os.makedirs(digital_folder, exist_ok=True)
+                
+                for digital_file in digital_files:
+                    if digital_file and digital_file.filename:
+                        # Check file size (max 100MB)
+                        digital_file.seek(0, 2)
+                        file_size = digital_file.tell()
+                        digital_file.seek(0)
+                        
+                        if file_size > 100 * 1024 * 1024:  # 100MB
+                            flash(f'File {digital_file.filename} is too large. Maximum size is 100MB.', 'warning')
+                            continue
+                        
+                        # Save file with unique name
+                        original_filename = secure_filename(digital_file.filename)
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                        unique_filename = f"{timestamp}{product.id}_{original_filename}"
+                        
+                        file_path = os.path.join(digital_folder, unique_filename)
+                        digital_file.save(file_path)
+                        
+                        # Save file info to database
+                        digital_product_file = DigitalProductFile(
+                            product_id=product.id,
+                            filename=unique_filename,
+                            original_filename=original_filename,
+                            file_type=original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else '',
+                            file_size=file_size
+                        )
+                        db.session.add(digital_product_file)
+            
             db.session.commit()
             
-            # Success message
-            flash(f'Product "{product.name}" created successfully!', 'success')
+            flash('Product created successfully with digital files!', 'success')
+            return redirect(url_for('admin_products'))
             
-            # Redirect to products list or stay on create page
-            if request.form.get('action') == 'save_and_new':
-                return redirect(url_for('create_product'))
-            else:
-                return redirect(url_for('admin_products'))
-                
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating product: {str(e)}', 'danger')
-            print(f"Error creating product: {e}")
             return render_template('create_product.html')
     
-    # GET request - show the form
     return render_template('create_product.html')
+
 
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
 @login_required
@@ -2071,6 +2121,59 @@ def view_digital_product(order_id):
     ).first_or_404()
     
     return render_template('view_digital_product.html', order=order)
+
+# Add this route to serve digital product files
+@app.route('/download_digital_product/<int:file_id>')
+@login_required
+def download_digital_product(file_id):
+    """Download digital product file (only for purchased products)"""
+    digital_file = DigitalProductFile.query.get_or_404(file_id)
+    
+    # Check if user has purchased this product (unless admin)
+    if not current_user.is_admin:
+        purchase = ProductOrder.query.filter_by(
+            user_id=current_user.id,
+            product_id=digital_file.product_id,
+            status='completed'
+        ).first()
+        
+        if not purchase:
+            flash('You need to purchase this product to download the files.', 'warning')
+            return redirect(url_for('product_detail', product_id=digital_file.product_id))
+    
+    # Increment download count
+    digital_file.download_count += 1
+    db.session.commit()
+    
+    # Serve the file
+    digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
+    return send_from_directory(
+        digital_folder, 
+        digital_file.filename,
+        as_attachment=True,
+        download_name=digital_file.original_filename
+    )
+
+@app.route('/admin/migrate-digital-files')
+@login_required
+def migrate_digital_files():
+    """Create the digital product files table - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    try:
+        # Create the digital_product_file table
+        db.create_all()
+        
+        # Create upload directory if it doesn't exist
+        digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
+        os.makedirs(digital_folder, exist_ok=True)
+        
+        return "✅ Digital files table created successfully! Upload folder ready."
+        
+    except Exception as e:
+        return f"❌ Migration failed: {str(e)}"
+        
 
 
 

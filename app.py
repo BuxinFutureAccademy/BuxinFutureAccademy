@@ -305,6 +305,96 @@ class ProductCartItem(db.Model):
     def get_total_price(self):
         return self.product.price * self.quantity
 
+
+# Add these database models to your app.py file
+
+class DigitalContent(db.Model):
+    """Model for storing digital content files for products"""
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_size = db.Column(db.Integer)
+    file_type = db.Column(db.String(50))
+    version = db.Column(db.String(50), default='v1.0')
+    is_active = db.Column(db.Boolean, default=True)
+    download_count = db.Column(db.Integer, default=0)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    product = db.relationship('Product', backref=db.backref('digital_contents', lazy=True))
+    uploader = db.relationship('User', foreign_keys=[uploaded_by], lazy='select')
+    
+    def get_file_size_mb(self):
+        return round(self.file_size / (1024 * 1024), 2) if self.file_size else 0
+    
+    def get_download_url(self):
+        return url_for('serve_digital_file', product_id=self.product_id)
+
+class DigitalDownload(db.Model):
+    """Model for tracking digital product downloads"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('product_order.id'), nullable=False)
+    digital_content_id = db.Column(db.Integer, db.ForeignKey('digital_content.id'), nullable=True)
+    downloaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ip_address = db.Column(db.String(45))  # IPv6 support
+    user_agent = db.Column(db.String(500))
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    product = db.relationship('Product', foreign_keys=[product_id], lazy='select')
+    order = db.relationship('ProductOrder', foreign_keys=[order_id], lazy='select')
+    digital_content = db.relationship('DigitalContent', foreign_keys=[digital_content_id], lazy='select')
+
+# Update your Product model to include digital content relationships
+# Add this method to your existing Product class:
+
+def get_digital_content(self):
+    """Get active digital content for this product"""
+    return DigitalContent.query.filter_by(product_id=self.id, is_active=True).first()
+
+def has_digital_content(self):
+    """Check if product has digital content available"""
+    return DigitalContent.query.filter_by(product_id=self.id, is_active=True).count() > 0
+
+# Add this to your Product model
+Product.get_digital_content = get_digital_content
+Product.has_digital_content = has_digital_content
+
+# Database migration function
+def create_digital_products_tables():
+    """Create digital products related tables"""
+    try:
+        db.create_all()
+        print("✅ Digital products tables created successfully")
+        return True
+    except Exception as e:
+        print(f"❌ Error creating digital products tables: {e}")
+        return False
+
+# Add this route to manually create tables if needed
+@app.route('/admin/create-digital-tables')
+@login_required
+def create_digital_tables():
+    """Manual creation of digital product tables - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "❌ Access denied: Admin privileges required", 403
+    
+    try:
+        create_digital_products_tables()
+        flash("Digital products tables created successfully!", "success")
+    except Exception as e:
+        flash(f"Error creating tables: {str(e)}", "danger")
+    
+    return redirect(url_for('admin_products'))
+
+
+
 class LearningMaterial(db.Model):
     """Model for learning materials shared in classes"""
     id = db.Column(db.Integer, primary_key=True)

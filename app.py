@@ -3588,7 +3588,7 @@ def payment_proof(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     else:
         flash(f'Payment proof file "{filename}" not found. This is a demo order.', 'warning')
-        return redirect(url_for('admin_product_orders'))
+        return redirect(request.referrer or url_for('admin_dashboard'))
 
 # ========================================
 # CLASS ENROLLMENT ROUTES

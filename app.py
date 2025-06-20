@@ -3576,19 +3576,49 @@ def course_material(filename):
     materials_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
     return send_from_directory(materials_folder, filename)
 
-@app.route('/payment_proof/<filename>')
+@app.route('/payment_proof/<path:filename>')
 @login_required
 def payment_proof(filename):
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
     
+    # If it's a Cloudinary URL, redirect to it
+    if filename.startswith('https://'):
+        return redirect(filename)
+    
+    # Otherwise, try local file (for backward compatibility)
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if os.path.exists(file_path):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     else:
-        # Return a placeholder image or error message instead of redirect
         return f"<div style='padding:20px;border:1px solid #ccc;'>Payment proof file not found: {filename}</div>", 404
+
+
+def upload_payment_proof_to_cloudinary(file, enrollment_type, enrollment_id, user_id):
+    """Upload payment proof to Cloudinary"""
+    try:
+        file.seek(0)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        public_id = f"payment_proof_{enrollment_type}_{enrollment_id}_{user_id}_{timestamp}"
+        
+        result = cloudinary.uploader.upload(
+            file,
+            resource_type="image",
+            public_id=public_id,
+            folder="payment_proofs",
+            overwrite=True,
+            format="jpg",  # Convert to JPG for smaller size
+            quality="auto"
+        )
+        
+        return result['secure_url']
+    except Exception as e:
+        print(f"❌ Cloudinary payment proof upload error: {e}")
+        return None
+
+
+
         
 # ========================================
 # CLASS ENROLLMENT ROUTES

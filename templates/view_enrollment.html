@@ -40,18 +40,23 @@
 <div class="mb-4">
     <h5>Payment Proof</h5>
     {% if enrollment.payment_proof %}
-        <div class="alert alert-info mb-2">
-            <i class="fas fa-file-image me-2"></i>
-            <strong>File:</strong> {{ enrollment.payment_proof }}
-        </div>
-        <img src="{{ url_for('payment_proof', filename=enrollment.payment_proof) }}" 
-             class="img-fluid rounded border" 
-             style="max-height: 300px;"
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <div class="alert alert-warning" style="display: none;">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            Payment proof file not found on server. File may have been moved or deleted.
-        </div>
+        {% if enrollment.payment_proof.startswith('https://') %}
+            <!-- Cloudinary image -->
+            <img src="{{ enrollment.payment_proof }}" 
+                 class="img-fluid rounded border" 
+                 style="max-height: 300px;"
+                 alt="Payment Proof">
+        {% else %}
+            <!-- Local image (backward compatibility) -->
+            <img src="{{ url_for('payment_proof', filename=enrollment.payment_proof) }}" 
+                 class="img-fluid rounded border" 
+                 style="max-height: 300px;"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="alert alert-warning" style="display: none;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Payment proof file not found on server.
+            </div>
+        {% endif %}
     {% else %}
         <div class="alert alert-warning">No payment proof uploaded</div>
     {% endif %}

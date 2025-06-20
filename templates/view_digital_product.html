@@ -49,34 +49,116 @@
             <!-- Digital Content Access -->
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-download me-2"></i>Digital Content Access</h5>
+                    <h5 class="mb-0"><i class="fas fa-download me-2"></i>Digital Files</h5>
                 </div>
-                <div class="card-body text-center">
-                    <i class="fas fa-file-download fa-3x text-primary mb-3"></i>
-                    <h5>Your Digital Product is Ready!</h5>
-                    <p class="text-muted">This is your purchased digital product. Contact support for download links or access instructions.</p>
-                    
-                    <!-- You can add actual download links or embed content here -->
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Access Instructions:</strong><br>
-                        For download links or access to your digital content, please contact our support team with your Order ID: <strong>#{{ order.id }}</strong>
-                    </div>
-                    
-                    <div class="d-flex justify-content-center gap-3">
-                        <a href="mailto:support@buxinfuture.com?subject=Digital Product Access - Order #{{ order.id }}" 
-                           class="btn btn-primary">
-                            <i class="fas fa-envelope me-2"></i>Contact Support
-                        </a>
+                <div class="card-body">
+                    {% if order.product.digital_files %}
+                        <div class="row">
+                            {% for file in order.product.digital_files %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card border">
+                                        <div class="card-body text-center">
+                                            <!-- File Icon -->
+                                            <div class="mb-3">
+                                                {% set ext = file.original_filename.split('.')[-1].lower() %}
+                                                {% if ext == 'pdf' %}
+                                                    <i class="fas fa-file-pdf fa-3x text-danger"></i>
+                                                {% elif ext in ['zip', 'rar', '7z'] %}
+                                                    <i class="fas fa-file-archive fa-3x text-warning"></i>
+                                                {% elif ext in ['doc', 'docx'] %}
+                                                    <i class="fas fa-file-word fa-3x text-primary"></i>
+                                                {% elif ext == 'txt' %}
+                                                    <i class="fas fa-file-alt fa-3x text-secondary"></i>
+                                                {% elif ext == 'mp4' %}
+                                                    <i class="fas fa-file-video fa-3x text-info"></i>
+                                                {% elif ext == 'mp3' %}
+                                                    <i class="fas fa-file-audio fa-3x text-success"></i>
+                                                {% elif ext in ['jpg', 'jpeg', 'png'] %}
+                                                    <i class="fas fa-file-image fa-3x text-warning"></i>
+                                                {% else %}
+                                                    <i class="fas fa-file fa-3x text-secondary"></i>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- File Info -->
+                                            <h6 class="card-title">{{ file.original_filename }}</h6>
+                                            <p class="text-muted small mb-2">{{ file.get_file_size_mb() }} MB</p>
+                                            
+                                            {% if file.download_count > 0 %}
+                                                <p class="text-muted small mb-3">
+                                                    <i class="fas fa-download me-1"></i>Downloaded {{ file.download_count }} time(s)
+                                                </p>
+                                            {% endif %}
+                                            
+                                            <!-- Download Button -->
+                                            <a href="{{ url_for('download_digital_product', file_id=file.id) }}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fas fa-download me-2"></i>Download
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
                         
-                        <a href="https://web.whatsapp.com/send?phone=+919319038312&text=Hello, I need access to my digital product. Order ID: #{{ order.id }}" 
-                           target="_blank" class="btn btn-success">
-                            <i class="fab fa-whatsapp me-2"></i>WhatsApp Support
-                        </a>
-                    </div>
+                        <!-- Download Instructions -->
+                        <div class="alert alert-info mt-4">
+                            <h6><i class="fas fa-info-circle me-2"></i>Download Instructions:</h6>
+                            <ul class="mb-0">
+                                <li>Click the "Download" button for each file you want to download</li>
+                                <li>Files will download directly to your device</li>
+                                <li>You can download these files multiple times</li>
+                                <li>If you have any issues, contact our support team</li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <!-- No Files Available -->
+                        <div class="text-center">
+                            <i class="fas fa-file-download fa-3x text-muted mb-3"></i>
+                            <h5>No Digital Files Available</h5>
+                            <p class="text-muted">This digital product doesn't have any downloadable files yet.</p>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Need Help?</strong><br>
+                                Contact our support team with your Order ID: <strong>#{{ order.id }}</strong>
+                            </div>
+                            
+                            <div class="d-flex justify-content-center gap-3">
+                                <a href="mailto:support@buxinfuture.com?subject=Digital Product Access - Order #{{ order.id }}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-envelope me-2"></i>Contact Support
+                                </a>
+                                
+                                <a href="https://web.whatsapp.com/send?phone=+919319038312&text=Hello, I need access to my digital product. Order ID: #{{ order.id }}" 
+                                   target="_blank" class="btn btn-success">
+                                    <i class="fab fa-whatsapp me-2"></i>WhatsApp Support
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn {
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+</style>
 {% endblock %}

@@ -40,7 +40,7 @@
 <div class="mb-4">
     <h5>Payment Proof</h5>
     {% if enrollment.payment_proof %}
-        <img src="{{ url_for('enrollment_payment_proof', filename=enrollment.payment_proof) }}" 
+        <img src="{{ url_for('payment_proof', filename=enrollment.payment_proof) }}"
              class="img-fluid rounded border" style="max-height: 300px;">
     {% else %}
         <div class="alert alert-warning">No payment proof uploaded</div>

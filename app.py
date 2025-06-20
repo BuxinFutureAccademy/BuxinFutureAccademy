@@ -3587,9 +3587,9 @@ def payment_proof(filename):
     if os.path.exists(file_path):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     else:
-        flash(f'Payment proof file "{filename}" not found. This is a demo order.', 'warning')
-        return redirect(request.referrer or url_for('admin_dashboard'))
-
+        # Return a placeholder image or error message instead of redirect
+        return f"<div style='padding:20px;border:1px solid #ccc;'>Payment proof file not found: {filename}</div>", 404
+        
 # ========================================
 # CLASS ENROLLMENT ROUTES
 # ========================================

@@ -1,44 +1,3 @@
-# app.py - Complete Flask Application (Production Ready)
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
-from datetime import datetime
-import os
-import uuid
-import requests
-import json
-import smtplib
-import urllib.parse
-from email.message import EmailMessage
-
-# ========================================
-# APPLICATION CONFIGURATION
-# ========================================
-
-app = Flask(__name__)
-
-# Production configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
-
-# Database configuration for production
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    # Handle PostgreSQL URL for Render
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-else:
-    # Fallback to SQLite for local development
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///learning_management.db'
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# File upload configuration
-app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
-
 # AI Assistant Configuration
 app.config['DEEPINFRA_API_KEY'] = os.environ.get('DEEPINFRA_API_KEY', "JJT2oAUiJNKaEzkGAcP0PpzZ1hBoExqz")
 app.config['DEEPINFRA_API_URL'] = "https://api.deepinfra.com/v1/openai/chat/completions"
@@ -304,8 +263,6 @@ class ProductCartItem(db.Model):
     
     def get_total_price(self):
         return self.product.price * self.quantity
-
-
 
 class LearningMaterial(db.Model):
     """Model for learning materials shared in classes"""
@@ -776,68 +733,6 @@ def create_course():
             return render_template('create_course.html')
     
     return render_template('create_course.html')
-
-
-# ========================================
-# ADMIN ROUTES FOR DIGITAL PRODUCT MANAGEMENT
-# ========================================
-
-@app.route('/admin/digital_products')
-@login_required
-def admin_digital_products():
-    """Admin view of all digital products"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    
-    digital_products = Product.query.filter_by(product_type='Digital').all()
-    return render_template('admin_digital_products.html', products=digital_products)
-
-@app.route('/admin/upload_digital_content/<int:product_id>', methods=['GET', 'POST'])
-@login_required
-def upload_digital_content(product_id):
-    """Upload digital content for a product"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    
-    product = Product.query.get_or_404(product_id)
-    
-    if product.product_type != 'Digital':
-        flash('This is not a digital product.', 'error')
-        return redirect(url_for('admin_products'))
-    
-    if request.method == 'POST':
-        if 'digital_file' not in request.files:
-            flash('No file uploaded!', 'error')
-            return redirect(url_for('upload_digital_content', product_id=product_id))
-        
-        file = request.files['digital_file']
-        if file.filename == '':
-            flash('No file selected!', 'error')
-            return redirect(url_for('upload_digital_content', product_id=product_id))
-        
-        try:
-            # Create digital products folder
-            digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
-            os.makedirs(digital_folder, exist_ok=True)
-            
-            # Save the file
-            filename = secure_filename(file.filename)
-            file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'unknown'
-            saved_filename = f"product_{product_id}.{file_extension}"
-            file_path = os.path.join(digital_folder, saved_filename)
-            
-            file.save(file_path)
-            
-            flash(f'Digital content uploaded successfully for {product.name}!', 'success')
-            return redirect(url_for('admin_digital_products'))
-            
-        except Exception as e:
-            flash(f'Error uploading file: {str(e)}', 'error')
-    
-    return render_template('upload_digital_content.html', product=product)
-    
 
 @app.route('/admin/edit_course/<int:course_id>', methods=['GET', 'POST'])
 @login_required
@@ -2921,20 +2816,11 @@ def product_checkout():
 @app.route('/my_orders')
 @login_required
 def my_orders():
-    """Updated my orders page with digital product access"""
-    # Get all orders
-    all_orders = ProductOrder.query.filter_by(
+    orders = ProductOrder.query.filter_by(
         user_id=current_user.id
     ).order_by(ProductOrder.ordered_at.desc()).all()
     
-    # Separate digital and physical orders
-    digital_orders = [order for order in all_orders if order.product.product_type == 'Digital']
-    physical_orders = [order for order in all_orders if order.product.product_type == 'Physical']
-    
-    return render_template('my_orders_updated.html', 
-                         all_orders=all_orders,
-                         digital_orders=digital_orders, 
-                         physical_orders=physical_orders)
+    return render_template('my_orders.html', orders=orders)
 
 # ========================================
 # PAYMENT ROUTES

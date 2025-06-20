@@ -3716,13 +3716,17 @@ def enroll_class(class_type, class_id):
                         flash('Payment proof file is too large. Maximum size is 5MB.', 'danger')
                         return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
                     
-                    # Save the file
-                    filename = secure_filename(payment_proof.filename)
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-                    unique_filename = f"{timestamp}enrollment_{class_type}_{class_id}_{current_user.id}_{filename}"
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                    payment_proof.save(filepath)
-                    proof_filename = unique_filename
+                    # Upload to Cloudinary instead of local storage
+                    cloudinary_url = upload_payment_proof_to_cloudinary(
+                        payment_proof, class_type, class_id, current_user.id
+                    )
+                    
+                    if cloudinary_url:
+                        proof_filename = cloudinary_url  # Store the full Cloudinary URL
+                        print(f"✅ Payment proof uploaded to Cloudinary: {cloudinary_url}")
+                    else:
+                        flash('Failed to upload payment proof. Please try again.', 'danger')
+                        return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
                     
                 except Exception as e:
                     flash(f'Error uploading payment proof: {str(e)}', 'danger')
@@ -3754,7 +3758,7 @@ def enroll_class(class_type, class_id):
                 customer_phone=phone,
                 customer_email=email,
                 customer_address=address,
-                payment_proof=proof_filename
+                payment_proof=proof_filename  # Now stores Cloudinary URL
             )
             
             db.session.add(enrollment)
@@ -3826,6 +3830,7 @@ Please review and approve the enrollment in the admin dashboard.
                          class_fee=class_fee,
                          currency=currency,
                          fee_display=fee_display)
+    
 
 @app.route('/admin/enrollments')
 @login_required

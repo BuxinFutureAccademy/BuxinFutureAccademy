@@ -9,7 +9,7 @@
                     <h4><i class="fas fa-edit me-2"></i>✏️ Edit Course</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" id="editCourseForm">
+                    <form method="POST" action="{{ url_for('edit_course', course_id=course.id) }}" id="editCourseForm">
                         <!-- Course Preview -->
                         <div class="row mb-4">
                             <div class="col-md-4">
@@ -37,14 +37,14 @@
                                         <div class="col-md-6">
                                             <div class="stat-card bg-success text-white p-3 rounded mb-2">
                                                 <i class="fas fa-play fa-2x mb-2"></i>
-                                                <h4 id="videoCount">{{ course.get_video_count() }}</h4>
+                                                <h4>{{ course.get_video_count() }}</h4>
                                                 <small>Video Lessons</small>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="stat-card bg-info text-white p-3 rounded">
                                                 <i class="fas fa-file fa-2x mb-2"></i>
-                                                <h4 id="materialCount">{{ course.materials|length }}</h4>
+                                                <h4>{{ course.materials|length }}</h4>
                                                 <small>Course Materials</small>
                                             </div>
                                         </div>
@@ -213,7 +213,7 @@
                             </div>
                         </div>
 
-                        <!-- Enhanced Video Management Section -->
+                        <!-- Videos Section -->
                         <div class="card mb-4">
                             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="fas fa-play me-2"></i>🎬 Video Lessons</h5>
@@ -222,7 +222,7 @@
                                 </button>
                             </div>
                             <div class="card-body">
-                                <!-- Existing Videos List -->
+                                <!-- Existing Videos -->
                                 <div id="videosList">
                                     {% if course.videos %}
                                         {% for video in course.videos %}
@@ -255,9 +255,6 @@
                                                                     <i class="fas fa-play me-1"></i>Play
                                                                 </a>
                                                             {% endif %}
-                                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editVideo({{ video.id }})">
-                                                                <i class="fas fa-edit me-1"></i>Edit
-                                                            </button>
                                                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteVideo({{ video.id }}, '{{ video.title|replace("'", "\\'") }}')">
                                                                 <i class="fas fa-trash me-1"></i>Delete
                                                             </button>
@@ -275,8 +272,8 @@
                                     {% endif %}
                                 </div>
 
-                                <!-- Add Video Form (Fixed and Enhanced) -->
-                                <div id="addVideoForm" class="border rounded p-4 mt-3" style="display: none; background: #f8f9fa; border: 2px dashed #007bff;">
+                                <!-- Add Video Form -->
+                                <div id="addVideoForm" class="border rounded p-4 mt-3" style="display: none; background: #f8f9fa;">
                                     <h6 class="mb-3">📹 Add New Video Lesson</h6>
                                     <form id="videoUploadForm" enctype="multipart/form-data">
                                         <input type="hidden" name="course_id" value="{{ course.id }}">
@@ -296,7 +293,6 @@
                                                 <input type="file" class="form-control" id="videoFile" name="video_file" 
                                                        accept=".mp4,.avi,.mov,.wmv,.flv,.webm,.mkv" required>
                                                 <div class="form-text">📋 Supported: MP4, AVI, MOV, WMV, FLV, WebM, MKV (Max 500MB)</div>
-                                                <div id="fileInfo" class="form-text text-info" style="display: none;"></div>
                                             </div>
                                             <div class="col-md-4 mb-3">
                                                 <label for="videoDuration" class="form-label">Duration (optional)</label>
@@ -317,25 +313,11 @@
                                             </button>
                                         </div>
                                     </form>
-                                    
-                                    <!-- Upload Progress -->
-                                    <div id="uploadProgress" class="mt-3" style="display: none;">
-                                        <div class="progress" style="height: 25px;">
-                                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                                 role="progressbar" style="width: 0%; line-height: 25px;" id="progressBar"></div>
-                                        </div>
-                                        <small class="text-muted mt-1 d-block" id="progressText">Preparing upload...</small>
-                                    </div>
-                                    
-                                    <!-- Upload Status -->
-                                    <div id="uploadStatus" class="mt-3" style="display: none;">
-                                        <div class="alert" id="statusAlert" role="alert"></div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Course Materials Section -->
+                        <!-- Materials Section -->
                         <div class="card mb-4">
                             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="fas fa-file me-2"></i>📁 Course Materials</h5>
@@ -375,8 +357,8 @@
                                     {% endif %}
                                 </div>
 
-                                <!-- Add Material Form (Hidden by default) -->
-                                <div id="addMaterialForm" class="border rounded p-4 mt-3" style="display: none; background: #f8f9fa; border: 2px dashed #28a745;">
+                                <!-- Add Material Form -->
+                                <div id="addMaterialForm" class="border rounded p-4 mt-3" style="display: none; background: #f8f9fa;">
                                     <h6 class="mb-3">📄 Add Course Material</h6>
                                     <form id="materialUploadForm" enctype="multipart/form-data">
                                         <input type="hidden" name="course_id" value="{{ course.id }}">
@@ -433,104 +415,6 @@
     </div>
 </div>
 
-<!-- Delete Video Modal -->
-<div class="modal fade" id="deleteVideoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i>🗑️ Delete Video
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the video lesson <strong id="videoToDelete"></strong>?</p>
-                <div class="alert alert-warning">
-                    <i class="fas fa-warning me-2"></i>
-                    This action cannot be undone and will permanently remove the video from Cloudinary.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteVideo">
-                    <i class="fas fa-trash me-2"></i>Yes, Delete Video
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Material Modal -->
-<div class="modal fade" id="deleteMaterialModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i>🗑️ Delete Material
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the material <strong id="materialToDelete"></strong>?</p>
-                <div class="alert alert-warning">
-                    <i class="fas fa-warning me-2"></i>
-                    This action cannot be undone and will permanently remove the file.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteMaterial">
-                    <i class="fas fa-trash me-2"></i>Yes, Delete Material
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Course Modal -->
-{% if course.get_enrolled_count() == 0 %}
-<div class="modal fade" id="deleteCourseModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i>🗑️ Delete Course
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-warning me-2"></i>
-                    <strong>Warning:</strong> This action cannot be undone!
-                </div>
-                
-                <p>Are you sure you want to delete the course <strong>"{{ course.title }}"</strong>?</p>
-                
-                <div class="course-delete-info">
-                    <h6>This will permanently delete:</h6>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-graduation-cap text-primary me-2"></i>The course itself</li>
-                        <li><i class="fas fa-play text-success me-2"></i>All course videos ({{ course.get_video_count() }} videos)</li>
-                        <li><i class="fas fa-file text-warning me-2"></i>All course materials ({{ course.materials|length }} files)</li>
-                        <li><i class="fas fa-shopping-cart text-info me-2"></i>All pending cart items</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <form action="{{ url_for('delete_course', course_id=course.id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash me-2"></i>Yes, Delete Course
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
 <style>
 .stat-card {
     text-align: center;
@@ -581,35 +465,16 @@ optgroup option {
     padding-left: 1rem;
 }
 
-.course-delete-info ul li {
-    padding: 2px 0;
-}
-
-.course-delete-info ul li i {
-    width: 20px;
-}
-
 .bg-gradient {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 #addVideoForm {
     border: 2px dashed #007bff;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
 #addMaterialForm {
     border: 2px dashed #28a745;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.progress {
-    height: 25px;
-}
-
-.progress-bar {
-    font-size: 14px;
-    line-height: 25px;
 }
 
 .btn-group .btn {
@@ -630,31 +495,16 @@ optgroup option {
 </style>
 
 <script>
-// Global variables
-let videoToDeleteId = null;
-let materialToDeleteId = null;
-
+// Simplified JavaScript for Edit Course Form
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('editCourseForm');
     const updateBtn = document.getElementById('updateBtn');
     
-    // Form submission handler
+    // Simple form submission - just show loading state
     form.addEventListener('submit', function(e) {
-        // Validate required fields
-        const title = document.getElementById('title').value.trim();
-        const category = document.getElementById('category').value;
-        const level = document.getElementById('level').value;
-        const price = document.getElementById('price').value;
-        
-        if (!title || !category || !level || !price) {
-            e.preventDefault();
-            alert('❌ Please fill in all required fields (Title, Category, Level, Price)');
-            return;
-        }
-        
-        // Add loading state to submit button
-        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating Course...';
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
         updateBtn.disabled = true;
+        // Let the form submit normally
     });
     
     // Video upload form handler
@@ -674,142 +524,154 @@ document.addEventListener('DOMContentLoaded', function() {
             uploadMaterial();
         });
     }
-    
-    // File input handlers
-    setupFileInputHandlers();
 });
 
-// Enhanced Video Upload Function
+// Video/Material Form Functions
+function showAddVideoForm() {
+    document.getElementById('addVideoForm').style.display = 'block';
+    document.getElementById('videoTitle').focus();
+}
+
+function hideAddVideoForm() {
+    document.getElementById('addVideoForm').style.display = 'none';
+    document.getElementById('videoUploadForm').reset();
+}
+
+function showAddMaterialForm() {
+    document.getElementById('addMaterialForm').style.display = 'block';
+    document.getElementById('materialTitle').focus();
+}
+
+function hideAddMaterialForm() {
+    document.getElementById('addMaterialForm').style.display = 'none';
+    document.getElementById('materialUploadForm').reset();
+}
+
+// Delete Functions
+function deleteVideo(videoId, videoTitle) {
+    if (confirm('Are you sure you want to delete "' + videoTitle + '"?')) {
+        fetch('/admin/delete_video/' + videoId, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector('[data-video-id="' + videoId + '"]').remove();
+                alert('✅ Video deleted successfully!');
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('❌ Delete failed: ' + error.message);
+        });
+    }
+}
+
+function deleteMaterial(materialId, materialTitle) {
+    if (confirm('Are you sure you want to delete "' + materialTitle + '"?')) {
+        fetch('/admin/delete_material/' + materialId, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector('[data-material-id="' + materialId + '"]').remove();
+                alert('✅ Material deleted successfully!');
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('❌ Delete failed: ' + error.message);
+        });
+    }
+}
+
+function confirmDelete() {
+    if (confirm('⚠️ Are you sure you want to delete this entire course? This cannot be undone!')) {
+        // Submit the delete form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("delete_course", course_id=course.id) }}';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Upload Functions
 async function uploadVideo() {
     const form = document.getElementById('videoUploadForm');
     const formData = new FormData(form);
     const uploadBtn = document.getElementById('uploadVideoBtn');
-    const progressDiv = document.getElementById('uploadProgress');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const statusDiv = document.getElementById('uploadStatus');
-    const statusAlert = document.getElementById('statusAlert');
     
-    // Validate form
+    // Basic validation
     const title = formData.get('video_title').trim();
     const file = formData.get('video_file');
-    const courseId = formData.get('course_id');
     
     if (!title) {
-        showUploadError('Please provide a video title');
+        alert('❌ Please provide a video title');
         return;
     }
     
     if (!file || file.size === 0) {
-        showUploadError('Please select a video file');
-        return;
-    }
-    
-    if (!courseId) {
-        showUploadError('Course ID is missing');
+        alert('❌ Please select a video file');
         return;
     }
     
     // Check file size (500MB limit)
-    const maxSize = 500 * 1024 * 1024; // 500MB
+    const maxSize = 500 * 1024 * 1024;
     if (file.size > maxSize) {
-        showUploadError(`Video file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 500MB.`);
+        alert('❌ Video file is too large (' + (file.size / 1024 / 1024).toFixed(1) + 'MB). Maximum size is 500MB.');
         return;
     }
     
-    console.log('🚀 Starting video upload:', {
-        title: title,
-        fileSize: `${(file.size / 1024 / 1024).toFixed(1)}MB`,
-        courseId: courseId
-    });
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Uploading...';
+    uploadBtn.disabled = true;
     
     try {
-        // Show progress UI
-        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Uploading...';
-        uploadBtn.disabled = true;
-        progressDiv.style.display = 'block';
-        statusDiv.style.display = 'none';
-        
-        // Simulate upload progress
-        let progress = 0;
-        progressText.textContent = 'Uploading to Cloudinary...';
-        
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 10;
-            if (progress > 90) progress = 90;
-            progressBar.style.width = progress + '%';
-            progressBar.textContent = `${Math.round(progress)}%`;
-        }, 800);
-        
-        // Upload video
-        console.log('📤 Sending request to /admin/add_video_to_course');
-        
         const response = await fetch('/admin/add_video_to_course', {
             method: 'POST',
             body: formData
         });
-        
-        clearInterval(progressInterval);
-        progressBar.style.width = '100%';
-        progressBar.textContent = '100%';
-        progressText.textContent = 'Processing...';
-        
-        console.log('📡 Response status:', response.status);
         
         if (response.ok) {
             const contentType = response.headers.get('content-type');
             
             if (contentType && contentType.includes('application/json')) {
                 const result = await response.json();
-                console.log('✅ Upload result:', result);
                 
                 if (result.success) {
-                    // Success - add video to the list
-                    progressText.textContent = 'Upload complete!';
-                    
-                    setTimeout(() => {
-                        addVideoToList(result.video);
-                        updateVideoCount();
-                        hideAddVideoForm();
-                        showNotification('✅ Video uploaded successfully!', 'success');
-                    }, 1000);
-                    
+                    alert('✅ Video uploaded successfully!');
+                    location.reload();
                 } else {
-                    throw new Error(result.error || 'Upload failed');
+                    alert('❌ Upload failed: ' + result.error);
                 }
             } else {
-                // Response is not JSON - likely an HTML error page
-                const errorText = await response.text();
-                console.error('❌ Non-JSON response:', errorText.substring(0, 200));
-                throw new Error('Server returned an error page instead of JSON response');
+                alert('❌ Server returned an error page instead of JSON response');
             }
         } else {
-            // HTTP error
-            const errorText = await response.text();
-            console.error('❌ HTTP error:', response.status, errorText.substring(0, 200));
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            alert('❌ HTTP Error: ' + response.status + ' ' + response.statusText);
         }
         
     } catch (error) {
-        console.error('❌ Upload error:', error);
-        showUploadError(error.message);
+        alert('❌ Upload failed: ' + error.message);
     } finally {
-        // Reset UI
         uploadBtn.innerHTML = '<i class="fas fa-upload me-1"></i>📤 Upload Video';
         uploadBtn.disabled = false;
-        progressDiv.style.display = 'none';
-        progressBar.style.width = '0%';
-        progressBar.textContent = '';
     }
 }
 
-// Material Upload Function
 async function uploadMaterial() {
     const form = document.getElementById('materialUploadForm');
     const formData = new FormData(form);
     const uploadBtn = document.getElementById('uploadMaterialBtn');
     
-    // Validate form
+    // Basic validation
     const title = formData.get('material_title').trim();
     const file = formData.get('material_file');
     
@@ -824,16 +686,16 @@ async function uploadMaterial() {
     }
     
     // Check file size (10MB limit for materials)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-        alert(`❌ File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`);
+        alert('❌ File is too large (' + (file.size / 1024 / 1024).toFixed(1) + 'MB). Maximum size is 10MB.');
         return;
     }
     
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Uploading...';
+    uploadBtn.disabled = true;
+    
     try {
-        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Uploading...';
-        uploadBtn.disabled = true;
-        
         const response = await fetch('/admin/add_material_to_course', {
             method: 'POST',
             body: formData
@@ -843,19 +705,16 @@ async function uploadMaterial() {
             const result = await response.json();
             
             if (result.success) {
-                addMaterialToList(result.material);
-                updateMaterialCount();
-                hideAddMaterialForm();
-                showNotification('✅ Material uploaded successfully!', 'success');
+                alert('✅ Material uploaded successfully!');
+                location.reload();
             } else {
-                throw new Error(result.error || 'Upload failed');
+                alert('❌ Upload failed: ' + result.error);
             }
         } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            alert('❌ HTTP Error: ' + response.status + ' ' + response.statusText);
         }
         
     } catch (error) {
-        console.error('❌ Material upload error:', error);
         alert('❌ Upload failed: ' + error.message);
     } finally {
         uploadBtn.innerHTML = '<i class="fas fa-upload me-1"></i>📤 Upload Material';
@@ -863,484 +722,38 @@ async function uploadMaterial() {
     }
 }
 
-// UI Helper Functions
-function showUploadError(message) {
-    const statusDiv = document.getElementById('uploadStatus');
-    const statusAlert = document.getElementById('statusAlert');
-    
-    statusAlert.className = 'alert alert-danger';
-    statusAlert.innerHTML = `
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        <strong>Upload Failed:</strong> ${message}
-    `;
-    statusDiv.style.display = 'block';
-    
-    console.error('🚨 Upload error:', message);
-}
-
-function addVideoToList(video) {
-    const videosList = document.getElementById('videosList');
-    const noVideosMsg = document.getElementById('noVideosMessage');
-    
-    // Hide "no videos" message
-    if (noVideosMsg) {
-        noVideosMsg.style.display = 'none';
-    }
-    
-    // Create new video item
-    const videoItem = document.createElement('div');
-    videoItem.className = 'video-item border rounded p-3 mb-3';
-    videoItem.setAttribute('data-video-id', video.id);
-    
-    const videoCount = videosList.querySelectorAll('.video-item').length + 1;
-    
-    const playUrl = video.video_url || `/course_video/${video.video_filename}`;
-    const description = video.description || '';
-    const duration = video.duration || '';
-    
-    videoItem.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-md-1">
-                <span class="badge bg-primary fs-6">${videoCount}</span>
-            </div>
-            <div class="col-md-6">
-                <h6 class="mb-1">${video.title}</h6>
-                ${description ? `<small class="text-muted">${description.substring(0, 100)}${description.length > 100 ? '...' : ''}</small>` : ''}
-            </div>
-            <div class="col-md-2">
-                ${duration ? `<small class="text-muted"><i class="fas fa-clock me-1"></i>${duration}</small>` : ''}
-            </div>
-            <div class="col-md-3 text-end">
-                <div class="btn-group">
-                    <a href="${playUrl}" target="_blank" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-play me-1"></i>Play
-                    </a>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editVideo(${video.id})">
-                        <i class="fas fa-edit me-1"></i>Edit
-                    </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteVideo(${video.id}, '${video.title.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-trash me-1"></i>Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    videosList.appendChild(videoItem);
-    console.log('✅ Video added to list:', video.title);
-}
-
-function addMaterialToList(material) {
-    const materialsList = document.getElementById('materialsList');
-    const noMaterialsMsg = document.getElementById('noMaterialsMessage');
-    
-    // Hide "no materials" message and create list group if needed
-    if (noMaterialsMsg) {
-        noMaterialsMsg.style.display = 'none';
-    }
-    
-    let listGroup = materialsList.querySelector('.list-group');
-    if (!listGroup) {
-        listGroup = document.createElement('div');
-        listGroup.className = 'list-group';
-        materialsList.appendChild(listGroup);
-    }
-    
-    // Create new material item
-    const materialItem = document.createElement('div');
-    materialItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-    materialItem.setAttribute('data-material-id', material.id);
-    
-    materialItem.innerHTML = `
-        <div>
-            <strong>${material.title}</strong>
-            <br><small class="text-muted">${material.file_type.toUpperCase()} - ${material.file_size_mb} MB</small>
-        </div>
-        <div class="btn-group">
-            <a href="/course_material/${material.filename}" 
-               class="btn btn-outline-primary btn-sm" target="_blank">
-                <i class="fas fa-download me-1"></i>Download
-            </a>
-            <button type="button" class="btn btn-outline-danger btn-sm" 
-                    onclick="deleteMaterial(${material.id}, '${material.title.replace(/'/g, "\\'")}')">
-                <i class="fas fa-trash me-1"></i>Delete
-            </button>
-        </div>
-    `;
-    
-    listGroup.appendChild(materialItem);
-    console.log('✅ Material added to list:', material.title);
-}
-
-function updateVideoCount() {
-    const videoCount = document.querySelectorAll('.video-item').length;
-    const videoCountElement = document.getElementById('videoCount');
-    if (videoCountElement) {
-        videoCountElement.textContent = videoCount;
-    }
-    console.log('📊 Video count updated:', videoCount);
-}
-
-function updateMaterialCount() {
-    const materialCount = document.querySelectorAll('[data-material-id]').length;
-    const materialCountElement = document.getElementById('materialCount');
-    if (materialCountElement) {
-        materialCountElement.textContent = materialCount;
-    }
-    console.log('📊 Material count updated:', materialCount);
-}
-
-// Form Management Functions
-function showAddVideoForm() {
-    const addVideoForm = document.getElementById('addVideoForm');
-    const videoTitleInput = document.getElementById('videoTitle');
-    
-    addVideoForm.style.display = 'block';
-    if (videoTitleInput) {
-        videoTitleInput.focus();
-    }
-    
-    // Hide "no videos" message if present
-    const noVideosMsg = document.getElementById('noVideosMessage');
-    if (noVideosMsg) {
-        noVideosMsg.style.display = 'none';
-    }
-    
-    console.log('📝 Add video form opened');
-}
-
-function hideAddVideoForm() {
-    const addVideoForm = document.getElementById('addVideoForm');
-    const videoUploadForm = document.getElementById('videoUploadForm');
-    const statusDiv = document.getElementById('uploadStatus');
-    const fileInfo = document.getElementById('fileInfo');
-    
-    addVideoForm.style.display = 'none';
-    if (videoUploadForm) {
-        videoUploadForm.reset();
-    }
-    if (statusDiv) {
-        statusDiv.style.display = 'none';
-    }
-    if (fileInfo) {
-        fileInfo.style.display = 'none';
-    }
-    
-    // Show "no videos" message if no videos exist
-    const videosList = document.getElementById('videosList');
-    const videoItems = videosList ? videosList.querySelectorAll('.video-item') : [];
-    const noVideosMsg = document.getElementById('noVideosMessage');
-    
-    if (videoItems.length === 0 && noVideosMsg) {
-        noVideosMsg.style.display = 'block';
-    }
-    
-    console.log('❌ Add video form closed');
-}
-
-function showAddMaterialForm() {
-    const addMaterialForm = document.getElementById('addMaterialForm');
-    const materialTitleInput = document.getElementById('materialTitle');
-    
-    addMaterialForm.style.display = 'block';
-    if (materialTitleInput) {
-        materialTitleInput.focus();
-    }
-    
-    // Hide "no materials" message if present
-    const noMaterialsMsg = document.getElementById('noMaterialsMessage');
-    if (noMaterialsMsg) {
-        noMaterialsMsg.style.display = 'none';
-    }
-    
-    console.log('📝 Add material form opened');
-}
-
-function hideAddMaterialForm() {
-    const addMaterialForm = document.getElementById('addMaterialForm');
-    const materialUploadForm = document.getElementById('materialUploadForm');
-    
-    addMaterialForm.style.display = 'none';
-    if (materialUploadForm) {
-        materialUploadForm.reset();
-    }
-    
-    // Show "no materials" message if no materials exist
-    const materialsList = document.getElementById('materialsList');
-    const materialItems = materialsList ? materialsList.querySelectorAll('[data-material-id]') : [];
-    const noMaterialsMsg = document.getElementById('noMaterialsMessage');
-    
-    if (materialItems.length === 0 && noMaterialsMsg) {
-        noMaterialsMsg.style.display = 'block';
-    }
-    
-    console.log('❌ Add material form closed');
-}
-
-// Delete Functions
-function deleteVideo(videoId, videoTitle) {
-    videoToDeleteId = videoId;
-    document.getElementById('videoToDelete').textContent = videoTitle;
-    
-    const modal = new bootstrap.Modal(document.getElementById('deleteVideoModal'));
-    modal.show();
-}
-
-function deleteMaterial(materialId, materialTitle) {
-    materialToDeleteId = materialId;
-    document.getElementById('materialToDelete').textContent = materialTitle;
-    
-    const modal = new bootstrap.Modal(document.getElementById('deleteMaterialModal'));
-    modal.show();
-}
-
-// Delete Confirmation Handlers
-document.getElementById('confirmDeleteVideo').addEventListener('click', async function() {
-    if (!videoToDeleteId) return;
-    
-    const button = this;
-    const originalText = button.innerHTML;
-    
-    try {
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
-        button.disabled = true;
+// File input handlers for validation
+document.getElementById('videoFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const fileSize = file.size / 1024 / 1024; // MB
+        const maxSize = 500; // MB
         
-        const response = await fetch(`/admin/delete_video/${videoToDeleteId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            
-            if (result.success) {
-                // Remove video from DOM
-                const videoItem = document.querySelector(`[data-video-id="${videoToDeleteId}"]`);
-                if (videoItem) {
-                    videoItem.remove();
-                }
-                
-                // Update video count
-                updateVideoCount();
-                
-                // Show "no videos" message if no videos left
-                const remainingVideos = document.querySelectorAll('.video-item');
-                const noVideosMsg = document.getElementById('noVideosMessage');
-                if (remainingVideos.length === 0 && noVideosMsg) {
-                    noVideosMsg.style.display = 'block';
-                }
-                
-                // Update video numbers
-                updateVideoNumbers();
-                
-                // Close modal and show success
-                bootstrap.Modal.getInstance(document.getElementById('deleteVideoModal')).hide();
-                showNotification('✅ Video deleted successfully!', 'success');
-            } else {
-                throw new Error(result.error || 'Delete failed');
-            }
-        } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (fileSize > maxSize) {
+            alert('❌ File is too large (' + fileSize.toFixed(1) + 'MB). Maximum size is ' + maxSize + 'MB.');
+            e.target.value = '';
         }
-        
-    } catch (error) {
-        console.error('Delete error:', error);
-        showNotification('❌ Delete failed: ' + error.message, 'danger');
-    } finally {
-        button.innerHTML = originalText;
-        button.disabled = false;
-        videoToDeleteId = null;
     }
 });
 
-document.getElementById('confirmDeleteMaterial').addEventListener('click', async function() {
-    if (!materialToDeleteId) return;
-    
-    const button = this;
-    const originalText = button.innerHTML;
-    
-    try {
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
-        button.disabled = true;
+document.getElementById('materialFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const fileSize = file.size / 1024 / 1024; // MB
+        const maxSize = 10; // MB
         
-        const response = await fetch(`/admin/delete_material/${materialToDeleteId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            
-            if (result.success) {
-                // Remove material from DOM
-                const materialItem = document.querySelector(`[data-material-id="${materialToDeleteId}"]`);
-                if (materialItem) {
-                    materialItem.remove();
-                }
-                
-                // Update material count
-                updateMaterialCount();
-                
-                // Show "no materials" message if no materials left
-                const remainingMaterials = document.querySelectorAll('[data-material-id]');
-                const noMaterialsMsg = document.getElementById('noMaterialsMessage');
-                if (remainingMaterials.length === 0 && noMaterialsMsg) {
-                    noMaterialsMsg.style.display = 'block';
-                    // Remove empty list group
-                    const listGroup = document.querySelector('.list-group');
-                    if (listGroup) {
-                        listGroup.remove();
-                    }
-                }
-                
-                // Close modal and show success
-                bootstrap.Modal.getInstance(document.getElementById('deleteMaterialModal')).hide();
-                showNotification('✅ Material deleted successfully!', 'success');
-            } else {
-                throw new Error(result.error || 'Delete failed');
-            }
-        } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (fileSize > maxSize) {
+            alert('❌ File is too large (' + fileSize.toFixed(1) + 'MB). Maximum size is ' + maxSize + 'MB.');
+            e.target.value = '';
+            return;
         }
         
-    } catch (error) {
-        console.error('Delete error:', error);
-        showNotification('❌ Delete failed: ' + error.message, 'danger');
-    } finally {
-        button.innerHTML = originalText;
-        button.disabled = false;
-        materialToDeleteId = null;
-    }
-});
-
-// Utility Functions
-function updateVideoNumbers() {
-    const videoItems = document.querySelectorAll('.video-item');
-    videoItems.forEach((item, index) => {
-        const badge = item.querySelector('.badge');
-        if (badge) {
-            badge.textContent = index + 1;
+        // Auto-fill title if empty
+        const titleInput = document.getElementById('materialTitle');
+        if (titleInput && !titleInput.value.trim()) {
+            const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+            titleInput.value = fileName;
         }
-    });
-}
-
-function editVideo(videoId) {
-    // For now, just show an alert. You can implement a full edit modal later
-    alert('Edit video functionality coming soon! Video ID: ' + videoId);
-    
-    // TODO: Implement edit video modal with form to update:
-    // - title
-    // - description
-    // - duration
-    // - order
-}
-
-function confirmDelete() {
-    {% if course.get_enrolled_count() == 0 %}
-        const modal = new bootstrap.Modal(document.getElementById('deleteCourseModal'));
-        modal.show();
-    {% else %}
-        alert('❌ Cannot delete this course because it has enrolled students. Deactivate it instead.');
-    {% endif %}
-}
-
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
-// File Input Handlers
-function setupFileInputHandlers() {
-    // Video file input handler
-    const fileInput = document.getElementById('videoFile');
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const fileInfoDiv = document.getElementById('fileInfo');
-            
-            if (file) {
-                const fileSize = file.size / 1024 / 1024; // MB
-                const maxSize = 500; // MB
-                
-                if (fileSize > maxSize) {
-                    fileInfoDiv.className = 'form-text text-danger';
-                    fileInfoDiv.innerHTML = `❌ File is too large (${fileSize.toFixed(1)}MB). Maximum size is ${maxSize}MB.`;
-                    fileInfoDiv.style.display = 'block';
-                    e.target.value = '';
-                    return;
-                }
-                
-                // Show file info
-                fileInfoDiv.className = 'form-text text-success';
-                fileInfoDiv.innerHTML = `✅ File: ${file.name} (${fileSize.toFixed(1)}MB)`;
-                fileInfoDiv.style.display = 'block';
-                
-                console.log('📁 File selected:', {
-                    name: file.name,
-                    size: `${fileSize.toFixed(1)}MB`,
-                    type: file.type
-                });
-            } else {
-                fileInfoDiv.style.display = 'none';
-            }
-        });
-    }
-    
-    // Material file input handler
-    const materialFileInput = document.getElementById('materialFile');
-    if (materialFileInput) {
-        materialFileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            
-            if (file) {
-                const fileSize = file.size / 1024 / 1024; // MB
-                const maxSize = 10; // MB
-                
-                if (fileSize > maxSize) {
-                    alert(`❌ File is too large (${fileSize.toFixed(1)}MB). Maximum size is ${maxSize}MB.`);
-                    e.target.value = '';
-                    return;
-                }
-                
-                // Auto-fill title if empty
-                const titleInput = document.getElementById('materialTitle');
-                if (titleInput && !titleInput.value.trim()) {
-                    const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-                    titleInput.value = fileName;
-                }
-                
-                console.log('📄 Material file selected:', {
-                    name: file.name,
-                    size: `${fileSize.toFixed(1)}MB`,
-                    type: file.type
-                });
-            }
-        });
-    }
-}
-
-// Additional Form Validation
-document.getElementById('image_url').addEventListener('input', function(e) {
-    const url = e.target.value;
-    if (url && url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-        console.log('Valid image URL:', url);
     }
 });
 
@@ -1349,78 +762,6 @@ document.getElementById('price').addEventListener('blur', function(e) {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
         e.target.value = value.toFixed(2);
-    }
-});
-
-// Character counter for short description
-document.getElementById('short_description').addEventListener('input', function(e) {
-    const maxLength = 500;
-    const currentLength = e.target.value.length;
-    const remaining = maxLength - currentLength;
-    
-    let counterElement = document.getElementById('char-counter');
-    if (!counterElement) {
-        counterElement = document.createElement('small');
-        counterElement.id = 'char-counter';
-        counterElement.className = 'form-text';
-        e.target.parentNode.appendChild(counterElement);
-    }
-    
-    counterElement.textContent = `${currentLength}/${maxLength} characters`;
-    counterElement.className = remaining < 50 ? 'form-text text-warning' : 'form-text text-muted';
-    
-    if (remaining < 0) {
-        counterElement.className = 'form-text text-danger';
-        counterElement.textContent = `${Math.abs(remaining)} characters over limit`;
-    }
-});
-
-// Auto-save draft functionality (optional)
-let autoSaveTimeout;
-function autoSaveDraft() {
-    clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(() => {
-        const formData = new FormData(document.getElementById('editCourseForm'));
-        const draftData = {};
-        
-        for (let [key, value] of formData.entries()) {
-            draftData[key] = value;
-        }
-        
-        // Save to sessionStorage (not localStorage as per restrictions)
-        try {
-            sessionStorage.setItem('course_draft_{{ course.id }}', JSON.stringify(draftData));
-            console.log('📝 Draft auto-saved');
-        } catch (error) {
-            console.log('Could not save draft:', error);
-        }
-    }, 2000);
-}
-
-// Auto-save on input changes
-document.getElementById('editCourseForm').addEventListener('input', autoSaveDraft);
-
-// Load draft on page load (if exists)
-window.addEventListener('load', function() {
-    try {
-        const savedDraft = sessionStorage.getItem('course_draft_{{ course.id }}');
-        if (savedDraft) {
-            console.log('📝 Found saved draft');
-            // Optional: Ask user if they want to restore the draft
-            // For now, just log that it exists
-        }
-    } catch (error) {
-        console.log('Could not load draft:', error);
-    }
-});
-
-// Clear draft when form is successfully submitted
-document.getElementById('editCourseForm').addEventListener('submit', function() {
-    try {
-        sessionStorage.removeItem('course_draft_{{ course.id }}');
-        console.log('📝 Draft cleared after successful submission');
-    } catch (error) {
-        console.log('Could not clear draft:', error);
     }
 });
 
@@ -1447,133 +788,4 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Video preview functionality (optional enhancement)
-function previewVideo(videoUrl) {
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Video Preview</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <video controls style="width: 100%; max-height: 400px;">
-                        <source src="${videoUrl}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    const bootstrapModal = new bootstrap.Modal(modal);
-    
-    modal.addEventListener('hidden.bs.modal', function() {
-        document.body.removeChild(modal);
-    });
-    
-    bootstrapModal.show();
-}
-
-// Enhanced form validation with real-time feedback
-function setupFormValidation() {
-    const requiredFields = [
-        { id: 'title', name: 'Course Title' },
-        { id: 'description', name: 'Description' },
-        { id: 'category', name: 'Category' },
-        { id: 'level', name: 'Level' },
-        { id: 'price', name: 'Price' }
-    ];
-    
-    requiredFields.forEach(field => {
-        const element = document.getElementById(field.id);
-        if (element) {
-            element.addEventListener('blur', function() {
-                validateField(element, field.name);
-            });
-        }
-    });
-}
-
-function validateField(element, fieldName) {
-    const value = element.value.trim();
-    let feedback = element.parentNode.querySelector('.field-feedback');
-    
-    if (!feedback) {
-        feedback = document.createElement('div');
-        feedback.className = 'field-feedback';
-        element.parentNode.appendChild(feedback);
-    }
-    
-    if (!value) {
-        element.classList.add('is-invalid');
-        element.classList.remove('is-valid');
-        feedback.className = 'field-feedback text-danger small';
-        feedback.textContent = `${fieldName} is required`;
-    } else {
-        element.classList.remove('is-invalid');
-        element.classList.add('is-valid');
-        feedback.className = 'field-feedback text-success small';
-        feedback.textContent = `${fieldName} looks good`;
-    }
-}
-
-// Initialize form validation
-setupFormValidation();
-
-// Loading state management
-function setLoadingState(button, isLoading, loadingText = 'Loading...') {
-    if (isLoading) {
-        button.dataset.originalText = button.innerHTML;
-        button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${loadingText}`;
-        button.disabled = true;
-    } else {
-        button.innerHTML = button.dataset.originalText || button.innerHTML;
-        button.disabled = false;
-    }
-}
-
-// Enhanced error handling
-window.addEventListener('error', function(e) {
-    console.error('Global error:', e.error);
-    showNotification('❌ An unexpected error occurred. Please try again.', 'danger');
-});
-
-window.addEventListener('unhandledrejection', function(e) {
-    console.error('Unhandled promise rejection:', e.reason);
-    showNotification('❌ An unexpected error occurred. Please try again.', 'danger');
-});
-
-// Performance monitoring
-if (window.performance && window.performance.measure) {
-    window.addEventListener('load', function() {
-        setTimeout(() => {
-            const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
-            console.log(`📊 Page load time: ${loadTime}ms`);
-        }, 0);
-    });
-}
-
-// Cleanup function for when user leaves the page
-window.addEventListener('beforeunload', function(e) {
-    // Cancel any ongoing uploads
-    const uploadBtn = document.getElementById('uploadVideoBtn');
-    const materialBtn = document.getElementById('uploadMaterialBtn');
-    
-    if (uploadBtn && uploadBtn.disabled) {
-        e.preventDefault();
-        e.returnValue = 'Video upload in progress. Are you sure you want to leave?';
-    }
-    
-    if (materialBtn && materialBtn.disabled) {
-        e.preventDefault();
-        e.returnValue = 'Material upload in progress. Are you sure you want to leave?';
-    }
-});
-
-console.log('✅ Edit course page fully loaded and initialized');
-</script>
-{% endblock %}
+console.log('✅ Simplified edit course page loaded');

@@ -2657,6 +2657,29 @@ def learn_course(course_id):
     
     return render_template('learn_course.html', **context)
 
+#////////////////////////////////////////////////////////
+
+@app.route('/admin/fix-course-images')
+@login_required
+def fix_course_images():
+    """Simple fix for course images"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    # Get all courses without images
+    courses = Course.query.all()
+    fixed = 0
+    
+    for course in courses:
+        # If no image or empty image, add a simple one
+        if not course.image_url or course.image_url.strip() == '':
+            course.image_url = 'https://via.placeholder.com/400x200/007bff/ffffff?text=' + course.category.replace(' ', '+')
+            fixed += 1
+    
+    db.session.commit()
+    
+    return f"Fixed {fixed} course images! <a href='/store'>Check Store</a>"
+
 
 
 # ========================================

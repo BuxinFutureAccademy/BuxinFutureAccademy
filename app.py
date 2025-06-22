@@ -3039,29 +3039,32 @@ def process_payment():
         flash('Your cart is empty!', 'warning')
         return redirect(url_for('store'))
     
+    # Get form data
     payment_method = request.form.get('payment_method')
     full_name = request.form.get('full_name')
     phone = request.form.get('phone')
     email = request.form.get('email')
     address = request.form.get('address')
     
-    payment_proof = request.files.get('payment_proof')
-    proof_filename = None
-    if payment_proof and allowed_file(payment_proof.filename):
-        filename = secure_filename(payment_proof.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-        filename = timestamp + filename
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        payment_proof.save(filepath)
-        proof_filename = filename
-    
+    # Validate payment method
     valid_methods = ['bank_transfer', 'wave', 'western_union', 'moneygram', 'ria']
     if payment_method not in valid_methods:
         flash('Please select a valid payment method', 'danger')
         return redirect(url_for('checkout'))
     
+    # Handle payment proof upload
+    payment_proof = request.files.get('payment_proof')
+    proof_url, error = handle_payment_proof_upload(
+        payment_proof, 'course_purchase', 'batch', current_user.id
+    )
+    
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('checkout'))
+    
     transaction_id = str(uuid.uuid4())[:8]
     
+    # Create purchases
     for cart_item in cart_items:
         purchase = Purchase(
             user_id=current_user.id,
@@ -3074,14 +3077,13 @@ def process_payment():
             customer_phone=phone,
             customer_email=email,
             customer_address=address,
-            payment_proof=proof_filename
+            payment_proof=proof_url
         )
         db.session.add(purchase)
         db.session.delete(cart_item)
     
     db.session.commit()
-    
-    flash('Order submitted successfully! Our team will verify your payment and you will receive access to your courses once confirmed.', 'success')
+    flash('Order submitted successfully!', 'success')
     return redirect(url_for('my_course_orders'))
 
 @app.route('/process_product_payment', methods=['POST'])
@@ -3093,33 +3095,37 @@ def process_product_payment():
         flash('Your cart is empty!', 'warning')
         return redirect(url_for('products'))
 
+    # Get form data
     payment_method = request.form.get('payment_method')
     full_name = request.form.get('full_name')
     phone = request.form.get('phone')
     email = request.form.get('email')
     address = request.form.get('address')
     
-    payment_proof = request.files.get('payment_proof')
-    proof_filename = None
-    if payment_proof and allowed_file(payment_proof.filename):
-        filename = secure_filename(payment_proof.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        payment_proof.save(filepath)
-        proof_filename = filename
-    
+    # Validate payment method
     valid_methods = ['bank_transfer', 'wave', 'western_union', 'moneygram', 'ria']
     if payment_method not in valid_methods:
         flash('Please select a valid payment method', 'danger')
         return redirect(url_for('product_checkout'))
+    
+    # Handle payment proof upload
+    payment_proof = request.files.get('payment_proof')
+    proof_url, error = handle_payment_proof_upload(
+        payment_proof, 'product_purchase', 'batch', current_user.id
+    )
+    
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('product_checkout'))
 
     transaction_id = str(uuid.uuid4())[:8]
     
+    # Create orders
     for cart_item in cart_items:
         if cart_item.product.product_type == 'Physical':
             if cart_item.quantity > cart_item.product.stock_quantity:
                 flash(f'Insufficient stock for {cart_item.product.name}', 'danger')
                 return redirect(url_for('product_cart'))
-            
             cart_item.product.stock_quantity -= cart_item.quantity
         
         order = ProductOrder(
@@ -3136,15 +3142,137 @@ def process_product_payment():
             customer_phone=phone,
             customer_email=email,
             customer_address=address,
-            payment_proof=proof_filename
+            payment_proof=proof_url
         )
         db.session.add(order)
         db.session.delete(cart_item)
     
     db.session.commit()
-    
-    flash('Order placed successfully! Our team will verify your payment and contact you shortly.', 'success')
+    flash('Order placed successfully!', 'success')
     return redirect(url_for('my_orders'))
+
+
+def upload_payment_proof_to_cloudinary(file, order_type, order_id, user_id):
+    """Upload payment proof to Cloudinary permanently"""
+    try:
+        file.seek(0)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        public_id = f"payment_proof_{order_type}_{order_id}_{user_id}_{timestamp}"
+        
+        result = cloudinary.uploader.upload(
+            file,
+            resource_type="image",
+            public_id=public_id,
+            folder="payment_proofs",
+            overwrite=True,
+            format="jpg",
+            quality="auto",
+            transformation=[{"width": 800, "height": 600, "crop": "limit"}]
+        )
+        
+        print(f"✅ Payment proof uploaded: {result['secure_url']}")
+        return result['secure_url']
+        
+    except Exception as e:
+        print(f"❌ Cloudinary upload error: {e}")
+        return None
+
+def handle_payment_proof_upload(payment_proof_file, order_type, order_id, user_id):
+    """Handle payment proof upload with validation - REUSABLE FUNCTION"""
+    if not payment_proof_file or not payment_proof_file.filename:
+        return None, "Payment proof is required!"
+    
+    if not allowed_file(payment_proof_file.filename):
+        return None, "Invalid file type. Please upload an image file."
+    
+    # Check file size (5MB limit)
+    payment_proof_file.seek(0, 2)
+    file_size = payment_proof_file.tell()
+    payment_proof_file.seek(0)
+    
+    if file_size > 5 * 1024 * 1024:
+        return None, "File too large. Maximum size is 5MB."
+    
+    # Upload to Cloudinary
+    cloudinary_url = upload_payment_proof_to_cloudinary(
+        payment_proof_file, order_type, order_id, user_id
+    )
+    
+    if not cloudinary_url:
+        return None, "Failed to upload payment proof. Please try again."
+    
+    return cloudinary_url, None
+
+# Simple migration route
+@app.route('/admin/migrate-payment-proofs')
+@login_required
+def migrate_payment_proofs():
+    """Simple migration of existing payment proofs to Cloudinary"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    try:
+        migrated = 0
+        errors = 0
+        
+        # Get all records with local files
+        all_records = []
+        all_records.extend(Purchase.query.filter(
+            Purchase.payment_proof.isnot(None),
+            ~Purchase.payment_proof.like('https://%')
+        ).all())
+        all_records.extend(ProductOrder.query.filter(
+            ProductOrder.payment_proof.isnot(None),
+            ~ProductOrder.payment_proof.like('https://%')
+        ).all())
+        all_records.extend(ClassEnrollment.query.filter(
+            ClassEnrollment.payment_proof.isnot(None),
+            ~ClassEnrollment.payment_proof.like('https://%')
+        ).all())
+        
+        for record in all_records:
+            try:
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], record.payment_proof)
+                
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as file:
+                        record_type = 'course' if hasattr(record, 'course_id') else 'product' if hasattr(record, 'product_id') else 'class'
+                        cloudinary_url = upload_payment_proof_to_cloudinary(
+                            file, record_type, record.id, record.user_id
+                        )
+                    
+                    if cloudinary_url:
+                        record.payment_proof = cloudinary_url
+                        migrated += 1
+                    else:
+                        errors += 1
+                else:
+                    errors += 1
+                    
+            except Exception as e:
+                errors += 1
+        
+        if migrated > 0:
+            db.session.commit()
+        
+        return f'''
+        <html>
+        <head><title>Migration Complete</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>📤 Payment Proof Migration Complete</h1>
+            <p><strong>✅ Migrated:</strong> {migrated} files</p>
+            <p><strong>❌ Errors:</strong> {errors} files</p>
+            <p><strong>📁 Total processed:</strong> {len(all_records)} records</p>
+            <p><a href="/admin/courses" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Admin</a></p>
+        </body>
+        </html>
+        '''
+        
+    except Exception as e:
+        return f"Migration failed: {str(e)}"
+
+
 
 @app.route('/payments')
 @login_required

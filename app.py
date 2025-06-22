@@ -3851,42 +3851,14 @@ def enroll_class(class_type, class_id):
             flash('Please select a valid payment method', 'danger')
             return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
         
-        # Handle payment proof upload
+        # Handle payment proof upload to Cloudinary - CLEAN VERSION
         payment_proof = request.files.get('payment_proof')
-        proof_filename = None
+        proof_url, error = handle_payment_proof_upload(
+            payment_proof, 'class_enrollment', class_id, current_user.id
+        )
         
-        if payment_proof and payment_proof.filename:
-            if allowed_file(payment_proof.filename):
-                try:
-                    # Check file size (max 5MB)
-                    payment_proof.seek(0, 2)  # Seek to end
-                    file_size = payment_proof.tell()
-                    payment_proof.seek(0)  # Seek back to beginning
-                    
-                    if file_size > 5 * 1024 * 1024:  # 5MB limit
-                        flash('Payment proof file is too large. Maximum size is 5MB.', 'danger')
-                        return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
-                    
-                    # Upload to Cloudinary instead of local storage
-                    cloudinary_url = upload_payment_proof_to_cloudinary(
-                        payment_proof, class_type, class_id, current_user.id
-                    )
-                    
-                    if cloudinary_url:
-                        proof_filename = cloudinary_url  # Store the full Cloudinary URL
-                        print(f"✅ Payment proof uploaded to Cloudinary: {cloudinary_url}")
-                    else:
-                        flash('Failed to upload payment proof. Please try again.', 'danger')
-                        return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
-                    
-                except Exception as e:
-                    flash(f'Error uploading payment proof: {str(e)}', 'danger')
-                    return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
-            else:
-                flash('Invalid file type for payment proof. Please upload an image or PDF file.', 'danger')
-                return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
-        else:
-            flash('Payment proof is required!', 'danger')
+        if error:
+            flash(error, 'danger')
             return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
         
         # Check group class capacity before enrollment
@@ -3909,7 +3881,7 @@ def enroll_class(class_type, class_id):
                 customer_phone=phone,
                 customer_email=email,
                 customer_address=address,
-                payment_proof=proof_filename  # Now stores Cloudinary URL
+                payment_proof=proof_url  # Store Cloudinary URL
             )
             
             db.session.add(enrollment)

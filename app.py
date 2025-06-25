@@ -354,8 +354,16 @@ User.group_classes = db.relationship('GroupClass',
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return User.query.get(int(user_id
 
+
+                              
+@app.route('/fix-db')
+def fix_db():
+    db.engine.execute("ALTER TABLE \"user\" ALTER COLUMN password_hash TYPE VARCHAR(255)")
+    return "Database fixed!"
+
+        
 # ========================================
 # HELPER FUNCTIONS
 # ========================================

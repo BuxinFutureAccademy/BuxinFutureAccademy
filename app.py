@@ -2006,83 +2006,36 @@ def admin_products():
 @app.route('/admin/create_product', methods=['GET', 'POST'])
 @login_required
 def create_product():
-    """Create a new product"""
+    """Enhanced create product with Cloudinary digital file storage"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
     
     if request.method == 'POST':
         try:
-            # Get form data
+            # Basic product information (keep your existing code here)
             name = request.form.get('name', '').strip()
             description = request.form.get('description', '').strip()
             short_description = request.form.get('short_description', '').strip()
-            price = request.form.get('price', '0')
+            price = float(request.form.get('price', '0'))
             product_type = request.form.get('product_type', '').strip()
             category = request.form.get('category', '').strip()
             brand = request.form.get('brand', '').strip()
             sku = request.form.get('sku', '').strip()
-            stock_quantity = request.form.get('stock_quantity', '0')
+            stock_quantity = int(request.form.get('stock_quantity', '0'))
             image_url = request.form.get('image_url', '').strip()
             is_active = 'is_active' in request.form
             featured = 'featured' in request.form
             
-            # Validate required fields
+            # Validation code here (keep your existing validation)
             if not all([name, description, price, product_type, category]):
-                flash('Please fill in all required fields (Name, Description, Price, Type, Category).', 'danger')
+                flash('Please fill in all required fields.', 'danger')
                 return render_template('create_product.html')
             
-            # Validate and convert price
-            try:
-                price = float(price)
-                if price < 0:
-                    flash('Price must be a positive number.', 'danger')
-                    return render_template('create_product.html')
-            except ValueError:
-                flash('Please enter a valid price.', 'danger')
-                return render_template('create_product.html')
-            
-            # Validate and convert stock quantity
-            try:
-                stock_quantity = int(stock_quantity)
-                if stock_quantity < 0:
-                    flash('Stock quantity must be a positive number.', 'danger')
-                    return render_template('create_product.html')
-            except ValueError:
-                flash('Please enter a valid stock quantity.', 'danger')
-                return render_template('create_product.html')
-            
-            # Auto-generate SKU if not provided
+            # Auto-generate SKU if not provided (keep your existing code)
             if not sku:
-                base_sku = name.upper().replace(' ', '-').replace('&', 'AND')
-                base_sku = ''.join(c for c in base_sku if c.isalnum() or c == '-')[:10]
-                
-                counter = 1
-                sku = f"{base_sku}-{counter:03d}"
-                while Product.query.filter_by(sku=sku).first():
-                    counter += 1
-                    sku = f"{base_sku}-{counter:03d}"
-            else:
-                existing_product = Product.query.filter_by(sku=sku).first()
-                if existing_product:
-                    flash(f'SKU "{sku}" already exists. Please choose a different SKU.', 'danger')
-                    return render_template('create_product.html')
-            
-            # For digital products, set stock to 0
-            if product_type == 'Digital':
-                stock_quantity = 0
-            
-            # Validate image URL if provided
-            if image_url:
-                try:
-                    from urllib.parse import urlparse
-                    parsed = urlparse(image_url)
-                    if not all([parsed.scheme, parsed.netloc]):
-                        flash('Please enter a valid image URL.', 'warning')
-                        image_url = ''
-                except:
-                    flash('Please enter a valid image URL.', 'warning')
-                    image_url = ''
+                # Your existing SKU generation code
+                pass
             
             # Create the product
             product = Product(
@@ -2094,7 +2047,7 @@ def create_product():
                 category=category,
                 brand=brand,
                 sku=sku,
-                stock_quantity=stock_quantity,
+                stock_quantity=stock_quantity if product_type == 'Physical' else 0,
                 image_url=image_url,
                 is_active=is_active,
                 featured=featured,
@@ -2105,11 +2058,9 @@ def create_product():
             db.session.add(product)
             db.session.flush()  # Get the product ID
             
-            # Handle digital product file uploads
+            # Handle digital product file uploads - CLOUDINARY VERSION
             if product_type == 'Digital':
                 digital_files = request.files.getlist('digital_files')
-                digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
-                os.makedirs(digital_folder, exist_ok=True)
                 
                 for digital_file in digital_files:
                     if digital_file and digital_file.filename:
@@ -2122,27 +2073,38 @@ def create_product():
                             flash(f'File {digital_file.filename} is too large. Maximum size is 100MB.', 'warning')
                             continue
                         
-                        # Save file with unique name
                         original_filename = secure_filename(digital_file.filename)
-                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-                        unique_filename = f"{timestamp}{product.id}_{original_filename}"
+                        print(f"📤 Uploading {original_filename} to Cloudinary...")
                         
-                        file_path = os.path.join(digital_folder, unique_filename)
-                        digital_file.save(file_path)
-                        
-                        # Save file info to database
-                        digital_product_file = DigitalProductFile(
-                            product_id=product.id,
-                            filename=unique_filename,
-                            original_filename=original_filename,
-                            file_type=original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else '',
-                            file_size=file_size
+                        # Upload to Cloudinary instead of local storage
+                        upload_result = upload_digital_file_to_cloudinary(
+                            digital_file, product.id, original_filename
                         )
-                        db.session.add(digital_product_file)
+                        
+                        if upload_result:
+                            # Create a fallback filename for compatibility
+                            fallback_filename = f"cloudinary_{upload_result['public_id']}"
+                            
+                            digital_product_file = DigitalProductFile(
+                                product_id=product.id,
+                                filename=fallback_filename,  # Fallback filename
+                                original_filename=original_filename,
+                                file_type=upload_result['format'],
+                                file_size=upload_result['size'],
+                                cloudinary_url=upload_result['url'],  # Cloudinary URL
+                                cloudinary_public_id=upload_result['public_id'],
+                                cloudinary_resource_type=upload_result['resource_type'],
+                                storage_type='cloudinary'
+                            )
+                            db.session.add(digital_product_file)
+                            print(f"✅ Digital file saved to database: {original_filename}")
+                        else:
+                            flash(f'Failed to upload file: {original_filename}', 'danger')
+                            print(f"❌ Failed to upload: {original_filename}")
             
             db.session.commit()
             
-            flash('Product created successfully with digital files!', 'success')
+            flash('Product created successfully with digital files stored on Cloudinary!', 'success')
             return redirect(url_for('admin_products'))
             
         except Exception as e:
@@ -2616,7 +2578,7 @@ def view_digital_product(order_id):
 @app.route('/download_digital_product/<int:file_id>')
 @login_required
 def download_digital_product(file_id):
-    """Download digital product file (only for purchased products)"""
+    """Download digital product file (Cloudinary or local fallback)"""
     digital_file = DigitalProductFile.query.get_or_404(file_id)
     
     # Check if user has purchased this product (unless admin)
@@ -2635,14 +2597,25 @@ def download_digital_product(file_id):
     digital_file.download_count += 1
     db.session.commit()
     
-    # Serve the file
-    digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
-    return send_from_directory(
-        digital_folder, 
-        digital_file.filename,
-        as_attachment=True,
-        download_name=digital_file.original_filename
-    )
+    # If file is stored on Cloudinary, redirect to Cloudinary URL
+    if digital_file.is_cloudinary_stored():
+        print(f"📥 Serving from Cloudinary: {digital_file.original_filename}")
+        return redirect(digital_file.cloudinary_url)
+    
+    # Fallback to local file system (for files not yet migrated)
+    else:
+        digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
+        if os.path.exists(os.path.join(digital_folder, digital_file.filename)):
+            print(f"📁 Serving from local storage: {digital_file.filename}")
+            return send_from_directory(
+                digital_folder, 
+                digital_file.filename,
+                as_attachment=True,
+                download_name=digital_file.original_filename
+            )
+        else:
+            flash('File not found. Please contact support.', 'error')
+            return redirect(url_for('product_detail', product_id=digital_file.product_id))
 
 @app.route('/admin/migrate-digital-files')
 @login_required

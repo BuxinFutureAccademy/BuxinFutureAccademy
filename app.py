@@ -336,13 +336,23 @@ class LearningMaterial(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator = db.relationship('User', foreign_keys=[created_by], lazy='select')
     
-    @property
-    def class_name(self):
-        if self.class_type == 'individual':
-            class_obj = IndividualClass.query.get(self.actual_class_id)
-        else:
-            class_obj = GroupClass.query.get(self.actual_class_id)
-        return class_obj.name if class_obj else "Unknown Class"
+@property
+def class_name(self):
+    if self.class_id.startswith('student_'):
+        # Individual student sharing
+        student_id = int(self.class_id.replace('student_', ''))
+        student = User.query.get(student_id)
+        return f"👤 {student.first_name} {student.last_name}" if student else "Unknown Student"
+    
+    elif self.class_type == 'individual':
+        class_obj = IndividualClass.query.get(self.actual_class_id)
+        return f"📖 {class_obj.name}" if class_obj else "Unknown Individual Class"
+    
+    elif self.class_type == 'group':
+        class_obj = GroupClass.query.get(self.actual_class_id)
+        return f"🎓 {class_obj.name}" if class_obj else "Unknown Group Class"
+    
+    return "Unknown Class"
 
 # Add back_populates to User model relationships
 User.individual_classes = db.relationship('IndividualClass', 

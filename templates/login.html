@@ -1,31 +1,591 @@
-
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-primary text-white text-center">
-                <h3><i class="fas fa-sign-in-alt me-2"></i>Login</h3>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-5">
+                <!-- Header -->
+                <div class="login-header text-center mb-4">
+                    <div class="login-icon mb-3">
+                        <i class="fas fa-sign-in-alt"></i>
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                    <h1 class="login-title">Welcome Back to <span class="text-gradient">BuXin Academy</span></h1>
+                    <p class="login-subtitle">Sign in to continue your learning journey</p>
+                </div>
+
+                <!-- Login Form -->
+                <div class="login-form-card">
+                    <form method="POST" class="login-form">
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label class="form-label">Username or Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                                <input type="text" class="form-control" name="username" required 
+                                       placeholder="Enter your username or email" autocomplete="username">
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-4">
+                            <label class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" name="password" required 
+                                       placeholder="Enter your password" autocomplete="current-password" id="password">
+                                <button type="button" class="input-group-text password-toggle" onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="password-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember Me & Forgot Password -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                                <label class="form-check-label" for="remember">
+                                    Remember me
+                                </label>
+                            </div>
+                            <a href="#" class="text-link forgot-link">Forgot password?</a>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-login w-100 mb-3">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </button>
+
+                        <!-- Divider -->
+                        <div class="divider-section">
+                            <div class="divider-line"></div>
+                            <span class="divider-text">or</span>
+                            <div class="divider-line"></div>
+                        </div>
+
+                        <!-- Social Login (Optional) -->
+                        <div class="social-login mb-3">
+                            <button type="button" class="btn btn-social btn-google w-100 mb-2">
+                                <i class="fab fa-google me-2"></i>Continue with Google
+                            </button>
+                        </div>
+
+                        <!-- Register Link -->
+                        <div class="text-center">
+                            <p class="register-text">
+                                New to BuXin Academy? 
+                                <a href="{{ url_for('register') }}" class="text-link">Create an account</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Access Features -->
+                <div class="features-section mt-4">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="feature-item">
+                                <i class="fas fa-mobile-alt"></i>
+                                <small>Mobile Learning</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="feature-item">
+                                <i class="fas fa-cloud"></i>
+                                <small>Cloud Sync</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="feature-item">
+                                <i class="fas fa-shield-alt"></i>
+                                <small>Secure Access</small>
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
-                </form>
-                
-                <div class="text-center mt-3">
-                    <p class="mb-0">Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Mobile-First Login Styles */
+.login-container {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: calc(100vh - 60px);
+    padding: 2rem 0;
+    display: flex;
+    align-items: center;
+}
+
+.login-header {
+    margin-bottom: 2rem;
+}
+
+.login-icon {
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.login-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+    line-height: 1.3;
+}
+
+.text-gradient {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.login-subtitle {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.login-form-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.input-group {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.input-group-text {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-right: none;
+    color: #6c757d;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+}
+
+.form-control {
+    border: 2px solid #e9ecef;
+    border-left: none;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.input-group:focus-within .input-group-text {
+    border-color: #667eea;
+    background: white;
+    color: #667eea;
+}
+
+.input-group:focus-within .form-control {
+    border-color: #667eea;
+    background: white;
+    box-shadow: none;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.form-control::placeholder {
+    color: #adb5bd;
+    font-size: 0.9rem;
+}
+
+.password-toggle {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-left: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 45px;
+}
+
+.password-toggle:hover {
+    background: #e9ecef;
+    color: #667eea;
+}
+
+.form-check-input {
+    border-radius: 4px;
+    border: 2px solid #e9ecef;
+}
+
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.form-check-label {
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.text-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.text-link:hover {
+    color: #5a6fd8;
+    text-decoration: underline;
+}
+
+.forgot-link {
+    font-size: 0.85rem;
+}
+
+.btn-login {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 0.9rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-login:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    color: white;
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+.divider-section {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0;
+}
+
+.divider-line {
+    flex: 1;
+    height: 1px;
+    background: #e9ecef;
+}
+
+.divider-text {
+    padding: 0 1rem;
+    color: #6c757d;
+    font-size: 0.85rem;
+    background: white;
+}
+
+.btn-social {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: white;
+    color: #495057;
+}
+
+.btn-google:hover {
+    border-color: #db4437;
+    background: #db4437;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.register-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.features-section {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 15px;
+    padding: 1.25rem 1rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0.25rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    height: 100%;
+}
+
+.feature-item i {
+    font-size: 1.1rem;
+    color: #667eea;
+}
+
+.feature-item small {
+    font-size: 0.75rem;
+    color: #495057;
+    text-align: center;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+/* Loading state */
+.btn-login.loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn-login.loading::after {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-left: 0.5rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Input validation styles */
+.form-control.is-valid {
+    border-color: #28a745;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.input-group:has(.is-valid) .input-group-text {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.input-group:has(.is-invalid) .input-group-text {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+/* Desktop responsive */
+@media (min-width: 768px) {
+    .login-container {
+        padding: 3rem 0;
+    }
+    
+    .login-title {
+        font-size: 2rem;
+    }
+    
+    .login-subtitle {
+        font-size: 1.05rem;
+    }
+    
+    .login-form-card {
+        padding: 2.5rem;
+    }
+    
+    .feature-item {
+        padding: 1rem 0.5rem;
+    }
+    
+    .feature-item i {
+        font-size: 1.25rem;
+    }
+    
+    .feature-item small {
+        font-size: 0.8rem;
+    }
+}
+
+/* Focus visible for accessibility */
+.form-control:focus-visible,
+.btn-login:focus-visible,
+.form-check-input:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Touch improvements for mobile */
+@media (max-width: 767px) {
+    .input-group-text,
+    .password-toggle {
+        min-width: 48px;
+        min-height: 48px;
+    }
+    
+    .btn-login {
+        min-height: 48px;
+    }
+    
+    .forgot-link {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+</style>
+
+<script>
+// Password toggle functionality
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const passwordIcon = document.getElementById('password-icon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordIcon.classList.remove('fa-eye');
+        passwordIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        passwordIcon.classList.remove('fa-eye-slash');
+        passwordIcon.classList.add('fa-eye');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.login-form');
+    const submitBtn = document.querySelector('.btn-login');
+    const inputs = form.querySelectorAll('input[required]');
+    
+    // Form validation
+    inputs.forEach(input => {
+        input.addEventListener('blur', validateInput);
+        input.addEventListener('input', validateInput);
+    });
+    
+    function validateInput(e) {
+        const input = e.target;
+        const value = input.value.trim();
+        
+        // Remove previous validation classes
+        input.classList.remove('is-valid', 'is-invalid');
+        
+        if (input.hasAttribute('required') && !value) {
+            return; // Don't validate empty required fields until form submission
+        }
+        
+        let isValid = true;
+        
+        if (input.name === 'username') {
+            // Accept username or email
+            isValid = value.length >= 3;
+        } else if (input.name === 'password') {
+            isValid = value.length >= 6;
+        }
+        
+        if (value) { // Only show validation if there's content
+            input.classList.add(isValid ? 'is-valid' : 'is-invalid');
+        }
+    }
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate all required fields
+        let isFormValid = true;
+        inputs.forEach(input => {
+            if (input.hasAttribute('required') && !input.value.trim()) {
+                input.classList.add('is-invalid');
+                isFormValid = false;
+            }
+        });
+        
+        if (isFormValid) {
+            // Add loading state
+            submitBtn.classList.add('loading');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+            
+            // Submit the form
+            setTimeout(() => {
+                form.submit();
+            }, 100);
+        } else {
+            // Focus first invalid input
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.focus();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+    
+    // Auto-focus and smooth scroll on mobile
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            // Small delay to ensure keyboard is shown
+            setTimeout(() => {
+                this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        });
+    });
+    
+    // Handle social login buttons
+    const socialBtns = document.querySelectorAll('.btn-social');
+    socialBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Add loading state for social login
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
+            this.disabled = true;
+            
+            // Here you would typically redirect to OAuth provider
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="fab fa-google me-2"></i>Continue with Google';
+            }, 2000);
+        });
+    });
+});
+</script>
 {% endblock %}

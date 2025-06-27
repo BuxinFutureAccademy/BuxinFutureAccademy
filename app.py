@@ -593,6 +593,310 @@ BuXin Future Academy Team
     
     return redirect(url_for('view_enrollment', enrollment_id=enrollment_id))
 
+# Add this utility route to your app.py to fix existing approved enrollments:
+
+@app.route('/admin/fix-existing-enrollments')
+@login_required
+def fix_existing_enrollments():
+    """Fix existing approved enrollments by adding students to classes - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Get all completed enrollments
+        completed_enrollments = ClassEnrollment.query.filter_by(status='completed').all()
+        
+        fixed_individual = 0
+        fixed_group = 0
+        errors = []
+        
+        for enrollment in completed_enrollments:
+            try:
+                student = User.query.get(enrollment.user_id)
+                if not student:
+                    errors.append(f"Enrollment #{enrollment.id}: Student not found (ID: {enrollment.user_id})")
+                    continue
+                
+                if enrollment.class_type == 'individual':
+                    class_obj = IndividualClass.query.get(enrollment.class_id)
+                    if class_obj:
+                        if student not in class_obj.students:
+                            class_obj.students.append(student)
+                            fixed_individual += 1
+                            print(f"✅ Fixed: Added {student.username} to individual class {class_obj.name}")
+                    else:
+                        errors.append(f"Enrollment #{enrollment.id}: Individual class not found (ID: {enrollment.class_id})")
+                        
+                elif enrollment.class_type == 'group':
+                    class_obj = GroupClass.query.get(enrollment.class_id)
+                    if class_obj:
+                        if student not in class_obj.students:
+                            if len(class_obj.students) < class_obj.max_students:
+                                class_obj.students.append(student)
+                                fixed_group += 1
+                                print(f"✅ Fixed: Added {student.username} to group class {class_obj.name}")
+                            else:
+                                errors.append(f"Enrollment #{enrollment.id}: Group class '{class_obj.name}' is full")
+                    else:
+                        errors.append(f"Enrollment #{enrollment.id}: Group class not found (ID: {enrollment.class_id})")
+                        
+            except Exception as e:
+                errors.append(f"Enrollment #{enrollment.id}: {str(e)}")
+        
+        # Commit all fixes
+        db.session.commit()
+        
+        # Generate report
+        html = f"""
+        <html>
+        <head><title>Enrollment Fix Results</title>
+        <style>
+            body {{ font-family: Arial; padding: 20px; background: #f8f9fa; }}
+            .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }}
+            .success {{ color: #28a745; background: #d4edda; padding: 1rem; border-radius: 5px; margin: 1rem 0; }}
+            .warning {{ color: #856404; background: #fff3cd; padding: 1rem; border-radius: 5px; margin: 1rem 0; }}
+            .error {{ color: #721c24; background: #f8d7da; padding: 1rem; border-radius: 5px; margin: 1rem 0; }}
+            ul {{ margin: 1rem 0; }}
+            .stats {{ display: flex; justify-content: space-around; margin: 2rem 0; }}
+            .stat {{ text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 10px; }}
+            .stat-number {{ font-size: 2rem; font-weight: bold; color: #007bff; }}
+        </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🔧 Enrollment Fix Results</h1>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-number">{completed_enrollments.count()}</div>
+                        <div>Total Enrollments</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">{fixed_individual}</div>
+                        <div>Individual Fixed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">{fixed_group}</div>
+                        <div>Group Fixed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">{len(errors)}</div>
+                        <div>Errors</div>
+                    </div>
+                </div>
+                
+                <div class="success">
+                    <h3>✅ Successfully Fixed</h3>
+                    <p><strong>Individual Classes:</strong> {fixed_individual} students added</p>
+                    <p><strong>Group Classes:</strong> {fixed_group} students added</p>
+                    <p><strong>Total Fixed:</strong> {fixed_individual + fixed_group} enrollments</p>
+                </div>
+        """
+        
+        if errors:
+            html += f"""
+                <div class="warning">
+                    <h3>⚠️ Errors Encountered ({len(errors)})</h3>
+                    <ul>
+            """
+            for error in errors:
+                html += f"<li>{error}</li>"
+            html += "</ul></div>"
+        
+        html += f"""
+                <div class="success">
+                    <h3>🎯 What Happened</h3>
+                    <p>This fix process reviewed all approved class enrollments and ensured students were properly added to their classes. Now:</p>
+                    <ul>
+                        <li>✅ Students can see their classes in the student dashboard</li>
+                        <li>✅ Admins can share materials with enrolled students</li>
+                        <li>✅ Learning materials will appear for enrolled students</li>
+                        <li>✅ Class rosters are accurate</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="/admin/dashboard" style="background: #007bff; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">← Admin Dashboard</a>
+                    <a href="/admin/enrollments" style="background: #28a745; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">View Enrollments</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return html
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Fix Failed</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Fix Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """, 500
+
+# Add this debug route to see what's happening with enrollments:
+
+@app.route('/debug/enrollments')
+@login_required
+def debug_enrollments():
+    """Debug route to check enrollment status and class memberships"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    # Get all enrollments
+    all_enrollments = ClassEnrollment.query.all()
+    individual_classes = IndividualClass.query.all()
+    group_classes = GroupClass.query.all()
+    
+    html = f"""
+    <html>
+    <head><title>Enrollment Debug</title>
+    <style>
+        body {{ font-family: Arial; padding: 20px; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        th {{ background-color: #f2f2f2; }}
+        .completed {{ background-color: #d4edda; }}
+        .pending {{ background-color: #fff3cd; }}
+        .failed {{ background-color: #f8d7da; }}
+        .enrolled {{ color: #28a745; font-weight: bold; }}
+        .not-enrolled {{ color: #dc3545; font-weight: bold; }}
+    </style>
+    </head>
+    <body>
+        <h1>🔍 Enrollment Debug Report</h1>
+        
+        <h2>📊 Summary</h2>
+        <p><strong>Total Enrollments:</strong> {len(all_enrollments)}</p>
+        <p><strong>Individual Classes:</strong> {len(individual_classes)}</p>
+        <p><strong>Group Classes:</strong> {len(group_classes)}</p>
+        
+        <h2>📋 All Enrollments</h2>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Student</th>
+                <th>Class Type</th>
+                <th>Class Name</th>
+                <th>Status</th>
+                <th>Actually Enrolled?</th>
+                <th>Issue</th>
+            </tr>
+    """
+    
+    for enrollment in all_enrollments:
+        student = User.query.get(enrollment.user_id)
+        student_name = f"{student.first_name} {student.last_name}" if student else "Unknown"
+        
+        # Check if student is actually in the class
+        actually_enrolled = False
+        class_name = "Unknown"
+        issue = ""
+        
+        if enrollment.class_type == 'individual':
+            class_obj = IndividualClass.query.get(enrollment.class_id)
+            if class_obj:
+                class_name = class_obj.name
+                actually_enrolled = student in class_obj.students if student else False
+                if enrollment.status == 'completed' and not actually_enrolled:
+                    issue = "❌ Approved but not in class roster"
+            else:
+                issue = "❌ Class not found"
+                
+        elif enrollment.class_type == 'group':
+            class_obj = GroupClass.query.get(enrollment.class_id)
+            if class_obj:
+                class_name = class_obj.name
+                actually_enrolled = student in class_obj.students if student else False
+                if enrollment.status == 'completed' and not actually_enrolled:
+                    issue = "❌ Approved but not in class roster"
+            else:
+                issue = "❌ Class not found"
+        
+        status_class = enrollment.status
+        enrolled_class = "enrolled" if actually_enrolled else "not-enrolled"
+        enrolled_text = "✅ YES" if actually_enrolled else "❌ NO"
+        
+        html += f"""
+            <tr class="{status_class}">
+                <td>{enrollment.id}</td>
+                <td>{student_name}</td>
+                <td>{enrollment.class_type.title()}</td>
+                <td>{class_name}</td>
+                <td>{enrollment.status.title()}</td>
+                <td class="{enrolled_class}">{enrolled_text}</td>
+                <td>{issue}</td>
+            </tr>
+        """
+    
+    html += """
+        </table>
+        
+        <h2>🏫 Individual Classes</h2>
+        <table>
+            <tr>
+                <th>Class ID</th>
+                <th>Class Name</th>
+                <th>Students Enrolled</th>
+                <th>Student Names</th>
+            </tr>
+    """
+    
+    for iclass in individual_classes:
+        student_names = [f"{s.first_name} {s.last_name}" for s in iclass.students]
+        html += f"""
+            <tr>
+                <td>{iclass.id}</td>
+                <td>{iclass.name}</td>
+                <td>{len(iclass.students)}</td>
+                <td>{', '.join(student_names) if student_names else 'No students'}</td>
+            </tr>
+        """
+    
+    html += """
+        </table>
+        
+        <h2>👥 Group Classes</h2>
+        <table>
+            <tr>
+                <th>Class ID</th>
+                <th>Class Name</th>
+                <th>Students Enrolled</th>
+                <th>Max Students</th>
+                <th>Student Names</th>
+            </tr>
+    """
+    
+    for gclass in group_classes:
+        student_names = [f"{s.first_name} {s.last_name}" for s in gclass.students]
+        html += f"""
+            <tr>
+                <td>{gclass.id}</td>
+                <td>{gclass.name}</td>
+                <td>{len(gclass.students)}</td>
+                <td>{gclass.max_students}</td>
+                <td>{', '.join(student_names) if student_names else 'No students'}</td>
+            </tr>
+        """
+    
+    html += f"""
+        </table>
+        
+        <h2>🔧 Actions</h2>
+        <p><a href="/admin/fix-existing-enrollments" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🔧 Fix All Enrollment Issues</a></p>
+        <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        <p><a href="/admin/enrollments">View Enrollments</a></p>
+    </body>
+    </html>
+    """
+    
+    return html
+
 # ========================================
 # ADDITIONAL ROUTES
 # ========================================

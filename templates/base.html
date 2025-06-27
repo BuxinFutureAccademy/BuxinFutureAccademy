@@ -821,7 +821,7 @@ body {
                             </li>
                         {% endif %}
 
-                        <!-- Tools & Support Dropdown -->
+                        <!-- Tools & Support Dropdown (UPDATED WITH ROBOTICS) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-tools"></i>
@@ -831,9 +831,21 @@ body {
                                 <li><a class="dropdown-item" href="{{ url_for('ai_assistant') }}">
                                     <i class="fas fa-brain"></i>AI Assistant
                                 </a></li>
+                                <!-- 🤖 ROBOTICS PROJECT SUBMISSION LINK -->
+                                <li><a class="dropdown-item" href="{{ url_for('robotics_projects') }}">
+                                    <i class="fas fa-robot"></i>Submit Project Idea
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('about_us') }}">
                                     <i class="fas fa-info-circle"></i>About Us
                                 </a></li>
+                                {% if current_user.is_admin %}
+                                    <!-- 🤖 ADMIN ROBOTICS SUBMISSIONS LINK -->
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_robotics_submissions') }}">
+                                        <i class="fas fa-cogs"></i>Robotics Submissions
+                                    </a></li>
+                                {% endif %}
                             </ul>
                         </li>
 
@@ -871,6 +883,13 @@ body {
                             <a class="nav-link" href="{{ url_for('products') }}">
                                 <i class="fas fa-box"></i>
                                 <span>Products</span>
+                            </a>
+                        </li>
+                        <!-- 🤖 ROBOTICS PROJECT SUBMISSION FOR GUESTS -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('robotics_projects') }}">
+                                <i class="fas fa-robot"></i>
+                                <span>Submit Project</span>
                             </a>
                         </li>
                         
@@ -919,7 +938,7 @@ body {
         {% endblock %}
     </div>
 
-    <!-- Modern Bottom Navigation for Mobile -->
+    <!-- Modern Bottom Navigation for Mobile (UPDATED WITH ROBOTICS) -->
     <nav class="navbar d-lg-none bottom-nav fixed-bottom">
        <div class="container-fluid d-flex justify-content-around flex-nowrap overflow-auto">
             <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
@@ -933,6 +952,11 @@ body {
             <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
                 <i class="fas fa-box"></i>
                 <div>Products</div>
+            </a>
+            <!-- 🤖 ROBOTICS PROJECT LINK IN MOBILE NAV -->
+            <a class="nav-link {% if request.endpoint == 'robotics_projects' %}active{% endif %}" href="{{ url_for('robotics_projects') }}">
+                <i class="fas fa-robot"></i>
+                <div>Projects</div>
             </a>
             {% if current_user.is_authenticated %}
                 <a class="nav-link {% if request.endpoint == 'cart' %}active{% endif %}" href="{{ url_for('cart') }}">
@@ -962,3 +986,34 @@ body {
             window.addEventListener('scroll', function() {
                 if (window.scrollY > 50) {
                     navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+
+            // Auto-dismiss flash messages after 5 seconds
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    if (alert && alert.parentNode) {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            });
+
+            // Add active class to current page in bottom nav
+            const currentPath = window.location.pathname;
+            const bottomNavLinks = document.querySelectorAll('.bottom-nav .nav-link');
+            
+            bottomNavLinks.forEach(function(link) {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

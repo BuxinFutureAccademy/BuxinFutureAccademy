@@ -499,6 +499,8 @@ def view_enrollment(enrollment_id):
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     return render_template('view_enrollment.html', enrollment=enrollment, IndividualClass=IndividualClass, GroupClass=GroupClass)
 
+# Replace your existing update_enrollment_status route in app.py with this fixed version:
+
 @app.route('/admin/update_enrollment_status/<int:enrollment_id>', methods=['POST'])
 @login_required
 def update_enrollment_status(enrollment_id):
@@ -510,24 +512,84 @@ def update_enrollment_status(enrollment_id):
     new_status = request.form.get('status')
     
     if new_status in ['pending', 'completed', 'failed']:
+        old_status = enrollment.status
         enrollment.status = new_status
-        db.session.commit()
         
-        if new_status == 'completed':
-            if enrollment.class_type == 'individual':
-                class_obj = IndividualClass.query.get(enrollment.class_id)
-            else:
-                class_obj = GroupClass.query.get(enrollment.class_id)
+        if new_status == 'completed' and old_status != 'completed':
+            # Get the student
+            student = User.query.get(enrollment.user_id)
             
-            if current_user not in class_obj.students:
-                class_obj.students.append(current_user)
+            if student:
+                # Get the class based on type
+                if enrollment.class_type == 'individual':
+                    class_obj = IndividualClass.query.get(enrollment.class_id)
+                    class_name = class_obj.name if class_obj else "Unknown Class"
+                    
+                    # Add student to individual class if not already enrolled
+                    if class_obj and student not in class_obj.students:
+                        class_obj.students.append(student)
+                        flash(f'✅ Enrollment approved! {student.first_name} {student.last_name} has been added to "{class_name}" individual class.', 'success')
+                        print(f"✅ Added {student.username} to individual class {class_name}")
+                    elif class_obj and student in class_obj.students:
+                        flash(f'✅ Enrollment approved! {student.first_name} {student.last_name} was already in "{class_name}" individual class.', 'info')
+                    else:
+                        flash(f'❌ Error: Individual class not found (ID: {enrollment.class_id})', 'danger')
+                        
+                elif enrollment.class_type == 'group':
+                    class_obj = GroupClass.query.get(enrollment.class_id)
+                    class_name = class_obj.name if class_obj else "Unknown Class"
+                    
+                    # Check if group class is full
+                    if class_obj:
+                        if len(class_obj.students) >= class_obj.max_students:
+                            flash(f'❌ Cannot approve enrollment: Group class "{class_name}" is full ({len(class_obj.students)}/{class_obj.max_students} students).', 'warning')
+                            enrollment.status = 'pending'  # Revert status
+                        elif student not in class_obj.students:
+                            class_obj.students.append(student)
+                            flash(f'✅ Enrollment approved! {student.first_name} {student.last_name} has been added to "{class_name}" group class. ({len(class_obj.students)}/{class_obj.max_students} students)', 'success')
+                            print(f"✅ Added {student.username} to group class {class_name}")
+                        else:
+                            flash(f'✅ Enrollment approved! {student.first_name} {student.last_name} was already in "{class_name}" group class.', 'info')
+                    else:
+                        flash(f'❌ Error: Group class not found (ID: {enrollment.class_id})', 'danger')
+                        
+                # Commit the changes
                 db.session.commit()
-            
-            flash('Enrollment approved! Student has been added to the class.', 'success')
+                
+                # Send confirmation email to student (optional)
+                try:
+                    if class_obj:
+                        subject = f"Class Enrollment Approved - {class_name}"
+                        message = f"""
+Dear {student.first_name},
+
+Great news! Your enrollment in "{class_name}" has been approved.
+
+You can now:
+- Access learning materials shared by your instructor
+- Participate in class activities  
+- View class content in your student dashboard
+
+Login to your dashboard: https://www.techbuxin.com/student/dashboard
+
+Best regards,
+BuXin Future Academy Team
+"""
+                        send_bulk_email([student], subject, message)
+                        print(f"📧 Sent confirmation email to {student.email}")
+                except Exception as e:
+                    print(f"❌ Failed to send confirmation email: {e}")
+            else:
+                flash(f'❌ Error: Student not found (ID: {enrollment.user_id})', 'danger')
+                
+        elif new_status == 'failed':
+            flash(f'❌ Enrollment marked as failed.', 'warning')
         else:
-            flash(f'Enrollment status updated to {new_status}.', 'success')
+            flash(f'📝 Enrollment status updated to {new_status}.', 'info')
+            
+        db.session.commit()
     else:
-        flash('Invalid status!', 'danger')
+        flash('❌ Invalid status!', 'danger')
     
     return redirect(url_for('view_enrollment', enrollment_id=enrollment_id))
 

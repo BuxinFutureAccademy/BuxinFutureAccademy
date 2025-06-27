@@ -3,36 +3,35 @@
 {% block content %}
 <!-- Hero Section -->
 <div class="hero-section">
-    <div class="hero-background"></div>
     <div class="hero-content">
         <div class="container">
             <div class="row justify-content-center text-center">
                 <div class="col-lg-10">
-                    <div class="hero-icon mb-4">
+                    <div class="hero-icon mb-3">
                         <i class="fas fa-robot"></i>
                     </div>
-                    <h1 class="hero-title mb-4">
+                    <h1 class="hero-title mb-3">
                         Welcome to <span class="text-gradient">BuXin Future Academy</span>
                     </h1>
-                    <p class="hero-subtitle mb-5">
+                    <p class="hero-subtitle mb-4">
                         Empowering the next generation with cutting-edge <strong>Robotics</strong>, <strong>AI</strong>, 
                         <strong>Coding</strong>, and <strong>Electric Vehicle Technology</strong>
                     </p>
                     
                     {% if not current_user.is_authenticated %}
                         <div class="hero-buttons">
-                            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
-                                <i class="fas fa-rocket me-2"></i>Start Your Journey
+                            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg mb-2 me-md-3">
+                                <i class="fas fa-rocket me-2"></i>Start Journey
                             </a>
-                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg mb-2">
                                 <i class="fas fa-sign-in-alt me-2"></i>Login
                             </a>
                         </div>
                     {% else %}
                         <div class="welcome-back">
-                            <h3 class="text-light mb-3">Welcome back, {{ current_user.first_name }}!</h3>
+                            <h4 class="text-light mb-3">Welcome back, {{ current_user.first_name }}!</h4>
                             <a href="{{ url_for('student_dashboard') if current_user.is_student else url_for('admin_dashboard') }}" class="btn btn-success btn-lg">
-                                <i class="fas fa-dashboard me-2"></i>Go to Dashboard
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </div>
                     {% endif %}
@@ -40,37 +39,34 @@
             </div>
         </div>
     </div>
-    <div class="hero-scroll-indicator">
-        <i class="fas fa-chevron-down"></i>
-    </div>
 </div>
 
 <!-- Stats Section -->
-<div class="stats-section py-5">
+<div class="stats-section py-4">
     <div class="container">
         <div class="row text-center">
-            <div class="col-md-3 mb-4">
+            <div class="col-6 col-md-3 mb-3">
                 <div class="stat-item">
                     <div class="stat-number text-primary" data-count="500">0</div>
-                    <div class="stat-label">Students Trained</div>
+                    <div class="stat-label">Students</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-4">
+            <div class="col-6 col-md-3 mb-3">
                 <div class="stat-item">
                     <div class="stat-number text-success" data-count="50">0</div>
-                    <div class="stat-label">Projects Built</div>
+                    <div class="stat-label">Projects</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-4">
+            <div class="col-6 col-md-3 mb-3">
                 <div class="stat-item">
                     <div class="stat-number text-warning" data-count="15">0</div>
-                    <div class="stat-label">Expert Instructors</div>
+                    <div class="stat-label">Instructors</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-4">
+            <div class="col-6 col-md-3 mb-3">
                 <div class="stat-item">
                     <div class="stat-number text-info" data-count="95">0</div>
-                    <div class="stat-label">Success Rate %</div>
+                    <div class="stat-label">Success %</div>
                 </div>
             </div>
         </div>
@@ -78,83 +74,142 @@
 </div>
 
 <!-- Classes Section -->
-<div class="classes-section py-5">
+<div class="classes-section py-4">
     <div class="container">
-        <div class="section-header text-center mb-5">
+        <div class="section-header text-center mb-4">
             <h2 class="section-title">Our <span class="text-gradient">Popular Classes</span></h2>
-            <p class="section-subtitle">Discover the future of technology through hands-on learning</p>
+            <p class="section-subtitle">Discover the future of technology</p>
         </div>
         
         <div class="row">
-            <div class="col-lg-6 col-md-6 mb-4">
+            <div class="col-md-6 mb-3">
                 <div class="class-card robotics">
                     <div class="class-icon">
                         <i class="fas fa-cogs"></i>
                     </div>
                     <div class="class-content">
-                        <h4 class="class-title">Robotics & Electronics</h4>
-                        <p class="class-description">Build and program real robots using Arduino and Raspberry Pi. Learn sensor integration and mechanical design.</p>
+                        <h5 class="class-title">Robotics & Electronics</h5>
+                        <p class="class-description">Build real robots using Arduino and Raspberry Pi. Learn sensors and mechanical design.</p>
                         <div class="class-features">
                             <span class="feature-tag">Arduino</span>
-                            <span class="feature-tag">Raspberry Pi</span>
                             <span class="feature-tag">Sensors</span>
                         </div>
                     </div>
-                    <div class="class-overlay"></div>
                 </div>
             </div>
             
-            <div class="col-lg-6 col-md-6 mb-4">
+            <div class="col-md-6 mb-3">
                 <div class="class-card coding">
                     <div class="class-icon">
                         <i class="fas fa-code"></i>
                     </div>
                     <div class="class-content">
-                        <h4 class="class-title">Coding & AI Fundamentals</h4>
-                        <p class="class-description">Learn programming languages like Python, C++, and explore machine learning and artificial intelligence basics.</p>
+                        <h5 class="class-title">Coding & AI</h5>
+                        <p class="class-description">Learn Python, C++, and explore machine learning and artificial intelligence basics.</p>
                         <div class="class-features">
                             <span class="feature-tag">Python</span>
-                            <span class="feature-tag">C++</span>
-                            <span class="feature-tag">Machine Learning</span>
+                            <span class="feature-tag">AI</span>
                         </div>
                     </div>
-                    <div class="class-overlay"></div>
                 </div>
             </div>
             
-            <div class="col-lg-6 col-md-6 mb-4">
+            <div class="col-md-6 mb-3">
                 <div class="class-card autonomous">
                     <div class="class-icon">
                         <i class="fas fa-car"></i>
                     </div>
                     <div class="class-content">
-                        <h4 class="class-title">Self-Driving Cars</h4>
-                        <p class="class-description">Discover how to build and code autonomous vehicles with advanced sensors, cameras, and AI algorithms.</p>
+                        <h5 class="class-title">Self-Driving Cars</h5>
+                        <p class="class-description">Build autonomous vehicles with advanced sensors, cameras, and AI algorithms.</p>
                         <div class="class-features">
                             <span class="feature-tag">Computer Vision</span>
-                            <span class="feature-tag">Sensors</span>
-                            <span class="feature-tag">AI Navigation</span>
+                            <span class="feature-tag">AI Nav</span>
                         </div>
                     </div>
-                    <div class="class-overlay"></div>
                 </div>
             </div>
             
-            <div class="col-lg-6 col-md-6 mb-4">
+            <div class="col-md-6 mb-3">
                 <div class="class-card electric">
                     <div class="class-icon">
                         <i class="fas fa-bolt"></i>
                     </div>
                     <div class="class-content">
-                        <h4 class="class-title">Electric Vehicles & Green Tech</h4>
-                        <p class="class-description">Learn to design and build electric scooters, mini tractors, solar panels, and sustainable technology solutions.</p>
+                        <h5 class="class-title">Electric Vehicles</h5>
+                        <p class="class-description">Design electric scooters, mini tractors, solar panels, and sustainable tech solutions.</p>
                         <div class="class-features">
                             <span class="feature-tag">Battery Tech</span>
-                            <span class="feature-tag">Solar Power</span>
-                            <span class="feature-tag">Green Energy</span>
+                            <span class="feature-tag">Solar</span>
                         </div>
                     </div>
-                    <div class="class-overlay"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Submission Section -->
+<div class="project-section py-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="project-card">
+                    <div class="project-header text-center mb-4">
+                        <div class="project-icon mb-3">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h2 class="project-title">Got a <span class="text-gradient">Robotics Idea?</span></h2>
+                        <p class="project-subtitle">Share your project and get expert mentorship!</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-user-tie"></i>
+                                <div>
+                                    <h6>Expert Guidance</h6>
+                                    <small>Get advice from robotics professionals</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-tools"></i>
+                                <div>
+                                    <h6>Component Help</h6>
+                                    <small>Choose the right parts for your project</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-code"></i>
+                                <div>
+                                    <h6>Programming Support</h6>
+                                    <small>Get help with coding and debugging</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-video"></i>
+                                <div>
+                                    <h6>Feature Opportunity</h6>
+                                    <small>Your project could be on our YouTube channel</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('robotics_projects') }}" class="btn btn-gradient btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Submit Your Project Idea
+                        </a>
+                        <div class="mt-2">
+                            <small class="text-muted">Free mentorship • All skill levels welcome</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -162,65 +217,51 @@
 </div>
 
 <!-- Features Section -->
-<div class="features-section py-5">
+<div class="features-section py-4">
     <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6 mb-5 mb-lg-0">
-                <h2 class="feature-title mb-4">Why Choose <span class="text-gradient">BuXin Future Academy?</span></h2>
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <div class="feature-icon">
-                            <i class="fas fa-tools"></i>
-                        </div>
-                        <div class="feature-content">
-                            <h5>Hands-On Learning</h5>
-                            <p>Build real projects with actual hardware and cutting-edge technology.</p>
-                        </div>
+        <h2 class="text-center mb-4">Why Choose <span class="text-gradient">BuXin Academy?</span></h2>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-tools"></i>
                     </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="feature-content">
-                            <h5>Expert Instructors</h5>
-                            <p>Learn from industry professionals with years of real-world experience.</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">
-                            <i class="fas fa-certificate"></i>
-                        </div>
-                        <div class="feature-content">
-                            <h5>Industry Certification</h5>
-                            <p>Earn recognized certificates that boost your career prospects.</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">
-                            <i class="fas fa-laptop-code"></i>
-                        </div>
-                        <div class="feature-content">
-                            <h5>Modern Equipment</h5>
-                            <p>Access to latest technology, tools, and development environments.</p>
-                        </div>
+                    <div class="feature-content">
+                        <h6>Hands-On Learning</h6>
+                        <p>Build real projects with actual hardware</p>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="feature-image">
-                    <div class="floating-elements">
-                        <div class="floating-element element-1">
-                            <i class="fas fa-microchip"></i>
-                        </div>
-                        <div class="floating-element element-2">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <div class="floating-element element-3">
-                            <i class="fas fa-brain"></i>
-                        </div>
-                        <div class="floating-element element-4">
-                            <i class="fas fa-rocket"></i>
-                        </div>
+            <div class="col-md-6 mb-3">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h6>Expert Instructors</h6>
+                        <p>Learn from industry professionals</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h6>Industry Certification</h6>
+                        <p>Earn recognized certificates</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h6>Modern Equipment</h6>
+                        <p>Access to latest technology</p>
                     </div>
                 </div>
             </div>
@@ -230,35 +271,31 @@
 
 <!-- CTA Section -->
 {% if not current_user.is_authenticated %}
-<div class="cta-section py-5">
+<div class="cta-section py-4">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-10 text-center">
-                <h2 class="cta-title mb-4">Ready to Shape the Future?</h2>
-                <p class="cta-subtitle mb-5">Join thousands of students who are already building tomorrow's technology today.</p>
-                <div class="cta-buttons">
-                    <div class="row justify-content-center">
-                        <div class="col-md-6 mb-4">
-                            <div class="cta-card new-student">
-                                <i class="fas fa-user-plus fa-3x mb-3"></i>
-                                <h4>New Student?</h4>
-                                <p>Create an account to join our innovative classes and start your learning journey into the future of technology.</p>
-                                <a href="{{ url_for('register') }}" class="btn btn-success btn-lg">
-                                    <i class="fas fa-rocket me-2"></i>Register Now
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-4">
-                            <div class="cta-card returning-student">
-                                <i class="fas fa-sign-in-alt fa-3x mb-3"></i>
-                                <h4>Already Registered?</h4>
-                                <p>Sign in to access your dashboard, course materials, live sessions, and continue your exciting learning journey.</p>
-                                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-sign-in-alt me-2"></i>Login
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+        <div class="text-center mb-4">
+            <h2 class="cta-title">Ready to Shape the Future?</h2>
+            <p class="cta-subtitle">Join thousands building tomorrow's technology</p>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="cta-card">
+                    <i class="fas fa-user-plus fa-2x mb-3"></i>
+                    <h5>New Student?</h5>
+                    <p>Create an account to join our innovative classes</p>
+                    <a href="{{ url_for('register') }}" class="btn btn-success">
+                        <i class="fas fa-rocket me-2"></i>Register Now
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="cta-card">
+                    <i class="fas fa-sign-in-alt fa-2x mb-3"></i>
+                    <h5>Already Registered?</h5>
+                    <p>Sign in to access your dashboard and courses</p>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
                 </div>
             </div>
         </div>
@@ -267,65 +304,30 @@
 {% endif %}
 
 <style>
-/* Hero Section */
+/* Mobile-First Responsive Design */
 .hero-section {
-    position: relative;
-    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 70vh;
     display: flex;
     align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* Responsive adjustments for small devices */
-@media (max-width: 768px) {
-    .hero-section {
-        min-height: 85vh;
-        padding: 30px 15px;
-    }
-}
-
-.hero-background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.2) 0%, transparent 50%);
-    animation: backgroundFloat 20s ease-in-out infinite;
-}
-
-@keyframes backgroundFloat {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    33% { transform: translateY(-10px) rotate(1deg); }
-    66% { transform: translateY(5px) rotate(-1deg); }
-}
-
-.hero-content {
-    position: relative;
-    z-index: 2;
     color: white;
+    padding: 2rem 0;
 }
 
 .hero-icon {
-    font-size: 5rem;
+    font-size: 3rem;
     animation: float 3s ease-in-out infinite;
 }
 
 @keyframes float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
+    50% { transform: translateY(-10px); }
 }
 
 .hero-title {
-    font-size: 3.5rem;
-    font-weight: 800;
-    margin-bottom: 1.5rem;
-    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
 .text-gradient {
@@ -333,50 +335,18 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: gradientShift 3s ease-in-out infinite;
-}
-
-@keyframes gradientShift {
-    0%, 100% { filter: hue-rotate(0deg); }
-    50% { filter: hue-rotate(90deg); }
 }
 
 .hero-subtitle {
-    font-size: 1.3rem;
-    font-weight: 300;
-    line-height: 1.6;
+    font-size: 1rem;
     opacity: 0.9;
+    line-height: 1.4;
 }
 
 .hero-buttons .btn {
-    padding: 15px 30px;
-    font-size: 1.1rem;
-    border-radius: 50px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
+    border-radius: 25px;
     font-weight: 600;
-    letter-spacing: 1px;
-}
-
-.hero-buttons .btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-
-.hero-scroll-indicator {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 1.5rem;
-    animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-    0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
-    40% { transform: translateX(-50%) translateY(-10px); }
-    60% { transform: translateX(-50%) translateY(-5px); }
+    padding: 0.75rem 1.5rem;
 }
 
 /* Stats Section */
@@ -385,17 +355,17 @@
 }
 
 .stat-item {
-    padding: 2rem 1rem;
+    padding: 1rem 0.5rem;
 }
 
 .stat-number {
-    font-size: 3rem;
-    font-weight: 800;
-    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
 }
 
 .stat-label {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     color: #6c757d;
     font-weight: 500;
 }
@@ -405,29 +375,24 @@
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
-.section-header {
-    margin-bottom: 4rem;
-}
-
 .section-title {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .section-subtitle {
-    font-size: 1.2rem;
+    font-size: 1rem;
     color: #6c757d;
 }
 
 .class-card {
     position: relative;
-    height: 350px;
-    border-radius: 20px;
+    height: 280px;
+    border-radius: 15px;
     overflow: hidden;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .class-card.robotics {
@@ -447,38 +412,35 @@
 }
 
 .class-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    transform: translateY(-5px);
 }
 
 .class-icon {
     position: absolute;
-    top: 30px;
-    left: 30px;
-    font-size: 3rem;
+    top: 20px;
+    left: 20px;
+    font-size: 2rem;
     color: white;
-    z-index: 3;
 }
 
 .class-content {
     position: absolute;
-    bottom: 30px;
-    left: 30px;
-    right: 30px;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
     color: white;
-    z-index: 3;
 }
 
 .class-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
 .class-description {
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
     opacity: 0.9;
 }
 
@@ -490,130 +452,125 @@
 
 .feature-tag {
     background: rgba(255,255,255,0.2);
-    padding: 0.3rem 0.8rem;
-    border-radius: 15px;
-    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
     backdrop-filter: blur(10px);
 }
 
-.class-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
+/* Project Submission Section */
+.project-section {
+    background: white;
 }
 
-.class-card:hover .class-overlay {
-    background: rgba(0,0,0,0.2);
+.project-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid #dee2e6;
+}
+
+.project-icon {
+    font-size: 3rem;
+    color: #667eea;
+}
+
+.project-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.project-subtitle {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.benefit-item i {
+    font-size: 1.5rem;
+    color: #667eea;
+    min-width: 24px;
+}
+
+.benefit-item h6 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.benefit-item small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.btn-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    border-radius: 25px;
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+}
+
+.btn-gradient:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    color: white;
+    transform: translateY(-2px);
 }
 
 /* Features Section */
 .features-section {
-    background: white;
-}
-
-.feature-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #2c3e50;
+    background: #f8f9fa;
 }
 
 .feature-item {
     display: flex;
     align-items: center;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    background: #f8f9fa;
-    border-radius: 15px;
-    transition: all 0.3s ease;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
 }
 
 .feature-item:hover {
-    background: #e9ecef;
-    transform: translateX(10px);
+    transform: translateY(-2px);
 }
 
 .feature-icon {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1.5rem;
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    min-width: 50px;
 }
 
-.feature-content h5 {
+.feature-content h6 {
+    margin: 0 0 0.25rem 0;
     font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #2c3e50;
+    font-size: 0.9rem;
 }
 
 .feature-content p {
     margin: 0;
     color: #6c757d;
-}
-
-.feature-image {
-    position: relative;
-    height: 400px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.floating-elements {
-    position: relative;
-    width: 300px;
-    height: 300px;
-}
-
-.floating-element {
-    position: absolute;
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.5rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-.element-1 {
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    animation: float 3s ease-in-out infinite;
-}
-
-.element-2 {
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
-    animation: float 3s ease-in-out infinite 0.5s;
-}
-
-.element-3 {
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    animation: float 3s ease-in-out infinite 1s;
-}
-
-.element-4 {
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    animation: float 3s ease-in-out infinite 1.5s;
+    font-size: 0.85rem;
 }
 
 /* CTA Section */
@@ -623,76 +580,87 @@
 }
 
 .cta-title {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
 }
 
 .cta-subtitle {
-    font-size: 1.2rem;
+    font-size: 1rem;
     opacity: 0.9;
 }
 
 .cta-card {
     background: rgba(255,255,255,0.1);
-    padding: 2.5rem 2rem;
-    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    border-radius: 15px;
     text-align: center;
     height: 100%;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.2);
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease;
 }
 
 .cta-card:hover {
-    background: rgba(255,255,255,0.15);
-    transform: translateY(-5px);
+    transform: translateY(-3px);
 }
 
-.cta-card h4 {
+.cta-card h5 {
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .cta-card p {
     opacity: 0.9;
-    line-height: 1.6;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
 }
 
 .cta-card .btn {
-    padding: 12px 30px;
-    border-radius: 50px;
+    border-radius: 25px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    padding: 0.75rem 1.5rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Desktop Responsive */
+@media (min-width: 768px) {
+    .hero-section {
+        min-height: 80vh;
+    }
+    
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 3rem;
     }
     
     .hero-subtitle {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
+    }
+    
+    .hero-icon {
+        font-size: 4rem;
     }
     
     .section-title {
-        font-size: 2rem;
+        font-size: 2.25rem;
     }
     
     .class-card {
-        height: 300px;
-        margin-bottom: 2rem;
+        height: 320px;
     }
     
-    .feature-image {
-        height: 250px;
-        margin-top: 2rem;
+    .project-title {
+        font-size: 2.25rem;
+    }
+    
+    .cta-title {
+        font-size: 2.25rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
     }
 }
 
-/* Loading Animation for Stats */
+/* Animation for stats */
 .stat-number {
     opacity: 0;
     animation: fadeInUp 1s ease forwards;
@@ -701,7 +669,7 @@
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(20px);
     }
     to {
         opacity: 1;
@@ -717,8 +685,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const animateCounter = (counter) => {
         const target = parseInt(counter.getAttribute('data-count'));
-        const duration = 2000; // 2 seconds
-        const increment = target / (duration / 16); // 60fps
+        const duration = 2000;
+        const increment = target / (duration / 16);
         let current = 0;
         
         const updateCounter = () => {
@@ -750,24 +718,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Observe stat items
     document.querySelectorAll('.stat-item').forEach(item => {
         observer.observe(item);
-    });
-    
-    // Smooth scroll for hero scroll indicator
-    document.querySelector('.hero-scroll-indicator')?.addEventListener('click', function() {
-        document.querySelector('.stats-section').scrollIntoView({
-            behavior: 'smooth'
-        });
-    });
-    
-    // Add hover effects to class cards
-    document.querySelectorAll('.class-card').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-10px) scale(1.02)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
     });
 });
 </script>

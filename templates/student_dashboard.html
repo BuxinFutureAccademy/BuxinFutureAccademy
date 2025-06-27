@@ -16,6 +16,252 @@
         background: linear-gradient(135deg, #0056d2, #00a3cc);
         box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
     }
+    
+    /* Enhanced Material Cards */
+    .material-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+    
+    .material-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .material-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .material-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    }
+    
+    .material-header h6 {
+        margin: 0;
+        font-weight: 600;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .material-content {
+        padding: 1.5rem;
+    }
+    
+    .material-text {
+        color: #495057;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .material-text a {
+        color: #007bff;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    
+    .material-text a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Media Display Styles */
+    .media-container {
+        margin: 1rem 0;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #e9ecef;
+    }
+    
+    .media-image {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .media-image:hover {
+        transform: scale(1.02);
+    }
+    
+    .media-video {
+        width: 100%;
+        height: 300px;
+        border-radius: 10px;
+        border: none;
+    }
+    
+    .media-pdf {
+        background: #f8f9fa;
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        margin: 1rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .media-pdf:hover {
+        background: #e3f2fd;
+        border-color: #0056b3;
+    }
+    
+    .pdf-icon {
+        font-size: 3rem;
+        color: #dc3545;
+        margin-bottom: 1rem;
+    }
+    
+    .pdf-button {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    }
+    
+    .pdf-button:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        text-decoration: none;
+    }
+    
+    .link-preview {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+    }
+    
+    .link-preview:hover {
+        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        transform: translateX(5px);
+        color: inherit;
+        text-decoration: none;
+    }
+    
+    .link-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+        color: #007bff;
+    }
+    
+    .link-text {
+        flex-grow: 1;
+    }
+    
+    .link-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.25rem;
+    }
+    
+    .link-url {
+        font-size: 0.875rem;
+        color: #6c757d;
+        word-break: break-all;
+    }
+    
+    .material-meta {
+        padding: 1rem 1.5rem;
+        background: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .material-time {
+        color: #6c757d;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .material-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-individual {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+    
+    .badge-group {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .material-card {
+            margin-bottom: 1rem;
+        }
+        
+        .material-content {
+            padding: 1rem;
+        }
+        
+        .media-video {
+            height: 200px;
+        }
+        
+        .link-preview {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .link-icon {
+            margin-right: 0;
+            margin-bottom: 0.5rem;
+        }
+    }
 </style>
 
 <div class="container-fluid mt-5 px-4">
@@ -25,7 +271,7 @@
             <h2 class="fw-bold">
                 <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
             </h2>
-            <p class="text-muted">Welcome back, {{ current_user.first_name }}! Let’s keep learning and growing 🚀</p>
+            <p class="text-muted">Welcome back, {{ current_user.first_name }}! Let's keep learning and growing 🚀</p>
         </div>
     </div>
 
@@ -66,7 +312,7 @@
                     <a href="{{ url_for('available_classes') }}"
                        class="btn btn-gradient w-100 rounded-pill mt-4 py-2 fw-bold d-flex align-items-center justify-content-center gap-2 hover-scale">
                         <i class="fas fa-rocket"></i>
-                        <span>Register To a New Classes Now</span>
+                        <span>Register To New Classes Now</span>
                     </a>
                 </div>
             </div>
@@ -83,28 +329,32 @@
                 <div class="card-body">
                     {% if materials %}
                         {% for material in materials %}
-                            <div class="card mb-3 shadow-sm border-0 hover-scale">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="card-title fw-bold text-primary">{{ material.class_name }}</h6>
-                                            <p class="card-text text-dark">{{ material.content }}</p>
-                                            <small class="text-muted">
-                                                <i class="fas fa-clock me-1"></i>{{ material.created_at.strftime('%Y-%m-%d %H:%M') }}
-                                            </small>
-                                        </div>
-                                        <span class="badge bg-{{ 'primary' if material.class_type == 'individual' else 'warning' }}">
-                                            {{ material.class_type.title() }}
-                                        </span>
+                            <div class="material-card">
+                                <div class="material-header">
+                                    <h6>{{ material.class_name }}</h6>
+                                </div>
+                                <div class="material-content">
+                                    <div class="material-text" id="material-{{ material.id }}">
+                                        <!-- Raw content will be processed by JavaScript -->
+                                        {{ material.content }}
                                     </div>
+                                </div>
+                                <div class="material-meta">
+                                    <div class="material-time">
+                                        <i class="fas fa-clock me-2"></i>
+                                        {{ material.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                    </div>
+                                    <span class="material-badge badge-{{ material.class_type }}">
+                                        {{ material.class_type.title() }}
+                                    </span>
                                 </div>
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="text-center text-muted py-5">
-                            <i class="fas fa-book-open fa-3x mb-3"></i>
-                            <p class="fs-5">No learning materials available yet.</p>
-                            <p class="small">Materials shared by your teachers will appear here soon.</p>
+                        <div class="empty-state">
+                            <i class="fas fa-book-open"></i>
+                            <h5>No learning materials available yet</h5>
+                            <p>Materials shared by your teachers will appear here soon.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -112,4 +362,166 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Process each material content
+    document.querySelectorAll('[id^="material-"]').forEach(function(element) {
+        processContent(element);
+    });
+});
+
+function processContent(element) {
+    const content = element.textContent;
+    let processedContent = '';
+    
+    // Split content by lines
+    const lines = content.split('\n');
+    
+    lines.forEach(function(line) {
+        const trimmedLine = line.trim();
+        
+        if (trimmedLine === '') {
+            processedContent += '<br>';
+            return;
+        }
+        
+        // Check for different types of media
+        if (isImageUrl(trimmedLine)) {
+            processedContent += createImageElement(trimmedLine);
+        } else if (isPdfUrl(trimmedLine)) {
+            processedContent += createPdfElement(trimmedLine);
+        } else if (isVideoUrl(trimmedLine)) {
+            processedContent += createVideoElement(trimmedLine);
+        } else if (isUrl(trimmedLine)) {
+            processedContent += createLinkElement(trimmedLine);
+        } else {
+            // Regular text with auto-linking
+            processedContent += autoLinkText(trimmedLine) + '<br>';
+        }
+    });
+    
+    element.innerHTML = processedContent;
+}
+
+function isImageUrl(url) {
+    return /\.(jpg|jpeg|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url);
+}
+
+function isPdfUrl(url) {
+    return /\.pdf(\?.*)?$/i.test(url) || url.toLowerCase().includes('pdf');
+}
+
+function isVideoUrl(url) {
+    return /youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/|\.mp4(\?.*)?$/i.test(url);
+}
+
+function isUrl(text) {
+    return /^https?:\/\/.+/i.test(text.trim());
+}
+
+function createImageElement(url) {
+    return `
+        <div class="media-container">
+            <img src="${url}" alt="Shared Image" class="media-image" 
+                 onclick="openImageModal('${url}')" style="cursor: pointer;">
+        </div>
+    `;
+}
+
+function createPdfElement(url) {
+    const filename = url.split('/').pop().split('?')[0] || 'Document.pdf';
+    return `
+        <div class="media-pdf">
+            <i class="fas fa-file-pdf pdf-icon"></i>
+            <h6>PDF Document</h6>
+            <p class="text-muted mb-3">${filename}</p>
+            <a href="${url}" target="_blank" class="pdf-button">
+                <i class="fas fa-external-link-alt me-2"></i>Open PDF
+            </a>
+        </div>
+    `;
+}
+
+function createVideoElement(url) {
+    let embedUrl = url;
+    
+    // Convert YouTube URLs to embed format
+    if (url.includes('youtube.com/watch?v=')) {
+        const videoId = url.split('v=')[1].split('&')[0];
+        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1].split('?')[0];
+        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (url.includes('vimeo.com/')) {
+        const videoId = url.split('vimeo.com/')[1].split('?')[0];
+        embedUrl = `https://player.vimeo.com/video/${videoId}`;
+    }
+    
+    return `
+        <div class="media-container">
+            <iframe src="${embedUrl}" class="media-video" 
+                    frameborder="0" allowfullscreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+            </iframe>
+        </div>
+    `;
+}
+
+function createLinkElement(url) {
+    const domain = url.replace(/^https?:\/\//, '').split('/')[0];
+    return `
+        <a href="${url}" target="_blank" class="link-preview">
+            <i class="fas fa-link link-icon"></i>
+            <div class="link-text">
+                <div class="link-title">External Link</div>
+                <div class="link-url">${domain}</div>
+            </div>
+            <i class="fas fa-external-link-alt"></i>
+        </a>
+    `;
+}
+
+function autoLinkText(text) {
+    // Auto-link URLs in regular text
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
+}
+
+function openImageModal(imageSrc) {
+    // Create modal for image viewing
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        cursor: pointer;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    img.style.cssText = `
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    `;
+    
+    modal.appendChild(img);
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', function() {
+        document.body.removeChild(modal);
+    });
+}
+</script>
+
 {% endblock %}

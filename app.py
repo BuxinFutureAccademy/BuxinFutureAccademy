@@ -358,10 +358,48 @@ def load_user(user_id):
 
 
                               
-@app.route('/fix-db')
-def fix_db():
-    db.engine.execute("ALTER TABLE \"user\" ALTER COLUMN password_hash TYPE VARCHAR(255)")
-    return "Database fixed!"
+@app.route('/admin/fix-password-hash-length')
+@login_required
+def fix_password_hash_length():
+    """Fix password_hash field length - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Increase password_hash field length from 120 to 255 characters
+        with db.engine.connect() as conn:
+            # PostgreSQL syntax for Render
+            conn.execute(db.text('ALTER TABLE "user" ALTER COLUMN password_hash TYPE VARCHAR(255)'))
+            conn.commit()
+        
+        return """
+        <html>
+        <head><title>Database Fixed</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Database Fixed Successfully!</h1>
+            <p><strong>password_hash</strong> field expanded from 120 to 255 characters</p>
+            <p>Registration should now work properly.</p>
+            <br>
+            <p><a href="/register" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🧪 Test Registration</a></p>
+            <p><a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Admin</a></p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p>Contact support if this persists.</p>
+            <p><a href="/admin/dashboard">← Back to Admin</a></p>
+        </body>
+        </html>
+        """, 500
 
         
 # ========================================

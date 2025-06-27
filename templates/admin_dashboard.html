@@ -262,7 +262,35 @@ body {
     color: var(--primary-color);
 }
 
-@media (max-width: 768px) {
+.table {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.table th {
+    background: var(--light-color);
+    border: none;
+    font-weight: 600;
+    padding: 1rem;
+    color: var(--dark-color);
+}
+
+.table td {
+    border: none;
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.table-responsive {
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
     .admin-container {
         margin: 1rem;
         padding: 1rem;
@@ -301,6 +329,21 @@ body {
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="classes-tab" data-bs-toggle="tab" data-bs-target="#classes" type="button">
                 <i class="fas fa-chalkboard-teacher me-2"></i>Classes
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="course-orders-tab" data-bs-toggle="tab" data-bs-target="#course-orders" type="button">
+                <i class="fas fa-graduation-cap me-2"></i>Course Orders
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="product-orders-tab" data-bs-toggle="tab" data-bs-target="#product-orders" type="button">
+                <i class="fas fa-shopping-cart me-2"></i>Product Orders
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="enrollments-tab" data-bs-toggle="tab" data-bs-target="#enrollments" type="button">
+                <i class="fas fa-clipboard-list me-2"></i>Enrollments
             </button>
         </li>
     </ul>
@@ -474,34 +517,256 @@ Links will be automatically formatted and clickable for students." required></te
                 </div>
             </div>
         </div>
+
+        <!-- Course Orders Tab -->
+        <div class="tab-pane fade" id="course-orders" role="tabpanel">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #6f42c1, #007bff);">
+                    <h5><i class="fas fa-graduation-cap me-2"></i>Course Orders</h5>
+                </div>
+                <div class="card-body">
+                    {% if course_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Student</th>
+                                        <th>Course</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in course_orders %}
+                                    <tr>
+                                        <td><strong>#{{ order.id }}</strong></td>
+                                        <td>
+                                            {{ order.customer_name or order.user.first_name + ' ' + order.user.last_name }}
+                                            <br><small class="text-muted">{{ order.customer_email or order.user.email }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ order.course.title }}</strong>
+                                            <br><small class="text-muted">${{ order.course.price }}</small>
+                                        </td>
+                                        <td><strong>${{ order.amount }}</strong></td>
+                                        <td>
+                                            {% if order.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif order.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ order.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ order.purchased_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('view_course_order', order_id=order.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-shopping-cart"></i>
+                            <h5>No course orders yet</h5>
+                            <p>Course purchases will appear here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Orders Tab -->
+        <div class="tab-pane fade" id="product-orders" role="tabpanel">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                    <h5><i class="fas fa-shopping-cart me-2"></i>Product Orders</h5>
+                </div>
+                <div class="card-body">
+                    {% if product_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Customer</th>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in product_orders %}
+                                    <tr>
+                                        <td><strong>#{{ order.id }}</strong></td>
+                                        <td>
+                                            {{ order.customer_name or order.user.first_name + ' ' + order.user.last_name }}
+                                            <br><small class="text-muted">{{ order.customer_email or order.user.email }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ order.product.name }}</strong>
+                                            <br><small class="text-muted">{{ order.product.category }}</small>
+                                        </td>
+                                        <td>{{ order.quantity }}</td>
+                                        <td><strong>${{ order.total_amount }}</strong></td>
+                                        <td>
+                                            {% if order.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif order.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif order.status == 'shipped' %}
+                                                <span class="badge bg-info">Shipped</span>
+                                            {% elif order.status == 'delivered' %}
+                                                <span class="badge bg-success">Delivered</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ order.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ order.ordered_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('view_order', order_id=order.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-box"></i>
+                            <h5>No product orders yet</h5>
+                            <p>Product purchases will appear here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrollments Tab -->
+        <div class="tab-pane fade" id="enrollments" role="tabpanel">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #dc3545, #fd7e14);">
+                    <h5><i class="fas fa-clipboard-list me-2"></i>Class Enrollments</h5>
+                </div>
+                <div class="card-body">
+                    {% if enrollments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Enrollment #</th>
+                                        <th>Student</th>
+                                        <th>Class</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for enrollment in enrollments %}
+                                    <tr>
+                                        <td><strong>#{{ enrollment.id }}</strong></td>
+                                        <td>
+                                            {{ enrollment.customer_name or enrollment.user.first_name + ' ' + enrollment.user.last_name }}
+                                            <br><small class="text-muted">{{ enrollment.customer_email or enrollment.user.email }}</small>
+                                        </td>
+                                        <td>
+                                            {% if enrollment.class_type == 'individual' %}
+                                                {% set class_obj = IndividualClass.query.get(enrollment.class_id) %}
+                                            {% else %}
+                                                {% set class_obj = GroupClass.query.get(enrollment.class_id) %}
+                                            {% endif %}
+                                            <strong>{{ class_obj.name if class_obj else 'Unknown Class' }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ 'individual' if enrollment.class_type == 'individual' else 'group' }}">
+                                                {{ enrollment.class_type.title() }}
+                                            </span>
+                                        </td>
+                                        <td><strong>${{ enrollment.amount }}</strong></td>
+                                        <td>
+                                            {% if enrollment.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif enrollment.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ enrollment.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ enrollment.enrolled_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('view_enrollment', enrollment_id=enrollment.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-plus"></i>
+                            <h5>No enrollments yet</h5>
+                            <p>Class enrollments will appear here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Quick Stats -->
     <div class="row stats-row">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stat-card">
                 <i class="fas fa-users stat-icon text-primary"></i>
                 <div class="stat-number">{{ students|length }}</div>
                 <div class="stat-label">Total Students</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stat-card">
-                <i class="fas fa-user stat-icon text-success"></i>
-                <div class="stat-number">{{ individual_classes|length }}</div>
-                <div class="stat-label">Individual Classes</div>
+                <i class="fas fa-graduation-cap stat-icon text-success"></i>
+                <div class="stat-number">{{ course_orders|length }}</div>
+                <div class="stat-label">Course Orders</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stat-card">
-                <i class="fas fa-users stat-icon text-warning"></i>
-                <div class="stat-number">{{ group_classes|length }}</div>
-                <div class="stat-label">Group Classes</div>
+                <i class="fas fa-shopping-cart stat-icon text-info"></i>
+                <div class="stat-number">{{ product_orders|length }}</div>
+                <div class="stat-label">Product Orders</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="stat-card">
-                <i class="fas fa-book stat-icon text-info"></i>
+                <i class="fas fa-clipboard-list stat-icon text-warning"></i>
+                <div class="stat-number">{{ enrollments|length }}</div>
+                <div class="stat-label">Enrollments</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <i class="fas fa-chalkboard-teacher stat-icon text-danger"></i>
+                <div class="stat-number">{{ (individual_classes|length) + (group_classes|length) }}</div>
+                <div class="stat-label">Total Classes</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <i class="fas fa-book stat-icon text-dark"></i>
                 <div class="stat-number">{{ materials|length }}</div>
                 <div class="stat-label">Materials Shared</div>
             </div>

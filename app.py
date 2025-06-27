@@ -309,19 +309,45 @@ class ProductCartItem(db.Model):
 #////////////////////////////////////////////////////////////////////////////
 
 class DigitalProductFile(db.Model):
-    """Model for digital product files"""
+    """Enhanced model for digital product files with Cloudinary support"""
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-    filename = db.Column(db.String(255), nullable=False)
+    
+    # File information
+    filename = db.Column(db.String(255), nullable=False)  # Local filename (backup)
     original_filename = db.Column(db.String(255), nullable=False)
     file_type = db.Column(db.String(50))
     file_size = db.Column(db.Integer)
+    
+    # Cloudinary information
+    cloudinary_url = db.Column(db.String(500))  # Cloudinary secure URL
+    cloudinary_public_id = db.Column(db.String(255))  # Cloudinary public ID
+    cloudinary_resource_type = db.Column(db.String(20), default='raw')  # raw, image, video
+    
+    # Storage type
+    storage_type = db.Column(db.String(20), default='cloudinary')  # 'local' or 'cloudinary'
+    
+    # Metadata
     download_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
     product = db.relationship('Product', backref=db.backref('digital_files', lazy=True))
     
     def get_file_size_mb(self):
         return round(self.file_size / (1024 * 1024), 2) if self.file_size else 0
+    
+    def get_download_url(self):
+        """Get the download URL (prefer Cloudinary)"""
+        if self.storage_type == 'cloudinary' and self.cloudinary_url:
+            return self.cloudinary_url
+        else:
+            # Fallback to local file
+            return url_for('download_digital_product', file_id=self.id)
+    
+    def is_cloudinary_stored(self):
+        """Check if file is stored on Cloudinary"""
+        return self.storage_type == 'cloudinary' and self.cloudinary_url
 
 
 

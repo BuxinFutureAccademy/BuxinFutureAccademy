@@ -619,7 +619,6 @@ def logout():
 # ADMIN DASHBOARD ROUTES
 # ========================================
 
-
 @app.route('/admin/dashboard', methods=['GET', 'POST'])
 @login_required
 def admin_dashboard():
@@ -675,6 +674,11 @@ def admin_dashboard():
     materials = LearningMaterial.query.order_by(LearningMaterial.id.desc()).limit(20).all()
     individual_classes = IndividualClass.query.all()
     group_classes = GroupClass.query.all()
+    
+    # Get orders and enrollments
+    course_orders = Purchase.query.order_by(Purchase.purchased_at.desc()).limit(50).all()
+    product_orders = ProductOrder.query.order_by(ProductOrder.ordered_at.desc()).limit(50).all()
+    enrollments = ClassEnrollment.query.order_by(ClassEnrollment.enrolled_at.desc()).limit(50).all()
 
     # Get individual students who are enrolled in individual classes
     individual_students = []
@@ -702,13 +706,18 @@ def admin_dashboard():
     return render_template(
         "admin_dashboard.html",
         students=students,
-        individual_students=individual_students,  # New: individual students list
+        individual_students=individual_students,  # Individual students list
         materials=materials,
         individual_classes=individual_classes,
         group_classes=group_classes,
-        class_options=class_options
+        course_orders=course_orders,              # Course orders
+        product_orders=product_orders,            # Product orders  
+        enrollments=enrollments,                  # Class enrollments
+        class_options=class_options,
+        # Add these imports for the template
+        IndividualClass=IndividualClass,
+        GroupClass=GroupClass
     )
-
 @app.route('/admin/create_class', methods=['GET', 'POST'])
 @login_required
 def create_class():

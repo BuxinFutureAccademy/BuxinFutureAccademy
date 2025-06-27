@@ -239,7 +239,123 @@
         opacity: 0.5;
     }
     
+    /* Fixed height container */
+    .dashboard-container {
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    .dashboard-header {
+        height: auto;
+        flex-shrink: 0;
+        padding: 1rem 0;
+    }
+    
+    .dashboard-content {
+        height: calc(100vh - 120px);
+        overflow: hidden;
+    }
+    
+    .classes-section {
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    .materials-section {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .materials-header {
+        flex-shrink: 0;
+    }
+    
+    .materials-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        scrollbar-width: thin;
+        scrollbar-color: #007bff #f1f1f1;
+    }
+    
+    /* Custom scrollbar for webkit browsers */
+    .materials-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .materials-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .materials-body::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border-radius: 10px;
+        transition: background 0.3s ease;
+    }
+    
+    .materials-body::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+    }
+    
+    /* Scroll animation */
+    .materials-body {
+        scroll-behavior: smooth;
+    }
+    
+    /* Fade effect at top and bottom of scroll area */
+    .materials-scroll-container {
+        position: relative;
+        height: 100%;
+    }
+    
+    .materials-scroll-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: linear-gradient(to bottom, rgba(248, 249, 250, 1), rgba(248, 249, 250, 0));
+        pointer-events: none;
+        z-index: 1;
+    }
+    
+    .materials-scroll-container::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: linear-gradient(to top, rgba(248, 249, 250, 1), rgba(248, 249, 250, 0));
+        pointer-events: none;
+        z-index: 1;
+    }
+    
     @media (max-width: 768px) {
+        .dashboard-container {
+            height: auto;
+            overflow: visible;
+        }
+        
+        .dashboard-content {
+            height: auto;
+            overflow: visible;
+        }
+        
+        .materials-section {
+            height: auto;
+            overflow: visible;
+        }
+        
+        .materials-body {
+            height: 70vh;
+            overflow-y: auto;
+        }
+        
         .material-card {
             margin-bottom: 1rem;
         }
@@ -264,99 +380,105 @@
     }
 </style>
 
-<div class="container-fluid mt-5 px-4">
-    <!-- Page Heading -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2 class="fw-bold">
-                <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
-            </h2>
-            <p class="text-muted">Welcome back, {{ current_user.first_name }}! Let's keep learning and growing 🚀</p>
+<div class="dashboard-container">
+    <div class="container-fluid dashboard-header">
+        <!-- Page Heading -->
+        <div class="row mb-3">
+            <div class="col">
+                <h2 class="fw-bold">
+                    <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
+                </h2>
+                <p class="text-muted mb-0">Welcome back, {{ current_user.first_name }}! Let's keep learning and growing 🚀</p>
+            </div>
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- My Classes Section -->
-        <div class="col-md-4">
-            <div class="card shadow-sm rounded-4 h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-chalkboard me-2"></i>My Classes
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <!-- Individual Classes -->
-                    <h6 class="fw-bold text-dark">Individual Classes</h6>
-                    {% for class in individual_classes %}
-                        <div class="border-bottom pb-2 mb-2">
-                            <strong>{{ class.name }}</strong>
-                            <p class="text-muted small mb-0">{{ class.description or 'No description' }}</p>
-                        </div>
-                    {% else %}
-                        <p class="text-muted">Not enrolled in any individual classes.</p>
-                    {% endfor %}
+    <div class="container-fluid dashboard-content">
+        <div class="row g-4 h-100">
+            <!-- My Classes Section -->
+            <div class="col-md-4 classes-section">
+                <div class="card shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chalkboard me-2"></i>My Classes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Individual Classes -->
+                        <h6 class="fw-bold text-dark">Individual Classes</h6>
+                        {% for class in individual_classes %}
+                            <div class="border-bottom pb-2 mb-2">
+                                <strong>{{ class.name }}</strong>
+                                <p class="text-muted small mb-0">{{ class.description or 'No description' }}</p>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Not enrolled in any individual classes.</p>
+                        {% endfor %}
 
-                    <!-- Group Classes -->
-                    <h6 class="fw-bold text-dark mt-3">Group Classes</h6>
-                    {% for class in group_classes %}
-                        <div class="border-bottom pb-2 mb-2">
-                            <strong>{{ class.name }}</strong>
-                            <p class="text-muted small mb-1">{{ class.description or 'No description' }}</p>
-                            <small class="text-success">{{ class.students|length }}/{{ class.max_students }} students</small>
-                        </div>
-                    {% else %}
-                        <p class="text-muted">Not enrolled in any group classes.</p>
-                    {% endfor %}
+                        <!-- Group Classes -->
+                        <h6 class="fw-bold text-dark mt-3">Group Classes</h6>
+                        {% for class in group_classes %}
+                            <div class="border-bottom pb-2 mb-2">
+                                <strong>{{ class.name }}</strong>
+                                <p class="text-muted small mb-1">{{ class.description or 'No description' }}</p>
+                                <small class="text-success">{{ class.students|length }}/{{ class.max_students }} students</small>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Not enrolled in any group classes.</p>
+                        {% endfor %}
 
-                    <!-- Browse Available Classes -->
-                    <a href="{{ url_for('available_classes') }}"
-                       class="btn btn-gradient w-100 rounded-pill mt-4 py-2 fw-bold d-flex align-items-center justify-content-center gap-2 hover-scale">
-                        <i class="fas fa-rocket"></i>
-                        <span>Register To New Classes Now</span>
-                    </a>
+                        <!-- Browse Available Classes -->
+                        <a href="{{ url_for('available_classes') }}"
+                           class="btn btn-gradient w-100 rounded-pill mt-4 py-2 fw-bold d-flex align-items-center justify-content-center gap-2 hover-scale">
+                            <i class="fas fa-rocket"></i>
+                            <span>Register To New Classes Now</span>
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Recent Learning Materials Section -->
-        <div class="col-md-8">
-            <div class="card shadow-sm rounded-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-book me-2"></i>Recent Learning Materials
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if materials %}
-                        {% for material in materials %}
-                            <div class="material-card">
-                                <div class="material-header">
-                                    <h6>{{ material.class_name }}</h6>
-                                </div>
-                                <div class="material-content">
-                                    <div class="material-text" id="material-{{ material.id }}">
-                                        <!-- Raw content will be processed by JavaScript -->
-                                        {{ material.content }}
+            <!-- Recent Learning Materials Section -->
+            <div class="col-md-8 materials-section">
+                <div class="card shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-success text-white materials-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-book me-2"></i>Recent Learning Materials
+                        </h5>
+                    </div>
+                    <div class="materials-scroll-container">
+                        <div class="materials-body">
+                            {% if materials %}
+                                {% for material in materials %}
+                                    <div class="material-card">
+                                        <div class="material-header">
+                                            <h6>{{ material.class_name }}</h6>
+                                        </div>
+                                        <div class="material-content">
+                                            <div class="material-text" id="material-{{ material.id }}">
+                                                <!-- Raw content will be processed by JavaScript -->
+                                                {{ material.content }}
+                                            </div>
+                                        </div>
+                                        <div class="material-meta">
+                                            <div class="material-time">
+                                                <i class="fas fa-clock me-2"></i>
+                                                {{ material.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                            </div>
+                                            <span class="material-badge badge-{{ material.class_type }}">
+                                                {{ material.class_type.title() }}
+                                            </span>
+                                        </div>
                                     </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-book-open"></i>
+                                    <h5>No learning materials available yet</h5>
+                                    <p>Materials shared by your teachers will appear here soon.</p>
                                 </div>
-                                <div class="material-meta">
-                                    <div class="material-time">
-                                        <i class="fas fa-clock me-2"></i>
-                                        {{ material.created_at.strftime('%B %d, %Y at %I:%M %p') }}
-                                    </div>
-                                    <span class="material-badge badge-{{ material.class_type }}">
-                                        {{ material.class_type.title() }}
-                                    </span>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-book-open"></i>
-                            <h5>No learning materials available yet</h5>
-                            <p>Materials shared by your teachers will appear here soon.</p>
+                            {% endif %}
                         </div>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>

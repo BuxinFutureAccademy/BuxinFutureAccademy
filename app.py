@@ -5108,8 +5108,6 @@ def bulk_reupload():
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-from werkzeug.utils import secure_filename
-import os
 
 # 3. ADD CLOUDINARY CONFIGURATION after your existing app.config settings
 # Add this after your WhatsApp config line:

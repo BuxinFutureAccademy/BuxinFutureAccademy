@@ -390,12 +390,6 @@
     <nav class="bottom-nav">
         <div class="container-fluid">
             <div class="row text-center">
-                <div class="col">
-                    <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
-                        <i class="fas fa-home"></i>
-                        <div>Home</div>
-                    </a>
-                </div>
                 {% if current_user.is_authenticated %}
                     <div class="col">
                         <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store') }}">

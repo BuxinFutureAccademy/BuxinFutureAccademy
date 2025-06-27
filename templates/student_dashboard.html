@@ -242,30 +242,57 @@
     /* Fixed height container */
     .dashboard-container {
         height: 100vh;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
     }
     
     .dashboard-header {
-        height: auto;
         flex-shrink: 0;
-        padding: 1rem 0;
+        padding: 1rem 1.5rem;
+        background: white;
+        border-bottom: 1px solid #e9ecef;
     }
     
     .dashboard-content {
-        height: calc(100vh - 120px);
+        flex: 1;
         overflow: hidden;
+        padding: 1rem 1.5rem;
     }
     
-    .classes-section {
+    .dashboard-row {
         height: 100%;
-        overflow: hidden;
+        display: flex;
+        gap: 1.5rem;
     }
     
-    .materials-section {
+    .classes-column {
+        width: 33.333333%;
+        flex-shrink: 0;
+    }
+    
+    .materials-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    
+    .classes-card {
         height: 100%;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+    }
+    
+    .classes-card .card-body {
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .materials-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
     
     .materials-header {
@@ -276,8 +303,7 @@
         flex: 1;
         overflow-y: auto;
         padding: 1.5rem;
-        scrollbar-width: thin;
-        scrollbar-color: #007bff #f1f1f1;
+        background: #f8f9fa;
     }
     
     /* Custom scrollbar for webkit browsers */
@@ -303,36 +329,14 @@
     /* Scroll animation */
     .materials-body {
         scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: #007bff #f1f1f1;
     }
     
-    /* Fade effect at top and bottom of scroll area */
+    /* Remove the previous scroll container styles that were conflicting */
     .materials-scroll-container {
-        position: relative;
         height: 100%;
-    }
-    
-    .materials-scroll-container::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: linear-gradient(to bottom, rgba(248, 249, 250, 1), rgba(248, 249, 250, 0));
-        pointer-events: none;
-        z-index: 1;
-    }
-    
-    .materials-scroll-container::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: linear-gradient(to top, rgba(248, 249, 250, 1), rgba(248, 249, 250, 0));
-        pointer-events: none;
-        z-index: 1;
+        overflow: hidden;
     }
     
     @media (max-width: 768px) {
@@ -344,15 +348,29 @@
         .dashboard-content {
             height: auto;
             overflow: visible;
+            padding: 1rem;
         }
         
-        .materials-section {
+        .dashboard-row {
             height: auto;
-            overflow: visible;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .classes-column {
+            width: 100%;
+        }
+        
+        .materials-column {
+            width: 100%;
+        }
+        
+        .materials-card {
+            height: auto;
         }
         
         .materials-body {
-            height: 70vh;
+            height: 60vh;
             overflow-y: auto;
         }
         
@@ -381,23 +399,20 @@
 </style>
 
 <div class="dashboard-container">
-    <div class="container-fluid dashboard-header">
-        <!-- Page Heading -->
-        <div class="row mb-3">
-            <div class="col">
-                <h2 class="fw-bold">
-                    <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
-                </h2>
-                <p class="text-muted mb-0">Welcome back, {{ current_user.first_name }}! Let's keep learning and growing 🚀</p>
-            </div>
-        </div>
+    <!-- Fixed Header -->
+    <div class="dashboard-header">
+        <h2 class="fw-bold mb-2">
+            <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
+        </h2>
+        <p class="text-muted mb-0">Welcome back, {{ current_user.first_name }}! Let's keep learning and growing 🚀</p>
     </div>
 
-    <div class="container-fluid dashboard-content">
-        <div class="row g-4 h-100">
+    <!-- Main Content Area -->
+    <div class="dashboard-content">
+        <div class="dashboard-row">
             <!-- My Classes Section -->
-            <div class="col-md-4 classes-section">
-                <div class="card shadow-sm rounded-4 h-100">
+            <div class="classes-column">
+                <div class="card shadow-sm rounded-4 classes-card">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-chalkboard me-2"></i>My Classes
@@ -438,8 +453,8 @@
             </div>
 
             <!-- Recent Learning Materials Section -->
-            <div class="col-md-8 materials-section">
-                <div class="card shadow-sm rounded-4 h-100">
+            <div class="materials-column">
+                <div class="card shadow-sm rounded-4 materials-card">
                     <div class="card-header bg-success text-white materials-header">
                         <h5 class="mb-0">
                             <i class="fas fa-book me-2"></i>Recent Learning Materials

@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block title %}Robotics Submission #{{ submission.id }}{% endblock %}
+
+{% block content %}
+<style>
+.submission-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 20px;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.submission-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.main-content {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.status-badge {
+    padding: 0.8rem 1.5rem;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 2px solid #ffeaa7;
+}
+
+.status-reviewed {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 2px solid #81ecec;
+}
+
+.status-selected {
+    background: #d4edda;
+    color: #155724;
+    border: 2px solid #00b894;
+}
+
+.status-declined {
+    background: #f8d7da;
+    color: #721c24;
+    border: 2px solid #e17055;
+}
+
+.info-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+.info-value {
+    color: #333;
+    font-size: 1rem;
+}
+
+.help-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.help-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.file-item {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.file-item:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.file-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.file-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.3rem;
+    word-break: break-word;
+}
+
+.file-size {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+.project-description {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+    margin: 1rem 0;
+    line-height: 1.6;
+}
+
+.admin-actions {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 1.5rem;
+}
+
+.admin-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.admin-form label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.admin-form select,
+.admin-form textarea {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.8rem;
+    transition: border-color 0.3s ease;
+}
+
+.admin-form select:focus,
+.admin-form textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.update-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.update-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.back-btn {
+    background: #6c757d;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #5a6268;
+    color: white;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .submission-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+</style>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="submission-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="h3 mb-2">🤖 {{ submission.project_title }}</h1>
+                <p class="mb-0 opacity-75">Submission #{{ submission.id }} by {{ submission.name }}</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_robotics_submissions') }}" class="back-btn">
+                    ← Back to Submissions
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="submission-content">
+        <!-- Left Column - Project Details -->
+        <div class="main-content">
+            <div class="section-title">📝 Project Details</div>
+            
+            <div class="info-item">
+                <span class="info-label">Project Title</span>
+                <div class="info-value">{{ submission.project_title }}</div>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">Project Description</span>
+                <div class="project-description">{{ submission.project_description }}</div>
+            </div>
+
+            {% if submission.problem_solved %}
+            <div class="info-item">
+                <span class="info-label">Problem This Project Solves</span>
+                <div class="info-value">{{ submission.problem_solved }}</div>
+            </div>
+            {% endif %}
+
+            {% if submission.components %}
+            <div class="info-item">
+                <span class="info-label">Components Planned/Needed</span>
+                <div class="info-value">{{ submission.components }}</div>
+            </div>
+            {% endif %}
+
+            {% if submission.progress %}
+            <div class="info-item">
+                <span class="info-label">Progress So Far</span>
+                <div class="info-value">{{ submission.progress }}</div>
+            </div>
+            {% endif %}
+
+            {% if submission.project_goal %}
+            <div class="info-item">
+                <span class="info-label">Project Goal/Dream</span>
+                <div class="info-value">{{ submission.project_goal }}</div>
+            </div>
+            {% endif %}
+
+            {% if submission.help_needed %}
+            <div class="info-item">
+                <span class="info-label">Help Needed</span>
+                <div class="help-tags">
+                    {% for help in submission.get_help_needed_list() %}
+                    <span class="help-tag">{{ help.replace('_', ' ').title() }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if submission.additional_comments %}
+            <div class="info-item">
+                <span class="info-label">Additional Comments</span>
+                <div class="info-value">{{ submission.additional_comments }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Uploaded Files -->
+            {% if submission.get_uploaded_files_list() %}
+            <div class="info-item">
+                <span class="info-label">📎 Uploaded Files ({{ submission.get_uploaded_files_list()|length }})</span>
+                <div class="files-grid">
+                    {% for file in submission.get_uploaded_files_list() %}
+                    <div class="file-item" onclick="window.open('{{ file.url }}', '_blank')">
+                        <span class="file-icon">
+                            {% if file.type in ['jpg', 'jpeg', 'png', 'gif'] %}
+                            🖼️
+                            {% elif file.type == 'pdf' %}
+                            📄
+                            {% elif file.type in ['doc', 'docx'] %}
+                            📝
+                            {% else %}
+                            📎
+                            {% endif %}
+                        </span>
+                        <div class="file-name">{{ file.filename }}</div>
+                        <div class="file-size">{{ (file.size / 1024 / 1024)|round(2) }} MB</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="sidebar">
+            <!-- Status Card -->
+            <div class="info-card">
+                <div class="section-title">📊 Status</div>
+                <div class="status-badge status-{{ submission.status }}">
+                    {{ submission.status.title() }}
+                </div>
+                
+                {% if submission.reviewed_at %}
+                <div class="info-item">
+                    <span class="info-label">Reviewed At</span>
+                    <div class="info-value">{{ submission.reviewed_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+                {% endif %}
+                
+                {% if submission.reviewer %}
+                <div class="info-item">
+                    <span class="info-label">Reviewed By</span>
+                    <div class="info-value">{{ submission.reviewer.first_name }} {{ submission.reviewer.last_name }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Submitter Info -->
+            <div class="info-card">
+                <div class="section-title">👤 Submitter Information</div>
+                
+                <div class="info-item">
+                    <span class="info-label">Name</span>
+                    <div class="info-value">{{ submission.name }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Email</span>
+                    <div class="info-value">
+                        <a href="mailto:{{ submission.email }}">{{ submission.email }}</a>
+                    </div>
+                </div>
+                
+                {% if submission.phone %}
+                <div class="info-item">
+                    <span class="info-label">Phone</span>
+                    <div class="info-value">
+                        <a href="tel:{{ submission.phone }}">{{ submission.phone }}</a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if submission.location %}
+                <div class="info-item">
+                    <span class="info-label">Location</span>
+                    <div class="info-value">{{ submission.location }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="info-item">
+                    <span class="info-label">Education Level</span>
+                    <div class="info-value">{{ submission.education_level.replace('_', ' ').title() }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Submitted</span>
+                    <div class="info-value">{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+            </div>
+
+            <!-- Admin Actions -->
+            <div class="admin-actions">
+                <div class="section-title">⚙️ Admin Actions</div>
+                
+                <form method="POST" action="{{ url_for('update_robotics_submission', submission_id=submission.id) }}" class="admin-form">
+                    <div class="form-group">
+                        <label for="status">Update Status</label>
+                        <select name="status" id="status" class="form-control" required>
+                            <option value="pending" {% if submission.status == 'pending' %}selected{% endif %}>Pending Review</option>
+                            <option value="reviewed" {% if submission.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                            <option value="selected" {% if submission.status == 'selected' %}selected{% endif %}>Selected for Mentorship</option>
+                            <option value="declined" {% if submission.status == 'declined' %}selected{% endif %}>Declined</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admin_notes">Admin Notes</label>
+                        <textarea name="admin_notes" id="admin_notes" class="form-control" rows="4" 
+                                  placeholder="Add notes for the submitter (will be included in status update email)">{{ submission.admin_notes or '' }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="update-btn">
+                        💾 Update Submission
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Confirm status changes
+document.querySelector('.admin-form').addEventListener('submit', function(e) {
+    const status = document.getElementById('status').value;
+    const currentStatus = '{{ submission.status }}';
+    
+    if (status !== currentStatus) {
+        const statusMessages = {
+            'selected': 'This will send a congratulations email to the submitter and mark them for mentorship.',
+            'declined': 'This will send a polite decline email to the submitter.',
+            'reviewed': 'This will update the status and notify the submitter that their project has been reviewed.'
+        };
+        
+        if (statusMessages[status]) {
+            if (!confirm(`Change status to "${status.toUpperCase()}"?\n\n${statusMessages[status]}`)) {
+                e.preventDefault();
+            }
+        }
+    }
+});
+
+// File preview functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const fileItems = document.querySelectorAll('.file-item');
+    fileItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.05)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(-2px) scale(1)';
+        });
+    });
+});
+</script>
+
+{% endblock %}

@@ -609,6 +609,7 @@ def logout():
 # ADMIN DASHBOARD ROUTES
 # ========================================
 
+
 @app.route('/admin/dashboard', methods=['GET', 'POST'])
 @login_required
 def admin_dashboard():
@@ -621,27 +622,58 @@ def admin_dashboard():
         content = request.form.get('message', '').strip()
 
         if not class_id or not content:
-            flash("Both class and content are required.", "danger")
+            flash("Both recipient and content are required.", "danger")
         else:
-            class_type, actual_class_id = class_id.split('_')
+            # Handle different recipient types
+            if class_id.startswith('individual_student_'):
+                # Single student
+                student_id = int(class_id.replace('individual_student_', ''))
+                student = User.query.get(student_id)
+                if student:
+                    material = LearningMaterial(
+                        class_id=f"student_{student_id}",
+                        class_type='individual',
+                        actual_class_id=student_id,
+                        content=content,
+                        created_by=current_user.id
+                    )
+                    db.session.add(material)
+                    db.session.commit()
+                    flash(f"Material shared with {student.first_name} {student.last_name}!", "success")
+                else:
+                    flash("Student not found.", "danger")
             
-            material = LearningMaterial(
-                class_id=class_id,
-                class_type=class_type,
-                actual_class_id=int(actual_class_id),
-                content=content,
-                created_by=current_user.id
-            )
-            db.session.add(material)
-            db.session.commit()
-            flash("Learning material shared!", "success")
+            elif class_id.startswith('individual_') or class_id.startswith('group_'):
+                # Class-based sharing (existing functionality)
+                class_type, actual_class_id = class_id.split('_', 1)
+                
+                material = LearningMaterial(
+                    class_id=class_id,
+                    class_type=class_type,
+                    actual_class_id=int(actual_class_id),
+                    content=content,
+                    created_by=current_user.id
+                )
+                db.session.add(material)
+                db.session.commit()
+                flash("Learning material shared with class!", "success")
+            
             return redirect(url_for('admin_dashboard'))
 
+    # Get all data for the dashboard
     students = User.query.filter_by(is_student=True).all()
     materials = LearningMaterial.query.order_by(LearningMaterial.id.desc()).limit(20).all()
     individual_classes = IndividualClass.query.all()
     group_classes = GroupClass.query.all()
 
+    # Get individual students who are enrolled in individual classes
+    individual_students = []
+    for iclass in individual_classes:
+        for student in iclass.students:
+            if student not in individual_students:
+                individual_students.append(student)
+
+    # Build class options for backward compatibility
     class_options = []
     for iclass in individual_classes:
         class_options.append({
@@ -660,6 +692,7 @@ def admin_dashboard():
     return render_template(
         "admin_dashboard.html",
         students=students,
+        individual_students=individual_students,  # New: individual students list
         materials=materials,
         individual_classes=individual_classes,
         group_classes=group_classes,

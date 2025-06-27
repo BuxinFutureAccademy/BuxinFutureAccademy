@@ -2393,20 +2393,203 @@ def student_dashboard():
     if current_user.is_admin:
         return redirect(url_for('admin_dashboard'))
     
-    individual_class_ids = [f'individual_{c.id}' for c in current_user.individual_classes]
-    group_class_ids = [f'group_{c.id}' for c in current_user.group_classes]
-    all_class_ids = individual_class_ids + group_class_ids
+    # Get student's enrolled classes
+    individual_classes = current_user.individual_classes
+    group_classes = current_user.group_classes
     
+    # Build list of class_ids that should show materials for this student
+    relevant_class_ids = []
+    
+    # Add individual class materials (format: "individual_X")
+    for iclass in individual_classes:
+        relevant_class_ids.append(f'individual_{iclass.id}')
+    
+    # Add group class materials (format: "group_X")  
+    for gclass in group_classes:
+        relevant_class_ids.append(f'group_{gclass.id}')
+    
+    # Add individual student materials (format: "student_X")
+    relevant_class_ids.append(f'student_{current_user.id}')
+    
+    # Get materials for all relevant classes/student
     materials = LearningMaterial.query.filter(
-        LearningMaterial.class_id.in_(all_class_ids)
+        LearningMaterial.class_id.in_(relevant_class_ids)
     ).order_by(LearningMaterial.created_at.desc()).all()
+    
+    print(f"🔍 Debug Student Dashboard:")
+    print(f"   Student ID: {current_user.id}")
+    print(f"   Individual Classes: {[f'individual_{c.id}' for c in individual_classes]}")
+    print(f"   Group Classes: {[f'group_{c.id}' for c in group_classes]}")
+    print(f"   Relevant Class IDs: {relevant_class_ids}")
+    print(f"   Materials Found: {len(materials)}")
+    for material in materials:
+        print(f"     - {material.class_id}: {material.content[:50]}...")
     
     return render_template(
         'student_dashboard.html',
         materials=materials,
-        individual_classes=current_user.individual_classes,
-        group_classes=current_user.group_classes
+        individual_classes=individual_classes,
+        group_classes=group_classes
     )
+
+
+
+@app.route('/debug/materials')
+@login_required
+def debug_materials():
+    """Debug route to see what materials exist and student enrollments"""
+    
+    # Get all materials
+    all_materials = LearningMaterial.query.all()
+    
+    # Get current user's classes
+    individual_classes = current_user.individual_classes
+    group_classes = current_user.group_classes
+    
+    debug_info = {
+        'current_user_id': current_user.id,
+        'current_user_name': f"{current_user.first_name} {current_user.last_name}",
+        'is_admin': current_user.is_admin,
+        'individual_classes': [
+            {
+                'id': c.id, 
+                'name': c.name, 
+                'expected_class_id': f'individual_{c.id}'
+            } for c in individual_classes
+        ],
+        'group_classes': [
+            {
+                'id': c.id, 
+                'name': c.name, 
+                'expected_class_id': f'group_{c.id}'
+            } for c in group_classes
+        ],
+        'all_materials': [
+            {
+                'id': m.id,
+                'class_id': m.class_id,
+                'class_type': m.class_type,
+                'actual_class_id': m.actual_class_id,
+                'content_preview': m.content[:100] + '...' if len(m.content) > 100 else m.content,
+                'created_at': m.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'class_name': m.class_name
+            } for m in all_materials
+        ]
+    }
+    
+    # Build expected class IDs for this student
+    expected_class_ids = []
+    expected_class_ids.extend([f'individual_{c.id}' for c in individual_classes])
+    expected_class_ids.extend([f'group_{c.id}' for c in group_classes])
+    expected_class_ids.append(f'student_{current_user.id}')
+    
+    debug_info['expected_class_ids'] = expected_class_ids
+    
+    # Check which materials should be visible
+    visible_materials = [
+        m for m in all_materials 
+        if m.class_id in expected_class_ids
+    ]
+    
+    debug_info['visible_materials_count'] = len(visible_materials)
+    debug_info['visible_materials'] = [
+        {
+            'id': m.id,
+            'class_id': m.class_id,
+            'content_preview': m.content[:50] + '...',
+            'class_name': m.class_name
+        } for m in visible_materials
+    ]
+    
+    # Return as HTML for easy viewing
+    html = f"""
+    <html>
+    <head><title>Materials Debug</title>
+    <style>body {{ font-family: Arial; padding: 20px; }}</style></head>
+    <body>
+        <h1>🔍 Materials Debug Information</h1>
+        
+        <h2>👤 Current User</h2>
+        <p><strong>ID:</strong> {debug_info['current_user_id']}</p>
+        <p><strong>Name:</strong> {debug_info['current_user_name']}</p>
+        <p><strong>Is Admin:</strong> {debug_info['is_admin']}</p>
+        
+        <h2>📚 Individual Classes Enrolled</h2>
+        <ul>
+    """
+    
+    for iclass in debug_info['individual_classes']:
+        html += f"<li><strong>{iclass['name']}</strong> (ID: {iclass['id']}, Expected class_id: {iclass['expected_class_id']})</li>"
+    
+    html += "</ul><h2>👥 Group Classes Enrolled</h2><ul>"
+    
+    for gclass in debug_info['group_classes']:
+        html += f"<li><strong>{gclass['name']}</strong> (ID: {gclass['id']}, Expected class_id: {gclass['expected_class_id']})</li>"
+    
+    html += f"""
+        </ul>
+        
+        <h2>🎯 Expected Class IDs for This Student</h2>
+        <ul>
+    """
+    
+    for class_id in debug_info['expected_class_ids']:
+        html += f"<li><code>{class_id}</code></li>"
+    
+    html += f"""
+        </ul>
+        
+        <h2>📋 All Materials in Database ({len(debug_info['all_materials'])})</h2>
+        <table border="1" style="border-collapse: collapse; width: 100%;">
+            <tr>
+                <th>ID</th>
+                <th>Class ID</th>
+                <th>Class Type</th>
+                <th>Class Name</th>
+                <th>Content Preview</th>
+                <th>Created</th>
+                <th>Visible to Student?</th>
+            </tr>
+    """
+    
+    for material in debug_info['all_materials']:
+        is_visible = material['class_id'] in debug_info['expected_class_ids']
+        visibility_color = "green" if is_visible else "red"
+        visibility_text = "✅ YES" if is_visible else "❌ NO"
+        
+        html += f"""
+            <tr>
+                <td>{material['id']}</td>
+                <td><code>{material['class_id']}</code></td>
+                <td>{material['class_type']}</td>
+                <td>{material['class_name']}</td>
+                <td>{material['content_preview']}</td>
+                <td>{material['created_at']}</td>
+                <td style="color: {visibility_color}; font-weight: bold;">{visibility_text}</td>
+            </tr>
+        """
+    
+    html += f"""
+        </table>
+        
+        <h2>✅ Materials Visible to This Student ({debug_info['visible_materials_count']})</h2>
+        <ul>
+    """
+    
+    for material in debug_info['visible_materials']:
+        html += f"<li><strong>{material['class_name']}</strong>: {material['content_preview']} (class_id: <code>{material['class_id']}</code>)</li>"
+    
+    html += f"""
+        </ul>
+        
+        <h3>🔄 Actions</h3>
+        <p><a href="/student/dashboard">← Back to Student Dashboard</a></p>
+        <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+    </body>
+    </html>
+    """
+    
+    return html
 
 # ========================================
 # AI ASSISTANT ROUTES

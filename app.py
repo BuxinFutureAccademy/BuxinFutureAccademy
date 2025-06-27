@@ -5209,6 +5209,257 @@ def check_cloudinary_config():
         print(f"❌ Cloudinary configuration error: {e}")
         return False
 
+#//////////////////////////////////////////////////////////////////////////
+
+def upload_digital_file_to_cloudinary(file, product_id, original_filename):
+    """Upload digital product file (PDF, etc.) to Cloudinary permanently"""
+    try:
+        print(f"📤 Uploading digital file to Cloudinary: {original_filename}")
+        
+        # Reset file pointer to beginning
+        file.seek(0)
+        
+        # Create a unique public_id for the file
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        safe_filename = secure_filename(original_filename).replace('.', '_')
+        public_id = f"product_{product_id}_{safe_filename}_{timestamp}"
+        
+        # Get file size for logging
+        file.seek(0, 2)
+        file_size = file.tell()
+        file.seek(0)
+        print(f"📁 File size: {file_size / (1024*1024):.1f}MB")
+        
+        # Determine resource type based on file extension
+        file_extension = original_filename.lower().split('.')[-1] if '.' in original_filename else ''
+        
+        if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']:
+            resource_type = "image"
+        elif file_extension in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm']:
+            resource_type = "video"
+        else:
+            resource_type = "raw"  # For PDFs, documents, etc.
+        
+        # Upload to Cloudinary with optimized settings for digital products
+        upload_params = {
+            'resource_type': resource_type,
+            'public_id': public_id,
+            'folder': "digital_products",
+            'overwrite': True,
+            'use_filename': True,
+            'unique_filename': False,
+        }
+        
+        # Add format for PDFs and documents
+        if file_extension == 'pdf':
+            upload_params['format'] = 'pdf'
+        
+        print(f"📤 Uploading to Cloudinary with params: {upload_params}")
+        
+        # Perform the upload
+        result = cloudinary.uploader.upload(file, **upload_params)
+        
+        print(f"✅ Cloudinary upload successful!")
+        print(f"   URL: {result.get('secure_url', 'No URL')}")
+        print(f"   Public ID: {result.get('public_id', 'No ID')}")
+        print(f"   Size: {result.get('bytes', 0) / (1024*1024):.1f}MB")
+        print(f"   Format: {result.get('format', 'Unknown')}")
+        
+        # Return structured result
+        upload_data = {
+            'url': result['secure_url'],
+            'public_id': result['public_id'],
+            'size': result.get('bytes', 0),
+            'format': result.get('format', file_extension),
+            'resource_type': result.get('resource_type', resource_type)
+        }
+        
+        return upload_data
+        
+    except Exception as e:
+        print(f"❌ Cloudinary upload error: {str(e)}")
+        import traceback
+        print("Full traceback:")
+        traceback.print_exc()
+        return None
+
+def delete_digital_file_from_cloudinary(public_id, resource_type="raw"):
+    """Delete digital file from Cloudinary"""
+    try:
+        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        print(f"🗑️ Deleted from Cloudinary: {public_id}")
+        return result.get('result') == 'ok'
+    except Exception as e:
+        print(f"❌ Error deleting from Cloudinary: {e}")
+        return False
+
+# Add this migration route to your app.py to add Cloudinary fields to existing table
+
+@app.route('/admin/migrate-digital-files-table')
+@login_required
+def migrate_digital_files_table():
+    """Add Cloudinary fields to existing digital_product_file table - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Check if table exists and what columns it has
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        
+        # Check if table exists
+        if 'digital_product_file' not in inspector.get_table_names():
+            # Create table if it doesn't exist
+            db.create_all()
+            return """
+            <html>
+            <head><title>Table Created</title>
+            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+            <body>
+                <h1>✅ Digital Product Files Table Created!</h1>
+                <p>The table has been created with all Cloudinary fields.</p>
+                <p><a href="/admin/products">← Back to Products</a></p>
+            </body>
+            </html>
+            """
+        
+        # Get existing columns
+        columns = [col['name'] for col in inspector.get_columns('digital_product_file')]
+        
+        # Add missing Cloudinary columns
+        new_columns = []
+        
+        with db.engine.connect() as conn:
+            if 'cloudinary_url' not in columns:
+                if 'sqlite' in str(db.engine.url):
+                    conn.execute(db.text('ALTER TABLE digital_product_file ADD COLUMN cloudinary_url VARCHAR(500)'))
+                else:
+                    conn.execute(db.text('ALTER TABLE digital_product_file ADD COLUMN cloudinary_url VARCHAR(500)'))
+                new_columns.append('cloudinary_url')
+            
+            if 'cloudinary_public_id' not in columns:
+                if 'sqlite' in str(db.engine.url):
+                    conn.execute(db.text('ALTER TABLE digital_product_file ADD COLUMN cloudinary_public_id VARCHAR(255)'))
+                else:
+                    conn.execute(db.text('ALTER TABLE digital_product_file ADD COLUMN cloudinary_public_id VARCHAR(255)'))
+                new_columns.append('cloudinary_public_id')
+            
+            if 'cloudinary_resource_type' not in columns:
+                if 'sqlite' in str(db.engine.url):
+                    conn.execute(db.text("ALTER TABLE digital_product_file ADD COLUMN cloudinary_resource_type VARCHAR(20) DEFAULT 'raw'"))
+                else:
+                    conn.execute(db.text("ALTER TABLE digital_product_file ADD COLUMN cloudinary_resource_type VARCHAR(20) DEFAULT 'raw'"))
+                new_columns.append('cloudinary_resource_type')
+            
+            if 'storage_type' not in columns:
+                if 'sqlite' in str(db.engine.url):
+                    conn.execute(db.text("ALTER TABLE digital_product_file ADD COLUMN storage_type VARCHAR(20) DEFAULT 'local'"))
+                else:
+                    conn.execute(db.text("ALTER TABLE digital_product_file ADD COLUMN storage_type VARCHAR(20) DEFAULT 'local'"))
+                new_columns.append('storage_type')
+                
+            conn.commit()
+        
+        return f"""
+        <html>
+        <head><title>Migration Complete</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>✅ Database Migration Complete!</h1>
+            <p><strong>Added columns:</strong> {', '.join(new_columns) if new_columns else 'No new columns needed'}</p>
+            <p><strong>Existing columns:</strong> {', '.join(columns)}</p>
+            
+            <h3>🎯 Next Steps:</h3>
+            <ol style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li><strong>Upload new digital products</strong> - They'll automatically go to Cloudinary</li>
+                <li><strong>Migrate existing files</strong> - <a href="/admin/migrate-digital-files-to-cloudinary">Click here to migrate</a></li>
+                <li><strong>Test downloads</strong> - Verify files work correctly</li>
+            </ol>
+            
+            <p style="margin-top: 2rem;">
+                <a href="/admin/products" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Products</a>
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/products">← Back to Products</a></p>
+        </body>
+        </html>
+        """, 500
+
+@app.route('/admin/migrate-digital-files-to-cloudinary')
+@login_required
+def migrate_digital_files_to_cloudinary():
+    """Migrate existing local digital files to Cloudinary - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    try:
+        # Get all digital files stored locally
+        local_files = DigitalProductFile.query.filter_by(storage_type='local').all()
+        digital_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
+        
+        migrated_count = 0
+        errors = []
+        
+        for digital_file in local_files:
+            try:
+                file_path = os.path.join(digital_folder, digital_file.filename)
+                
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as file:
+                        upload_result = upload_digital_file_to_cloudinary(
+                            file, digital_file.product_id, digital_file.original_filename
+                        )
+                    
+                    if upload_result:
+                        # Update database record
+                        digital_file.cloudinary_url = upload_result['url']
+                        digital_file.cloudinary_public_id = upload_result['public_id']
+                        digital_file.cloudinary_resource_type = upload_result['resource_type']
+                        digital_file.storage_type = 'cloudinary'
+                        migrated_count += 1
+                        print(f"✅ Migrated: {digital_file.original_filename}")
+                    else:
+                        errors.append(f"Failed to upload {digital_file.original_filename}")
+                else:
+                    errors.append(f"File not found: {digital_file.filename}")
+                    
+            except Exception as e:
+                errors.append(f"Error with {digital_file.original_filename}: {str(e)}")
+        
+        if migrated_count > 0:
+            db.session.commit()
+        
+        return f'''
+        <html>
+        <head><title>Digital Files Migration Complete</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>📤 Digital Files Migration Complete</h1>
+            <p><strong>✅ Migrated:</strong> {migrated_count} files</p>
+            <p><strong>❌ Errors:</strong> {len(errors)} files</p>
+            <p><strong>📁 Total processed:</strong> {len(local_files)} files</p>
+            {"<ul>" + "".join([f"<li>{error}</li>" for error in errors]) + "</ul>" if errors else ""}
+            <p><a href="/admin/products" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Products</a></p>
+        </body>
+        </html>
+        '''
+        
+    except Exception as e:
+        return f"Migration failed: {str(e)}"
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////
+
 # Add this route for debugging Cloudinary
 @app.route('/admin/test-cloudinary')
 @login_required

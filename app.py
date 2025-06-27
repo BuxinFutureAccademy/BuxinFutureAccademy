@@ -350,6 +350,65 @@ class DigitalProductFile(db.Model):
         return self.storage_type == 'cloudinary' and self.cloudinary_url
 
 
+# Add this database model to your app.py with your other models//////////////////////////////////////////////////////////////////////
+class RoboticsProjectSubmission(db.Model):
+    """Model for robotics project submissions"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Personal Information
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(20))
+    location = db.Column(db.String(100))
+    education_level = db.Column(db.String(50), nullable=False)
+    
+    # Project Details
+    project_title = db.Column(db.String(200), nullable=False)
+    project_description = db.Column(db.Text, nullable=False)
+    problem_solved = db.Column(db.Text)
+    components = db.Column(db.Text)
+    progress = db.Column(db.Text)
+    project_goal = db.Column(db.Text)
+    
+    # Help Needed (stored as comma-separated values)
+    help_needed = db.Column(db.Text)
+    
+    # Additional Information
+    additional_comments = db.Column(db.Text)
+    
+    # File Uploads (stored as JSON array of file info)
+    uploaded_files = db.Column(db.Text)  # JSON string of file URLs/paths
+    
+    # Status and Admin Fields
+    status = db.Column(db.String(20), default='pending')  # pending, reviewed, selected, declined
+    admin_notes = db.Column(db.Text)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reviewed_at = db.Column(db.DateTime)
+    
+    # Timestamps
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by], lazy='select')
+    
+    def get_help_needed_list(self):
+        """Return help needed as a list"""
+        if self.help_needed:
+            return self.help_needed.split(',')
+        return []
+    
+    def get_uploaded_files_list(self):
+        """Return uploaded files as a list"""
+        if self.uploaded_files:
+            try:
+                import json
+                return json.loads(self.uploaded_files)
+            except:
+                return []
+        return []
+
+
+
 
 class LearningMaterial(db.Model):
     """Model for learning materials shared in classes"""
@@ -507,9 +566,600 @@ def generate_whatsapp_links(recipients, message):
     return whatsapp_links
 
 
+# ========================================/////////////////////////////////////////////////////////////////
+# Add these routes to your app.py
 # ========================================
-# ADD ALL OTHER ROUTES HERE
-# ========================================
+
+# Add these routes to your app.py
+
+@app.route('/robotics-projects')
+def robotics_projects():
+    """Show the robotics project submission page"""
+    return render_template('robotics_projects.html')
+
+@app.route('/robotics-projects', methods=['POST'])
+def submit_robotics_project():
+    """Handle robotics project submission"""
+    try:
+        # Get form data
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        location = request.form.get('location', '').strip()
+        education_level = request.form.get('education_level', '').strip()
+        
+        project_title = request.form.get('project_title', '').strip()
+        project_description = request.form.get('project_description', '').strip()
+        problem_solved = request.form.get('problem_solved', '').strip()
+        components = request.form.get('components', '').strip()
+        progress = request.form.get('progress', '').strip()
+        project_goal = request.form.get('project_goal', '').strip()
+        additional_comments = request.form.get('additional_comments', '').strip()
+        
+        # Get help needed as comma-separated string
+        help_needed_list = request.form.getlist('help_needed')
+        help_needed = ','.join(help_needed_list) if help_needed_list else ''
+        
+        # Validate required fields
+        if not all([name, email, education_level, project_title, project_description]):
+            flash('Please fill in all required fields!', 'danger')
+            return redirect(url_for('robotics_projects'))
+        
+        # Handle file uploads to Cloudinary
+        uploaded_files = []
+        project_files = request.files.getlist('project_files')
+        
+        for file in project_files:
+            if file and file.filename:
+                # Check file size (max 10MB per file)
+                file.seek(0, 2)
+                file_size = file.tell()
+                file.seek(0)
+                
+                if file_size > 10 * 1024 * 1024:  # 10MB
+                    flash(f'File {file.filename} is too large. Maximum size is 10MB per file.', 'warning')
+                    continue
+                
+                # Check file type
+                allowed_extensions = {'jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'txt'}
+                file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                
+                if file_extension not in allowed_extensions:
+                    flash(f'File {file.filename} has an unsupported format. Allowed: {", ".join(allowed_extensions)}', 'warning')
+                    continue
+                
+                try:
+                    # Upload to Cloudinary
+                    print(f"📤 Uploading project file: {file.filename}")
+                    
+                    # Generate unique public_id
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    safe_filename = secure_filename(file.filename).replace('.', '_')
+                    public_id = f"robotics_project_{timestamp}_{safe_filename}"
+                    
+                    # Determine resource type
+                    if file_extension in ['jpg', 'jpeg', 'png']:
+                        resource_type = "image"
+                    else:
+                        resource_type = "raw"
+                    
+                    result = cloudinary.uploader.upload(
+                        file,
+                        resource_type=resource_type,
+                        public_id=public_id,
+                        folder="robotics_projects",
+                        overwrite=True
+                    )
+                    
+                    uploaded_files.append({
+                        'filename': file.filename,
+                        'url': result['secure_url'],
+                        'public_id': result['public_id'],
+                        'size': file_size,
+                        'type': file_extension
+                    })
+                    
+                    print(f"✅ Successfully uploaded: {file.filename}")
+                    
+                except Exception as e:
+                    print(f"❌ Failed to upload {file.filename}: {e}")
+                    flash(f'Failed to upload {file.filename}. Please try again.', 'warning')
+        
+        # Create submission record
+        submission = RoboticsProjectSubmission(
+            name=name,
+            email=email,
+            phone=phone,
+            location=location,
+            education_level=education_level,
+            project_title=project_title,
+            project_description=project_description,
+            problem_solved=problem_solved,
+            components=components,
+            progress=progress,
+            project_goal=project_goal,
+            help_needed=help_needed,
+            additional_comments=additional_comments,
+            uploaded_files=json.dumps(uploaded_files) if uploaded_files else None
+        )
+        
+        db.session.add(submission)
+        db.session.commit()
+        
+        # Send confirmation email to submitter
+        try:
+            subject = f"🚀 Your Robotics Project Submission Received - {project_title}"
+            message = f"""
+Dear {name},
+
+Thank you for submitting your robotics project idea: "{project_title}"
+
+I have received your submission and will personally review it. Here's what happens next:
+
+✅ Your submission details:
+- Project: {project_title}
+- Education Level: {education_level.replace('_', ' ').title()}
+- Help Needed: {', '.join([h.replace('_', ' ').title() for h in help_needed_list]) if help_needed_list else 'Not specified'}
+- Files Uploaded: {len(uploaded_files)} file(s)
+
+🔍 What's Next:
+1. I'll review your project idea within 1-2 weeks
+2. Selected projects will receive direct mentorship and support
+3. You may be featured on my YouTube channel or social media
+4. I'll connect you with resources, components, or other makers if possible
+
+🤝 Remember:
+Whether selected or not, keep building and experimenting! The robotics community is always here to support passionate makers like you.
+
+If you have any questions, feel free to reply to this email.
+
+Keep innovating!
+Best regards,
+BuXin Future Academy Team
+
+---
+Submission ID: #{submission.id}
+Submitted on: {submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}
+"""
+            
+            # Create a temporary user object for the email function
+            class TempUser:
+                def __init__(self, email, first_name):
+                    self.email = email
+                    self.first_name = first_name
+            
+            temp_user = TempUser(email, name.split()[0])
+            send_bulk_email([temp_user], subject, message)
+            
+        except Exception as e:
+            print(f"Failed to send confirmation email: {e}")
+            # Don't fail the submission if email fails
+        
+        # Send notification to admin
+        try:
+            admin_users = User.query.filter_by(is_admin=True).all()
+            if admin_users:
+                admin_subject = f"🤖 New Robotics Project Submission - {project_title}"
+                admin_message = f"""
+New robotics project submission received:
+
+👤 Submitter: {name} ({email})
+📍 Location: {location or 'Not specified'}
+🎓 Level: {education_level.replace('_', ' ').title()}
+
+🚀 Project: {project_title}
+📝 Description: {project_description[:200]}{'...' if len(project_description) > 200 else ''}
+
+🤝 Help Needed: {', '.join([h.replace('_', ' ').title() for h in help_needed_list]) if help_needed_list else 'Not specified'}
+
+📎 Files: {len(uploaded_files)} uploaded
+
+View full submission in admin panel: https://www.techbuxin.com/admin/robotics-submissions
+
+Submission ID: #{submission.id}
+"""
+                send_bulk_email(admin_users, admin_subject, admin_message)
+                
+        except Exception as e:
+            print(f"Failed to send admin notification: {e}")
+        
+        flash('🎉 Your robotics project submission has been received! Check your email for confirmation details.', 'success')
+        return redirect(url_for('robotics_projects'))
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error submitting robotics project: {e}")
+        flash('An error occurred while submitting your project. Please try again.', 'danger')
+        return redirect(url_for('robotics_projects'))
+
+# Admin routes for managing submissions
+
+@app.route('/admin/robotics-submissions')
+@login_required
+def admin_robotics_submissions():
+    """Admin view for all robotics project submissions"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    status_filter = request.args.get('status', '')
+    education_filter = request.args.get('education', '')
+    search = request.args.get('search', '')
+    sort_by = request.args.get('sort', 'newest')
+    
+    # Start with base query
+    query = RoboticsProjectSubmission.query
+    
+    # Apply filters
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    if education_filter:
+        query = query.filter_by(education_level=education_filter)
+    
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                RoboticsProjectSubmission.name.like(search_filter),
+                RoboticsProjectSubmission.email.like(search_filter),
+                RoboticsProjectSubmission.project_title.like(search_filter),
+                RoboticsProjectSubmission.project_description.like(search_filter)
+            )
+        )
+    
+    # Apply sorting
+    if sort_by == 'name':
+        query = query.order_by(RoboticsProjectSubmission.name.asc())
+    elif sort_by == 'title':
+        query = query.order_by(RoboticsProjectSubmission.project_title.asc())
+    elif sort_by == 'status':
+        query = query.order_by(RoboticsProjectSubmission.status.asc())
+    elif sort_by == 'oldest':
+        query = query.order_by(RoboticsProjectSubmission.submitted_at.asc())
+    else:  # newest
+        query = query.order_by(RoboticsProjectSubmission.submitted_at.desc())
+    
+    submissions = query.all()
+    
+    # Get statistics
+    total_submissions = RoboticsProjectSubmission.query.count()
+    pending_submissions = RoboticsProjectSubmission.query.filter_by(status='pending').count()
+    selected_submissions = RoboticsProjectSubmission.query.filter_by(status='selected').count()
+    reviewed_submissions = RoboticsProjectSubmission.query.filter_by(status='reviewed').count()
+    
+    return render_template('admin_robotics_submissions.html',
+                         submissions=submissions,
+                         total_submissions=total_submissions,
+                         pending_submissions=pending_submissions,
+                         selected_submissions=selected_submissions,
+                         reviewed_submissions=reviewed_submissions,
+                         status_filter=status_filter,
+                         education_filter=education_filter,
+                         search_term=search,
+                         sort_by=sort_by)
+
+@app.route('/admin/robotics-submission/<int:submission_id>')
+@login_required
+def view_robotics_submission(submission_id):
+    """View detailed robotics submission"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    submission = RoboticsProjectSubmission.query.get_or_404(submission_id)
+    return render_template('view_robotics_submission.html', submission=submission)
+
+@app.route('/admin/update-robotics-submission/<int:submission_id>', methods=['POST'])
+@login_required
+def update_robotics_submission(submission_id):
+    """Update submission status and notes"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    submission = RoboticsProjectSubmission.query.get_or_404(submission_id)
+    
+    try:
+        new_status = request.form.get('status')
+        admin_notes = request.form.get('admin_notes', '').strip()
+        
+        if new_status in ['pending', 'reviewed', 'selected', 'declined']:
+            old_status = submission.status
+            submission.status = new_status
+            submission.admin_notes = admin_notes
+            submission.reviewed_by = current_user.id
+            submission.reviewed_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            # Send status update email to submitter
+            try:
+                status_messages = {
+                    'reviewed': '👀 Your project has been reviewed',
+                    'selected': '🎉 Congratulations! Your project has been selected for mentorship',
+                    'declined': '📝 Thank you for your submission'
+                }
+                
+                if new_status != old_status and new_status in status_messages:
+                    subject = f"🤖 Project Update: {submission.project_title}"
+                    
+                    if new_status == 'selected':
+                        message = f"""
+Dear {submission.name},
+
+Exciting news! 🎉
+
+Your robotics project "{submission.project_title}" has been SELECTED for mentorship and support!
+
+🚀 What this means:
+- You'll receive direct guidance and mentorship
+- Help with component selection and circuit design
+- Programming assistance and code examples
+- Possible feature on YouTube or social media
+- Access to resources and community connections
+
+📧 Next Steps:
+I'll be reaching out to you directly within the next few days to discuss your project in detail and plan our collaboration.
+
+{f'💬 Personal Note from Reviewer: {admin_notes}' if admin_notes else ''}
+
+Keep that innovative spirit alive!
+
+Best regards,
+BuXin Future Academy Team
+"""
+                    else:
+                        message = f"""
+Dear {submission.name},
+
+Thank you for submitting your robotics project "{submission.project_title}".
+
+Your submission has been reviewed and marked as: {status_messages[new_status]}
+
+{f'💬 Feedback: {admin_notes}' if admin_notes else ''}
+
+Remember: Whether selected or not, keep building and experimenting! The robotics community is always here to support passionate makers like you.
+
+Feel free to submit new project ideas anytime.
+
+Best regards,
+BuXin Future Academy Team
+"""
+                    
+                    # Create temp user for email
+                    class TempUser:
+                        def __init__(self, email, first_name):
+                            self.email = email
+                            self.first_name = first_name
+                    
+                    temp_user = TempUser(submission.email, submission.name.split()[0])
+                    send_bulk_email([temp_user], subject, message)
+                    
+            except Exception as e:
+                print(f"Failed to send status update email: {e}")
+            
+            flash(f'Submission status updated to "{new_status}" successfully!', 'success')
+        else:
+            flash('Invalid status selected!', 'danger')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating submission: {str(e)}', 'danger')
+    
+    return redirect(url_for('view_robotics_submission', submission_id=submission_id))
+
+@app.route('/admin/robotics-submissions/export')
+@login_required
+def export_robotics_submissions():
+    """Export submissions to CSV"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        import csv
+        from io import StringIO
+        from flask import Response
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'ID', 'Name', 'Email', 'Phone', 'Location', 'Education Level',
+            'Project Title', 'Project Description', 'Problem Solved', 'Components',
+            'Progress', 'Project Goal', 'Help Needed', 'Additional Comments',
+            'Status', 'Admin Notes', 'Submitted At', 'Reviewed At', 'Files Count'
+        ])
+        
+        # Write submission data
+        submissions = RoboticsProjectSubmission.query.order_by(RoboticsProjectSubmission.submitted_at.desc()).all()
+        for submission in submissions:
+            files_count = len(submission.get_uploaded_files_list())
+            
+            writer.writerow([
+                submission.id,
+                submission.name,
+                submission.email,
+                submission.phone or '',
+                submission.location or '',
+                submission.education_level,
+                submission.project_title,
+                submission.project_description,
+                submission.problem_solved or '',
+                submission.components or '',
+                submission.progress or '',
+                submission.project_goal or '',
+                submission.help_needed or '',
+                submission.additional_comments or '',
+                submission.status,
+                submission.admin_notes or '',
+                submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S'),
+                submission.reviewed_at.strftime('%Y-%m-%d %H:%M:%S') if submission.reviewed_at else '',
+                files_count
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=robotics_submissions_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+        
+    except Exception as e:
+        flash(f'Error exporting submissions: {str(e)}', 'danger')
+        return redirect(url_for('admin_robotics_submissions'))
+
+@app.route('/admin/robotics-submissions/stats')
+@login_required
+def robotics_submissions_stats():
+    """Get submission statistics"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        # Basic stats
+        total = RoboticsProjectSubmission.query.count()
+        pending = RoboticsProjectSubmission.query.filter_by(status='pending').count()
+        reviewed = RoboticsProjectSubmission.query.filter_by(status='reviewed').count()
+        selected = RoboticsProjectSubmission.query.filter_by(status='selected').count()
+        declined = RoboticsProjectSubmission.query.filter_by(status='declined').count()
+        
+        # Education level breakdown
+        education_stats = db.session.query(
+            RoboticsProjectSubmission.education_level,
+            db.func.count(RoboticsProjectSubmission.id)
+        ).group_by(RoboticsProjectSubmission.education_level).all()
+        
+        education_data = [{'level': stat[0], 'count': stat[1]} for stat in education_stats]
+        
+        # Help needed breakdown
+        help_stats = {}
+        submissions = RoboticsProjectSubmission.query.all()
+        for submission in submissions:
+            help_list = submission.get_help_needed_list()
+            for help_type in help_list:
+                help_stats[help_type] = help_stats.get(help_type, 0) + 1
+        
+        help_data = [{'type': k, 'count': v} for k, v in help_stats.items()]
+        
+        # Recent submissions (last 30 days)
+        from datetime import timedelta
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        recent_submissions = RoboticsProjectSubmission.query.filter(
+            RoboticsProjectSubmission.submitted_at >= thirty_days_ago
+        ).count()
+        
+        return {
+            'total_submissions': total,
+            'pending_submissions': pending,
+            'reviewed_submissions': reviewed,
+            'selected_submissions': selected,
+            'declined_submissions': declined,
+            'recent_submissions': recent_submissions,
+            'education_breakdown': education_data,
+            'help_needed_breakdown': help_data
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+# Add this helper function to upload files to Cloudinary with proper error handling
+def upload_project_file_to_cloudinary(file, submission_id, original_filename):
+    """Upload project file to Cloudinary with proper categorization"""
+    try:
+        file.seek(0)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        safe_filename = secure_filename(original_filename).replace('.', '_')
+        public_id = f"robotics_submission_{submission_id}_{timestamp}_{safe_filename}"
+        
+        # Determine resource type based on file extension
+        file_extension = original_filename.lower().split('.')[-1] if '.' in original_filename else ''
+        
+        if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']:
+            resource_type = "image"
+        elif file_extension in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm']:
+            resource_type = "video"
+        else:
+            resource_type = "raw"  # For PDFs, documents, etc.
+        
+        # Upload to Cloudinary
+        upload_params = {
+            'resource_type': resource_type,
+            'public_id': public_id,
+            'folder': "robotics_project_submissions",
+            'overwrite': True,
+            'use_filename': True,
+            'unique_filename': False,
+        }
+        
+        result = cloudinary.uploader.upload(file, **upload_params)
+        
+        return {
+            'url': result['secure_url'],
+            'public_id': result['public_id'],
+            'size': result.get('bytes', 0),
+            'format': result.get('format', file_extension),
+            'resource_type': result.get('resource_type', resource_type),
+            'filename': original_filename
+        }
+        
+    except Exception as e:
+        print(f"❌ Cloudinary upload error: {str(e)}")
+        return None
+
+# Create database table migration helper
+@app.route('/admin/create-robotics-table')
+@login_required
+def create_robotics_table():
+    """Create robotics submissions table - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Create the table
+        db.create_all()
+        
+        return """
+        <html>
+        <head><title>Table Created</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Robotics Submissions Table Created!</h1>
+            <p>The robotics_project_submission table has been created successfully.</p>
+            <p><strong>Features:</strong></p>
+            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
+                <li>✅ Complete submission tracking</li>
+                <li>✅ File upload support with Cloudinary</li>
+                <li>✅ Admin review system</li>
+                <li>✅ Email notifications</li>
+                <li>✅ Export capabilities</li>
+            </ul>
+            <p style="margin-top: 2rem;">
+                <a href="/robotics-projects" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🚀 Test Submission Form</a>
+                <a href="/admin/robotics-submissions" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">📊 Admin Panel</a>
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Table Creation Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Error Creating Table</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """, 500
 
 # ========================================
 # AUTHENTICATION ROUTES

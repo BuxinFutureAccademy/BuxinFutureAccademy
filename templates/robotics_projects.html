@@ -1,0 +1,654 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --dark-gradient: linear-gradient(135deg, #434343 0%, #000000 100%);
+}
+
+body {
+    background: var(--primary-gradient);
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.hero-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    margin: 2rem auto;
+    max-width: 1200px;
+    padding: 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.hero-subtitle {
+    font-size: 1.3rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+.form-container {
+    background: white;
+    border-radius: 20px;
+    margin: 2rem auto;
+    max-width: 800px;
+    padding: 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.form-header h2 {
+    color: #333;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid #e9ecef;
+    border-radius: 15px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    transform: translateY(-2px);
+}
+
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 3rem;
+}
+
+.textarea-large {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.checkbox-item:hover {
+    background: #e9ecef;
+    border-color: #667eea;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 0.75rem;
+    transform: scale(1.2);
+}
+
+.checkbox-item label {
+    cursor: pointer;
+    font-weight: 500;
+    margin: 0;
+}
+
+.file-upload {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    width: 100%;
+}
+
+.file-upload input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.file-upload-label {
+    display: block;
+    padding: 2rem;
+    border: 2px dashed #667eea;
+    border-radius: 15px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.file-upload:hover .file-upload-label {
+    background: #e3f2fd;
+    border-color: #2196f3;
+}
+
+.submit-btn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 1.25rem 3rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    width: 100%;
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+}
+
+.examples-section {
+    background: white;
+    border-radius: 20px;
+    margin: 2rem auto;
+    max-width: 1200px;
+    padding: 3rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.example-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    border-left: 5px solid #667eea;
+    transition: all 0.3s ease;
+}
+
+.example-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.example-title {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.example-desc {
+    color: #666;
+    line-height: 1.6;
+}
+
+.benefits-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    margin: 2rem auto;
+    max-width: 1200px;
+    padding: 3rem;
+    color: white;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.benefit-card {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.benefit-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.benefit-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.benefit-desc {
+    opacity: 0.9;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .hero-section,
+    .form-container,
+    .examples-section,
+    .benefits-section {
+        margin: 1rem;
+        padding: 2rem;
+    }
+    
+    .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="container-fluid">
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">🚀 Submit Your Robotics Project Idea</h1>
+            <p class="hero-subtitle">
+                Let's Build the Future Together! Whether you're a student, hobbyist, or innovation enthusiast – I'm here to help you bring your robotics dreams to life.
+            </p>
+        </div>
+    </div>
+
+    <!-- Benefits Section -->
+    <div class="benefits-section">
+        <h2 class="text-center mb-4">🧠 How I Can Help You</h2>
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <span class="benefit-icon">💡</span>
+                <h4 class="benefit-title">Project Design Advice</h4>
+                <p class="benefit-desc">Get expert guidance on turning your idea into a workable design</p>
+            </div>
+            <div class="benefit-card">
+                <span class="benefit-icon">🔧</span>
+                <h4 class="benefit-title">Component Recommendations</h4>
+                <p class="benefit-desc">Choose the right parts and tools for your specific project needs</p>
+            </div>
+            <div class="benefit-card">
+                <span class="benefit-icon">💻</span>
+                <h4 class="benefit-title">Code & Debugging Help</h4>
+                <p class="benefit-desc">Get code examples, debugging assistance, and programming guidance</p>
+            </div>
+            <div class="benefit-card">
+                <span class="benefit-icon">📹</span>
+                <h4 class="benefit-title">Feature Your Project</h4>
+                <p class="benefit-desc">Showcase your work on YouTube and social media platforms</p>
+            </div>
+            <div class="benefit-card">
+                <span class="benefit-icon">📦</span>
+                <h4 class="benefit-title">Access to Resources</h4>
+                <p class="benefit-desc">Help you find parts, tools, and resources (limited availability)</p>
+            </div>
+            <div class="benefit-card">
+                <span class="benefit-icon">🤝</span>
+                <h4 class="benefit-title">Connect with Community</h4>
+                <p class="benefit-desc">Match you with other makers, mentors, and collaborators</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Examples -->
+    <div class="examples-section">
+        <h2 class="text-center mb-4">💡 Project Ideas You Can Submit</h2>
+        <div class="examples-grid">
+            <div class="example-card">
+                <h4 class="example-title">🧹 Trash-Cleaning Line-Following Robot</h4>
+                <p class="example-desc">Autonomous robot that follows lines in school halls while collecting trash using sensors and mechanical arms.</p>
+            </div>
+            <div class="example-card">
+                <h4 class="example-title">🏠 Voice-Controlled Home Automation</h4>
+                <p class="example-desc">Smart home system using Arduino/Raspberry Pi to control lights, fans, and appliances with voice commands.</p>
+            </div>
+            <div class="example-card">
+                <h4 class="example-title">🚗 Self-Driving Toy Car</h4>
+                <p class="example-desc">Mini autonomous vehicle with object detection, path planning, and obstacle avoidance capabilities.</p>
+            </div>
+            <div class="example-card">
+                <h4 class="example-title">🦾 Sensor-Controlled Robotic Hand</h4>
+                <p class="example-desc">Prosthetic hand prototype controlled by gloves with flex sensors for natural finger movements.</p>
+            </div>
+            <div class="example-card">
+                <h4 class="example-title">🌱 Smart Irrigation System</h4>
+                <p class="example-desc">IoT-based automatic watering system using soil moisture sensors and weather data integration.</p>
+            </div>
+            <div class="example-card">
+                <h4 class="example-title">📚 Book Delivery Drone</h4>
+                <p class="example-desc">Autonomous drone for delivering books and small parcels within school or campus premises.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Form -->
+    <div class="form-container">
+        <div class="form-header">
+            <h2>✍️ Submit Your Project Idea</h2>
+            <p class="text-muted">Fill out the form below and I'll personally review your submission. Let's make your robotics dream a reality!</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <!-- Personal Information -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">👤 Your Name *</label>
+                        <input type="text" class="form-control" name="name" required 
+                               placeholder="Enter your full name">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">📧 Email Address *</label>
+                        <input type="email" class="form-control" name="email" required 
+                               placeholder="your.email@example.com">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">📱 Phone Number (Optional)</label>
+                        <input type="tel" class="form-control" name="phone" 
+                               placeholder="+1234567890">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">🌍 Country/Location</label>
+                        <input type="text" class="form-control" name="location" 
+                               placeholder="e.g., United States, Nigeria, India">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education Level -->
+            <div class="form-group">
+                <label class="form-label">🎓 Select Your Level *</label>
+                <select class="form-control form-select" name="education_level" required>
+                    <option value="">Choose your current level...</option>
+                    <option value="primary">📘 Primary School Student (Grades 1–6)</option>
+                    <option value="junior_high">📗 Junior High/Middle School Student (Grades 7–9)</option>
+                    <option value="senior_high">📙 Senior High School Student (Grades 10–12)</option>
+                    <option value="university_undergrad">🎓 University/College Student (Undergraduate)</option>
+                    <option value="university_postgrad">🎓 University Student (Postgraduate/Master's/PhD)</option>
+                    <option value="vocational">🧰 Vocational/Technical Student</option>
+                    <option value="stem_academy">🧪 STEM Academy/Bootcamp Student</option>
+                    <option value="hobbyist">🤖 Hobbyist (Self-Taught/Independent Learner)</option>
+                    <option value="teacher">👨‍🏫 Teacher or Mentor</option>
+                    <option value="professional">🧑‍💻 Working Professional (Engineer, Developer, etc.)</option>
+                    <option value="other">🚀 Other (Please Specify in Description)</option>
+                </select>
+            </div>
+
+            <!-- Project Details -->
+            <div class="form-group">
+                <label class="form-label">🚀 Project Title *</label>
+                <input type="text" class="form-control" name="project_title" required 
+                       placeholder="Give your project a catchy name">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">📝 Project Description *</label>
+                <textarea class="form-control textarea-large" name="project_description" required 
+                          placeholder="Describe your robotics project idea in detail. What will it do? How will it work? Be as specific as possible!"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">❓ What Problem Does This Project Solve?</label>
+                <textarea class="form-control" name="problem_solved" 
+                          placeholder="Explain what real-world problem your project addresses or what need it fulfills."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">🔧 Components You Plan to Use (or Need Help Choosing)</label>
+                <textarea class="form-control" name="components" 
+                          placeholder="List any components you plan to use (Arduino, Raspberry Pi, sensors, motors, etc.) or mention if you need help choosing components."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">📈 Any Progress So Far?</label>
+                <textarea class="form-control" name="progress" 
+                          placeholder="Describe any work you've already done on this project, research completed, or prototypes built."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">🎯 Your Goal or Dream for This Project</label>
+                <textarea class="form-control" name="project_goal" 
+                          placeholder="What's your ultimate vision for this project? How do you see it being used or impacting others?"></textarea>
+            </div>
+
+            <!-- Help Needed -->
+            <div class="form-group">
+                <label class="form-label">🤝 What Kind of Help Do You Need? (Check all that apply)</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="help_needed" value="idea_validation" id="help1">
+                        <label for="help1">💡 Idea Validation</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="help_needed" value="component_list" id="help2">
+                        <label for="help2">📋 Component List</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="help_needed" value="circuit_design" id="help3">
+                        <label for="help3">⚡ Circuit Design</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="help_needed" value="programming" id="help4">
+                        <label for="help4">💻 Programming Help</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="help_needed" value="resources" id="help5">
+                        <label for="help5">📦 Access to Tools/Resources</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="help_needed" value="mentorship" id="help6">
+                        <label for="help6">🤝 Mentorship</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="form-group">
+                <label class="form-label">📎 Upload Files (Optional)</label>
+                <div class="file-upload">
+                    <input type="file" name="project_files" multiple 
+                           accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.txt" id="file-upload">
+                    <label for="file-upload" class="file-upload-label">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: #667eea;"></i><br>
+                        <strong>Click to upload sketches, images, or progress files</strong><br>
+                        <small class="text-muted">Supported: Images, PDFs, Documents (Max 10MB each)</small>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Additional Comments -->
+            <div class="form-group">
+                <label class="form-label">💬 Anything Else You'd Like to Share?</label>
+                <textarea class="form-control" name="additional_comments" 
+                          placeholder="Any additional information, questions, or special requests you'd like me to know about."></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group">
+                <button type="submit" class="submit-btn">
+                    🚀 Submit My Project Idea
+                </button>
+            </div>
+
+            <div class="text-center mt-4">
+                <p class="text-muted">
+                    <small>📧 You'll receive a confirmation email, and I'll personally review every submission. 
+                    Selected projects will be contacted within 1-2 weeks!</small>
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="hero-section">
+        <div class="hero-content">
+            <h2>🙌 Let's Make It Happen Together</h2>
+            <p class="hero-subtitle">
+                I believe in <strong>learning by doing</strong>. Let's create real-world robotics projects that solve problems, 
+                showcase creativity, and make a difference in the world.
+            </p>
+            <p style="font-size: 1.5rem; font-weight: 600;">
+                📢 Submit your idea now and let's build the future together!
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// File upload preview
+document.getElementById('file-upload').addEventListener('change', function(e) {
+    const label = document.querySelector('.file-upload-label');
+    const fileCount = e.target.files.length;
+    
+    if (fileCount > 0) {
+        label.innerHTML = `
+            <i class="fas fa-check-circle fa-3x mb-3" style="color: #28a745;"></i><br>
+            <strong>${fileCount} file(s) selected</strong><br>
+            <small class="text-muted">Click to change files</small>
+        `;
+    }
+});
+
+// Form validation and submission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitBtn = document.querySelector('.submit-btn');
+    
+    form.addEventListener('submit', function(e) {
+        // Add loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting Your Project...';
+        submitBtn.disabled = true;
+        
+        // Basic validation
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.style.borderColor = '#dc3545';
+                isValid = false;
+            } else {
+                field.style.borderColor = '#28a745';
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            submitBtn.innerHTML = '🚀 Submit My Project Idea';
+            submitBtn.disabled = false;
+            
+            // Scroll to first invalid field
+            const firstInvalid = form.querySelector('[style*="border-color: rgb(220, 53, 69)"]');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+        }
+    });
+    
+    // Real-time validation
+    const inputs = form.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.hasAttribute('required') && !this.value.trim()) {
+                this.style.borderColor = '#dc3545';
+            } else {
+                this.style.borderColor = '#28a745';
+            }
+        });
+        
+        input.addEventListener('input', function() {
+            if (this.style.borderColor === 'rgb(220, 53, 69)' && this.value.trim()) {
+                this.style.borderColor = '#28a745';
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

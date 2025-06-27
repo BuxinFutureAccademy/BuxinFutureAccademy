@@ -973,10 +973,11 @@ Links will be automatically formatted and clickable for students." required></te
             <i class="fas fa-users-cog fa-2x mb-2 text-info"></i>
             <div>Manage Users</div>
         </a>
-        <a href="{{ url_for('admin_robotics_submissions') }}" class="quick-link">
-            <i class="fas fa-robot-cog fa-2x mb-2 text-info"></i>
-            <div>🤖 Robotics Submissions</div>
-        </a>
+<a href="{{ url_for('admin_robotics_submissions') }}" class="quick-link">
+    <i class="fas fa-robot-cog fa-2x mb-2 
+       {% if request.endpoint == 'admin_robotics_submissions' %}text-primary{% else %}text-info{% endif %}"></i>
+    <div>🤖 Robotics Submissions</div>
+</a>
     </div>
 </div>
 

@@ -1,4 +1,3 @@
-<!-- templates/create_project.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,6 +69,7 @@
             background: #f8f9ff; 
             transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
         }
         .upload-area:hover { 
             border-color: #764ba2; 
@@ -84,6 +84,7 @@
             max-height: 300px; 
             border-radius: 10px; 
             margin-top: 1rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         .char-counter { 
             font-size: 0.875rem; 
@@ -114,87 +115,116 @@
         }
         .section-title i { margin-right: 0.5rem; }
 
+        /* Remove image button */
+        .remove-image-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .remove-image-btn:hover {
+            background: rgba(220, 53, 69, 1);
+            transform: scale(1.1);
+        }
+
+        /* Image preview container */
+        .image-preview-container {
+            position: relative;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+
         /* Mobile Bottom Navigation - ONLY FOR PHONES */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(0,0,0,0.1);
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    z-index: 1000;
-    padding: 0.3rem 0;
-}
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding: 0.3rem 0;
+        }
 
-.bottom-nav .nav-link {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.3rem 0.2rem;
-    color: #666 !important;
-    text-decoration: none;
-    font-size: 0.65rem;
-    min-height: 50px;
-    justify-content: center;
-}
+        .bottom-nav .nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.3rem 0.2rem;
+            color: #666 !important;
+            text-decoration: none;
+            font-size: 0.65rem;
+            min-height: 50px;
+            justify-content: center;
+        }
 
-.bottom-nav .nav-link i {
-    font-size: 1rem;
-    margin-bottom: 0.1rem;
-}
+        .bottom-nav .nav-link i {
+            font-size: 1rem;
+            margin-bottom: 0.1rem;
+        }
 
-.bottom-nav .nav-link div {
-    line-height: 1;
-    white-space: nowrap;
-}
+        .bottom-nav .nav-link div {
+            line-height: 1;
+            white-space: nowrap;
+        }
 
-.bottom-nav .nav-link.active,
-.bottom-nav .nav-link:hover {
-    color: #667eea !important;
-}
+        .bottom-nav .nav-link.active,
+        .bottom-nav .nav-link:hover {
+            color: #667eea !important;
+        }
 
-/* Show bottom nav and add padding ONLY on phones (max-width: 576px) */
-@media (max-width: 576px) {
-    .bottom-nav {
-        display: block !important;
-    }
-    body {
-        padding-bottom: 60px !important;
-    }
-}
+        /* Show bottom nav and add padding ONLY on phones (max-width: 576px) */
+        @media (max-width: 576px) {
+            .bottom-nav {
+                display: block !important;
+            }
+            body {
+                padding-bottom: 60px !important;
+            }
+        }
 
-/* Hide bottom nav on tablets and larger screens */
-@media (min-width: 577px) {
-    .bottom-nav {
-        display: none !important;
-    }
-}
+        /* Hide bottom nav on tablets and larger screens */
+        @media (min-width: 577px) {
+            .bottom-nav {
+                display: none !important;
+            }
+        }
 
-/* Extra small phones - even more compact */
-@media (max-width: 400px) {
-    .bottom-nav .nav-link {
-        font-size: 0.6rem;
-        padding: 0.2rem 0.1rem;
-        min-height: 45px;
-    }
-    
-    .bottom-nav .nav-link i {
-        font-size: 0.9rem;
-    }
-    
-    body {
-        padding-bottom: 55px !important;
-    }
-}
+        /* Extra small phones - even more compact */
+        @media (max-width: 400px) {
+            .bottom-nav .nav-link {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.1rem;
+                min-height: 45px;
+            }
+            
+            .bottom-nav .nav-link i {
+                font-size: 0.9rem;
+            }
+            
+            body {
+                padding-bottom: 55px !important;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark" style="background: rgba(0,0,0,0.2); backdrop-filter: blur(10px);">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+            <a class="navbar-brand fw-bold" href="/">
                 <i class="fas fa-rocket me-2"></i>BuXin Future Academy
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -203,20 +233,20 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('student_projects') }}">
+                        <a class="nav-link" href="javascript:history.back()">
                             <i class="fas fa-arrow-left me-1"></i>Back to Projects
                         </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('my_projects') }}">My Projects</a>
+                        <a class="nav-link" href="#my-projects">My Projects</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('student_dashboard') }}">Dashboard</a>
+                        <a class="nav-link" href="#dashboard">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        <a class="nav-link" href="#logout">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -227,16 +257,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <!-- Flash Messages -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+                <div id="flash-messages"></div>
 
                 <div class="form-container">
                     <div class="form-header">
@@ -244,7 +265,7 @@
                         <p class="text-muted mb-0">Share your amazing project with the community!</p>
                     </div>
 
-                    <form method="POST" enctype="multipart/form-data" id="project-form">
+                    <form id="project-form" onsubmit="handleSubmit(event)">
                         <!-- Basic Information Section -->
                         <div class="form-section">
                             <div class="section-title">
@@ -270,243 +291,6 @@
                                           placeholder="Describe your project in detail. What does it do? How did you build it? What challenges did you face?"></textarea>
                                 <div class="char-counter" id="description-counter">0/2000</div>
                                 <div class="help-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Optional: Link to GitHub repository, live demo, or any related resource
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Submit Section -->
-                        <div class="text-center">
-                            <button type="button" class="btn btn-outline-secondary me-3" onclick="history.back()">
-                                <i class="fas fa-times me-1"></i>Cancel
-                            </button>
-                            <button type="submit" class="btn btn-custom btn-lg" id="submit-btn">
-                                <i class="fas fa-rocket me-2"></i>Create Project
-                            </button>
-                        </div>
-
-                        <div class="text-center mt-3">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Your project will be visible to all students and visitors
-                            </small>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-<!-- Mobile Bottom Navigation -->
-<nav class="bottom-nav">
-    <div class="container-fluid">
-        <div class="row text-center">
-            <div class="col">
-                <a class="nav-link" href="{{ url_for('student_projects') }}">
-                    <i class="fas fa-project-diagram"></i>
-                    <div>Projects</div>
-                </a>
-            </div>
-            <div class="col">
-                <a class="nav-link active" href="{{ url_for('create_project') }}">
-                    <i class="fas fa-plus"></i>
-                    <div>Create</div>
-                </a>
-            </div>
-            <div class="col">
-                <a class="nav-link" href="{{ url_for('my_projects') }}">
-                    <i class="fas fa-user"></i>
-                    <div>My Projects</div>
-                </a>
-            </div>
-            <div class="col">
-                <a class="nav-link" href="{{ url_for('student_dashboard') }}">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <div>Dashboard</div>
-                </a>
-            </div>
-        </div>
-    </div>
-</nav>
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // Character counters
-        function setupCharCounter(inputId, counterId, maxLength) {
-            const input = document.getElementById(inputId);
-            const counter = document.getElementById(counterId);
-            
-            input.addEventListener('input', function() {
-                const length = this.value.length;
-                counter.textContent = `${length}/${maxLength}`;
-                
-                // Change color based on usage
-                counter.className = 'char-counter';
-                if (length > maxLength * 0.9) {
-                    counter.classList.add('danger');
-                } else if (length > maxLength * 0.7) {
-                    counter.classList.add('warning');
-                }
-            });
-        }
-
-        // Initialize character counters
-        setupCharCounter('title', 'title-counter', 200);
-        setupCharCounter('description', 'description-counter', 2000);
-
-        // Image preview functionality
-        function previewImage(event) {
-            const file = event.target.files[0];
-            const preview = document.getElementById('image-preview');
-            
-            if (file) {
-                // Validate file type
-                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
-                if (!allowedTypes.includes(file.type)) {
-                    alert('Please select a valid image file (PNG, JPG, JPEG, GIF, WebP)');
-                    event.target.value = '';
-                    return;
-                }
-                
-                // Validate file size (5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('File size must be less than 5MB');
-                    event.target.value = '';
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `
-                        <div class="mt-3">
-                            <img src="${e.target.result}" class="preview-image" alt="Preview">
-                            <div class="mt-2">
-                                <small class="text-success">
-                                    <i class="fas fa-check-circle me-1"></i>
-                                    Image selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
-                                </small>
-                            </div>
-                        </div>
-                    `;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '';
-            }
-        }
-
-        // Drag and drop functionality
-        const uploadArea = document.querySelector('.upload-area');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            uploadArea.classList.add('dragover');
-        }
-
-        function unhighlight(e) {
-            uploadArea.classList.remove('dragover');
-        }
-
-        uploadArea.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            
-            if (files.length > 0) {
-                document.getElementById('project_image').files = files;
-                previewImage({ target: { files: files } });
-            }
-        }
-
-        // Form validation
-        document.getElementById('project-form').addEventListener('submit', function(e) {
-            const title = document.getElementById('title').value.trim();
-            const description = document.getElementById('description').value.trim();
-            
-            if (!title || !description) {
-                e.preventDefault();
-                alert('Please fill in all required fields (Title and Description)');
-                return false;
-            }
-
-            // Validate YouTube URL if provided
-            const youtubeUrl = document.getElementById('youtube_url').value.trim();
-            if (youtubeUrl) {
-                const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[\w-]+/;
-                if (!youtubePattern.test(youtubeUrl)) {
-                    e.preventDefault();
-                    alert('Please enter a valid YouTube URL');
-                    return false;
-                }
-            }
-
-            // Validate project link if provided
-            const projectLink = document.getElementById('project_link').value.trim();
-            if (projectLink) {
-                try {
-                    new URL(projectLink);
-                } catch (e) {
-                    e.preventDefault();
-                    alert('Please enter a valid project link URL');
-                    return false;
-                }
-            }
-
-            // Show loading state
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Project...';
-            submitBtn.disabled = true;
-        });
-
-        // YouTube URL validation helper
-        document.getElementById('youtube_url').addEventListener('blur', function() {
-            const url = this.value.trim();
-            if (url && url !== '') {
-                const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[\w-]+/;
-                if (!youtubePattern.test(url)) {
-                    this.classList.add('is-invalid');
-                    if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('invalid-feedback')) {
-                        const feedback = document.createElement('div');
-                        feedback.className = 'invalid-feedback';
-                        feedback.textContent = 'Please enter a valid YouTube URL';
-                        this.parentNode.insertBefore(feedback, this.nextSibling);
-                    }
-                } else {
-                    this.classList.remove('is-invalid');
-                    const feedback = this.parentNode.querySelector('.invalid-feedback');
-                    if (feedback) {
-                        feedback.remove();
-                    }
-                }
-            } else {
-                this.classList.remove('is-invalid');
-                const feedback = this.parentNode.querySelector('.invalid-feedback');
-                if (feedback) {
-                    feedback.remove();
-                }
-            }
-        });
-    </script>
-</body>
-</html>
                                     <i class="fas fa-lightbulb me-1"></i>
                                     Tip: Include details about technologies used, problems solved, and what you learned!
                                 </div>
@@ -525,10 +309,12 @@
                                 <label for="project_image" class="form-label">
                                     <i class="fas fa-image me-1"></i>Project Image
                                 </label>
-                                <div class="upload-area" onclick="document.getElementById('project_image').click()">
-                                    <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
-                                    <p class="mb-0">Click to upload or drag and drop</p>
-                                    <small class="text-muted">PNG, JPG, JPEG, GIF, WebP (Max 5MB)</small>
+                                <div class="upload-area" id="upload-area" onclick="document.getElementById('project_image').click()">
+                                    <div id="upload-content">
+                                        <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                                        <p class="mb-0">Click to upload or drag and drop</p>
+                                        <small class="text-muted">PNG, JPG, JPEG, GIF, WebP (Max 5MB)</small>
+                                    </div>
                                     <input type="file" class="d-none" id="project_image" name="project_image" 
                                            accept=".png,.jpg,.jpeg,.gif,.webp" onchange="previewImage(event)">
                                     <div id="image-preview"></div>
@@ -563,3 +349,295 @@
                                 <input type="url" class="form-control" id="project_link" name="project_link" 
                                        placeholder="https://github.com/username/project or https://myproject.com">
                                 <div class="help-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Optional: Link to GitHub repository, live demo, or any related resource
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Section -->
+                        <div class="text-center">
+                            <button type="button" class="btn btn-outline-secondary me-3" onclick="history.back()">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </button>
+                            <button type="submit" class="btn btn-custom btn-lg" id="submit-btn">
+                                <i class="fas fa-rocket me-2"></i>Create Project
+                            </button>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Your project will be visible to all students and visitors
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="container-fluid">
+            <div class="row text-center">
+                <div class="col">
+                    <a class="nav-link" href="#projects">
+                        <i class="fas fa-project-diagram"></i>
+                        <div>Projects</div>
+                    </a>
+                </div>
+                <div class="col">
+                    <a class="nav-link active" href="#create">
+                        <i class="fas fa-plus"></i>
+                        <div>Create</div>
+                    </a>
+                </div>
+                <div class="col">
+                    <a class="nav-link" href="#my-projects">
+                        <i class="fas fa-user"></i>
+                        <div>My Projects</div>
+                    </a>
+                </div>
+                <div class="col">
+                    <a class="nav-link" href="#dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <div>Dashboard</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Character counters
+        function setupCharCounter(inputId, counterId, maxLength) {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(counterId);
+            
+            if (input && counter) {
+                input.addEventListener('input', function() {
+                    const length = this.value.length;
+                    counter.textContent = `${length}/${maxLength}`;
+                    
+                    // Change color based on usage
+                    counter.className = 'char-counter';
+                    if (length > maxLength * 0.9) {
+                        counter.classList.add('danger');
+                    } else if (length > maxLength * 0.7) {
+                        counter.classList.add('warning');
+                    }
+                });
+            }
+        }
+
+        // Initialize character counters
+        setupCharCounter('title', 'title-counter', 200);
+        setupCharCounter('description', 'description-counter', 2000);
+
+        // Global variable to store the current image file
+        let currentImageFile = null;
+
+        // Image preview functionality
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('image-preview');
+            const uploadContent = document.getElementById('upload-content');
+            
+            if (file) {
+                // Validate file type
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Please select a valid image file (PNG, JPG, JPEG, GIF, WebP)');
+                    event.target.value = '';
+                    return;
+                }
+                
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    event.target.value = '';
+                    return;
+                }
+                
+                currentImageFile = file;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Hide upload content
+                    uploadContent.style.display = 'none';
+                    
+                    // Show preview
+                    preview.innerHTML = `
+                        <div class="image-preview-container">
+                            <img src="${e.target.result}" class="preview-image" alt="Preview">
+                            <button type="button" class="remove-image-btn" onclick="removeImage()" title="Remove image">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-success">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Image selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                            </small>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                removeImage();
+            }
+        }
+
+        // Remove image function
+        function removeImage() {
+            const preview = document.getElementById('image-preview');
+            const uploadContent = document.getElementById('upload-content');
+            const fileInput = document.getElementById('project_image');
+            
+            // Clear file input
+            fileInput.value = '';
+            currentImageFile = null;
+            
+            // Show upload content
+            uploadContent.style.display = 'block';
+            
+            // Clear preview
+            preview.innerHTML = '';
+        }
+
+        // Drag and drop functionality
+        const uploadArea = document.getElementById('upload-area');
+        
+        if (uploadArea) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                uploadArea.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                uploadArea.classList.remove('dragover');
+            }
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    // Create a new event object to simulate file input change
+                    const fileInput = document.getElementById('project_image');
+                    fileInput.files = files;
+                    
+                    // Trigger the preview
+                    previewImage({ target: { files: files } });
+                }
+            }
+        }
+
+        // Form submission handler
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('title').value.trim();
+            const description = document.getElementById('description').value.trim();
+            
+            if (!title || !description) {
+                alert('Please fill in all required fields (Title and Description)');
+                return false;
+            }
+
+            // Validate YouTube URL if provided
+            const youtubeUrl = document.getElementById('youtube_url').value.trim();
+            if (youtubeUrl) {
+                const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[\w-]+/;
+                if (!youtubePattern.test(youtubeUrl)) {
+                    alert('Please enter a valid YouTube URL');
+                    return false;
+                }
+            }
+
+            // Validate project link if provided
+            const projectLink = document.getElementById('project_link').value.trim();
+            if (projectLink) {
+                try {
+                    new URL(projectLink);
+                } catch (error) {
+                    alert('Please enter a valid project link URL');
+                    return false;
+                }
+            }
+
+            // Show loading state
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Project...';
+            submitBtn.disabled = true;
+
+            // Simulate form submission (replace with actual form submission)
+            setTimeout(() => {
+                alert('Project created successfully! (This is a demo)');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 2000);
+        }
+
+        // YouTube URL validation helper
+        const youtubeInput = document.getElementById('youtube_url');
+        if (youtubeInput) {
+            youtubeInput.addEventListener('blur', function() {
+                const url = this.value.trim();
+                if (url && url !== '') {
+                    const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[\w-]+/;
+                    if (!youtubePattern.test(url)) {
+                        this.classList.add('is-invalid');
+                        if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('invalid-feedback')) {
+                            const feedback = document.createElement('div');
+                            feedback.className = 'invalid-feedback';
+                            feedback.textContent = 'Please enter a valid YouTube URL';
+                            this.parentNode.insertBefore(feedback, this.nextSibling);
+                        }
+                    } else {
+                        this.classList.remove('is-invalid');
+                        const feedback = this.parentNode.querySelector('.invalid-feedback');
+                        if (feedback) {
+                            feedback.remove();
+                        }
+                    }
+                } else {
+                    this.classList.remove('is-invalid');
+                    const feedback = this.parentNode.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        feedback.remove();
+                    }
+                }
+            });
+        }
+
+        // Initialize the form
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Create Project form loaded successfully');
+        });
+    </script>
+</body>
+</html>

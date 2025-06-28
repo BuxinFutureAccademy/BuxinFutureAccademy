@@ -177,6 +177,32 @@
                             </ul>
                         </li>
 
+                        <!-- Student Projects (NEW ADDITION) -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="fas fa-project-diagram me-1"></i>Projects
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('student_projects') }}">
+                                    <i class="fas fa-eye me-2"></i>View All Projects
+                                </a></li>
+                                {% if not current_user.is_admin %}
+                                    <li><a class="dropdown-item" href="{{ url_for('create_project') }}">
+                                        <i class="fas fa-plus me-2"></i>Create Project
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('my_projects') }}">
+                                        <i class="fas fa-user me-2"></i>My Projects
+                                    </a></li>
+                                {% endif %}
+                                {% if current_user.is_admin %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_projects') }}">
+                                        <i class="fas fa-cogs me-2"></i>Manage Projects
+                                    </a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
+
                         <!-- Shopping Dropdown -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle position-relative" href="#" data-bs-toggle="dropdown">
@@ -267,6 +293,9 @@
                                     <li><a class="dropdown-item" href="{{ url_for('admin_products') }}">
                                         <i class="fas fa-box me-2"></i>Manage Products
                                     </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_projects') }}">
+                                        <i class="fas fa-project-diagram me-2"></i>Student Projects
+                                    </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('admin_robotics_submissions') }}">
                                         <i class="fas fa-robot me-2"></i>Robotics Submissions
                                     </a></li>
@@ -327,6 +356,12 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('products') }}">
                                 <i class="fas fa-box me-1"></i>Products
+                            </a>
+                        </li>
+                        <!-- Student Projects for Guests (NEW) -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_projects') }}">
+                                <i class="fas fa-project-diagram me-1"></i>Projects
                             </a>
                         </li>
                         <li class="nav-item">
@@ -398,15 +433,15 @@
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
-                            <i class="fas fa-box"></i>
-                            <div>Products</div>
+                        <a class="nav-link {% if request.endpoint in ['student_projects', 'view_project', 'create_project', 'my_projects'] %}active{% endif %}" href="{{ url_for('student_projects') }}">
+                            <i class="fas fa-project-diagram"></i>
+                            <div>Projects</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'robotics_projects' %}active{% endif %}" href="{{ url_for('robotics_projects') }}">
-                            <i class="fas fa-robot"></i>
-                            <div>Projects</div>
+                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
+                            <i class="fas fa-box"></i>
+                            <div>Products</div>
                         </a>
                     </div>
                     {% if current_user.is_admin %}
@@ -433,15 +468,15 @@
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
-                            <i class="fas fa-box"></i>
-                            <div>Products</div>
+                        <a class="nav-link {% if request.endpoint in ['student_projects', 'view_project'] %}active{% endif %}" href="{{ url_for('student_projects') }}">
+                            <i class="fas fa-project-diagram"></i>
+                            <div>Projects</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'robotics_projects' %}active{% endif %}" href="{{ url_for('robotics_projects') }}">
-                            <i class="fas fa-robot"></i>
-                            <div>Projects</div>
+                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
+                            <i class="fas fa-box"></i>
+                            <div>Products</div>
                         </a>
                     </div>
                     <div class="col">

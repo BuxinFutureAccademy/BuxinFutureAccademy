@@ -218,6 +218,11 @@
                 padding-bottom: 55px !important;
             }
         }
+
+        .alert {
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -233,20 +238,20 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="javascript:history.back()">
+                        <a class="nav-link" href="/student-projects">
                             <i class="fas fa-arrow-left me-1"></i>Back to Projects
                         </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="#my-projects">My Projects</a>
+                        <a class="nav-link" href="/my-projects">My Projects</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#dashboard">Dashboard</a>
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#logout">Logout</a>
+                        <a class="nav-link" href="/logout">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -256,8 +261,10 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <!-- Flash Messages -->
-                <div id="flash-messages"></div>
+                <!-- Flash Messages Container -->
+                <div id="flash-messages">
+                    <!-- Flash messages will be displayed here -->
+                </div>
 
                 <div class="form-container">
                     <div class="form-header">
@@ -265,7 +272,8 @@
                         <p class="text-muted mb-0">Share your amazing project with the community!</p>
                     </div>
 
-                    <form id="project-form" onsubmit="handleSubmit(event)">
+                    <!-- FIXED: Changed to use proper form action and method -->
+                    <form id="project-form" method="POST" action="/create-project" enctype="multipart/form-data">
                         <!-- Basic Information Section -->
                         <div class="form-section">
                             <div class="section-title">
@@ -360,6 +368,7 @@
                             <button type="button" class="btn btn-outline-secondary me-3" onclick="history.back()">
                                 <i class="fas fa-times me-1"></i>Cancel
                             </button>
+                            <!-- FIXED: Changed to type="submit" and removed onclick -->
                             <button type="submit" class="btn btn-custom btn-lg" id="submit-btn">
                                 <i class="fas fa-rocket me-2"></i>Create Project
                             </button>
@@ -382,25 +391,25 @@
         <div class="container-fluid">
             <div class="row text-center">
                 <div class="col">
-                    <a class="nav-link" href="#projects">
+                    <a class="nav-link" href="/student-projects">
                         <i class="fas fa-project-diagram"></i>
                         <div>Projects</div>
                     </a>
                 </div>
                 <div class="col">
-                    <a class="nav-link active" href="#create">
+                    <a class="nav-link active" href="/create-project">
                         <i class="fas fa-plus"></i>
                         <div>Create</div>
                     </a>
                 </div>
                 <div class="col">
-                    <a class="nav-link" href="#my-projects">
+                    <a class="nav-link" href="/my-projects">
                         <i class="fas fa-user"></i>
                         <div>My Projects</div>
                     </a>
                 </div>
                 <div class="col">
-                    <a class="nav-link" href="#dashboard">
+                    <a class="nav-link" href="/dashboard">
                         <i class="fas fa-tachometer-alt"></i>
                         <div>Dashboard</div>
                     </a>
@@ -438,9 +447,6 @@
         setupCharCounter('title', 'title-counter', 200);
         setupCharCounter('description', 'description-counter', 2000);
 
-        // Global variable to store the current image file
-        let currentImageFile = null;
-
         // Image preview functionality
         function previewImage(event) {
             const file = event.target.files[0];
@@ -451,19 +457,17 @@
                 // Validate file type
                 const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
                 if (!allowedTypes.includes(file.type)) {
-                    alert('Please select a valid image file (PNG, JPG, JPEG, GIF, WebP)');
+                    showAlert('Please select a valid image file (PNG, JPG, JPEG, GIF, WebP)', 'danger');
                     event.target.value = '';
                     return;
                 }
                 
                 // Validate file size (5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('File size must be less than 5MB');
+                    showAlert('File size must be less than 5MB', 'danger');
                     event.target.value = '';
                     return;
                 }
-                
-                currentImageFile = file;
                 
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -500,7 +504,6 @@
             
             // Clear file input
             fileInput.value = '';
-            currentImageFile = null;
             
             // Show upload content
             uploadContent.style.display = 'block';
@@ -555,15 +558,24 @@
             }
         }
 
-        // Form submission handler
-        function handleSubmit(e) {
-            e.preventDefault();
+        // Form submission with loading state
+        document.getElementById('project-form').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.innerHTML;
             
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Project...';
+            submitBtn.disabled = true;
+            
+            // Validate form before submission
             const title = document.getElementById('title').value.trim();
             const description = document.getElementById('description').value.trim();
             
             if (!title || !description) {
-                alert('Please fill in all required fields (Title and Description)');
+                e.preventDefault();
+                showAlert('Please fill in all required fields (Title and Description)', 'danger');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
                 return false;
             }
 
@@ -572,7 +584,10 @@
             if (youtubeUrl) {
                 const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[\w-]+/;
                 if (!youtubePattern.test(youtubeUrl)) {
-                    alert('Please enter a valid YouTube URL');
+                    e.preventDefault();
+                    showAlert('Please enter a valid YouTube URL', 'danger');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                     return false;
                 }
             }
@@ -583,23 +598,32 @@
                 try {
                     new URL(projectLink);
                 } catch (error) {
-                    alert('Please enter a valid project link URL');
+                    e.preventDefault();
+                    showAlert('Please enter a valid project link URL', 'danger');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                     return false;
                 }
             }
 
-            // Show loading state
-            const submitBtn = document.getElementById('submit-btn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Project...';
-            submitBtn.disabled = true;
+            // If we get here, form is valid and will be submitted
+            // The loading state will be cleared when the page reloads or redirects
+        });
 
-            // Simulate form submission (replace with actual form submission)
-            setTimeout(() => {
-                alert('Project created successfully! (This is a demo)');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 2000);
+        // Function to show alerts
+        function showAlert(message, type) {
+            const alertsContainer = document.getElementById('flash-messages');
+            const alertHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            alertsContainer.innerHTML = alertHTML;
+            
+            // Scroll to top to show alert
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // YouTube URL validation helper
@@ -636,7 +660,7 @@
 
         // Initialize the form
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Create Project form loaded successfully');
+            console.log('Create Project form loaded and ready');
         });
     </script>
 </body>

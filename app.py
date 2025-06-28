@@ -407,7 +407,158 @@ class RoboticsProjectSubmission(db.Model):
                 return []
         return []
 
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+# Add these new database models to your app.py file
+# Place them with your other models (after the existing models)
+
+class StudentProject(db.Model):
+    """Model for student project posts"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Project Information
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    
+    # Media Content
+    image_url = db.Column(db.String(500))  # Project image URL (Cloudinary)
+    youtube_url = db.Column(db.String(500))  # YouTube video URL
+    project_link = db.Column(db.String(500))  # Additional project link (GitHub, demo, etc.)
+    
+    # Student Information
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    student = db.relationship('User', foreign_keys=[student_id], lazy='select')
+    
+    # Metadata
+    is_active = db.Column(db.Boolean, default=True)
+    featured = db.Column(db.Boolean, default=False)  # Admin can feature projects
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    likes = db.relationship('ProjectLike', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('ProjectComment', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def get_like_count(self):
+        """Get total likes for this project"""
+        return self.likes.filter_by(is_like=True).count()
+    
+    def get_dislike_count(self):
+        """Get total dislikes for this project"""
+        return self.likes.filter_by(is_like=False).count()
+    
+    def get_comment_count(self):
+        """Get total comments for this project"""
+        return self.comments.count()
+    
+    def user_reaction(self, user_id):
+        """Get user's like/dislike status for this project"""
+        if not user_id:
+            return None
+        like = self.likes.filter_by(user_id=user_id).first()
+        return like.is_like if like else None
+    
+    def get_youtube_embed_url(self):
+        """Convert YouTube URL to embed URL"""
+        if not self.youtube_url:
+            return None
+        
+        # Handle different YouTube URL formats
+        import re
+        youtube_patterns = [
+            r'(?:https?://)?(?:www\.)?youtube\.com/watch\?v=([a-zA-Z0-9_-]+)',
+            r'(?:https?://)?(?:www\.)?youtu\.be/([a-zA-Z0-9_-]+)',
+            r'(?:https?://)?(?:www\.)?youtube\.com/embed/([a-zA-Z0-9_-]+)'
+        ]
+        
+        for pattern in youtube_patterns:
+            match = re.search(pattern, self.youtube_url)
+            if match:
+                video_id = match.group(1)
+                return f"https://www.youtube.com/embed/{video_id}"
+        
+        return None
+
+
+class ProjectLike(db.Model):
+    """Model for project likes/dislikes"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('student_project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_like = db.Column(db.Boolean, nullable=False)  # True for like, False for dislike
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    
+    # Ensure one reaction per user per project
+    __table_args__ = (db.UniqueConstraint('project_id', 'user_id', name='unique_user_project_reaction'),)
+
+
+class ProjectComment(db.Model):
+    """Model for project comments"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('student_project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comment = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+
+
+# Helper function to upload project images to Cloudinary
+def upload_project_image_to_cloudinary(image_file, project_id, user_id):
+    """Upload project image to Cloudinary"""
+    try:
+        print(f"📤 Uploading project image to Cloudinary...")
+        
+        # Reset file pointer to beginning
+        image_file.seek(0)
+        
+        # Create a unique public_id for the image
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        public_id = f"project_{project_id}_{user_id}_{timestamp}"
+        
+        # Get file size for logging
+        image_file.seek(0, 2)
+        file_size = image_file.tell()
+        image_file.seek(0)
+        print(f"📁 File size: {file_size / (1024*1024):.1f}MB")
+        
+        # Upload to Cloudinary with optimized settings
+        upload_params = {
+            'resource_type': "image",
+            'public_id': public_id,
+            'folder': "student_projects",
+            'overwrite': True,
+            'format': "jpg",  # Convert to JPG for optimization
+            'quality': "auto",  # Optimize quality automatically
+            'transformation': [
+                {'width': 800, 'height': 600, 'crop': 'limit'},  # Limit max size
+                {'quality': 'auto:good'}  # Good quality optimization
+            ]
+        }
+        
+        print(f"📤 Uploading to Cloudinary with params: {upload_params}")
+        
+        # Perform the upload
+        result = cloudinary.uploader.upload(image_file, **upload_params)
+        
+        print(f"✅ Cloudinary upload successful!")
+        print(f"   URL: {result.get('secure_url', 'No URL')}")
+        print(f"   Public ID: {result.get('public_id', 'No ID')}")
+        print(f"   Size: {result.get('bytes', 0) / (1024*1024):.1f}MB")
+        
+        return result['secure_url']
+        
+    except Exception as e:
+        print(f"❌ Cloudinary upload error: {str(e)}")
+        import traceback
+        print("Full traceback:")
+        traceback.print_exc()
+        return None
 
 
 class LearningMaterial(db.Model):
@@ -1161,6 +1312,611 @@ def create_robotics_table():
         </html>
         """, 500
 
+
+
+
+
+# ========================================
+# STUDENT PROJECT SHOWCASE ROUTES
+# ========================================
+
+@app.route('/student-projects')
+def student_projects():
+    """Display all student projects (public page)"""
+    # Get filter parameters
+    search = request.args.get('search', '').strip()
+    sort_by = request.args.get('sort', 'newest')
+    featured_only = request.args.get('featured') == 'true'
+    
+    # Start with base query for active projects
+    query = StudentProject.query.filter_by(is_active=True)
+    
+    # Apply filters
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                StudentProject.title.like(search_filter),
+                StudentProject.description.like(search_filter)
+            )
+        )
+    
+    if featured_only:
+        query = query.filter_by(featured=True)
+    
+    # Apply sorting
+    if sort_by == 'popular':
+        # Sort by like count (subquery)
+        like_counts = db.session.query(
+            ProjectLike.project_id,
+            db.func.count(ProjectLike.id).label('like_count')
+        ).filter_by(is_like=True).group_by(ProjectLike.project_id).subquery()
+        
+        query = query.outerjoin(like_counts, StudentProject.id == like_counts.c.project_id)\
+                    .order_by(db.desc(db.func.coalesce(like_counts.c.like_count, 0)))
+    elif sort_by == 'title':
+        query = query.order_by(StudentProject.title.asc())
+    else:  # newest
+        query = query.order_by(StudentProject.created_at.desc())
+    
+    projects = query.all()
+    
+    # Get statistics
+    total_projects = StudentProject.query.filter_by(is_active=True).count()
+    featured_projects = StudentProject.query.filter_by(is_active=True, featured=True).count()
+    
+    return render_template('student_projects.html',
+                         projects=projects,
+                         total_projects=total_projects,
+                         featured_projects=featured_projects,
+                         search_term=search,
+                         sort_by=sort_by,
+                         featured_only=featured_only)
+
+@app.route('/student-projects/<int:project_id>')
+def view_project(project_id):
+    """View individual project details"""
+    project = StudentProject.query.get_or_404(project_id)
+    
+    if not project.is_active:
+        flash('This project is not available.', 'warning')
+        return redirect(url_for('student_projects'))
+    
+    # Get comments with pagination
+    page = request.args.get('page', 1, type=int)
+    comments = project.comments.order_by(ProjectComment.created_at.desc())\
+                             .paginate(page=page, per_page=10, error_out=False)
+    
+    # Get user's reaction if logged in
+    user_reaction = None
+    if current_user.is_authenticated:
+        user_reaction = project.user_reaction(current_user.id)
+    
+    return render_template('view_project.html',
+                         project=project,
+                         comments=comments,
+                         user_reaction=user_reaction)
+
+@app.route('/my-projects')
+@login_required
+def my_projects():
+    """Show current user's projects"""
+    projects = StudentProject.query.filter_by(student_id=current_user.id)\
+                                  .order_by(StudentProject.created_at.desc()).all()
+    
+    # Calculate statistics
+    total_likes = sum(project.get_like_count() for project in projects)
+    total_comments = sum(project.get_comment_count() for project in projects)
+    
+    return render_template('my_projects.html',
+                         projects=projects,
+                         total_likes=total_likes,
+                         total_comments=total_comments)
+
+@app.route('/create-project', methods=['GET', 'POST'])
+@login_required
+def create_project():
+    """Create a new project post"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            title = request.form.get('title', '').strip()
+            description = request.form.get('description', '').strip()
+            youtube_url = request.form.get('youtube_url', '').strip()
+            project_link = request.form.get('project_link', '').strip()
+            
+            # Validate required fields
+            if not all([title, description]):
+                flash('Project title and description are required!', 'danger')
+                return render_template('create_project.html')
+            
+            # Create the project first to get an ID
+            project = StudentProject(
+                title=title,
+                description=description,
+                youtube_url=youtube_url if youtube_url else None,
+                project_link=project_link if project_link else None,
+                student_id=current_user.id
+            )
+            
+            db.session.add(project)
+            db.session.flush()  # Get the project ID
+            
+            # Handle image upload
+            project_image = request.files.get('project_image')
+            if project_image and project_image.filename:
+                # Check file type
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                file_extension = project_image.filename.rsplit('.', 1)[1].lower() if '.' in project_image.filename else ''
+                
+                if file_extension not in allowed_extensions:
+                    flash('Invalid image format. Please use PNG, JPG, JPEG, GIF, or WebP.', 'danger')
+                    db.session.rollback()
+                    return render_template('create_project.html')
+                
+                # Check file size (5MB limit)
+                project_image.seek(0, 2)
+                file_size = project_image.tell()
+                project_image.seek(0)
+                
+                if file_size > 5 * 1024 * 1024:  # 5MB
+                    flash('Image file is too large. Maximum size is 5MB.', 'danger')
+                    db.session.rollback()
+                    return render_template('create_project.html')
+                
+                # Upload to Cloudinary
+                print(f"📤 Uploading project image for: {title}")
+                cloudinary_url = upload_project_image_to_cloudinary(
+                    project_image, project.id, current_user.id
+                )
+                
+                if cloudinary_url:
+                    project.image_url = cloudinary_url
+                    print(f"✅ Image uploaded successfully: {cloudinary_url}")
+                else:
+                    flash('Failed to upload image. Please try again.', 'danger')
+                    db.session.rollback()
+                    return render_template('create_project.html')
+            
+            # Validate YouTube URL if provided
+            if youtube_url:
+                embed_url = project.get_youtube_embed_url()
+                if not embed_url:
+                    flash('Invalid YouTube URL. Please enter a valid YouTube video URL.', 'warning')
+                    # Don't fail the entire submission, just clear the URL
+                    project.youtube_url = None
+            
+            db.session.commit()
+            
+            flash(f'🎉 Project "{title}" created successfully!', 'success')
+            return redirect(url_for('my_projects'))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating project: {e}")
+            flash('An error occurred while creating your project. Please try again.', 'danger')
+            return render_template('create_project.html')
+    
+    return render_template('create_project.html')
+
+@app.route('/edit-project/<int:project_id>', methods=['GET', 'POST'])
+@login_required
+def edit_project(project_id):
+    """Edit an existing project"""
+    project = StudentProject.query.get_or_404(project_id)
+    
+    # Check permissions
+    if project.student_id != current_user.id and not current_user.is_admin:
+        flash('You can only edit your own projects.', 'danger')
+        return redirect(url_for('student_projects'))
+    
+    if request.method == 'POST':
+        try:
+            # Update project fields
+            project.title = request.form.get('title', '').strip()
+            project.description = request.form.get('description', '').strip()
+            project.youtube_url = request.form.get('youtube_url', '').strip() or None
+            project.project_link = request.form.get('project_link', '').strip() or None
+            project.updated_at = datetime.utcnow()
+            
+            # Validate required fields
+            if not all([project.title, project.description]):
+                flash('Project title and description are required!', 'danger')
+                return render_template('edit_project.html', project=project)
+            
+            # Handle new image upload
+            project_image = request.files.get('project_image')
+            if project_image and project_image.filename:
+                # Same validation as create
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                file_extension = project_image.filename.rsplit('.', 1)[1].lower() if '.' in project_image.filename else ''
+                
+                if file_extension not in allowed_extensions:
+                    flash('Invalid image format. Please use PNG, JPG, JPEG, GIF, or WebP.', 'danger')
+                    return render_template('edit_project.html', project=project)
+                
+                # Check file size
+                project_image.seek(0, 2)
+                file_size = project_image.tell()
+                project_image.seek(0)
+                
+                if file_size > 5 * 1024 * 1024:  # 5MB
+                    flash('Image file is too large. Maximum size is 5MB.', 'danger')
+                    return render_template('edit_project.html', project=project)
+                
+                # Upload new image
+                cloudinary_url = upload_project_image_to_cloudinary(
+                    project_image, project.id, current_user.id
+                )
+                
+                if cloudinary_url:
+                    project.image_url = cloudinary_url
+                else:
+                    flash('Failed to upload new image. Keeping existing image.', 'warning')
+            
+            # Validate YouTube URL if provided
+            if project.youtube_url:
+                embed_url = project.get_youtube_embed_url()
+                if not embed_url:
+                    flash('Invalid YouTube URL. Please enter a valid YouTube video URL.', 'warning')
+                    project.youtube_url = None
+            
+            db.session.commit()
+            
+            flash(f'Project "{project.title}" updated successfully!', 'success')
+            return redirect(url_for('view_project', project_id=project.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating project: {e}")
+            flash('An error occurred while updating your project. Please try again.', 'danger')
+    
+    return render_template('edit_project.html', project=project)
+
+@app.route('/delete-project/<int:project_id>', methods=['POST'])
+@login_required
+def delete_project(project_id):
+    """Delete a project"""
+    project = StudentProject.query.get_or_404(project_id)
+    
+    # Check permissions
+    if project.student_id != current_user.id and not current_user.is_admin:
+        flash('You can only delete your own projects.', 'danger')
+        return redirect(url_for('student_projects'))
+    
+    try:
+        project_title = project.title
+        
+        # Delete associated likes and comments (cascade should handle this)
+        db.session.delete(project)
+        db.session.commit()
+        
+        flash(f'Project "{project_title}" deleted successfully.', 'success')
+        
+        if current_user.is_admin:
+            return redirect(url_for('admin_projects'))
+        else:
+            return redirect(url_for('my_projects'))
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting project: {e}")
+        flash('An error occurred while deleting the project. Please try again.', 'danger')
+        return redirect(url_for('view_project', project_id=project_id))
+
+@app.route('/project/<int:project_id>/like', methods=['POST'])
+@login_required
+def toggle_project_like(project_id):
+    """Toggle like/dislike for a project"""
+    project = StudentProject.query.get_or_404(project_id)
+    
+    try:
+        data = request.get_json()
+        is_like = data.get('is_like', True)  # True for like, False for dislike
+        
+        # Check if user already has a reaction
+        existing_reaction = ProjectLike.query.filter_by(
+            project_id=project_id,
+            user_id=current_user.id
+        ).first()
+        
+        if existing_reaction:
+            if existing_reaction.is_like == is_like:
+                # Same reaction - remove it
+                db.session.delete(existing_reaction)
+                action = 'removed'
+            else:
+                # Different reaction - update it
+                existing_reaction.is_like = is_like
+                action = 'liked' if is_like else 'disliked'
+        else:
+            # New reaction - create it
+            new_reaction = ProjectLike(
+                project_id=project_id,
+                user_id=current_user.id,
+                is_like=is_like
+            )
+            db.session.add(new_reaction)
+            action = 'liked' if is_like else 'disliked'
+        
+        db.session.commit()
+        
+        # Return updated counts
+        like_count = project.get_like_count()
+        dislike_count = project.get_dislike_count()
+        user_reaction = project.user_reaction(current_user.id)
+        
+        return {
+            'success': True,
+            'action': action,
+            'like_count': like_count,
+            'dislike_count': dislike_count,
+            'user_reaction': user_reaction
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error toggling project like: {e}")
+        return {'success': False, 'error': str(e)}, 500
+
+@app.route('/project/<int:project_id>/comment', methods=['POST'])
+@login_required
+def add_project_comment(project_id):
+    """Add a comment to a project"""
+    project = StudentProject.query.get_or_404(project_id)
+    
+    try:
+        data = request.get_json()
+        comment_text = data.get('comment', '').strip()
+        
+        if not comment_text:
+            return {'success': False, 'error': 'Comment cannot be empty'}, 400
+        
+        if len(comment_text) > 1000:
+            return {'success': False, 'error': 'Comment is too long (max 1000 characters)'}, 400
+        
+        # Create new comment
+        new_comment = ProjectComment(
+            project_id=project_id,
+            user_id=current_user.id,
+            comment=comment_text
+        )
+        
+        db.session.add(new_comment)
+        db.session.commit()
+        
+        # Return comment data
+        return {
+            'success': True,
+            'comment': {
+                'id': new_comment.id,
+                'comment': new_comment.comment,
+                'user_name': f"{current_user.first_name} {current_user.last_name}",
+                'created_at': new_comment.created_at.strftime('%Y-%m-%d %H:%M'),
+                'can_delete': True  # User can delete their own comment
+            },
+            'comment_count': project.get_comment_count()
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding comment: {e}")
+        return {'success': False, 'error': str(e)}, 500
+
+@app.route('/project/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+def delete_project_comment(comment_id):
+    """Delete a project comment"""
+    comment = ProjectComment.query.get_or_404(comment_id)
+    
+    # Check permissions
+    if comment.user_id != current_user.id and not current_user.is_admin:
+        return {'success': False, 'error': 'You can only delete your own comments'}, 403
+    
+    try:
+        project_id = comment.project_id
+        db.session.delete(comment)
+        db.session.commit()
+        
+        # Get updated comment count
+        project = StudentProject.query.get(project_id)
+        comment_count = project.get_comment_count() if project else 0
+        
+        return {
+            'success': True,
+            'comment_count': comment_count
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting comment: {e}")
+        return {'success': False, 'error': str(e)}, 500
+
+# ========================================
+# ADMIN PROJECT MANAGEMENT ROUTES
+# ========================================
+
+@app.route('/admin/projects')
+@login_required
+def admin_projects():
+    """Admin view for managing all student projects"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    search = request.args.get('search', '').strip()
+    status = request.args.get('status', '')  # active, inactive
+    featured = request.args.get('featured', '')  # true, false
+    sort_by = request.args.get('sort', 'newest')
+    
+    # Start with base query
+    query = StudentProject.query
+    
+    # Apply filters
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                StudentProject.title.like(search_filter),
+                StudentProject.description.like(search_filter)
+            )
+        )
+    
+    if status == 'active':
+        query = query.filter_by(is_active=True)
+    elif status == 'inactive':
+        query = query.filter_by(is_active=False)
+    
+    if featured == 'true':
+        query = query.filter_by(featured=True)
+    elif featured == 'false':
+        query = query.filter_by(featured=False)
+    
+    # Apply sorting
+    if sort_by == 'title':
+        query = query.order_by(StudentProject.title.asc())
+    elif sort_by == 'student':
+        query = query.join(User).order_by(User.first_name.asc(), User.last_name.asc())
+    elif sort_by == 'popular':
+        # Sort by like count
+        like_counts = db.session.query(
+            ProjectLike.project_id,
+            db.func.count(ProjectLike.id).label('like_count')
+        ).filter_by(is_like=True).group_by(ProjectLike.project_id).subquery()
+        
+        query = query.outerjoin(like_counts, StudentProject.id == like_counts.c.project_id)\
+                    .order_by(db.desc(db.func.coalesce(like_counts.c.like_count, 0)))
+    else:  # newest
+        query = query.order_by(StudentProject.created_at.desc())
+    
+    projects = query.all()
+    
+    # Get statistics
+    total_projects = StudentProject.query.count()
+    active_projects = StudentProject.query.filter_by(is_active=True).count()
+    featured_projects = StudentProject.query.filter_by(featured=True).count()
+    
+    return render_template('admin_projects.html',
+                         projects=projects,
+                         total_projects=total_projects,
+                         active_projects=active_projects,
+                         featured_projects=featured_projects,
+                         search_term=search,
+                         status_filter=status,
+                         featured_filter=featured,
+                         sort_by=sort_by)
+
+@app.route('/admin/project/<int:project_id>/toggle-status', methods=['POST'])
+@login_required
+def admin_toggle_project_status(project_id):
+    """Toggle project active/inactive status"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        project = StudentProject.query.get_or_404(project_id)
+        data = request.get_json()
+        new_status = data.get('is_active', False)
+        
+        project.is_active = new_status
+        db.session.commit()
+        
+        action = "activated" if new_status else "deactivated"
+        return {
+            'success': True,
+            'message': f'Project "{project.title}" {action} successfully!',
+            'new_status': new_status
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+@app.route('/admin/project/<int:project_id>/toggle-featured', methods=['POST'])
+@login_required
+def admin_toggle_project_featured(project_id):
+    """Toggle project featured status"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        project = StudentProject.query.get_or_404(project_id)
+        data = request.get_json()
+        new_featured = data.get('featured', False)
+        
+        project.featured = new_featured
+        db.session.commit()
+        
+        action = "featured" if new_featured else "unfeatured"
+        return {
+            'success': True,
+            'message': f'Project "{project.title}" {action} successfully!',
+            'featured': new_featured
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+# ========================================
+# DATABASE MIGRATION ROUTE FOR NEW TABLES
+# ========================================
+
+@app.route('/admin/create-project-tables')
+@login_required
+def create_project_tables():
+    """Create student project tables - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Create the new tables
+        db.create_all()
+        
+        return """
+        <html>
+        <head><title>Project Tables Created</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Student Project Showcase Tables Created!</h1>
+            <p>The following tables have been created successfully:</p>
+            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
+                <li>✅ <strong>student_project</strong> - Main project posts</li>
+                <li>✅ <strong>project_like</strong> - Likes and dislikes</li>
+                <li>✅ <strong>project_comment</strong> - Comments system</li>
+            </ul>
+            <h3>🎯 Features Available:</h3>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>📸 Students can post project images (stored on Cloudinary)</li>
+                <li>🎬 Embed YouTube videos in projects</li>
+                <li>🔗 Add project links (GitHub, demos, etc.)</li>
+                <li>👍👎 Like/dislike system</li>
+                <li>💬 Comment system</li>
+                <li>⭐ Admin can feature projects</li>
+                <li>🔍 Search and filter projects</li>
+            </ul>
+            <p style="margin-top: 2rem;">
+                <a href="/student-projects" style="background: #28a745; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">🚀 View Projects</a>
+                <a href="/create-project" style="background: #007bff; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">➕ Create Project</a>
+                <a href="/admin/projects" style="background: #6f42c1; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">⚙️ Admin Panel</a>
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Table Creation Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Error Creating Tables</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """, 500
 # ========================================
 # AUTHENTICATION ROUTES
 # ========================================

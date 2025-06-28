@@ -1320,13 +1320,17 @@ def create_robotics_table():
 # STUDENT PROJECT SHOWCASE ROUTES
 # ========================================
 
+# Replace your existing student_projects route in app.py with this fixed version:
+
 @app.route('/student-projects')
 def student_projects():
-    """Display all student projects (public page)"""
+    """Display all student projects (public page) - FIXED VERSION"""
     # Get filter parameters
     search = request.args.get('search', '').strip()
     sort_by = request.args.get('sort', 'newest')
     featured_only = request.args.get('featured') == 'true'
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Number of projects per page
     
     # Start with base query for active projects
     query = StudentProject.query.filter_by(is_active=True)
@@ -1359,7 +1363,22 @@ def student_projects():
     else:  # newest
         query = query.order_by(StudentProject.created_at.desc())
     
-    projects = query.all()
+    # Get paginated results
+    projects_pagination = query.paginate(
+        page=page, 
+        per_page=per_page, 
+        error_out=False
+    )
+    projects = projects_pagination.items
+    
+    # Preload comments for each project (get the latest 3 comments)
+    for project in projects:
+        # Get recent comments for this project (ordered by most recent first)
+        recent_comments = ProjectComment.query.filter_by(project_id=project.id)\
+                                             .order_by(ProjectComment.created_at.desc())\
+                                             .limit(3).all()
+        # Reverse to show oldest to newest in the display
+        project.recent_comments = list(reversed(recent_comments))
     
     # Get statistics
     total_projects = StudentProject.query.filter_by(is_active=True).count()
@@ -1367,11 +1386,13 @@ def student_projects():
     
     return render_template('student_projects.html',
                          projects=projects,
+                         projects_pagination=projects_pagination,
                          total_projects=total_projects,
                          featured_projects=featured_projects,
                          search_term=search,
                          sort_by=sort_by,
-                         featured_only=featured_only)
+                         featured_only=featured_only,
+                         current_page=page)
 
 @app.route('/student-projects/<int:project_id>')
 def view_project(project_id):

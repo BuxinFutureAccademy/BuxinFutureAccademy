@@ -5,8 +5,9 @@
 <div class="hero-section">
     <div class="hero-content">
         <div class="container">
-            <div class="row justify-content-center text-center">
-                <div class="col-lg-10">
+            <div class="row align-items-center">
+                <!-- Left side - Text content -->
+                <div class="col-lg-6 col-md-12 text-center text-lg-start">
                     <div class="hero-icon mb-3">
                         <i class="fas fa-robot"></i>
                     </div>
@@ -35,6 +36,13 @@
                             </a>
                         </div>
                     {% endif %}
+                </div>
+                
+                <!-- Right side - Image -->
+                <div class="col-lg-6 col-md-12 text-center">
+                    <div class="hero-image">
+                        <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751125693/Obstacle-Avoiding-Robot-Car-Using-An-Arduino-Uno-removebg-preview_qhz2gl.png" alt="BuXin Academy Technology" class="img-fluid hero-img">
+                    </div>
                 </div>
             </div>
         </div>
@@ -305,23 +313,69 @@
 
 <style>
 /* Mobile-First Responsive Design */
+/* Updated Hero Section Styles */
 .hero-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 70vh;
+    min-height: 80vh;
     display: flex;
     align-items: center;
     color: white;
-    padding: 2rem 0;
+    padding: 3rem 0;
 }
 
-.hero-icon {
-    font-size: 3rem;
+.hero-content {
+    width: 100%;
+}
+
+.hero-image {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-img {
+    max-width: 100%;
+    height: auto;
+    max-height: 500px;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3));
     animation: float 3s ease-in-out infinite;
 }
 
+/* Float animation for the image */
 @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    0%, 100% { 
+        transform: translateY(0px); 
+    }
+    50% { 
+        transform: translateY(-15px); 
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .hero-section {
+        min-height: 70vh;
+        padding: 2rem 0;
+    }
+    
+    .hero-image {
+        margin-top: 2rem;
+    }
+    
+    .hero-img {
+        max-height: 350px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .hero-img {
+        max-height: 600px;
+    }
+}
+
+/* Keep existing hero styles */
+.hero-icon {
+    font-size: 3rem;
+    animation: float 3s ease-in-out infinite;
 }
 
 .hero-title {
@@ -349,6 +403,20 @@
     padding: 0.75rem 1.5rem;
 }
 
+/* Desktop responsive */
+@media (min-width: 768px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .hero-icon {
+        font-size: 4rem;
+    }
+}
 /* Stats Section */
 .stats-section {
     background: #f8f9fa;

@@ -636,25 +636,31 @@
 
                             <!-- Comments Section -->
                             <div class="comments-section" id="comments-{{ project.id }}">
-                                {% for comment in project.comments.order_by(project.comments.property.mapper.class_.created_at.desc()).limit(3) %}
-                                    <div class="comment-item" id="comment-{{ comment.id }}">
-                                        <div class="comment-avatar">
-                                            {{ comment.user.first_name[0] }}{{ comment.user.last_name[0] }}
-                                        </div>
-                                        <div class="comment-content">
-                                            <div class="comment-author">{{ comment.user.first_name }} {{ comment.user.last_name }}</div>
-                                            <p class="comment-text">{{ comment.comment }}</p>
-                                            <div class="comment-time">
-                                                {{ comment.created_at.strftime('%m/%d %I:%M %p') }}
-                                                {% if current_user.is_authenticated and (current_user.id == comment.user_id or current_user.is_admin) %}
-                                                    <button class="delete-comment-btn" onclick="deleteComment({{ comment.id }}, {{ project.id }})">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                {% endif %}
+                                {% if project.recent_comments %}
+                                    {% for comment in project.recent_comments %}
+                                        <div class="comment-item" id="comment-{{ comment.id }}">
+                                            <div class="comment-avatar">
+                                                {{ comment.user.first_name[0] }}{{ comment.user.last_name[0] }}
+                                            </div>
+                                            <div class="comment-content">
+                                                <div class="comment-author">{{ comment.user.first_name }} {{ comment.user.last_name }}</div>
+                                                <p class="comment-text">{{ comment.comment }}</p>
+                                                <div class="comment-time">
+                                                    {{ comment.created_at.strftime('%m/%d %I:%M %p') }}
+                                                    {% if current_user.is_authenticated and (current_user.id == comment.user_id or current_user.is_admin) %}
+                                                        <button class="delete-comment-btn" onclick="deleteComment({{ comment.id }}, {{ project.id }})">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
                                             </div>
                                         </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center py-2">
+                                        <small class="text-muted">No comments yet. Be the first to comment!</small>
                                     </div>
-                                {% endfor %}
+                                {% endif %}
                                 
                                 {% if project.get_comment_count() > 3 %}
                                     <div class="text-center mt-2">
@@ -693,12 +699,25 @@
                     </div>
                 {% endfor %}
 
-                <!-- Load More Button -->
-                <div class="load-more">
-                    <button class="load-more-btn" onclick="loadMoreProjects()">
-                        <i class="fas fa-plus me-2"></i>Load More Projects
-                    </button>
-                </div>
+                <!-- Load More Button / Pagination -->
+                {% if projects_pagination.has_next %}
+                    <div class="load-more">
+                        <a href="{{ url_for('student_projects', page=projects_pagination.next_num, search=search_term, sort=sort_by, featured='true' if featured_only else '') }}" 
+                           class="load-more-btn">
+                            <i class="fas fa-plus me-2"></i>Load More Projects
+                        </a>
+                    </div>
+                {% endif %}
+
+                <!-- Page Info for Admin -->
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Page {{ projects_pagination.page }} of {{ projects_pagination.pages }} 
+                            ({{ projects_pagination.total }} total projects)
+                        </small>
+                    </div>
+                {% endif %}
             {% else %}
                 <div class="text-center py-5" style="background: white; border-radius: 15px;">
                     <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
@@ -985,16 +1004,15 @@
             window.location.href = `/student-projects/${projectId}`;
         }
 
-        // Load more projects (pagination)
+        // Load more projects (pagination) - Updated
         function loadMoreProjects() {
-            // This would require AJAX pagination implementation
-            // For now, show a simple message
-            const currentUrl = new URL(window.location);
-            const currentPage = parseInt(currentUrl.searchParams.get('page') || '1');
-            const nextPage = currentPage + 1;
-            
-            currentUrl.searchParams.set('page', nextPage);
-            window.location.href = currentUrl.toString();
+            // Check if there's a load more link
+            const loadMoreLink = document.querySelector('.load-more a');
+            if (loadMoreLink) {
+                window.location.href = loadMoreLink.href;
+            } else {
+                showToast('No more projects to load', 'info');
+            }
         }
 
         // Simple toast notification function

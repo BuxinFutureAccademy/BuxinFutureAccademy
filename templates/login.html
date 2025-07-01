@@ -52,7 +52,9 @@
                                     Remember me
                                 </label>
                             </div>
-                            <a href="#" class="text-link forgot-link">Forgot password?</a>
+                            <a href="{{ url_for('forgot_password') }}" class="text-link forgot-link">
+                                <i class="fas fa-key me-1"></i>Forgot password?
+                            </a>
                         </div>
 
                         <!-- Submit Button -->
@@ -265,15 +267,28 @@
     text-decoration: none;
     font-weight: 500;
     font-size: 0.9rem;
+    transition: all 0.3s ease;
 }
 
 .text-link:hover {
     color: #5a6fd8;
     text-decoration: underline;
+    transform: translateX(2px);
 }
 
 .forgot-link {
     font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.forgot-link:hover {
+    color: #f5576c;
+}
+
+.forgot-link i {
+    font-size: 0.75rem;
 }
 
 .btn-login {
@@ -474,6 +489,45 @@
         align-items: center;
     }
 }
+
+/* Enhanced forgot password link styling */
+.forgot-link {
+    position: relative;
+    overflow: hidden;
+}
+
+.forgot-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(245, 87, 108, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.forgot-link:hover::before {
+    left: 100%;
+}
+
+/* Password reset success message styling */
+.alert-password-reset {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #b8dac4;
+    border-radius: 12px;
+    color: #155724;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-password-reset i {
+    color: #28a745;
+    font-size: 1.1rem;
+}
 </style>
 
 <script>
@@ -497,6 +551,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('.login-form');
     const submitBtn = document.querySelector('.btn-login');
     const inputs = form.querySelectorAll('input[required]');
+    
+    // Check for password reset success message in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('reset') === 'success') {
+        showPasswordResetSuccess();
+    }
     
     // Form validation
     inputs.forEach(input => {
@@ -586,6 +646,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 2000);
         });
     });
+    
+    // Enhanced forgot password link interaction
+    const forgotLink = document.querySelector('.forgot-link');
+    forgotLink.addEventListener('click', function(e) {
+        // Add a subtle animation
+        this.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+            this.style.transform = 'scale(1)';
+        }, 150);
+    });
 });
+
+function showPasswordResetSuccess() {
+    const loginHeader = document.querySelector('.login-header');
+    const successAlert = document.createElement('div');
+    successAlert.className = 'alert-password-reset';
+    successAlert.innerHTML = `
+        <i class="fas fa-check-circle"></i>
+        <div>
+            <strong>Password Reset Successful!</strong><br>
+            <small>You can now log in with your new password.</small>
+        </div>
+    `;
+    
+    loginHeader.appendChild(successAlert);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        successAlert.style.opacity = '0';
+        setTimeout(() => {
+            if (successAlert.parentNode) {
+                successAlert.parentNode.removeChild(successAlert);
+            }
+        }, 300);
+    }, 10000);
+}
 </script>
 {% endblock %}

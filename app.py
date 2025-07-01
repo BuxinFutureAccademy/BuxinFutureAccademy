@@ -834,17 +834,51 @@ def generate_whatsapp_links(recipients, message):
 
 # Add these routes to your app.py file
 
+
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
-    """Handle forgot password requests"""
+    """Handle forgot password requests - DEBUGGED VERSION"""
     if current_user.is_authenticated:
         flash('You are already logged in.', 'info')
         return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
     
     if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
+        # Debug: Print all form data
+        print("=== FORGOT PASSWORD DEBUG ===")
+        print(f"Request method: {request.method}")
+        print(f"Form data: {request.form}")
+        print(f"Raw form data: {dict(request.form)}")
         
-        if not email:
+        # Try multiple ways to get the email
+        email = None
+        
+        # Method 1: Standard form field
+        if 'email' in request.form:
+            email = request.form.get('email', '').strip().lower()
+            print(f"Method 1 - Standard: email = '{email}'")
+        
+        # Method 2: Check for any field that might contain email
+        for key, value in request.form.items():
+            print(f"Form field: '{key}' = '{value}'")
+            if 'email' in key.lower() or '@' in str(value):
+                email = str(value).strip().lower()
+                print(f"Method 2 - Found email-like field: '{key}' = '{email}'")
+                break
+        
+        # Method 3: Check if it's JSON data
+        if request.is_json:
+            json_data = request.get_json()
+            print(f"JSON data: {json_data}")
+            if json_data and 'email' in json_data:
+                email = json_data.get('email', '').strip().lower()
+                print(f"Method 3 - JSON: email = '{email}'")
+        
+        print(f"Final email value: '{email}'")
+        print("=== END DEBUG ===")
+        
+        # Validation
+        if not email or email == '':
+            print("❌ Email validation failed - empty or None")
             flash('Please enter your email address.', 'danger')
             return render_template('forgot_password.html')
         
@@ -852,14 +886,20 @@ def forgot_password():
         import re
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
+            print(f"❌ Email format validation failed for: '{email}'")
             flash('Please enter a valid email address.', 'danger')
             return render_template('forgot_password.html')
         
+        print(f"✅ Email validation passed for: '{email}'")
+        
         # Find user by email
         user = User.query.filter_by(email=email).first()
+        print(f"User lookup result: {user}")
         
         if user:
             try:
+                print(f"Found user: {user.username} ({user.email})")
+                
                 # Check if user already has a recent unused token (prevent spam)
                 recent_token = PasswordResetToken.query.filter(
                     PasswordResetToken.user_id == user.id,
@@ -868,28 +908,39 @@ def forgot_password():
                 ).first()
                 
                 if recent_token:
+                    print("⚠️ Recent token exists")
                     flash('A password reset email was already sent recently. Please check your email or wait 5 minutes before requesting another.', 'warning')
                     return render_template('forgot_password.html')
                 
                 # Generate reset token
+                print("Generating reset token...")
                 reset_token = generate_reset_token(user)
                 
                 if reset_token:
+                    print(f"✅ Reset token generated: {reset_token[:10]}...")
+                    
                     # Send email
+                    print("Sending reset email...")
                     email_sent = send_password_reset_email(user, reset_token)
                     
                     if email_sent:
+                        print("✅ Email sent successfully")
                         flash('📧 Password reset instructions have been sent to your email address. Please check your inbox and spam folder.', 'success')
                         return redirect(url_for('login'))
                     else:
+                        print("❌ Email sending failed")
                         flash('Failed to send reset email. Please try again later or contact support.', 'danger')
                 else:
+                    print("❌ Token generation failed")
                     flash('Failed to generate reset token. Please try again later.', 'danger')
                     
             except Exception as e:
-                print(f"Error in forgot password: {e}")
+                print(f"❌ Exception in forgot password: {e}")
+                import traceback
+                traceback.print_exc()
                 flash('An error occurred. Please try again later.', 'danger')
         else:
+            print(f"User not found for email: {email}")
             # Don't reveal whether email exists or not (security best practice)
             # Show success message anyway to prevent email enumeration
             flash('📧 If an account with that email exists, password reset instructions have been sent.', 'success')

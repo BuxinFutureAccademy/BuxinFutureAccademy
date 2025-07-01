@@ -12,6 +12,9 @@ import json
 import smtplib
 import urllib.parse
 from email.message import EmailMessage
+import secrets
+from itsdangerous import URLSafeTimedSerializer
+from datetime import datetime, timedelta
 
 # ========================================
 # APPLICATION CONFIGURATION
@@ -407,6 +410,116 @@ class RoboticsProjectSubmission(db.Model):
                 return []
         return []
 
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+# Add this configuration after your existing app.config settings
+app.config['RESET_TOKEN_SALT'] = os.environ.get('RESET_TOKEN_SALT', 'password-reset-salt-change-in-production')
+
+# Add this new model to your database models section
+class PasswordResetToken(db.Model):
+    """Model for password reset tokens"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(255), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    
+    def __init__(self, user_id, **kwargs):
+        super().__init__(**kwargs)
+        self.user_id = user_id
+        self.token = secrets.token_urlsafe(32)
+        # Token expires in 1 hour
+        self.expires_at = datetime.utcnow() + timedelta(hours=1)
+    
+    def is_expired(self):
+        return datetime.utcnow() > self.expires_at
+    
+    def is_valid(self):
+        return not self.used and not self.is_expired()
+
+# Add these helper functions after your existing helper functions
+def generate_reset_token(user):
+    """Generate a secure password reset token"""
+    try:
+        # Clean up old expired tokens for this user
+        PasswordResetToken.query.filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.expires_at < datetime.utcnow()
+        ).delete()
+        
+        # Create new token
+        reset_token = PasswordResetToken(user_id=user.id)
+        db.session.add(reset_token)
+        db.session.commit()
+        
+        return reset_token.token
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error generating reset token: {e}")
+        return None
+
+def verify_reset_token(token):
+    """Verify and return user for valid reset token"""
+    try:
+        reset_token = PasswordResetToken.query.filter_by(token=token).first()
+        
+        if not reset_token or not reset_token.is_valid():
+            return None
+        
+        return reset_token.user
+    except Exception as e:
+        print(f"Error verifying reset token: {e}")
+        return None
+
+def send_password_reset_email(user, reset_token):
+    """Send password reset email"""
+    try:
+        reset_url = url_for('reset_password', token=reset_token, _external=True)
+        
+        subject = "🔒 Reset Your BuXin Academy Password"
+        message = f"""
+Hello {user.first_name},
+
+We received a request to reset your password for your BuXin Academy account.
+
+Click the link below to reset your password:
+{reset_url}
+
+This link will expire in 1 hour for your security.
+
+If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
+
+For security reasons:
+- Never share this link with anyone
+- This link can only be used once
+- If you need help, contact our support team
+
+Best regards,
+BuXin Academy Team
+
+---
+This is an automated email. Please do not reply to this email.
+If you need assistance, contact us at support@techbuxin.com
+"""
+        
+        # Create a temporary user object for the email function
+        class TempUser:
+            def __init__(self, email, first_name):
+                self.email = email
+                self.first_name = first_name
+        
+        temp_user = TempUser(user.email, user.first_name)
+        sent_count = send_bulk_email([temp_user], subject, message)
+        
+        return sent_count > 0
+        
+    except Exception as e:
+        print(f"Failed to send password reset email: {e}")
+        return False
+
 #////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 # Add these new database models to your app.py file
@@ -715,6 +828,618 @@ def generate_whatsapp_links(recipients, message):
             'message': formatted_message
         })
     return whatsapp_links
+
+
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+# Add these routes to your app.py file
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Handle forgot password requests"""
+    if current_user.is_authenticated:
+        flash('You are already logged in.', 'info')
+        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        
+        if not email:
+            flash('Please enter your email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        # Validate email format
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            flash('Please enter a valid email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            try:
+                # Check if user already has a recent unused token (prevent spam)
+                recent_token = PasswordResetToken.query.filter(
+                    PasswordResetToken.user_id == user.id,
+                    PasswordResetToken.created_at > datetime.utcnow() - timedelta(minutes=5),
+                    PasswordResetToken.used == False
+                ).first()
+                
+                if recent_token:
+                    flash('A password reset email was already sent recently. Please check your email or wait 5 minutes before requesting another.', 'warning')
+                    return render_template('forgot_password.html')
+                
+                # Generate reset token
+                reset_token = generate_reset_token(user)
+                
+                if reset_token:
+                    # Send email
+                    email_sent = send_password_reset_email(user, reset_token)
+                    
+                    if email_sent:
+                        flash('📧 Password reset instructions have been sent to your email address. Please check your inbox and spam folder.', 'success')
+                        return redirect(url_for('login'))
+                    else:
+                        flash('Failed to send reset email. Please try again later or contact support.', 'danger')
+                else:
+                    flash('Failed to generate reset token. Please try again later.', 'danger')
+                    
+            except Exception as e:
+                print(f"Error in forgot password: {e}")
+                flash('An error occurred. Please try again later.', 'danger')
+        else:
+            # Don't reveal whether email exists or not (security best practice)
+            # Show success message anyway to prevent email enumeration
+            flash('📧 If an account with that email exists, password reset instructions have been sent.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Handle password reset with token"""
+    if current_user.is_authenticated:
+        flash('You are already logged in.', 'info')
+        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+    
+    # Verify token
+    user = verify_reset_token(token)
+    if not user:
+        flash('❌ Invalid or expired password reset link. Please request a new password reset.', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        
+        # Validate password
+        if not password:
+            flash('Password is required.', 'danger')
+            return render_template('reset_password.html', token=token, user=user)
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'danger')
+            return render_template('reset_password.html', token=token, user=user)
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return render_template('reset_password.html', token=token, user=user)
+        
+        try:
+            # Update user password
+            user.set_password(password)
+            
+            # Mark token as used
+            reset_token = PasswordResetToken.query.filter_by(token=token).first()
+            if reset_token:
+                reset_token.used = True
+            
+            # Clean up old tokens for this user
+            PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.id != (reset_token.id if reset_token else 0)
+            ).delete()
+            
+            db.session.commit()
+            
+            # Send confirmation email
+            try:
+                subject = "✅ Your BuXin Academy Password Has Been Reset"
+                message = f"""
+Hello {user.first_name},
+
+Your password has been successfully reset for your BuXin Academy account.
+
+If you made this change, you can safely ignore this email.
+
+If you didn't reset your password, please contact our support team immediately at support@techbuxin.com
+
+For your security:
+- Always use a strong, unique password
+- Never share your login credentials
+- Log out from shared devices
+
+Best regards,
+BuXin Academy Team
+"""
+                class TempUser:
+                    def __init__(self, email, first_name):
+                        self.email = email
+                        self.first_name = first_name
+                
+                temp_user = TempUser(user.email, user.first_name)
+                send_bulk_email([temp_user], subject, message)
+            except Exception as e:
+                print(f"Failed to send confirmation email: {e}")
+            
+            flash('✅ Your password has been successfully reset! You can now log in with your new password.', 'success')
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error resetting password: {e}")
+            flash('An error occurred while resetting your password. Please try again.', 'danger')
+    
+    return render_template('reset_password.html', token=token, user=user)
+
+@app.route('/admin/password-reset-tokens')
+@login_required
+def admin_password_reset_tokens():
+    """Admin view for password reset tokens - for debugging/monitoring"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get recent tokens (last 7 days)
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    tokens = PasswordResetToken.query.filter(
+        PasswordResetToken.created_at >= seven_days_ago
+    ).order_by(PasswordResetToken.created_at.desc()).all()
+    
+    # Get statistics
+    total_tokens = len(tokens)
+    used_tokens = sum(1 for t in tokens if t.used)
+    expired_tokens = sum(1 for t in tokens if t.is_expired() and not t.used)
+    active_tokens = sum(1 for t in tokens if t.is_valid())
+    
+    return render_template('admin_password_reset_tokens.html',
+                         tokens=tokens,
+                         total_tokens=total_tokens,
+                         used_tokens=used_tokens,
+                         expired_tokens=expired_tokens,
+                         active_tokens=active_tokens)
+
+# Add this migration route to create the password reset table
+@app.route('/admin/create-password-reset-table')
+@login_required
+def create_password_reset_table():
+    """Create password reset tokens table - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Create the table
+        db.create_all()
+        
+        return """
+        <html>
+        <head><title>Password Reset Table Created</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Password Reset System Enabled!</h1>
+            <p>The password_reset_token table has been created successfully.</p>
+            <p><strong>Features Added:</strong></p>
+            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
+                <li>✅ Secure token generation (32-byte URL-safe)</li>
+                <li>✅ 1-hour token expiration</li>
+                <li>✅ Single-use tokens</li>
+                <li>✅ Email notifications</li>
+                <li>✅ Rate limiting (5-minute cooldown)</li>
+                <li>✅ Automatic cleanup of old tokens</li>
+                <li>✅ Admin monitoring dashboard</li>
+            </ul>
+            <p style="margin-top: 2rem;">
+                <a href="/forgot-password" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🔒 Test Forgot Password</a>
+                <a href="/admin/password-reset-tokens" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">📊 View Tokens</a>
+            </p>
+            <p style="margin-top: 1rem;">
+                <a href="/admin/dashboard">← Back to Admin Dashboard</a>
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Table Creation Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Error Creating Table</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """, 500
+
+
+# Add these additional routes to your app.py file to complete the forgot password system
+
+
+
+# Additional helper routes for the admin password reset management
+
+@app.route('/admin/password-reset-token/<int:token_id>')
+@login_required
+def get_password_reset_token_details(token_id):
+    """Get detailed information about a specific password reset token"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        token = PasswordResetToken.query.get_or_404(token_id)
+        user = token.user
+        
+        # Calculate time remaining
+        time_remaining = (token.expires_at - datetime.utcnow()).total_seconds() / 60
+        
+        html = f'''
+        <div class="token-details">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="mb-3"><i class="fas fa-user me-2"></i>User Information</h6>
+                    <div class="detail-item">
+                        <strong>Name:</strong> {user.first_name} {user.last_name}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Username:</strong> {user.username}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Email:</strong> {user.email}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Account Type:</strong> {'Admin' if user.is_admin else 'Student'}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Account Created:</strong> {user.created_at.strftime('%Y-%m-%d %H:%M')}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="mb-3"><i class="fas fa-key me-2"></i>Token Information</h6>
+                    <div class="detail-item">
+                        <strong>Token ID:</strong> {token.id}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Created:</strong> {token.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Expires:</strong> {token.expires_at.strftime('%Y-%m-%d %H:%M:%S')}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Status:</strong> 
+                        {'✅ Used' if token.used else ('⏰ Active' if time_remaining > 0 else '❌ Expired')}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Time Remaining:</strong> 
+                        {f'{int(time_remaining)} minutes' if time_remaining > 0 else 'Expired'}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h6 class="mb-3"><i class="fas fa-shield-alt me-2"></i>Security Information</h6>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <strong>Full Token:</strong><br>
+                            <code style="word-break: break-all;">{token.token}</code>
+                        </div>
+                        {'<div class="alert alert-success">This token has been used successfully.</div>' if token.used else ''}
+                        {'<div class="alert alert-danger">This token has expired and cannot be used.</div>' if token.is_expired() and not token.used else ''}
+                        {f'<div class="alert alert-warning">This token will expire in {int(time_remaining)} minutes.</div>' if not token.used and time_remaining > 0 and time_remaining < 30 else ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .detail-item {{
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f3f4;
+        }}
+        .detail-item:last-child {{
+            border-bottom: none;
+        }}
+        .detail-item strong {{
+            color: #495057;
+            font-weight: 600;
+        }}
+        </style>
+        '''
+        
+        return html
+        
+    except Exception as e:
+        return f'<div class="alert alert-danger">Error loading token details: {str(e)}</div>', 500
+
+@app.route('/admin/revoke-reset-token/<int:token_id>', methods=['POST'])
+@login_required
+def revoke_password_reset_token(token_id):
+    """Revoke a password reset token"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        token = PasswordResetToken.query.get_or_404(token_id)
+        
+        if token.used:
+            return {'success': False, 'error': 'Token has already been used'}, 400
+        
+        # Mark token as used (effectively revoking it)
+        token.used = True
+        db.session.commit()
+        
+        return {'success': True, 'message': 'Token revoked successfully'}
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+@app.route('/admin/cleanup-expired-tokens', methods=['POST'])
+@login_required
+def cleanup_expired_password_reset_tokens():
+    """Clean up expired password reset tokens"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        # Delete all expired tokens
+        deleted_count = PasswordResetToken.query.filter(
+            PasswordResetToken.expires_at < datetime.utcnow()
+        ).delete()
+        
+        db.session.commit()
+        
+        return {'success': True, 'deleted_count': deleted_count}
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+@app.route('/admin/password-reset-stats')
+@login_required
+def get_password_reset_stats():
+    """Get password reset statistics for admin dashboard"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        # Get tokens from last 7 days
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        tokens = PasswordResetToken.query.filter(
+            PasswordResetToken.created_at >= seven_days_ago
+        ).all()
+        
+        total_tokens = len(tokens)
+        used_tokens = sum(1 for t in tokens if t.used)
+        expired_tokens = sum(1 for t in tokens if t.is_expired() and not t.used)
+        active_tokens = sum(1 for t in tokens if t.is_valid())
+        
+        return {
+            'total_tokens': total_tokens,
+            'used_tokens': used_tokens,
+            'expired_tokens': expired_tokens,
+            'active_tokens': active_tokens
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/admin/export-password-reset-tokens')
+@login_required
+def export_password_reset_tokens():
+    """Export password reset tokens to CSV"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        import csv
+        from io import StringIO
+        from flask import Response
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'ID', 'User ID', 'Username', 'Email', 'Full Name', 'Token', 
+            'Created At', 'Expires At', 'Used', 'Is Expired', 'Status'
+        ])
+        
+        # Get tokens from last 30 days
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        tokens = PasswordResetToken.query.filter(
+            PasswordResetToken.created_at >= thirty_days_ago
+        ).order_by(PasswordResetToken.created_at.desc()).all()
+        
+        # Write token data
+        for token in tokens:
+            user = token.user
+            status = 'Used' if token.used else ('Expired' if token.is_expired() else 'Active')
+            
+            writer.writerow([
+                token.id,
+                user.id,
+                user.username,
+                user.email,
+                f"{user.first_name} {user.last_name}",
+                token.token,
+                token.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                token.expires_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'Yes' if token.used else 'No',
+                'Yes' if token.is_expired() else 'No',
+                status
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=password_reset_tokens_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+        
+    except Exception as e:
+        flash(f'Error exporting tokens: {str(e)}', 'danger')
+        return redirect(url_for('admin_password_reset_tokens'))
+
+# Add this cleanup task that runs automatically
+@app.route('/admin/auto-cleanup-expired-tokens')
+def auto_cleanup_expired_tokens():
+    """Automatic cleanup of expired tokens (can be called by a cron job)"""
+    try:
+        # Delete tokens older than 24 hours past expiration
+        cleanup_time = datetime.utcnow() - timedelta(hours=24)
+        deleted_count = PasswordResetToken.query.filter(
+            PasswordResetToken.expires_at < cleanup_time
+        ).delete()
+        
+        db.session.commit()
+        
+        return {
+            'success': True, 
+            'deleted_count': deleted_count,
+            'message': f'Cleaned up {deleted_count} old expired tokens'
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+# Enhanced user edit route to show password reset history
+@app.route('/admin/users/<int:user_id>/password-resets')
+@login_required
+def user_password_reset_history(user_id):
+    """View password reset history for a specific user"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Get password reset tokens for this user (last 90 days)
+    ninety_days_ago = datetime.utcnow() - timedelta(days=90)
+    reset_tokens = PasswordResetToken.query.filter(
+        PasswordResetToken.user_id == user_id,
+        PasswordResetToken.created_at >= ninety_days_ago
+    ).order_by(PasswordResetToken.created_at.desc()).all()
+    
+    return render_template('user_password_reset_history.html', 
+                         user=user, 
+                         reset_tokens=reset_tokens)
+
+# Security enhancement: Rate limiting for forgot password requests
+password_reset_attempts = {}
+
+def is_rate_limited(email):
+    """Check if email is rate limited for password reset requests"""
+    now = datetime.utcnow()
+    if email in password_reset_attempts:
+        attempts = password_reset_attempts[email]
+        # Remove attempts older than 1 hour
+        attempts = [attempt for attempt in attempts if (now - attempt).total_seconds() < 3600]
+        password_reset_attempts[email] = attempts
+        
+        # Allow max 3 attempts per hour
+        if len(attempts) >= 3:
+            return True
+    
+    return False
+
+def record_password_reset_attempt(email):
+    """Record a password reset attempt"""
+    now = datetime.utcnow()
+    if email not in password_reset_attempts:
+        password_reset_attempts[email] = []
+    password_reset_attempts[email].append(now)
+
+# Update the forgot_password route to include rate limiting
+# (Replace the existing forgot_password route with this enhanced version)
+
+@app.route('/forgot-password-enhanced', methods=['GET', 'POST'])
+def forgot_password_enhanced():
+    """Enhanced forgot password with rate limiting"""
+    if current_user.is_authenticated:
+        flash('You are already logged in.', 'info')
+        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        
+        if not email:
+            flash('Please enter your email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        # Check rate limiting
+        if is_rate_limited(email):
+            flash('Too many password reset requests. Please wait an hour before trying again.', 'warning')
+            return render_template('forgot_password.html')
+        
+        # Record this attempt
+        record_password_reset_attempt(email)
+        
+        # Validate email format
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            flash('Please enter a valid email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            try:
+                # Check if user already has a recent unused token (prevent spam)
+                recent_token = PasswordResetToken.query.filter(
+                    PasswordResetToken.user_id == user.id,
+                    PasswordResetToken.created_at > datetime.utcnow() - timedelta(minutes=5),
+                    PasswordResetToken.used == False
+                ).first()
+                
+                if recent_token:
+                    flash('A password reset email was already sent recently. Please check your email or wait 5 minutes before requesting another.', 'warning')
+                    return render_template('forgot_password.html')
+                
+                # Generate reset token
+                reset_token = generate_reset_token(user)
+                
+                if reset_token:
+                    # Send email
+                    email_sent = send_password_reset_email(user, reset_token)
+                    
+                    if email_sent:
+                        flash('📧 Password reset instructions have been sent to your email address. Please check your inbox and spam folder.', 'success')
+                        return redirect(url_for('login'))
+                    else:
+                        flash('Failed to send reset email. Please try again later or contact support.', 'danger')
+                else:
+                    flash('Failed to generate reset token. Please try again later.', 'danger')
+                    
+            except Exception as e:
+                print(f"Error in forgot password: {e}")
+                flash('An error occurred. Please try again later.', 'danger')
+        else:
+            # Don't reveal whether email exists or not (security best practice)
+            flash('📧 If an account with that email exists, password reset instructions have been sent.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html')
 
 
 # ========================================/////////////////////////////////////////////////////////////////

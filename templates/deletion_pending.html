@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Deletion Pending - BuXin Future Academy</title>
+    <meta name="description" content="Your account deletion request is being reviewed">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .pending-container {
+            max-width: 700px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            text-align: center;
+        }
+        
+        .pending-header {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+            padding: 3rem 2rem;
+        }
+        
+        .pending-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .pending-content {
+            padding: 2rem;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        .data-summary {
+            background: #e8f4f8;
+            border: 1px solid #b8daff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dee2e6;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.5rem;
+            top: 0.5rem;
+            width: 1rem;
+            height: 1rem;
+            background: #ffc107;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .timeline-item.completed::before {
+            background: #28a745;
+        }
+        
+        .timeline-item.current::before {
+            background: #007bff;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="pending-container">
+        <!-- Header -->
+        <div class="pending-header">
+            <div class="pending-icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <h1>Account Deletion Pending</h1>
+            <p class="lead mb-0">Your deletion request is being reviewed</p>
+        </div>
+
+        <!-- Content -->
+        <div class="pending-content">
+            <div class="warning-box">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Review Required</h5>
+                <p class="mb-0">
+                    Your account cannot be deleted immediately because you have active purchases or enrollments. 
+                    Our team will review your request and contact you within 24 hours.
+                </p>
+            </div>
+
+            <div class="data-summary">
+                <h5><i class="fas fa-database me-2"></i>Active Account Data</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 text-primary">{{ active_courses }}</div>
+                            <small>Completed Courses</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 text-success">{{ active_orders }}</div>
+                            <small>Product Orders</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 text-warning">{{ enrollments }}</div>
+                            <small>Class Enrollments</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h5><i class="fas fa-user-shield me-2"></i>Account Status</h5>
+                <p><strong>Name:</strong> {{ user_name }}</p>
+                <p><strong>Email:</strong> {{ email }}</p>
+                <p><strong>Status:</strong> <span class="badge bg-warning">Deactivated - Pending Deletion</span></p>
+                <p class="mb-0"><strong>Request Date:</strong> {{ moment().format('MMMM Do YYYY, h:mm A') }}</p>
+            </div>
+
+            <div class="info-box">
+                <h5><i class="fas fa-clock me-2"></i>What Happens Next</h5>
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <strong>✅ Deletion Request Submitted</strong>
+                        <p class="text-muted mb-0">Your account has been temporarily deactivated</p>
+                    </div>
+                    <div class="timeline-item current">
+                        <strong>🔄 Admin Review (Current Step)</strong>
+                        <p class="text-muted mb-0">Our team is reviewing your active purchases and data</p>
+                    </div>
+                    <div class="timeline-item">
+                        <strong>📧 Email Confirmation</strong>
+                        <p class="text-muted mb-0">You'll receive confirmation within 24 hours</p>
+                    </div>
+                    <div class="timeline-item">
+                        <strong>🗑️ Account Deletion</strong>
+                        <p class="text-muted mb-0">Complete removal of your account and data</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h5><i class="fas fa-info-circle me-2"></i>Important Information</h5>
+                <ul class="text-start mb-0">
+                    <li><strong>Account Access:</strong> Your account has been temporarily deactivated</li>
+                    <li><strong>Data Retention:</strong> Your data is secure and will not be deleted until review is complete</li>
+                    <li><strong>Refunds:</strong> Any eligible refunds will be processed during the review</li>
+                    <li><strong>Contact:</strong> You can contact support to cancel this deletion request</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h5><i class="fas fa-phone me-2"></i>Need to Cancel or Have Questions?</h5>
+                <p>Contact our support team immediately:</p>
+                <p class="mb-0">
+                    <a href="mailto:support@techbuxin.com" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-envelope me-1"></i>Email Support
+                    </a>
+                    <a href="tel:+2205427090" class="btn btn-outline-success">
+                        <i class="fas fa-phone me-1"></i>Call +220 542 7090
+                    </a>
+                </p>
+            </div>
+
+            <div class="mt-4">
+                <a href="/" class="btn btn-primary btn-lg">
+                    <i class="fas fa-home me-2"></i>Return to Homepage
+                </a>
+            </div>
+
+            <div class="mt-3">
+                <p class="text-muted">
+                    <small>
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Your data is secure and protected during this review process.
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Add current time
+        document.addEventListener('DOMContentLoaded', function() {
+            // You can add any additional JavaScript functionality here
+            console.log('Account deletion pending page loaded');
+        });
+    </script>
+</body>
+</html>

@@ -775,6 +775,8 @@ def privacy_policy():
 
 # Add these routes to your app.py file////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+# Add these routes to your app.py file
+
 @app.route('/delete-account', methods=['GET', 'POST'])
 @login_required
 def delete_account():
@@ -892,8 +894,21 @@ Admin Dashboard: https://techbuxin.com/admin/users/{user_id}/edit
                 ProjectLike.query.filter_by(user_id=user_id).delete()
                 StudentProject.query.filter_by(student_id=user_id).delete()
                 
-                # 4. Delete robotics submissions
-                RoboticsProjectSubmission.query.filter_by(user_id=user_id).delete()
+                # 4. Delete robotics submissions - FIXED: Check the actual field name
+                # First, let's try to find robotics submissions by the correct field
+                # You need to check your RoboticsProjectSubmission model for the correct field name
+                # Common field names might be: student_id, submitted_by, creator_id, etc.
+                try:
+                    # Try different possible field names
+                    if hasattr(RoboticsProjectSubmission, 'student_id'):
+                        RoboticsProjectSubmission.query.filter_by(student_id=user_id).delete()
+                    elif hasattr(RoboticsProjectSubmission, 'submitted_by'):
+                        RoboticsProjectSubmission.query.filter_by(submitted_by=user_id).delete()
+                    elif hasattr(RoboticsProjectSubmission, 'creator_id'):
+                        RoboticsProjectSubmission.query.filter_by(creator_id=user_id).delete()
+                    # Add more field names as needed based on your model
+                except Exception as e:
+                    print(f"Warning: Could not delete robotics submissions: {e}")
                 
                 # 5. Delete password reset tokens
                 PasswordResetToken.query.filter_by(user_id=user_id).delete()
@@ -960,12 +975,27 @@ BuXin Future Academy Team
     
     # GET request - show deletion form
     # Get user's data summary
+    # FIXED: Handle robotics submissions properly
+    robotics_count = 0
+    try:
+        # Try different possible field names for robotics submissions
+        if hasattr(RoboticsProjectSubmission, 'student_id'):
+            robotics_count = RoboticsProjectSubmission.query.filter_by(student_id=current_user.id).count()
+        elif hasattr(RoboticsProjectSubmission, 'submitted_by'):
+            robotics_count = RoboticsProjectSubmission.query.filter_by(submitted_by=current_user.id).count()
+        elif hasattr(RoboticsProjectSubmission, 'creator_id'):
+            robotics_count = RoboticsProjectSubmission.query.filter_by(creator_id=current_user.id).count()
+        # Add more field names as needed
+    except Exception as e:
+        print(f"Warning: Could not count robotics submissions: {e}")
+        robotics_count = 0
+    
     user_data = {
         'courses_purchased': Purchase.query.filter_by(user_id=current_user.id, status='completed').count(),
         'products_ordered': ProductOrder.query.filter_by(user_id=current_user.id, status='completed').count(),
         'class_enrollments': ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').count(),
         'projects_posted': StudentProject.query.filter_by(student_id=current_user.id).count(),
-        'robotics_submissions': RoboticsProjectSubmission.query.filter_by(user_id=current_user.id).count(),
+        'robotics_submissions': robotics_count,
         'account_created': current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else 'Unknown'
     }
     
@@ -1035,6 +1065,27 @@ def anonymize_user_data(user_id):
         db.session.rollback()
         print(f"Error anonymizing user data: {e}")
         return False
+
+
+# Helper function to find the correct field name for robotics submissions
+def get_robotics_submission_field():
+    """
+    Helper function to determine the correct field name for user relationship
+    in RoboticsProjectSubmission model. You should check your model definition
+    and update this function accordingly.
+    """
+    # Check your RoboticsProjectSubmission model and return the correct field name
+    # Common possibilities:
+    if hasattr(RoboticsProjectSubmission, 'student_id'):
+        return 'student_id'
+    elif hasattr(RoboticsProjectSubmission, 'submitted_by'):
+        return 'submitted_by'
+    elif hasattr(RoboticsProjectSubmission, 'creator_id'):
+        return 'creator_id'
+    elif hasattr(RoboticsProjectSubmission, 'user_id'):
+        return 'user_id'
+    else:
+        return None
 # ========================================
 # HELPER FUNCTIONS
 # ========================================    

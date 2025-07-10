@@ -761,9 +761,19 @@ def fix_password_hash_length():
         """, 500
 
         
+#privacy///////////////////////////////////////////////////////////////////////////
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    """Privacy Policy page"""
+    context = {
+        'page_title': 'Privacy Policy - BuXin Future Academy',
+        'meta_description': 'Privacy Policy for BuXin Future Academy - How we collect, use, and protect your personal information.'
+    }
+    return render_template('privacy_policy.html', **context)
 # ========================================
 # HELPER FUNCTIONS
-# ========================================
+# ========================================    
 
 def allowed_file(filename, file_type='general'):
     """Check if file extension is allowed for upload"""

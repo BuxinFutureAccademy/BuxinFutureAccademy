@@ -10,13 +10,7 @@
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
-                        <h5><i class="fas fa-info-circle me-2"></i>Class Fee: 
-                            {% if class_type == 'individual' %}
-                                $100
-                            {% else %}
-                                D1000
-                            {% endif %}
-                        </h5>
+                        <h5><i class="fas fa-info-circle me-2"></i>Class Fee: {{ fee_display }}</h5>
                         <p class="mb-0">Please complete your payment using one of the methods below to enroll in this 
                             {% if class_type == 'individual' %}
                                 individual class.
@@ -24,6 +18,34 @@
                                 group class.
                             {% endif %}
                         </p>
+                    </div>
+
+                    <!-- NEW: Class Details Card -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-graduation-cap me-2"></i>{{ class_obj.name }}
+                            </h5>
+                            {% if class_obj.description %}
+                            <p class="card-text">{{ class_obj.description }}</p>
+                            {% endif %}
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <small class="text-muted">Class Type:</small>
+                                    <div><i class="fas fa-{% if class_type == 'individual' %}user{% else %}users{% endif %} me-1"></i>{{ class_type.title() }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">Price:</small>
+                                    <div class="h5 text-success mb-0">{{ fee_display }}</div>
+                                </div>
+                                {% if class_type == 'group' %}
+                                <div class="col-md-4">
+                                    <small class="text-muted">Available Spots:</small>
+                                    <div>{{ class_obj.max_students - class_obj.students|length }} / {{ class_obj.max_students }}</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                     
                     <form method="POST" enctype="multipart/form-data">
@@ -57,7 +79,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="phone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ current_user.whatsapp_number or '' }}" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email Address</label>
@@ -72,20 +95,25 @@
                         </div>
                         
                         <div class="mb-4">
-                            <label for="payment_proof" class="form-label">Upload Payment Proof</label>
-                            <input class="form-control" type="file" id="payment_proof" name="payment_proof" required>
-                            <div class="form-text">Upload screenshot or receipt of your payment</div>
+                            <label for="payment_proof" class="form-label">
+                                <i class="fas fa-upload me-1"></i>Upload Payment Proof
+                            </label>
+                            <input class="form-control" type="file" id="payment_proof" name="payment_proof" 
+                                   accept="image/*,.pdf" required>
+                            <div class="form-text">
+                                Upload screenshot or receipt of your {{ fee_display }} payment
+                            </div>
                         </div>
                         
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Important:</strong> After submitting your enrollment, our team will verify your payment. 
+                            <strong>Important:</strong> After submitting your enrollment, our team will verify your {{ fee_display }} payment. 
                             You will receive access to your class once payment is confirmed.
                         </div>
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-check-circle me-2"></i>Submit Enrollment
+                                <i class="fas fa-check-circle me-2"></i>Submit Enrollment ({{ fee_display }})
                             </button>
                             <a href="{{ url_for('available_classes') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Back to Classes
@@ -97,4 +125,14 @@
         </div>
     </div>
 </div>
+
+<script>
+// Auto-fill phone number if available
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.getElementById('phone');
+    if (!phoneInput.value && '{{ current_user.whatsapp_number }}') {
+        phoneInput.value = '{{ current_user.whatsapp_number }}';
+    }
+});
+</script>
 {% endblock %}

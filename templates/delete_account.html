@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delete Account - BuXin Future Academy</title>
-    <meta name="description" content="Delete your BuXin Future Academy account permanently">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -20,7 +19,7 @@
         }
         
         .delete-container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
@@ -39,47 +38,10 @@
             padding: 2rem;
         }
         
-        .warning-box {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-left: 4px solid #f39c12;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
+        .alert {
             border-radius: 8px;
-        }
-        
-        .danger-box {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-left: 4px solid #dc3545;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 8px;
-        }
-        
-        .info-box {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            border-left: 4px solid #28a745;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 8px;
-        }
-        
-        .data-summary {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-        }
-        
-        .confirmation-section {
-            background: #fff;
-            border: 2px solid #dc3545;
-            border-radius: 10px;
-            padding: 2rem;
-            margin: 2rem 0;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .form-control:focus {
@@ -93,13 +55,6 @@
             padding: 0.75rem 2rem;
             font-weight: 600;
             border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-danger:hover {
-            background: linear-gradient(135deg, #c82333 0%, #b21f2d 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
         }
         
         .btn-secondary {
@@ -108,31 +63,6 @@
             padding: 0.75rem 2rem;
             font-weight: 600;
             border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-        }
-        
-        .countdown {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #dc3545;
-        }
-        
-        .checkbox-section {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-        
-        .checkbox-section .form-check-input:checked {
-            background-color: #dc3545;
-            border-color: #dc3545;
         }
     </style>
 </head>
@@ -154,141 +84,76 @@
                     {% if messages %}
                         {% for category, message in messages %}
                             <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
-                                {{ message }}
+                                {{ message|safe }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
 
-                <!-- Warning Box -->
-                <div class="danger-box">
+                <!-- Warning -->
+                <div class="alert alert-danger">
                     <h5><i class="fas fa-exclamation-triangle me-2"></i>⚠️ PERMANENT ACTION</h5>
                     <p class="mb-0">
                         <strong>This action cannot be undone.</strong> Deleting your account will permanently remove 
-                        all your personal data, course progress, and account history. Please read carefully before proceeding.
+                        all your personal data, course progress, and account history.
                     </p>
                 </div>
 
-                <!-- User Data Summary -->
-                <div class="data-summary">
-                    <h5><i class="fas fa-chart-bar me-2"></i>Your Account Data</h5>
+                <!-- Account Summary -->
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-user me-2"></i>Your Account Summary</h5>
                     <div class="row">
                         <div class="col-md-6">
-                            <ul class="list-unstyled">
-                                <li><i class="fas fa-graduation-cap me-2"></i><strong>Courses Purchased:</strong> {{ user_data.courses_purchased }}</li>
-                                <li><i class="fas fa-shopping-cart me-2"></i><strong>Products Ordered:</strong> {{ user_data.products_ordered }}</li>
-                                <li><i class="fas fa-users me-2"></i><strong>Class Enrollments:</strong> {{ user_data.class_enrollments }}</li>
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fas fa-graduation-cap me-2"></i>Courses: {{ user_data.courses_purchased }}</li>
+                                <li><i class="fas fa-shopping-cart me-2"></i>Orders: {{ user_data.products_ordered }}</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
-                            <ul class="list-unstyled">
-                                <li><i class="fas fa-project-diagram me-2"></i><strong>Projects Posted:</strong> {{ user_data.projects_posted }}</li>
-                                <li><i class="fas fa-robot me-2"></i><strong>Robotics Submissions:</strong> {{ user_data.robotics_submissions }}</li>
-                                <li><i class="fas fa-calendar me-2"></i><strong>Member Since:</strong> {{ user_data.account_created }}</li>
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fas fa-users me-2"></i>Enrollments: {{ user_data.class_enrollments }}</li>
+                                <li><i class="fas fa-calendar me-2"></i>Member since: {{ user_data.account_created }}</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
                 <!-- What Will Be Deleted -->
-                <div class="info-box">
+                <div class="alert alert-warning">
                     <h5><i class="fas fa-info-circle me-2"></i>What Will Be Deleted</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <ul>
-                                <li>Personal information (name, email, phone)</li>
-                                <li>Account credentials</li>
-                                <li>Course progress and certificates</li>
-                                <li>Posted projects and comments</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <ul>
-                                <li>Shopping cart items</li>
-                                <li>Learning materials you created</li>
-                                <li>Robotics project submissions</li>
-                                <li>All personal preferences</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Important Notes -->
-                <div class="warning-box">
-                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Important Notes</h5>
                     <ul class="mb-0">
-                        <li><strong>Active Purchases:</strong> If you have active course purchases or orders, your account may be deactivated for review instead of immediate deletion.</li>
-                        <li><strong>Refunds:</strong> Account deletion does not automatically trigger refunds. Contact support for refund requests.</li>
-                        <li><strong>Data Retention:</strong> Some data may be retained for legal or business purposes as outlined in our Privacy Policy.</li>
-                        <li><strong>Emails:</strong> You may continue to receive transactional emails related to past purchases.</li>
-                    </ul>
-                </div>
-
-                <!-- Alternatives -->
-                <div class="info-box">
-                    <h5><i class="fas fa-lightbulb me-2"></i>Before You Delete - Consider These Alternatives</h5>
-                    <ul class="mb-0">
-                        <li><strong>Take a Break:</strong> You can simply stop using the platform without deleting your account</li>
-                        <li><strong>Update Privacy Settings:</strong> <a href="/privacy-policy">Review our Privacy Policy</a> and contact support to limit data usage</li>
-                        <li><strong>Contact Support:</strong> Reach out to support@techbuxin.com if you have specific concerns</li>
-                        <li><strong>Data Export:</strong> Contact support to request a copy of your data before deletion</li>
+                        <li>Personal information (name, email, phone)</li>
+                        <li>Account credentials and login access</li>
+                        <li>Course progress and any certificates</li>
+                        <li>All account preferences and settings</li>
                     </ul>
                 </div>
 
                 <!-- Deletion Form -->
-                <div class="confirmation-section">
-                    <h4><i class="fas fa-shield-alt me-2"></i>Account Deletion Confirmation</h4>
-                    <p>If you're sure you want to delete your account, please complete the form below:</p>
+                <div class="border rounded p-4 mt-4">
+                    <h4><i class="fas fa-shield-alt me-2"></i>Confirm Account Deletion</h4>
                     
                     <form method="POST" id="deletion-form">
-                        <!-- Reason for Deletion -->
+                        <!-- Reason -->
                         <div class="mb-3">
-                            <label for="reason" class="form-label">
-                                <i class="fas fa-question-circle me-2"></i>Why are you deleting your account? (Optional)
-                            </label>
+                            <label for="reason" class="form-label">Why are you deleting your account? (Optional)</label>
                             <select class="form-select" name="reason" id="reason">
                                 <option value="">Select a reason...</option>
                                 <option value="no_longer_needed">No longer need the service</option>
                                 <option value="privacy_concerns">Privacy concerns</option>
-                                <option value="found_alternative">Found an alternative service</option>
+                                <option value="found_alternative">Found an alternative</option>
                                 <option value="too_expensive">Too expensive</option>
                                 <option value="technical_issues">Technical issues</option>
-                                <option value="customer_service">Customer service issues</option>
                                 <option value="other">Other</option>
                             </select>
                         </div>
 
                         <!-- Feedback -->
                         <div class="mb-3">
-                            <label for="feedback" class="form-label">
-                                <i class="fas fa-comment me-2"></i>Additional feedback (Optional)
-                            </label>
+                            <label for="feedback" class="form-label">Additional feedback (Optional)</label>
                             <textarea class="form-control" name="feedback" id="feedback" rows="3" 
                                       placeholder="Help us improve by sharing your experience..."></textarea>
-                        </div>
-
-                        <!-- Confirmation Checkboxes -->
-                        <div class="checkbox-section">
-                            <h6>Please confirm you understand:</h6>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="understand-permanent" required>
-                                <label class="form-check-label" for="understand-permanent">
-                                    I understand this action is permanent and cannot be undone
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="understand-data" required>
-                                <label class="form-check-label" for="understand-data">
-                                    I understand all my data will be permanently deleted
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="understand-access" required>
-                                <label class="form-check-label" for="understand-access">
-                                    I understand I will lose access to all purchased courses and materials
-                                </label>
-                            </div>
                         </div>
 
                         <!-- Password Confirmation -->
@@ -300,7 +165,7 @@
                                    placeholder="Your current password" required>
                         </div>
 
-                        <!-- Final Confirmation -->
+                        <!-- Text Confirmation -->
                         <div class="mb-3">
                             <label for="confirmation_text" class="form-label">
                                 <i class="fas fa-typing me-2"></i>Type "DELETE MY ACCOUNT" to confirm
@@ -309,20 +174,12 @@
                                    placeholder="DELETE MY ACCOUNT" required>
                         </div>
 
-                        <!-- Countdown Timer -->
-                        <div id="countdown-section" style="display: none;">
-                            <div class="alert alert-warning text-center">
-                                <i class="fas fa-clock me-2"></i>
-                                Please wait <span id="countdown" class="countdown">10</span> seconds before you can delete your account.
-                            </div>
-                        </div>
-
                         <!-- Action Buttons -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="/student/dashboard" class="btn btn-secondary me-md-2">
                                 <i class="fas fa-arrow-left me-2"></i>Cancel
                             </a>
-                            <button type="submit" class="btn btn-danger" id="delete-btn" disabled>
+                            <button type="submit" class="btn btn-danger" id="delete-btn">
                                 <i class="fas fa-trash-alt me-2"></i>Delete My Account
                             </button>
                         </div>
@@ -334,8 +191,7 @@
                     <p class="text-muted">
                         <i class="fas fa-question-circle me-2"></i>
                         Need help? Contact us at 
-                        <a href="mailto:support@techbuxin.com">support@techbuxin.com</a> or 
-                        <a href="tel:+2205427090">+220 542 7090</a>
+                        <a href="mailto:support@techbuxin.com">support@techbuxin.com</a>
                     </p>
                 </div>
             </div>
@@ -346,69 +202,14 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Form validation and countdown
+        // Form validation
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('deletion-form');
-            const deleteBtn = document.getElementById('delete-btn');
-            const countdownSection = document.getElementById('countdown-section');
-            const countdownElement = document.getElementById('countdown');
             const confirmationInput = document.getElementById('confirmation_text');
-            const passwordInput = document.getElementById('password');
-            const checkboxes = document.querySelectorAll('.form-check-input[type="checkbox"]');
             
-            let countdownStarted = false;
-            let countdownTimer;
-            
-            // Check form validity
-            function checkFormValidity() {
-                const confirmationText = confirmationInput.value.trim().toLowerCase();
-                const passwordFilled = passwordInput.value.trim() !== '';
-                const allCheckboxesChecked = Array.from(checkboxes).every(cb => cb.checked);
-                
-                if (confirmationText === 'delete my account' && passwordFilled && allCheckboxesChecked) {
-                    if (!countdownStarted) {
-                        startCountdown();
-                    }
-                } else {
-                    stopCountdown();
-                }
-            }
-            
-            // Start countdown
-            function startCountdown() {
-                countdownStarted = true;
-                countdownSection.style.display = 'block';
-                let timeLeft = 10;
-                
-                countdownTimer = setInterval(function() {
-                    timeLeft--;
-                    countdownElement.textContent = timeLeft;
-                    
-                    if (timeLeft <= 0) {
-                        clearInterval(countdownTimer);
-                        countdownSection.style.display = 'none';
-                        deleteBtn.disabled = false;
-                        deleteBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Delete My Account';
-                    }
-                }, 1000);
-            }
-            
-            // Stop countdown
-            function stopCountdown() {
-                if (countdownTimer) {
-                    clearInterval(countdownTimer);
-                }
-                countdownStarted = false;
-                countdownSection.style.display = 'none';
-                deleteBtn.disabled = true;
-                deleteBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Delete My Account';
-            }
-            
-            // Add event listeners
-            confirmationInput.addEventListener('input', checkFormValidity);
-            passwordInput.addEventListener('input', checkFormValidity);
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', checkFormValidity);
+            // Auto-uppercase confirmation text
+            confirmationInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
             });
             
             // Form submission confirmation
@@ -416,11 +217,6 @@
                 if (!confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
                     e.preventDefault();
                 }
-            });
-            
-            // Auto-uppercase confirmation text
-            confirmationInput.addEventListener('input', function() {
-                this.value = this.value.toUpperCase();
             });
         });
     </script>

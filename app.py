@@ -771,10 +771,6 @@ def privacy_policy():
         'meta_description': 'Privacy Policy for BuXin Future Academy - How we collect, use, and protect your personal information.'
     }
     return render_template('privacy_policy.html', **context)
-
-
-
-
 # ========================================
 # HELPER FUNCTIONS
 # ========================================    

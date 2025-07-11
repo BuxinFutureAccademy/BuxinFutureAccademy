@@ -3357,9 +3357,7 @@ def debug_enrollments():
         <p><a href="/admin/enrollments">View Enrollments</a></p>
     </body>
     </html>
-    """
-    
-    return html
+ 
 
 # ========================================
 # ADDITIONAL ROUTES
@@ -3559,12 +3557,14 @@ def create_class():
         class_type = request.form['class_type']
         name = request.form['name']
         description = request.form.get('description', '')
+        price = float(request.form.get('price', 100.0))  # NEW: Get price from form
         student_ids = request.form.getlist('students')
         
         if class_type == 'individual':
             new_class = IndividualClass(
                 name=name,
                 description=description,
+                price=price,  # NEW: Add price
                 teacher_id=current_user.id
             )
         else:
@@ -3572,6 +3572,7 @@ def create_class():
             new_class = GroupClass(
                 name=name,
                 description=description,
+                price=price,  # NEW: Add price
                 teacher_id=current_user.id,
                 max_students=max_students
             )
@@ -3583,11 +3584,12 @@ def create_class():
         new_class.students.extend(students)
         db.session.commit()
         
-        flash(f'{class_type.title()} class created successfully!', 'success')
+        flash(f'{class_type.title()} class "{name}" created successfully with price ${price}!', 'success')
         return redirect(url_for('admin_dashboard'))
     
     students = User.query.filter_by(is_student=True).all()
     return render_template('create_class.html', students=students)
+
 
 # ========================================
 # COURSE MANAGEMENT ROUTES

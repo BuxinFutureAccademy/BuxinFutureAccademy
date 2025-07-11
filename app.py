@@ -2892,63 +2892,6 @@ def admin_toggle_project_featured(project_id):
         return {'success': False, 'error': str(e)}, 500
 
 # ========================================
-# DATABASE MIGRATION ROUTE FOR NEW TABLES
-# ========================================
-
-@app.route('/admin/create-project-tables')
-@login_required
-def create_project_tables():
-    """Create student project tables - ADMIN ONLY"""
-    if not current_user.is_admin:
-        return "Access denied: Admin privileges required", 403
-    
-    try:
-        # Create the new tables
-        db.create_all()
-        
-        return """
-        <html>
-        <head><title>Project Tables Created</title>
-        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
-        <body>
-            <h1>✅ Student Project Showcase Tables Created!</h1>
-            <p>The following tables have been created successfully:</p>
-            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
-                <li>✅ <strong>student_project</strong> - Main project posts</li>
-                <li>✅ <strong>project_like</strong> - Likes and dislikes</li>
-                <li>✅ <strong>project_comment</strong> - Comments system</li>
-            </ul>
-            <h3>🎯 Features Available:</h3>
-            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
-                <li>📸 Students can post project images (stored on Cloudinary)</li>
-                <li>🎬 Embed YouTube videos in projects</li>
-                <li>🔗 Add project links (GitHub, demos, etc.)</li>
-                <li>👍👎 Like/dislike system</li>
-                <li>💬 Comment system</li>
-                <li>⭐ Admin can feature projects</li>
-                <li>🔍 Search and filter projects</li>
-            </ul>
-            <p style="margin-top: 2rem;">
-                <a href="/student-projects" style="background: #28a745; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">🚀 View Projects</a>
-                <a href="/create-project" style="background: #007bff; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">➕ Create Project</a>
-                <a href="/admin/projects" style="background: #6f42c1; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">⚙️ Admin Panel</a>
-            </p>
-        </body>
-        </html>
-        """
-        
-    except Exception as e:
-        return f"""
-        <html>
-        <head><title>Table Creation Error</title>
-        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
-        <body>
-            <h1>❌ Error Creating Tables</h1>
-            <p><strong>Error:</strong> {str(e)}</p>
-            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
-        </body>
-        </html>
-# ========================================
 # AUTHENTICATION ROUTES
 # ========================================
 

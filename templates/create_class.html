@@ -35,6 +35,21 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
+
+                    <!-- NEW: Price Field -->
+                    <div class="mb-3">
+                        <label for="price" class="form-label">
+                            <i class="fas fa-dollar-sign me-1"></i>Class Price
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text" id="currency-symbol">$</span>
+                            <input type="number" class="form-control" id="price" name="price" 
+                                   value="100" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-text">
+                            <small id="price-help">Individual classes: USD ($) | Group classes: Gambian Dalasi (D)</small>
+                        </div>
+                    </div>
                     
                     <div class="mb-3" id="max-students-field" style="display: none;">
                         <label for="max_students" class="form-label">Maximum Students</label>
@@ -72,22 +87,36 @@
 </div>
 
 <script>
-// Show/hide max students field based on class type
+// Show/hide max students field and update price/currency based on class type
 document.addEventListener('DOMContentLoaded', function() {
     const individualRadio = document.getElementById('individual');
     const groupRadio = document.getElementById('group');
     const maxStudentsField = document.getElementById('max-students-field');
+    const currencySymbol = document.getElementById('currency-symbol');
+    const priceInput = document.getElementById('price');
+    const priceHelp = document.getElementById('price-help');
     
-    function toggleMaxStudentsField() {
+    function toggleFieldsBasedOnClassType() {
         if (groupRadio.checked) {
+            // Group class
             maxStudentsField.style.display = 'block';
+            currencySymbol.textContent = 'D';
+            priceInput.value = '1000';
+            priceHelp.innerHTML = '<i class="fas fa-info-circle me-1"></i>Group class price in Gambian Dalasi (D)';
         } else {
+            // Individual class
             maxStudentsField.style.display = 'none';
+            currencySymbol.textContent = '$';
+            priceInput.value = '100';
+            priceHelp.innerHTML = '<i class="fas fa-info-circle me-1"></i>Individual class price in USD ($)';
         }
     }
     
-    individualRadio.addEventListener('change', toggleMaxStudentsField);
-    groupRadio.addEventListener('change', toggleMaxStudentsField);
+    individualRadio.addEventListener('change', toggleFieldsBasedOnClassType);
+    groupRadio.addEventListener('change', toggleFieldsBasedOnClassType);
+    
+    // Initialize on page load
+    toggleFieldsBasedOnClassType();
 });
 </script>
 {% endblock %}

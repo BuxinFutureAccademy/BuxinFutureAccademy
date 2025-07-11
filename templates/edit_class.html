@@ -58,6 +58,31 @@
                                           rows="3">{{ class_obj.description or '' }}</textarea>
                             </div>
 
+                            <!-- NEW: Price Field -->
+                            <div class="mb-3">
+                                <label for="price" class="form-label">
+                                    <i class="fas fa-dollar-sign me-1"></i>Class Price
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="currency-symbol">
+                                        {% if class_type == 'individual' %}${% else %}D{% endif %}
+                                    </span>
+                                    <input type="number" class="form-control" id="price" name="price" 
+                                           value="{{ class_obj.price if class_obj.price else (100 if class_type == 'individual' else 1000) }}" 
+                                           min="0" step="0.01" required>
+                                </div>
+                                <div class="form-text">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        {% if class_type == 'individual' %}
+                                            Individual class price in USD ($)
+                                        {% else %}
+                                            Group class price in Gambian Dalasi (D)
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
                             {% if class_type == 'group' %}
                             <div class="mb-3">
                                 <label for="max_students" class="form-label">Maximum Students</label>
@@ -95,7 +120,9 @@
                                     <div class="col-md-6">
                                         <div class="card bg-light">
                                             <div class="card-body">
-                                                <h6 class="card-title">Current Enrollment</h6>
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-users me-1"></i>Current Enrollment
+                                                </h6>
                                                 <p class="card-text">
                                                     <strong>{{ class_obj.students|length }}</strong> 
                                                     {% if class_type == 'group' %}
@@ -104,6 +131,19 @@
                                                         students enrolled
                                                     {% endif %}
                                                 </p>
+                                                
+                                                <!-- NEW: Current Price Display -->
+                                                <div class="mt-2 p-2 bg-white rounded">
+                                                    <small class="text-muted">Current Price:</small>
+                                                    <div class="h5 text-success mb-0">
+                                                        {% if class_type == 'individual' %}
+                                                            ${{ class_obj.price if class_obj.price else 100 }}
+                                                        {% else %}
+                                                            D{{ class_obj.price if class_obj.price else 1000 }}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
                                                 <div class="mt-2">
                                                     <small class="text-muted">Currently enrolled:</small>
                                                     <ul class="list-unstyled mt-1">

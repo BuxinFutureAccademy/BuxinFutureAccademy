@@ -7039,6 +7039,98 @@ Please review and approve the enrollment in the admin dashboard.
                          fee_display=fee_display)
     
 
+# Add this route to your app.py to add price columns to class tables
+
+@app.route('/admin/add-class-price-fields')
+@login_required
+def add_class_price_fields():
+    """Add price field to IndividualClass and GroupClass tables - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        with db.engine.connect() as conn:
+            # Check if columns already exist
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            
+            # Check IndividualClass table
+            individual_columns = [col['name'] for col in inspector.get_columns('individual_class')]
+            group_columns = [col['name'] for col in inspector.get_columns('group_class')]
+            
+            added_columns = []
+            
+            # Add price column to IndividualClass if it doesn't exist
+            if 'price' not in individual_columns:
+                if 'sqlite' in str(db.engine.url):
+                    conn.execute(db.text('ALTER TABLE individual_class ADD COLUMN price FLOAT DEFAULT 100.0'))
+                else:
+                    conn.execute(db.text('ALTER TABLE individual_class ADD COLUMN price FLOAT DEFAULT 100.0'))
+                added_columns.append('individual_class.price')
+            
+            # Add price column to GroupClass if it doesn't exist
+            if 'price' not in group_columns:
+                if 'sqlite' in str(db.engine.url):
+                    conn.execute(db.text('ALTER TABLE group_class ADD COLUMN price FLOAT DEFAULT 1000.0'))
+                else:
+                    conn.execute(db.text('ALTER TABLE group_class ADD COLUMN price FLOAT DEFAULT 1000.0'))
+                added_columns.append('group_class.price')
+            
+            conn.commit()
+        
+        if added_columns:
+            return f"""
+            <html>
+            <head><title>Price Fields Added</title>
+            <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+            <body>
+                <h1>✅ Price Fields Added Successfully!</h1>
+                <p><strong>Added columns:</strong> {', '.join(added_columns)}</p>
+                <p><strong>Default values:</strong></p>
+                <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
+                    <li>Individual Classes: $100.00</li>
+                    <li>Group Classes: D1000.00</li>
+                </ul>
+                <h3>🎯 What's New:</h3>
+                <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                    <li>✅ Price field in class creation form</li>
+                    <li>✅ Price editing in class edit form</li>
+                    <li>✅ Dynamic currency symbols ($ for individual, D for group)</li>
+                    <li>✅ Default prices set automatically</li>
+                </ul>
+                <p style="margin-top: 2rem;">
+                    <a href="/admin/create_class" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">➕ Create Class</a>
+                    <a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">← Admin Dashboard</a>
+                </p>
+            </body>
+            </html>
+            """
+        else:
+            return """
+            <html>
+            <head><title>No Changes Needed</title>
+            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+            <body>
+                <h1>✅ Price Fields Already Exist!</h1>
+                <p>Both IndividualClass and GroupClass tables already have price columns.</p>
+                <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+            </body>
+            </html>
+            """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """, 500
+        
 @app.route('/admin/enrollments')
 @login_required
 def admin_enrollments():
@@ -7072,6 +7164,14 @@ def edit_class(class_type, class_id):
         class_obj.name = request.form['name']
         class_obj.description = request.form.get('description', '')
         
+        # NEW: Update price
+        try:
+            new_price = float(request.form.get('price', 100.0))
+            class_obj.price = new_price
+        except (ValueError, TypeError):
+            flash('Invalid price format. Using default value.', 'warning')
+            class_obj.price = 100.0 if class_type == 'individual' else 1000.0
+        
         # Update max_students for group classes
         if class_type == 'group':
             new_max_students = int(request.form.get('max_students', 10))
@@ -7095,13 +7195,13 @@ def edit_class(class_type, class_id):
         
         try:
             db.session.commit()
-            flash(f'{class_type.title()} class updated successfully!', 'success')
+            flash(f'{class_type.title()} class updated successfully! New price: ${class_obj.price}', 'success')
             return redirect(url_for('admin_dashboard'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating class: {str(e)}', 'danger')
     
-    # Get all students for the form
+    # GET request - show the form with current data
     students = User.query.filter_by(is_student=True).all()
     return render_template('edit_class.html', class_obj=class_obj, class_type=class_type, students=students)
 

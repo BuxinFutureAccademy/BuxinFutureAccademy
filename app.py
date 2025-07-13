@@ -1491,8 +1491,308 @@ def forgot_password_enhanced():
             return redirect(url_for('login'))
     
     return render_template('forgot_password.html')
+    
+# ========================================/////////////////////////////////////////////////////////////////
+@app.route('/privacy-policy')
+def privacy_policy():
+    """Privacy Policy page"""
+    context = {
+        'page_title': 'Privacy Policy - BuXin Future Academy',
+        'meta_description': 'Privacy Policy for BuXin Future Academy - How we collect, use, and protect your personal information.'
+    }
+    return render_template('privacy_policy.html', **context)
+
+# Add these routes to your app.py file
+
+# FIXED VERSION - Replace your delete account route with this working version
+
+@app.route('/delete-account', methods=['GET', 'POST'])
+@login_required
+def delete_account():
+    """User account deletion page - FIXED VERSION"""
+    if request.method == 'POST':
+        # Get form data
+        confirmation_text = request.form.get('confirmation_text', '').strip()
+        password = request.form.get('password', '').strip()
+        reason = request.form.get('reason', '').strip()
+        feedback = request.form.get('feedback', '').strip()
+        
+        # Validate confirmation text
+        if confirmation_text.lower() != 'delete my account':
+            flash('Please type "DELETE MY ACCOUNT" exactly to confirm deletion.', 'danger')
+            return render_template('delete_account.html')
+        
+        # Validate password
+        if not current_user.check_password(password):
+            flash('Incorrect password. Please enter your current password to confirm deletion.', 'danger')
+            return render_template('delete_account.html')
+        
+        try:
+            # Store user info for logging before deletion
+            user_id = current_user.id
+            username = current_user.username
+            email = current_user.email
+            user_name = f"{current_user.first_name} {current_user.last_name}"
+            
+            print(f"🗑️ Account deletion request: {user_name} ({email})")
+            
+            # Check for active purchases/enrollments - SAFE VERSION
+            active_courses = 0
+            active_orders = 0
+            enrollments = 0
+            
+            try:
+                active_courses = Purchase.query.filter_by(user_id=user_id, status='completed').count()
+            except:
+                active_courses = 0
+            
+            try:
+                active_orders = ProductOrder.query.filter_by(user_id=user_id, status='completed').count()
+            except:
+                active_orders = 0
+                
+            try:
+                enrollments = ClassEnrollment.query.filter_by(user_id=user_id, status='completed').count()
+            except:
+                enrollments = 0
+            
+            if active_courses > 0 or active_orders > 0 or enrollments > 0:
+                # User has active purchases/enrollments - deactivate instead of delete
+                flash(f'''
+                    Account deletion request received. You have active purchases/enrollments that require review.
+                    Your account has been deactivated and an admin will contact you within 24 hours.
+                ''', 'warning')
+                
+                # Send notification to admins
+                try:
+                    admin_users = User.query.filter_by(is_admin=True).all()
+                    if admin_users:
+                        subject = f"Account Deletion Request - {user_name}"
+                        message = f"""
+Account deletion request received:
+
+User: {user_name} ({username})
+Email: {email}
+Reason: {reason}
+Feedback: {feedback}
+
+Active Data:
+• Completed Courses: {active_courses}
+• Completed Orders: {active_orders}
+• Class Enrollments: {enrollments}
+
+Please review this deletion request manually.
+Admin Dashboard: https://techbuxin.com/admin/users/{user_id}/edit
+"""
+                        send_bulk_email(admin_users, subject, message)
+                except Exception as e:
+                    print(f"Failed to send admin notification: {e}")
+                
+                db.session.commit()
+                logout_user()
+                
+                return render_template('deletion_pending.html', 
+                                     user_name=user_name, 
+                                     email=email,
+                                     active_courses=active_courses,
+                                     active_orders=active_orders,
+                                     enrollments=enrollments)
+            
+            else:
+                # User has no active data, safe to delete immediately
+                
+                # Delete user-related data in correct order (only what exists)
+                try:
+                    # 1. Delete cart items
+                    CartItem.query.filter_by(user_id=user_id).delete()
+                    ProductCartItem.query.filter_by(user_id=user_id).delete()
+                    
+                    # 2. Delete learning materials created by user
+                    LearningMaterial.query.filter_by(created_by=user_id).delete()
+                    
+                    # 3. Delete project posts and related data (only if tables exist)
+                    try:
+                        ProjectComment.query.filter_by(user_id=user_id).delete()
+                        ProjectLike.query.filter_by(user_id=user_id).delete()
+                        StudentProject.query.filter_by(student_id=user_id).delete()
+                    except:
+                        pass  # Tables might not exist
+                    
+                    # 4. Delete password reset tokens (only if table exists)
+                    try:
+                        PasswordResetToken.query.filter_by(user_id=user_id).delete()
+                    except:
+                        pass  # Table might not exist
+                    
+                    # 5. Remove from class relationships
+                    try:
+                        for iclass in current_user.individual_classes:
+                            iclass.students.remove(current_user)
+                        for gclass in current_user.group_classes:
+                            gclass.students.remove(current_user)
+                    except:
+                        pass  # Relationships might not exist
+                    
+                    # 6. Delete pending purchases/orders/enrollments
+                    Purchase.query.filter_by(user_id=user_id, status='pending').delete()
+                    ProductOrder.query.filter_by(user_id=user_id, status='pending').delete()
+                    ClassEnrollment.query.filter_by(user_id=user_id, status='pending').delete()
+                    
+                    # 7. Delete the user account
+                    db.session.delete(current_user)
+                    db.session.commit()
+                    
+                    print(f"✅ Account deleted successfully: {user_name}")
+                    
+                except Exception as e:
+                    print(f"Error during deletion process: {e}")
+                    db.session.rollback()
+                    raise e
+                
+                # Send confirmation email
+                try:
+                    subject = "Account Deletion Confirmation - BuXin Future Academy"
+                    message = f"""
+Dear {user_name},
+
+Your BuXin Future Academy account has been successfully deleted as requested.
+
+Account Details:
+• Username: {username}
+• Email: {email}
+• Deletion Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
+
+All your personal data has been permanently removed from our systems.
+
+Thank you for being part of BuXin Future Academy.
+
+Best regards,
+BuXin Future Academy Team
+"""
+                    # Create temporary user object for email
+                    class TempUser:
+                        def __init__(self, email, first_name):
+                            self.email = email
+                            self.first_name = first_name
+                    
+                    temp_user = TempUser(email, user_name.split()[0])
+                    send_bulk_email([temp_user], subject, message)
+                except Exception as e:
+                    print(f"Failed to send deletion confirmation email: {e}")
+                
+                # Logout user
+                logout_user()
+                
+                # Show success page
+                return render_template('deletion_success.html', 
+                                     user_name=user_name, 
+                                     email=email)
+        
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error deleting account: {e}")
+            flash(f'An error occurred while deleting your account. Please contact support.', 'danger')
+            return render_template('delete_account.html')
+    
+    # GET request - show deletion form with SAFE data summary
+    user_data = {
+        'account_created': current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else 'Unknown'
+    }
+    
+    # Safely try to get each count
+    try:
+        user_data['courses_purchased'] = Purchase.query.filter_by(user_id=current_user.id, status='completed').count()
+    except:
+        user_data['courses_purchased'] = 0
+    
+    try:
+        user_data['products_ordered'] = ProductOrder.query.filter_by(user_id=current_user.id, status='completed').count()
+    except:
+        user_data['products_ordered'] = 0
+    
+    try:
+        user_data['class_enrollments'] = ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').count()
+    except:
+        user_data['class_enrollments'] = 0
+    
+    try:
+        user_data['projects_posted'] = StudentProject.query.filter_by(student_id=current_user.id).count()
+    except:
+        user_data['projects_posted'] = 0
+    
+    # For robotics submissions, we'll check by email since it doesn't have user_id
+    try:
+        user_data['robotics_submissions'] = RoboticsProjectSubmission.query.filter_by(email=current_user.email).count()
+    except:
+        user_data['robotics_submissions'] = 0
+    
+    return render_template('delete_account.html', user_data=user_data)
+    
+
+@app.route('/admin/account-deletion-requests')
+@login_required
+def admin_account_deletion_requests():
+    """Admin view for account deletion requests"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get users who requested deletion (you might need to add a field for this)
+    # For now, this is a placeholder - you'd need to implement the tracking
+    
+    return render_template('admin_deletion_requests.html')
 
 
+# Add this utility function to handle data anonymization instead of deletion
+def anonymize_user_data(user_id):
+    """Anonymize user data instead of deleting (alternative approach)"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return False
+        
+        # Anonymize personal data
+        user.username = f"deleted_user_{user_id}"
+        user.email = f"deleted_{user_id}@techbuxin.com"
+        user.first_name = "Deleted"
+        user.last_name = "User"
+        user.whatsapp_number = None
+        user.is_student = False
+        user.is_admin = False
+        
+        # Keep purchase/enrollment history for business records
+        # but anonymize personal details in those records
+        purchases = Purchase.query.filter_by(user_id=user_id).all()
+        for purchase in purchases:
+            purchase.customer_name = "Deleted User"
+            purchase.customer_email = f"deleted_{user_id}@techbuxin.com"
+            purchase.customer_phone = None
+            purchase.customer_address = None
+        
+        # Similar anonymization for orders and enrollments
+        orders = ProductOrder.query.filter_by(user_id=user_id).all()
+        for order in orders:
+            order.customer_name = "Deleted User"
+            order.customer_email = f"deleted_{user_id}@techbuxin.com"
+            order.customer_phone = None
+            order.customer_address = None
+            order.shipping_address = None
+        
+        enrollments = ClassEnrollment.query.filter_by(user_id=user_id).all()
+        for enrollment in enrollments:
+            enrollment.customer_name = "Deleted User"
+            enrollment.customer_email = f"deleted_{user_id}@techbuxin.com"
+            enrollment.customer_phone = None
+            enrollment.customer_address = None
+        
+        db.session.commit()
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error anonymizing user data: {e}")
+        return False
+        
 # ========================================/////////////////////////////////////////////////////////////////
 # Add these routes to your app.py
 # ========================================

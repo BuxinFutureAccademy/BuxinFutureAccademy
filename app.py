@@ -3668,125 +3668,49 @@ def admin_courses():
     courses = Course.query.order_by(Course.created_at.desc()).all()
     return render_template('admin_courses.html', courses=courses)
 
-@app.route('/admin/create_course', methods=['GET', 'POST'])
+@app.route('/admin/create_class', methods=['GET', 'POST'])
 @login_required
-def create_course():
+def create_class():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        try:
-            # Basic course information
-            title = request.form['title']
-            description = request.form['description']
-            short_description = request.form.get('short_description', '')
-            price = float(request.form['price'])
-            duration_weeks = int(request.form.get('duration_weeks', 4))
-            level = request.form['level']
-            category = request.form['category']
-            image_url = request.form.get('image_url', '')
-            
-            # Create the course
-            course = Course(
-                title=title,
+        class_type = request.form['class_type']
+        name = request.form['name']
+        description = request.form.get('description', '')
+        price = float(request.form.get('price', 100.0))  # NEW: Get price from form
+        student_ids = request.form.getlist('students')
+        
+        if class_type == 'individual':
+            new_class = IndividualClass(
+                name=name,
                 description=description,
-                short_description=short_description,
-                price=price,
-                duration_weeks=duration_weeks,
-                level=level,
-                category=category,
-                image_url=image_url,
-                created_by=current_user.id
+                price=price,  # NEW: Add price
+                teacher_id=current_user.id
             )
-            
-            db.session.add(course)
-            db.session.flush()
-            
-            # Handle video uploads - CLOUDINARY VERSION
-            video_files = request.files.getlist('video_files')
-            video_titles = request.form.getlist('video_titles')
-            video_descriptions = request.form.getlist('video_descriptions')
-            video_orders = request.form.getlist('video_orders')
-            video_durations = request.form.getlist('video_durations')
-            
-            for i, video_file in enumerate(video_files):
-                if video_file and video_file.filename and allowed_file(video_file.filename, 'video'):
-                    video_file.seek(0, 2)
-                    file_size = video_file.tell()
-                    video_file.seek(0)
-                    
-                    if file_size > 500 * 1024 * 1024:  # 500MB
-                        flash(f'Video file {video_file.filename} is too large. Maximum size is 500MB.', 'warning')
-                        continue
-                    
-                    print(f"📤 Uploading {video_file.filename} to Cloudinary...")
-                    
-                    # Upload to Cloudinary instead of local storage
-                    upload_result = upload_video_to_cloudinary(video_file, course.id, i+1)
-                    
-                    if upload_result:
-                        # Create a fallback filename for compatibility
-                        fallback_filename = f"cloudinary_{upload_result['public_id']}.mp4"
-                        
-                        course_video = CourseVideo(
-                            course_id=course.id,
-                            title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
-                            description=video_descriptions[i] if i < len(video_descriptions) else "",
-                            video_filename=fallback_filename,  # Fallback filename
-                            video_url=upload_result['url'],  # Cloudinary URL
-                            duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
-                            order_index=int(video_orders[i]) if i < len(video_orders) else i+1
-                        )
-                        db.session.add(course_video)
-                        print(f"✅ Video saved to database: {course_video.title}")
-                    else:
-                        flash(f'Failed to upload video: {video_file.filename}', 'danger')
-                        print(f"❌ Failed to upload: {video_file.filename}")
-            
-            # Handle course materials (keep local storage for materials)
-            material_files = request.files.getlist('course_materials')
-            materials_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
-            os.makedirs(materials_folder, exist_ok=True)
-            
-            for material_file in material_files:
-                if material_file and material_file.filename and allowed_file(material_file.filename, 'material'):
-                    material_file.seek(0, 2)
-                    file_size = material_file.tell()
-                    material_file.seek(0)
-                    
-                    if file_size > 10 * 1024 * 1024:
-                        flash(f'Material file {material_file.filename} is too large. Maximum size is 10MB.', 'warning')
-                        continue
-                    
-                    filename = secure_filename(material_file.filename)
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-                    unique_filename = f"{timestamp}{course.id}_{filename}"
-                    
-                    material_path = os.path.join(materials_folder, unique_filename)
-                    material_file.save(material_path)
-                    
-                    course_material = CourseMaterial(
-                        course_id=course.id,
-                        title=filename.rsplit('.', 1)[0],
-                        filename=unique_filename,
-                        file_type=filename.rsplit('.', 1)[1].lower(),
-                        file_size=file_size
-                    )
-                    
-                    db.session.add(course_material)
-            
-            db.session.commit()
-            
-            flash('Course created successfully with videos and materials!', 'success')
-            return redirect(url_for('admin_courses'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error creating course: {str(e)}', 'danger')
-            return render_template('create_course.html')
+        else:
+            max_students = int(request.form.get('max_students', 10))
+            new_class = GroupClass(
+                name=name,
+                description=description,
+                price=price,  # NEW: Add price
+                teacher_id=current_user.id,
+                max_students=max_students
+            )
+        
+        db.session.add(new_class)
+        db.session.commit()
+        
+        students = User.query.filter(User.id.in_(student_ids)).all()
+        new_class.students.extend(students)
+        db.session.commit()
+        
+        flash(f'{class_type.title()} class "{name}" created successfully with price ${price}!', 'success')
+        return redirect(url_for('admin_dashboard'))
     
-    return render_template('create_course.html')
+    students = User.query.filter_by(is_student=True).all()
+    return render_template('create_class.html', students=students)
 
 @app.route('/admin/edit_course/<int:course_id>', methods=['GET', 'POST'])
 @login_required

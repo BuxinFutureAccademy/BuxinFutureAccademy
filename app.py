@@ -761,244 +761,9 @@ def fix_password_hash_length():
         """, 500
 
         
-#privacy///////////////////////////////////////////////////////////////////////////
-
-@app.route('/privacy-policy')
-def privacy_policy():
-    """Privacy Policy page"""
-    context = {
-        'page_title': 'Privacy Policy - BuXin Future Academy',
-        'meta_description': 'Privacy Policy for BuXin Future Academy - How we collect, use, and protect your personal information.'
-    }
-    return render_template('privacy_policy.html', **context)
-
-
-# FIXED VERSION - Replace your delete account route with this working version/////////////////////////////////////////////////////////
-
-@app.route('/delete-account', methods=['GET', 'POST'])
-@login_required
-def delete_account():
-    """User account deletion page - FIXED VERSION"""
-    if request.method == 'POST':
-        # Get form data
-        confirmation_text = request.form.get('confirmation_text', '').strip()
-        password = request.form.get('password', '').strip()
-        reason = request.form.get('reason', '').strip()
-        feedback = request.form.get('feedback', '').strip()
-        
-        # Validate confirmation text
-        if confirmation_text.lower() != 'delete my account':
-            flash('Please type "DELETE MY ACCOUNT" exactly to confirm deletion.', 'danger')
-            return render_template('delete_account.html')
-        
-        # Validate password
-        if not current_user.check_password(password):
-            flash('Incorrect password. Please enter your current password to confirm deletion.', 'danger')
-            return render_template('delete_account.html')
-        
-        try:
-            # Store user info for logging before deletion
-            user_id = current_user.id
-            username = current_user.username
-            email = current_user.email
-            user_name = f"{current_user.first_name} {current_user.last_name}"
-            
-            print(f"🗑️ Account deletion request: {user_name} ({email})")
-            
-            # Check for active purchases/enrollments - SAFE VERSION
-            active_courses = 0
-            active_orders = 0
-            enrollments = 0
-            
-            try:
-                active_courses = Purchase.query.filter_by(user_id=user_id, status='completed').count()
-            except:
-                active_courses = 0
-            
-            try:
-                active_orders = ProductOrder.query.filter_by(user_id=user_id, status='completed').count()
-            except:
-                active_orders = 0
-                
-            try:
-                enrollments = ClassEnrollment.query.filter_by(user_id=user_id, status='completed').count()
-            except:
-                enrollments = 0
-            
-            if active_courses > 0 or active_orders > 0 or enrollments > 0:
-                # User has active purchases/enrollments - deactivate instead of delete
-                flash(f'''
-                    Account deletion request received. You have active purchases/enrollments that require review.
-                    Your account has been deactivated and an admin will contact you within 24 hours.
-                ''', 'warning')
-                
-                # Send notification to admins
-                try:
-                    admin_users = User.query.filter_by(is_admin=True).all()
-                    if admin_users:
-                        subject = f"Account Deletion Request - {user_name}"
-                        message = f"""
-Account deletion request received:
-
-User: {user_name} ({username})
-Email: {email}
-Reason: {reason}
-Feedback: {feedback}
-
-Active Data:
-• Completed Courses: {active_courses}
-• Completed Orders: {active_orders}
-• Class Enrollments: {enrollments}
-
-Please review this deletion request manually.
-Admin Dashboard: https://techbuxin.com/admin/users/{user_id}/edit
-"""
-                        send_bulk_email(admin_users, subject, message)
-                except Exception as e:
-                    print(f"Failed to send admin notification: {e}")
-                
-                db.session.commit()
-                logout_user()
-                
-                return render_template('deletion_pending.html', 
-                                     user_name=user_name, 
-                                     email=email,
-                                     active_courses=active_courses,
-                                     active_orders=active_orders,
-                                     enrollments=enrollments)
-            
-            else:
-                # User has no active data, safe to delete immediately
-                
-                # Delete user-related data in correct order (only what exists)
-                try:
-                    # 1. Delete cart items
-                    CartItem.query.filter_by(user_id=user_id).delete()
-                    ProductCartItem.query.filter_by(user_id=user_id).delete()
-                    
-                    # 2. Delete learning materials created by user
-                    LearningMaterial.query.filter_by(created_by=user_id).delete()
-                    
-                    # 3. Delete project posts and related data (only if tables exist)
-                    try:
-                        ProjectComment.query.filter_by(user_id=user_id).delete()
-                        ProjectLike.query.filter_by(user_id=user_id).delete()
-                        StudentProject.query.filter_by(student_id=user_id).delete()
-                    except:
-                        pass  # Tables might not exist
-                    
-                    # 4. Delete password reset tokens (only if table exists)
-                    try:
-                        PasswordResetToken.query.filter_by(user_id=user_id).delete()
-                    except:
-                        pass  # Table might not exist
-                    
-                    # 5. Remove from class relationships
-                    try:
-                        for iclass in current_user.individual_classes:
-                            iclass.students.remove(current_user)
-                        for gclass in current_user.group_classes:
-                            gclass.students.remove(current_user)
-                    except:
-                        pass  # Relationships might not exist
-                    
-                    # 6. Delete pending purchases/orders/enrollments
-                    Purchase.query.filter_by(user_id=user_id, status='pending').delete()
-                    ProductOrder.query.filter_by(user_id=user_id, status='pending').delete()
-                    ClassEnrollment.query.filter_by(user_id=user_id, status='pending').delete()
-                    
-                    # 7. Delete the user account
-                    db.session.delete(current_user)
-                    db.session.commit()
-                    
-                    print(f"✅ Account deleted successfully: {user_name}")
-                    
-                except Exception as e:
-                    print(f"Error during deletion process: {e}")
-                    db.session.rollback()
-                    raise e
-                
-                # Send confirmation email
-                try:
-                    subject = "Account Deletion Confirmation - BuXin Future Academy"
-                    message = f"""
-Dear {user_name},
-
-Your BuXin Future Academy account has been successfully deleted as requested.
-
-Account Details:
-• Username: {username}
-• Email: {email}
-• Deletion Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
-
-All your personal data has been permanently removed from our systems.
-
-Thank you for being part of BuXin Future Academy.
-
-Best regards,
-BuXin Future Academy Team
-"""
-                    # Create temporary user object for email
-                    class TempUser:
-                        def __init__(self, email, first_name):
-                            self.email = email
-                            self.first_name = first_name
-                    
-                    temp_user = TempUser(email, user_name.split()[0])
-                    send_bulk_email([temp_user], subject, message)
-                except Exception as e:
-                    print(f"Failed to send deletion confirmation email: {e}")
-                
-                # Logout user
-                logout_user()
-                
-                # Show success page
-                return render_template('deletion_success.html', 
-                                     user_name=user_name, 
-                                     email=email)
-        
-        except Exception as e:
-            db.session.rollback()
-            print(f"❌ Error deleting account: {e}")
-            flash(f'An error occurred while deleting your account. Please contact support.', 'danger')
-            return render_template('delete_account.html')
-    
-    # GET request - show deletion form with SAFE data summary
-    user_data = {
-        'account_created': current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else 'Unknown'
-    }
-    
-    # Safely try to get each count
-    try:
-        user_data['courses_purchased'] = Purchase.query.filter_by(user_id=current_user.id, status='completed').count()
-    except:
-        user_data['courses_purchased'] = 0
-    
-    try:
-        user_data['products_ordered'] = ProductOrder.query.filter_by(user_id=current_user.id, status='completed').count()
-    except:
-        user_data['products_ordered'] = 0
-    
-    try:
-        user_data['class_enrollments'] = ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').count()
-    except:
-        user_data['class_enrollments'] = 0
-    
-    try:
-        user_data['projects_posted'] = StudentProject.query.filter_by(student_id=current_user.id).count()
-    except:
-        user_data['projects_posted'] = 0
-    
-    # For robotics submissions, we'll check by email since it doesn't have user_id
-    try:
-        user_data['robotics_submissions'] = RoboticsProjectSubmission.query.filter_by(email=current_user.email).count()
-    except:
-        user_data['robotics_submissions'] = 0
-    
-    return render_template('delete_account.html', user_data=user_data)
 # ========================================
 # HELPER FUNCTIONS
-# ========================================    
+# ========================================
 
 def allowed_file(filename, file_type='general'):
     """Check if file extension is allowed for upload"""
@@ -2948,6 +2713,7 @@ def create_project_tables():
             <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
         </body>
         </html>
+        """, 500
 # ========================================
 # AUTHENTICATION ROUTES
 # ========================================
@@ -3200,9 +2966,165 @@ def fix_existing_enrollments():
             <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
         </body>
         </html>
+        """, 500
 
+# Add this debug route to see what's happening with enrollments:
 
- 
+@app.route('/debug/enrollments')
+@login_required
+def debug_enrollments():
+    """Debug route to check enrollment status and class memberships"""
+    if not current_user.is_admin:
+        return "Admin only", 403
+    
+    # Get all enrollments
+    all_enrollments = ClassEnrollment.query.all()
+    individual_classes = IndividualClass.query.all()
+    group_classes = GroupClass.query.all()
+    
+    html = f"""
+    <html>
+    <head><title>Enrollment Debug</title>
+    <style>
+        body {{ font-family: Arial; padding: 20px; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        th {{ background-color: #f2f2f2; }}
+        .completed {{ background-color: #d4edda; }}
+        .pending {{ background-color: #fff3cd; }}
+        .failed {{ background-color: #f8d7da; }}
+        .enrolled {{ color: #28a745; font-weight: bold; }}
+        .not-enrolled {{ color: #dc3545; font-weight: bold; }}
+    </style>
+    </head>
+    <body>
+        <h1>🔍 Enrollment Debug Report</h1>
+        
+        <h2>📊 Summary</h2>
+        <p><strong>Total Enrollments:</strong> {len(all_enrollments)}</p>
+        <p><strong>Individual Classes:</strong> {len(individual_classes)}</p>
+        <p><strong>Group Classes:</strong> {len(group_classes)}</p>
+        
+        <h2>📋 All Enrollments</h2>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Student</th>
+                <th>Class Type</th>
+                <th>Class Name</th>
+                <th>Status</th>
+                <th>Actually Enrolled?</th>
+                <th>Issue</th>
+            </tr>
+    """
+    
+    for enrollment in all_enrollments:
+        student = User.query.get(enrollment.user_id)
+        student_name = f"{student.first_name} {student.last_name}" if student else "Unknown"
+        
+        # Check if student is actually in the class
+        actually_enrolled = False
+        class_name = "Unknown"
+        issue = ""
+        
+        if enrollment.class_type == 'individual':
+            class_obj = IndividualClass.query.get(enrollment.class_id)
+            if class_obj:
+                class_name = class_obj.name
+                actually_enrolled = student in class_obj.students if student else False
+                if enrollment.status == 'completed' and not actually_enrolled:
+                    issue = "❌ Approved but not in class roster"
+            else:
+                issue = "❌ Class not found"
+                
+        elif enrollment.class_type == 'group':
+            class_obj = GroupClass.query.get(enrollment.class_id)
+            if class_obj:
+                class_name = class_obj.name
+                actually_enrolled = student in class_obj.students if student else False
+                if enrollment.status == 'completed' and not actually_enrolled:
+                    issue = "❌ Approved but not in class roster"
+            else:
+                issue = "❌ Class not found"
+        
+        status_class = enrollment.status
+        enrolled_class = "enrolled" if actually_enrolled else "not-enrolled"
+        enrolled_text = "✅ YES" if actually_enrolled else "❌ NO"
+        
+        html += f"""
+            <tr class="{status_class}">
+                <td>{enrollment.id}</td>
+                <td>{student_name}</td>
+                <td>{enrollment.class_type.title()}</td>
+                <td>{class_name}</td>
+                <td>{enrollment.status.title()}</td>
+                <td class="{enrolled_class}">{enrolled_text}</td>
+                <td>{issue}</td>
+            </tr>
+        """
+    
+    html += """
+        </table>
+        
+        <h2>🏫 Individual Classes</h2>
+        <table>
+            <tr>
+                <th>Class ID</th>
+                <th>Class Name</th>
+                <th>Students Enrolled</th>
+                <th>Student Names</th>
+            </tr>
+    """
+    
+    for iclass in individual_classes:
+        student_names = [f"{s.first_name} {s.last_name}" for s in iclass.students]
+        html += f"""
+            <tr>
+                <td>{iclass.id}</td>
+                <td>{iclass.name}</td>
+                <td>{len(iclass.students)}</td>
+                <td>{', '.join(student_names) if student_names else 'No students'}</td>
+            </tr>
+        """
+    
+    html += """
+        </table>
+        
+        <h2>👥 Group Classes</h2>
+        <table>
+            <tr>
+                <th>Class ID</th>
+                <th>Class Name</th>
+                <th>Students Enrolled</th>
+                <th>Max Students</th>
+                <th>Student Names</th>
+            </tr>
+    """
+    
+    for gclass in group_classes:
+        student_names = [f"{s.first_name} {s.last_name}" for s in gclass.students]
+        html += f"""
+            <tr>
+                <td>{gclass.id}</td>
+                <td>{gclass.name}</td>
+                <td>{len(gclass.students)}</td>
+                <td>{gclass.max_students}</td>
+                <td>{', '.join(student_names) if student_names else 'No students'}</td>
+            </tr>
+        """
+    
+    html += f"""
+        </table>
+        
+        <h2>🔧 Actions</h2>
+        <p><a href="/admin/fix-existing-enrollments" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🔧 Fix All Enrollment Issues</a></p>
+        <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        <p><a href="/admin/enrollments">View Enrollments</a></p>
+    </body>
+    </html>
+    """
+    
+    return html
 
 # ========================================
 # ADDITIONAL ROUTES
@@ -3402,14 +3324,12 @@ def create_class():
         class_type = request.form['class_type']
         name = request.form['name']
         description = request.form.get('description', '')
-        price = float(request.form.get('price', 100.0))  # NEW: Get price from form
         student_ids = request.form.getlist('students')
         
         if class_type == 'individual':
             new_class = IndividualClass(
                 name=name,
                 description=description,
-                price=price,  # NEW: Add price
                 teacher_id=current_user.id
             )
         else:
@@ -3417,7 +3337,6 @@ def create_class():
             new_class = GroupClass(
                 name=name,
                 description=description,
-                price=price,  # NEW: Add price
                 teacher_id=current_user.id,
                 max_students=max_students
             )
@@ -3429,12 +3348,11 @@ def create_class():
         new_class.students.extend(students)
         db.session.commit()
         
-        flash(f'{class_type.title()} class "{name}" created successfully with price ${price}!', 'success')
+        flash(f'{class_type.title()} class created successfully!', 'success')
         return redirect(url_for('admin_dashboard'))
     
     students = User.query.filter_by(is_student=True).all()
     return render_template('create_class.html', students=students)
-
 
 # ========================================
 # COURSE MANAGEMENT ROUTES
@@ -6886,98 +6804,6 @@ Please review and approve the enrollment in the admin dashboard.
                          fee_display=fee_display)
     
 
-# Add this route to your app.py to add price columns to class tables
-
-@app.route('/admin/add-class-price-fields')
-@login_required
-def add_class_price_fields():
-    """Add price field to IndividualClass and GroupClass tables - ADMIN ONLY"""
-    if not current_user.is_admin:
-        return "Access denied: Admin privileges required", 403
-    
-    try:
-        with db.engine.connect() as conn:
-            # Check if columns already exist
-            from sqlalchemy import inspect
-            inspector = inspect(db.engine)
-            
-            # Check IndividualClass table
-            individual_columns = [col['name'] for col in inspector.get_columns('individual_class')]
-            group_columns = [col['name'] for col in inspector.get_columns('group_class')]
-            
-            added_columns = []
-            
-            # Add price column to IndividualClass if it doesn't exist
-            if 'price' not in individual_columns:
-                if 'sqlite' in str(db.engine.url):
-                    conn.execute(db.text('ALTER TABLE individual_class ADD COLUMN price FLOAT DEFAULT 100.0'))
-                else:
-                    conn.execute(db.text('ALTER TABLE individual_class ADD COLUMN price FLOAT DEFAULT 100.0'))
-                added_columns.append('individual_class.price')
-            
-            # Add price column to GroupClass if it doesn't exist
-            if 'price' not in group_columns:
-                if 'sqlite' in str(db.engine.url):
-                    conn.execute(db.text('ALTER TABLE group_class ADD COLUMN price FLOAT DEFAULT 1000.0'))
-                else:
-                    conn.execute(db.text('ALTER TABLE group_class ADD COLUMN price FLOAT DEFAULT 1000.0'))
-                added_columns.append('group_class.price')
-            
-            conn.commit()
-        
-        if added_columns:
-            return f"""
-            <html>
-            <head><title>Price Fields Added</title>
-            <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
-            <body>
-                <h1>✅ Price Fields Added Successfully!</h1>
-                <p><strong>Added columns:</strong> {', '.join(added_columns)}</p>
-                <p><strong>Default values:</strong></p>
-                <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
-                    <li>Individual Classes: $100.00</li>
-                    <li>Group Classes: D1000.00</li>
-                </ul>
-                <h3>🎯 What's New:</h3>
-                <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
-                    <li>✅ Price field in class creation form</li>
-                    <li>✅ Price editing in class edit form</li>
-                    <li>✅ Dynamic currency symbols ($ for individual, D for group)</li>
-                    <li>✅ Default prices set automatically</li>
-                </ul>
-                <p style="margin-top: 2rem;">
-                    <a href="/admin/create_class" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">➕ Create Class</a>
-                    <a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">← Admin Dashboard</a>
-                </p>
-            </body>
-            </html>
-            """
-        else:
-            return """
-            <html>
-            <head><title>No Changes Needed</title>
-            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
-            <body>
-                <h1>✅ Price Fields Already Exist!</h1>
-                <p>Both IndividualClass and GroupClass tables already have price columns.</p>
-                <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
-            </body>
-            </html>
-            """
-        
-    except Exception as e:
-        return f"""
-        <html>
-        <head><title>Migration Error</title>
-        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
-        <body>
-            <h1>❌ Migration Failed</h1>
-            <p><strong>Error:</strong> {str(e)}</p>
-            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
-        </body>
-        </html>
-        """, 500
-        
 @app.route('/admin/enrollments')
 @login_required
 def admin_enrollments():
@@ -7011,14 +6837,6 @@ def edit_class(class_type, class_id):
         class_obj.name = request.form['name']
         class_obj.description = request.form.get('description', '')
         
-        # NEW: Update price
-        try:
-            new_price = float(request.form.get('price', 100.0))
-            class_obj.price = new_price
-        except (ValueError, TypeError):
-            flash('Invalid price format. Using default value.', 'warning')
-            class_obj.price = 100.0 if class_type == 'individual' else 1000.0
-        
         # Update max_students for group classes
         if class_type == 'group':
             new_max_students = int(request.form.get('max_students', 10))
@@ -7042,13 +6860,13 @@ def edit_class(class_type, class_id):
         
         try:
             db.session.commit()
-            flash(f'{class_type.title()} class updated successfully! New price: ${class_obj.price}', 'success')
+            flash(f'{class_type.title()} class updated successfully!', 'success')
             return redirect(url_for('admin_dashboard'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating class: {str(e)}', 'danger')
     
-    # GET request - show the form with current data
+    # Get all students for the form
     students = User.query.filter_by(is_student=True).all()
     return render_template('edit_class.html', class_obj=class_obj, class_type=class_type, students=students)
 

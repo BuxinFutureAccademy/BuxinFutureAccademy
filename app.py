@@ -2892,6 +2892,63 @@ def admin_toggle_project_featured(project_id):
         return {'success': False, 'error': str(e)}, 500
 
 # ========================================
+# DATABASE MIGRATION ROUTE FOR NEW TABLES
+# ========================================
+
+@app.route('/admin/create-project-tables')
+@login_required
+def create_project_tables():
+    """Create student project tables - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Create the new tables
+        db.create_all()
+        
+        return """
+        <html>
+        <head><title>Project Tables Created</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Student Project Showcase Tables Created!</h1>
+            <p>The following tables have been created successfully:</p>
+            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
+                <li>✅ <strong>student_project</strong> - Main project posts</li>
+                <li>✅ <strong>project_like</strong> - Likes and dislikes</li>
+                <li>✅ <strong>project_comment</strong> - Comments system</li>
+            </ul>
+            <h3>🎯 Features Available:</h3>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>📸 Students can post project images (stored on Cloudinary)</li>
+                <li>🎬 Embed YouTube videos in projects</li>
+                <li>🔗 Add project links (GitHub, demos, etc.)</li>
+                <li>👍👎 Like/dislike system</li>
+                <li>💬 Comment system</li>
+                <li>⭐ Admin can feature projects</li>
+                <li>🔍 Search and filter projects</li>
+            </ul>
+            <p style="margin-top: 2rem;">
+                <a href="/student-projects" style="background: #28a745; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">🚀 View Projects</a>
+                <a href="/create-project" style="background: #007bff; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">➕ Create Project</a>
+                <a href="/admin/projects" style="background: #6f42c1; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">⚙️ Admin Panel</a>
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Table Creation Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Error Creating Tables</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+# ========================================
 # AUTHENTICATION ROUTES
 # ========================================
 
@@ -3052,6 +3109,99 @@ def fix_existing_enrollments():
         # Commit all fixes
         db.session.commit()
         
+        # Generate report
+        html = f"""
+        <html>
+        <head><title>Enrollment Fix Results</title>
+        <style>
+            body {{ font-family: Arial; padding: 20px; background: #f8f9fa; }}
+            .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }}
+            .success {{ color: #28a745; background: #d4edda; padding: 1rem; border-radius: 5px; margin: 1rem 0; }}
+            .warning {{ color: #856404; background: #fff3cd; padding: 1rem; border-radius: 5px; margin: 1rem 0; }}
+            .error {{ color: #721c24; background: #f8d7da; padding: 1rem; border-radius: 5px; margin: 1rem 0; }}
+            ul {{ margin: 1rem 0; }}
+            .stats {{ display: flex; justify-content: space-around; margin: 2rem 0; }}
+            .stat {{ text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 10px; }}
+            .stat-number {{ font-size: 2rem; font-weight: bold; color: #007bff; }}
+        </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🔧 Enrollment Fix Results</h1>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-number">{completed_enrollments.count()}</div>
+                        <div>Total Enrollments</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">{fixed_individual}</div>
+                        <div>Individual Fixed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">{fixed_group}</div>
+                        <div>Group Fixed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">{len(errors)}</div>
+                        <div>Errors</div>
+                    </div>
+                </div>
+                
+                <div class="success">
+                    <h3>✅ Successfully Fixed</h3>
+                    <p><strong>Individual Classes:</strong> {fixed_individual} students added</p>
+                    <p><strong>Group Classes:</strong> {fixed_group} students added</p>
+                    <p><strong>Total Fixed:</strong> {fixed_individual + fixed_group} enrollments</p>
+                </div>
+        """
+        
+        if errors:
+            html += f"""
+                <div class="warning">
+                    <h3>⚠️ Errors Encountered ({len(errors)})</h3>
+                    <ul>
+            """
+            for error in errors:
+                html += f"<li>{error}</li>"
+            html += "</ul></div>"
+        
+        html += f"""
+                <div class="success">
+                    <h3>🎯 What Happened</h3>
+                    <p>This fix process reviewed all approved class enrollments and ensured students were properly added to their classes. Now:</p>
+                    <ul>
+                        <li>✅ Students can see their classes in the student dashboard</li>
+                        <li>✅ Admins can share materials with enrolled students</li>
+                        <li>✅ Learning materials will appear for enrolled students</li>
+                        <li>✅ Class rosters are accurate</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="/admin/dashboard" style="background: #007bff; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">← Admin Dashboard</a>
+                    <a href="/admin/enrollments" style="background: #28a745; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; margin: 0 1rem;">View Enrollments</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return html
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Fix Failed</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Fix Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+
+
  
 
 # ========================================
@@ -6339,7 +6489,12 @@ def course_video_bypass(filename):
             <p><strong>Path:</strong> {video_file_path}</p>
             <p><strong>Available files:</strong></p>
             <ul>
-
+        """ + ''.join([f'<li>{f}</li>' for f in os.listdir(video_folder)]) + """
+            </ul>
+            <p><a href="/video-debug">← Back to Debug</a></p>
+        </div>
+        """, 404
+    
     try:
         # Serve the video file directly
         return send_from_directory(
@@ -6386,7 +6541,26 @@ def test_player():
     <body>
         <h1>Video Player Test</h1>
         <p>Available video files:</p>
-
+    """
+    
+    for video_file in available_files:
+        html += f"""
+        <div class="video-item">
+            <h3>{video_file}</h3>
+            <video controls>
+                <source src="/course_video_bypass/{video_file}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p><a href="/course_video_bypass/{video_file}" target="_blank">Direct link</a></p>
+        </div>
+        """
+    
+    html += """
+        <p><a href="/test-upload">Upload another test video</a></p>
+        <p><a href="/video-debug">Back to debug</a></p>
+    </body>
+    </html>
+    """
     
     return html
 
@@ -6431,9 +6605,37 @@ def test_upload():
                 
                 <h2>All files in video folder:</h2>
                 <ul>
-    
+                """
                 
-
+                for f in all_files:
+                    result += f"<li>{f}</li>"
+                
+                result += f"""
+                </ul>
+                
+                <h2>Test Video Link:</h2>
+                <p><a href="/course_video/{test_filename}" target="_blank">Try to play: {test_filename}</a></p>
+                
+                <p><a href="/test-upload">Upload another test video</a></p>
+                <p><a href="/video-debug">Check debug info</a></p>
+                """
+                
+                return result
+                
+            except Exception as e:
+                return f"Upload failed: {e}"
+    
+    # GET request - show upload form
+    return '''
+    <h1>Test Video Upload</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <p>Select a small video file (MP4, under 50MB):</p>
+        <input type="file" name="test_video" accept=".mp4,.avi,.mov" required>
+        <br><br>
+        <button type="submit">Upload Test Video</button>
+    </form>
+    <p><a href="/video-debug">← Back to Debug</a></p>
+    '''
 
 
 #..................................................................................................................................................
@@ -6513,8 +6715,6 @@ def available_classes():
                          individual_classes=individual_classes,
                          group_classes=group_classes)
 
-# Update your existing enroll_class route in app.py to use dynamic pricing
-
 @app.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])
 @login_required
 def enroll_class(class_type, class_id):
@@ -6553,17 +6753,13 @@ def enroll_class(class_type, class_id):
         flash('You already have a pending enrollment for this class. Please wait for admin approval.', 'info')
         return redirect(url_for('student_dashboard'))
     
-    # NEW: Get dynamic pricing from the class object
-    class_fee = getattr(class_obj, 'price', None)
-    if not class_fee:
-        # Fallback to default prices if price field doesn't exist or is null
-        class_fee = 100.0 if class_type == 'individual' else 1000.0
-    
-    # Set currency and display format
+    # Set dynamic pricing based on class type
     if class_type == 'individual':
-        currency = '
+        class_fee = 100.00  # $100 for individual classes
+        currency = '$'
         fee_display = f'${class_fee:.0f}'
     else:
+        class_fee = 1000.00  # D1000 for group classes
         currency = 'D'
         fee_display = f'D{class_fee:.0f}'
     
@@ -6586,7 +6782,7 @@ def enroll_class(class_type, class_id):
             flash('Please select a valid payment method', 'danger')
             return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
         
-        # Handle payment proof upload to Cloudinary
+        # Handle payment proof upload to Cloudinary - CLEAN VERSION
         payment_proof = request.files.get('payment_proof')
         proof_url, error = handle_payment_proof_upload(
             payment_proof, 'class_enrollment', class_id, current_user.id
@@ -6603,12 +6799,12 @@ def enroll_class(class_type, class_id):
                 return redirect(url_for('available_classes'))
         
         try:
-            # Create enrollment record with dynamic price
+            # Create enrollment record
             enrollment = ClassEnrollment(
                 user_id=current_user.id,
                 class_id=class_id,
                 class_type=class_type,
-                amount=class_fee,  # Use dynamic price from class object
+                amount=class_fee,  # Dynamic amount based on class type
                 status='pending',
                 payment_method=payment_method,
                 transaction_id=str(uuid.uuid4())[:8].upper(),
@@ -6616,13 +6812,13 @@ def enroll_class(class_type, class_id):
                 customer_phone=phone,
                 customer_email=email,
                 customer_address=address,
-                payment_proof=proof_url
+                payment_proof=proof_url  # Store Cloudinary URL
             )
             
             db.session.add(enrollment)
             db.session.commit()
             
-            # Send notification email to admin
+            # Send notification email to admin (optional)
             try:
                 admin_users = User.query.filter_by(is_admin=True).all()
                 if admin_users:
@@ -6688,6 +6884,7 @@ Please review and approve the enrollment in the admin dashboard.
                          class_fee=class_fee,
                          currency=currency,
                          fee_display=fee_display)
+    
 
 # Add this route to your app.py to add price columns to class tables
 
@@ -6729,175 +6926,68 @@ def add_class_price_fields():
             conn.commit()
         
         if added_columns:
-            return
- 
-        
-# Fixed version without f-strings - Add this route to your app.py
-
-@app.route('/admin/delete_enrollment/<int:enrollment_id>', methods=['POST'])
-@login_required
-def delete_enrollment(enrollment_id):
-    """Delete a class enrollment - ADMIN ONLY"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    
-    try:
-        # Get the enrollment
-        enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
-        
-        # Store info for flash message
-        if enrollment.user:
-            student_name = enrollment.user.first_name + " " + enrollment.user.last_name
+            return f"""
+            <html>
+            <head><title>Price Fields Added</title>
+            <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+            <body>
+                <h1>✅ Price Fields Added Successfully!</h1>
+                <p><strong>Added columns:</strong> {', '.join(added_columns)}</p>
+                <p><strong>Default values:</strong></p>
+                <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
+                    <li>Individual Classes: $100.00</li>
+                    <li>Group Classes: D1000.00</li>
+                </ul>
+                <h3>🎯 What's New:</h3>
+                <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                    <li>✅ Price field in class creation form</li>
+                    <li>✅ Price editing in class edit form</li>
+                    <li>✅ Dynamic currency symbols ($ for individual, D for group)</li>
+                    <li>✅ Default prices set automatically</li>
+                </ul>
+                <p style="margin-top: 2rem;">
+                    <a href="/admin/create_class" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">➕ Create Class</a>
+                    <a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">← Admin Dashboard</a>
+                </p>
+            </body>
+            </html>
+            """
         else:
-            student_name = "Unknown Student"
-        
-        class_name = "Unknown Class"
-        
-        # Get class name based on type
-        if enrollment.class_type == 'individual':
-            individual_class = IndividualClass.query.get(enrollment.class_id)
-            if individual_class:
-                class_name = individual_class.name
-                # Remove student from class if they were already enrolled
-                if enrollment.status == 'completed' and enrollment.user in individual_class.students:
-                    individual_class.students.remove(enrollment.user)
-        elif enrollment.class_type == 'group':
-            group_class = GroupClass.query.get(enrollment.class_id)
-            if group_class:
-                class_name = group_class.name
-                # Remove student from class if they were already enrolled
-                if enrollment.status == 'completed' and enrollment.user in group_class.students:
-                    group_class.students.remove(enrollment.user)
-        
-        # Delete the enrollment record
-        db.session.delete(enrollment)
-        db.session.commit()
-        
-        success_message = 'Enrollment for ' + student_name + ' in "' + class_name + '" has been deleted successfully.'
-        flash(success_message, 'success')
-        
-        # Send notification email to student (optional)
-        try:
-            if enrollment.user and enrollment.user.email:
-                subject = "Enrollment Cancellation - " + class_name
-                message = "Dear " + student_name + ",\n\n"
-                message += "Your enrollment in \"" + class_name + "\" has been cancelled by an administrator.\n\n"
-                message += "If you believe this was done in error or have any questions, please contact our support team.\n\n"
-                message += "Best regards,\n"
-                message += "BuXin Future Academy Team\n\n"
-                message += "Contact: support@techbuxin.com\n"
-                message += "Phone: +220 542 7090"
-                
-                send_bulk_email([enrollment.user], subject, message)
-        except Exception as e:
-            print("Failed to send cancellation email: " + str(e))
+            return """
+            <html>
+            <head><title>No Changes Needed</title>
+            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+            <body>
+                <h1>✅ Price Fields Already Exist!</h1>
+                <p>Both IndividualClass and GroupClass tables already have price columns.</p>
+                <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+            </body>
+            </html>
+            """
         
     except Exception as e:
-        db.session.rollback()
-        error_message = 'Error deleting enrollment: ' + str(e)
-        flash(error_message, 'danger')
-        print("Error deleting enrollment " + str(enrollment_id) + ": " + str(e))
-    
-    return redirect(url_for('admin_enrollments'))
-
-
-# Also update your existing admin_enrollments route
-
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """, 500
+        
 @app.route('/admin/enrollments')
 @login_required
 def admin_enrollments():
-    """Enhanced admin enrollments view with separation"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
 
-    # Get all enrollments with better sorting
-    enrollments = ClassEnrollment.query.order_by(
-        ClassEnrollment.enrolled_at.desc()
-    ).all()
-    
-    # Calculate statistics
-    total_enrollments = len(enrollments)
-    individual_enrollments = [e for e in enrollments if e.class_type == 'individual']
-    group_enrollments = [e for e in enrollments if e.class_type == 'group']
-    pending_enrollments = [e for e in enrollments if e.status == 'pending']
-    completed_enrollments = [e for e in enrollments if e.status == 'completed']
-    
-    # Add debug info
-    print("Enrollment Stats:")
-    print("   Total: " + str(total_enrollments))
-    print("   Individual: " + str(len(individual_enrollments)))
-    print("   Group: " + str(len(group_enrollments)))
-    print("   Pending: " + str(len(pending_enrollments)))
-    print("   Completed: " + str(len(completed_enrollments)))
-    
-    return render_template('admin_enrollments.html', 
-                         enrollments=enrollments,
-                         IndividualClass=IndividualClass, 
-                         GroupClass=GroupClass,
-                         total_enrollments=total_enrollments,
-                         individual_count=len(individual_enrollments),
-                         group_count=len(group_enrollments),
-                         pending_count=len(pending_enrollments),
-                         completed_count=len(completed_enrollments))
+    enrollments = ClassEnrollment.query.order_by(ClassEnrollment.enrolled_at.desc()).all()
+    return render_template('admin_enrollments.html', enrollments=enrollments, IndividualClass=IndividualClass, GroupClass=GroupClass)
 
-
-# Enhanced bulk delete route (optional) - also without f-strings
-
-@app.route('/admin/bulk_delete_enrollments', methods=['POST'])
-@login_required
-def bulk_delete_enrollments():
-    """Bulk delete multiple enrollments - ADMIN ONLY"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    
-    try:
-        enrollment_ids = request.form.getlist('enrollment_ids')
-        if not enrollment_ids:
-            flash('No enrollments selected for deletion.', 'warning')
-            return redirect(url_for('admin_enrollments'))
-        
-        deleted_count = 0
-        errors = []
-        
-        for enrollment_id in enrollment_ids:
-            try:
-                enrollment = ClassEnrollment.query.get(int(enrollment_id))
-                if enrollment:
-                    # Remove from class if needed
-                    if enrollment.status == 'completed':
-                        if enrollment.class_type == 'individual':
-                            individual_class = IndividualClass.query.get(enrollment.class_id)
-                            if individual_class and enrollment.user in individual_class.students:
-                                individual_class.students.remove(enrollment.user)
-                        elif enrollment.class_type == 'group':
-                            group_class = GroupClass.query.get(enrollment.class_id)
-                            if group_class and enrollment.user in group_class.students:
-                                group_class.students.remove(enrollment.user)
-                    
-                    db.session.delete(enrollment)
-                    deleted_count += 1
-            except Exception as e:
-                error_msg = "Error deleting enrollment " + str(enrollment_id) + ": " + str(e)
-                errors.append(error_msg)
-        
-        if deleted_count > 0:
-            db.session.commit()
-            success_msg = 'Successfully deleted ' + str(deleted_count) + ' enrollment(s).'
-            flash(success_msg, 'success')
-        
-        if errors:
-            for error in errors:
-                flash(error, 'danger')
-        
-    except Exception as e:
-        db.session.rollback()
-        error_msg = 'Error during bulk deletion: ' + str(e)
-        flash(error_msg, 'danger')
-    
-    return redirect(url_for('admin_enrollments'))
 
 
 @app.route('/admin/edit_class/<class_type>/<int:class_id>', methods=['GET', 'POST'])

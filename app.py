@@ -7159,6 +7159,14 @@ def edit_class(class_type, class_id):
         class_obj.name = request.form['name']
         class_obj.description = request.form.get('description', '')
         
+        # NEW: Update price
+        try:
+            new_price = float(request.form.get('price', 100.0))
+            class_obj.price = new_price
+        except (ValueError, TypeError):
+            flash('Invalid price format. Using default value.', 'warning')
+            class_obj.price = 100.0 if class_type == 'individual' else 1000.0
+        
         # Update max_students for group classes
         if class_type == 'group':
             new_max_students = int(request.form.get('max_students', 10))
@@ -7182,13 +7190,13 @@ def edit_class(class_type, class_id):
         
         try:
             db.session.commit()
-            flash(f'{class_type.title()} class updated successfully!', 'success')
+            flash(f'{class_type.title()} class updated successfully! New price: ${class_obj.price}', 'success')
             return redirect(url_for('admin_dashboard'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating class: {str(e)}', 'danger')
     
-    # Get all students for the form
+    # GET request - show the form with current data
     students = User.query.filter_by(is_student=True).all()
     return render_template('edit_class.html', class_obj=class_obj, class_type=class_type, students=students)
 

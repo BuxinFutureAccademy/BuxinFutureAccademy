@@ -6822,67 +6822,115 @@ def add_class_price_fields():
             conn.commit()
         
         if added_columns:
-            return f"""
-            <html>
-            <head><title>Price Fields Added</title>
-            <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
-            <body>
-                <h1>✅ Price Fields Added Successfully!</h1>
-                <p><strong>Added columns:</strong> {', '.join(added_columns)}</p>
-                <p><strong>Default values:</strong></p>
-                <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
-                    <li>Individual Classes: $100.00</li>
-                    <li>Group Classes: D1000.00</li>
-                </ul>
-                <h3>🎯 What's New:</h3>
-                <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
-                    <li>✅ Price field in class creation form</li>
-                    <li>✅ Price editing in class edit form</li>
-                    <li>✅ Dynamic currency symbols ($ for individual, D for group)</li>
-                    <li>✅ Default prices set automatically</li>
-                </ul>
-                <p style="margin-top: 2rem;">
-                    <a href="/admin/create_class" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">➕ Create Class</a>
-                    <a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">← Admin Dashboard</a>
-                </p>
-            </body>
-            </html>
-            """
-        else:
-            return """
-            <html>
-            <head><title>No Changes Needed</title>
-            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
-            <body>
-                <h1>✅ Price Fields Already Exist!</h1>
-                <p>Both IndividualClass and GroupClass tables already have price columns.</p>
-                <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
-            </body>
-            </html>
-            """
+            return
+ 
+        
+@app.route('/admin/delete_enrollment/<int:enrollment_id>', methods=['POST'])
+@login_required
+def delete_enrollment(enrollment_id):
+    """Delete a class enrollment - ADMIN ONLY"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        # Get the enrollment
+        enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+        
+        # Store info for flash message
+        student_name = f"{enrollment.user.first_name} {enrollment.user.last_name}" if enrollment.user else "Unknown Student"
+        class_name = "Unknown Class"
+        
+        # Get class name based on type
+        if enrollment.class_type == 'individual':
+            individual_class = IndividualClass.query.get(enrollment.class_id)
+            if individual_class:
+                class_name = individual_class.name
+                # Remove student from class if they were already enrolled
+                if enrollment.status == 'completed' and enrollment.user in individual_class.students:
+                    individual_class.students.remove(enrollment.user)
+        elif enrollment.class_type == 'group':
+            group_class = GroupClass.query.get(enrollment.class_id)
+            if group_class:
+                class_name = group_class.name
+                # Remove student from class if they were already enrolled
+                if enrollment.status == 'completed' and enrollment.user in group_class.students:
+                    group_class.students.remove(enrollment.user)
+        
+        # Delete the enrollment record
+        db.session.delete(enrollment)
+        db.session.commit()
+        
+        flash(f'Enrollment for {student_name} in "{class_name}" has been deleted successfully.', 'success')
+        
+        # Send notification email to student (optional)
+        try:
+            if enrollment.user and enrollment.user.email:
+                subject = f"Enrollment Cancellation - {class_name}"
+                message = f"""
+Dear {student_name},
+
+Your enrollment in "{class_name}" has been cancelled by an administrator.
+
+If you believe this was done in error or have any questions, please contact our support team.
+
+Best regards,
+BuXin Future Academy Team
+
+Contact: support@techbuxin.com
+Phone: +220 542 7090
+"""
+                send_bulk_email([enrollment.user], subject, message)
+        except Exception as e:
+            print(f"Failed to send cancellation email: {e}")
         
     except Exception as e:
-        return f"""
-        <html>
-        <head><title>Migration Error</title>
-        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
-        <body>
-            <h1>❌ Migration Failed</h1>
-            <p><strong>Error:</strong> {str(e)}</p>
-            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
-        </body>
-        </html>
-        """, 500
-        
+        db.session.rollback()
+        flash(f'Error deleting enrollment: {str(e)}', 'danger')
+        print(f"Error deleting enrollment {enrollment_id}: {e}")
+    
+    return redirect(url_for('admin_enrollments'))
+
+
+# Also update your existing admin_enrollments route to separate the data better
+
 @app.route('/admin/enrollments')
 @login_required
 def admin_enrollments():
+    """Enhanced admin enrollments view with separation"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
 
-    enrollments = ClassEnrollment.query.order_by(ClassEnrollment.enrolled_at.desc()).all()
-    return render_template('admin_enrollments.html', enrollments=enrollments, IndividualClass=IndividualClass, GroupClass=GroupClass)
+    # Get all enrollments with better sorting
+    enrollments = ClassEnrollment.query.order_by(
+        ClassEnrollment.enrolled_at.desc()
+    ).all()
+    
+    # Calculate statistics
+    total_enrollments = len(enrollments)
+    individual_enrollments = [e for e in enrollments if e.class_type == 'individual']
+    group_enrollments = [e for e in enrollments if e.class_type == 'group']
+    pending_enrollments = [e for e in enrollments if e.status == 'pending']
+    completed_enrollments = [e for e in enrollments if e.status == 'completed']
+    
+    # Add debug info
+    print(f"📊 Enrollment Stats:")
+    print(f"   Total: {total_enrollments}")
+    print(f"   Individual: {len(individual_enrollments)}")
+    print(f"   Group: {len(group_enrollments)}")
+    print(f"   Pending: {len(pending_enrollments)}")
+    print(f"   Completed: {len(completed_enrollments)}")
+    
+    return render_template('admin_enrollments.html', 
+                         enrollments=enrollments,
+                         IndividualClass=IndividualClass, 
+                         GroupClass=GroupClass,
+                         total_enrollments=total_enrollments,
+                         individual_count=len(individual_enrollments),
+                         group_count=len(group_enrollments),
+                         pending_count=len(pending_enrollments),
+                         completed_count=len(completed_enrollments))
 
 
 

@@ -6432,12 +6432,7 @@ def course_video_bypass(filename):
             <p><strong>Path:</strong> {video_file_path}</p>
             <p><strong>Available files:</strong></p>
             <ul>
-        """ + ''.join([f'<li>{f}</li>' for f in os.listdir(video_folder)]) + """
-            </ul>
-            <p><a href="/video-debug">← Back to Debug</a></p>
-        </div>
-        """, 404
-    
+
     try:
         # Serve the video file directly
         return send_from_directory(
@@ -6484,26 +6479,7 @@ def test_player():
     <body>
         <h1>Video Player Test</h1>
         <p>Available video files:</p>
-    """
-    
-    for video_file in available_files:
-        html += f"""
-        <div class="video-item">
-            <h3>{video_file}</h3>
-            <video controls>
-                <source src="/course_video_bypass/{video_file}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-            <p><a href="/course_video_bypass/{video_file}" target="_blank">Direct link</a></p>
-        </div>
-        """
-    
-    html += """
-        <p><a href="/test-upload">Upload another test video</a></p>
-        <p><a href="/video-debug">Back to debug</a></p>
-    </body>
-    </html>
-    """
+
     
     return html
 
@@ -6548,37 +6524,9 @@ def test_upload():
                 
                 <h2>All files in video folder:</h2>
                 <ul>
-                """
-                
-                for f in all_files:
-                    result += f"<li>{f}</li>"
-                
-                result += f"""
-                </ul>
-                
-                <h2>Test Video Link:</h2>
-                <p><a href="/course_video/{test_filename}" target="_blank">Try to play: {test_filename}</a></p>
-                
-                <p><a href="/test-upload">Upload another test video</a></p>
-                <p><a href="/video-debug">Check debug info</a></p>
-                """
-                
-                return result
-                
-            except Exception as e:
-                return f"Upload failed: {e}"
     
-    # GET request - show upload form
-    return '''
-    <h1>Test Video Upload</h1>
-    <form method="POST" enctype="multipart/form-data">
-        <p>Select a small video file (MP4, under 50MB):</p>
-        <input type="file" name="test_video" accept=".mp4,.avi,.mov" required>
-        <br><br>
-        <button type="submit">Upload Test Video</button>
-    </form>
-    <p><a href="/video-debug">← Back to Debug</a></p>
-    '''
+                
+
 
 
 #..................................................................................................................................................
@@ -6658,6 +6606,8 @@ def available_classes():
                          individual_classes=individual_classes,
                          group_classes=group_classes)
 
+# Update your existing enroll_class route in app.py to use dynamic pricing
+
 @app.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])
 @login_required
 def enroll_class(class_type, class_id):
@@ -6696,13 +6646,17 @@ def enroll_class(class_type, class_id):
         flash('You already have a pending enrollment for this class. Please wait for admin approval.', 'info')
         return redirect(url_for('student_dashboard'))
     
-    # Set dynamic pricing based on class type
+    # NEW: Get dynamic pricing from the class object
+    class_fee = getattr(class_obj, 'price', None)
+    if not class_fee:
+        # Fallback to default prices if price field doesn't exist or is null
+        class_fee = 100.0 if class_type == 'individual' else 1000.0
+    
+    # Set currency and display format
     if class_type == 'individual':
-        class_fee = 100.00  # $100 for individual classes
-        currency = '$'
+        currency = '
         fee_display = f'${class_fee:.0f}'
     else:
-        class_fee = 1000.00  # D1000 for group classes
         currency = 'D'
         fee_display = f'D{class_fee:.0f}'
     
@@ -6725,7 +6679,7 @@ def enroll_class(class_type, class_id):
             flash('Please select a valid payment method', 'danger')
             return redirect(url_for('enroll_class', class_type=class_type, class_id=class_id))
         
-        # Handle payment proof upload to Cloudinary - CLEAN VERSION
+        # Handle payment proof upload to Cloudinary
         payment_proof = request.files.get('payment_proof')
         proof_url, error = handle_payment_proof_upload(
             payment_proof, 'class_enrollment', class_id, current_user.id
@@ -6742,12 +6696,12 @@ def enroll_class(class_type, class_id):
                 return redirect(url_for('available_classes'))
         
         try:
-            # Create enrollment record
+            # Create enrollment record with dynamic price
             enrollment = ClassEnrollment(
                 user_id=current_user.id,
                 class_id=class_id,
                 class_type=class_type,
-                amount=class_fee,  # Dynamic amount based on class type
+                amount=class_fee,  # Use dynamic price from class object
                 status='pending',
                 payment_method=payment_method,
                 transaction_id=str(uuid.uuid4())[:8].upper(),
@@ -6755,13 +6709,13 @@ def enroll_class(class_type, class_id):
                 customer_phone=phone,
                 customer_email=email,
                 customer_address=address,
-                payment_proof=proof_url  # Store Cloudinary URL
+                payment_proof=proof_url
             )
             
             db.session.add(enrollment)
             db.session.commit()
             
-            # Send notification email to admin (optional)
+            # Send notification email to admin
             try:
                 admin_users = User.query.filter_by(is_admin=True).all()
                 if admin_users:
@@ -6827,7 +6781,6 @@ Please review and approve the enrollment in the admin dashboard.
                          class_fee=class_fee,
                          currency=currency,
                          fee_display=fee_display)
-    
 
 # Add this route to your app.py to add price columns to class tables
 

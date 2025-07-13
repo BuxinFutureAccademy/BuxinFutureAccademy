@@ -6825,6 +6825,8 @@ def add_class_price_fields():
             return
  
         
+# Fixed version without f-strings - Add this route to your app.py
+
 @app.route('/admin/delete_enrollment/<int:enrollment_id>', methods=['POST'])
 @login_required
 def delete_enrollment(enrollment_id):
@@ -6838,7 +6840,11 @@ def delete_enrollment(enrollment_id):
         enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
         
         # Store info for flash message
-        student_name = f"{enrollment.user.first_name} {enrollment.user.last_name}" if enrollment.user else "Unknown Student"
+        if enrollment.user:
+            student_name = enrollment.user.first_name + " " + enrollment.user.last_name
+        else:
+            student_name = "Unknown Student"
+        
         class_name = "Unknown Class"
         
         # Get class name based on type
@@ -6861,38 +6867,35 @@ def delete_enrollment(enrollment_id):
         db.session.delete(enrollment)
         db.session.commit()
         
-        flash(f'Enrollment for {student_name} in "{class_name}" has been deleted successfully.', 'success')
+        success_message = 'Enrollment for ' + student_name + ' in "' + class_name + '" has been deleted successfully.'
+        flash(success_message, 'success')
         
         # Send notification email to student (optional)
         try:
             if enrollment.user and enrollment.user.email:
-                subject = f"Enrollment Cancellation - {class_name}"
-                message = f"""
-Dear {student_name},
-
-Your enrollment in "{class_name}" has been cancelled by an administrator.
-
-If you believe this was done in error or have any questions, please contact our support team.
-
-Best regards,
-BuXin Future Academy Team
-
-Contact: support@techbuxin.com
-Phone: +220 542 7090
-"""
+                subject = "Enrollment Cancellation - " + class_name
+                message = "Dear " + student_name + ",\n\n"
+                message += "Your enrollment in \"" + class_name + "\" has been cancelled by an administrator.\n\n"
+                message += "If you believe this was done in error or have any questions, please contact our support team.\n\n"
+                message += "Best regards,\n"
+                message += "BuXin Future Academy Team\n\n"
+                message += "Contact: support@techbuxin.com\n"
+                message += "Phone: +220 542 7090"
+                
                 send_bulk_email([enrollment.user], subject, message)
         except Exception as e:
-            print(f"Failed to send cancellation email: {e}")
+            print("Failed to send cancellation email: " + str(e))
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Error deleting enrollment: {str(e)}', 'danger')
-        print(f"Error deleting enrollment {enrollment_id}: {e}")
+        error_message = 'Error deleting enrollment: ' + str(e)
+        flash(error_message, 'danger')
+        print("Error deleting enrollment " + str(enrollment_id) + ": " + str(e))
     
     return redirect(url_for('admin_enrollments'))
 
 
-# Also update your existing admin_enrollments route to separate the data better
+# Also update your existing admin_enrollments route
 
 @app.route('/admin/enrollments')
 @login_required
@@ -6915,12 +6918,12 @@ def admin_enrollments():
     completed_enrollments = [e for e in enrollments if e.status == 'completed']
     
     # Add debug info
-    print(f"📊 Enrollment Stats:")
-    print(f"   Total: {total_enrollments}")
-    print(f"   Individual: {len(individual_enrollments)}")
-    print(f"   Group: {len(group_enrollments)}")
-    print(f"   Pending: {len(pending_enrollments)}")
-    print(f"   Completed: {len(completed_enrollments)}")
+    print("Enrollment Stats:")
+    print("   Total: " + str(total_enrollments))
+    print("   Individual: " + str(len(individual_enrollments)))
+    print("   Group: " + str(len(group_enrollments)))
+    print("   Pending: " + str(len(pending_enrollments)))
+    print("   Completed: " + str(len(completed_enrollments)))
     
     return render_template('admin_enrollments.html', 
                          enrollments=enrollments,
@@ -6932,6 +6935,62 @@ def admin_enrollments():
                          pending_count=len(pending_enrollments),
                          completed_count=len(completed_enrollments))
 
+
+# Enhanced bulk delete route (optional) - also without f-strings
+
+@app.route('/admin/bulk_delete_enrollments', methods=['POST'])
+@login_required
+def bulk_delete_enrollments():
+    """Bulk delete multiple enrollments - ADMIN ONLY"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        enrollment_ids = request.form.getlist('enrollment_ids')
+        if not enrollment_ids:
+            flash('No enrollments selected for deletion.', 'warning')
+            return redirect(url_for('admin_enrollments'))
+        
+        deleted_count = 0
+        errors = []
+        
+        for enrollment_id in enrollment_ids:
+            try:
+                enrollment = ClassEnrollment.query.get(int(enrollment_id))
+                if enrollment:
+                    # Remove from class if needed
+                    if enrollment.status == 'completed':
+                        if enrollment.class_type == 'individual':
+                            individual_class = IndividualClass.query.get(enrollment.class_id)
+                            if individual_class and enrollment.user in individual_class.students:
+                                individual_class.students.remove(enrollment.user)
+                        elif enrollment.class_type == 'group':
+                            group_class = GroupClass.query.get(enrollment.class_id)
+                            if group_class and enrollment.user in group_class.students:
+                                group_class.students.remove(enrollment.user)
+                    
+                    db.session.delete(enrollment)
+                    deleted_count += 1
+            except Exception as e:
+                error_msg = "Error deleting enrollment " + str(enrollment_id) + ": " + str(e)
+                errors.append(error_msg)
+        
+        if deleted_count > 0:
+            db.session.commit()
+            success_msg = 'Successfully deleted ' + str(deleted_count) + ' enrollment(s).'
+            flash(success_msg, 'success')
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+        
+    except Exception as e:
+        db.session.rollback()
+        error_msg = 'Error during bulk deletion: ' + str(e)
+        flash(error_msg, 'danger')
+    
+    return redirect(url_for('admin_enrollments'))
 
 
 @app.route('/admin/edit_class/<class_type>/<int:class_id>', methods=['GET', 'POST'])

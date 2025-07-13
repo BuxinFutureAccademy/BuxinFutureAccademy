@@ -1491,7 +1491,6 @@ def forgot_password_enhanced():
             return redirect(url_for('login'))
     
     return render_template('forgot_password.html')
-    
 # ========================================/////////////////////////////////////////////////////////////////
 @app.route('/privacy-policy')
 def privacy_policy():
@@ -1504,12 +1503,10 @@ def privacy_policy():
 
 # Add these routes to your app.py file
 
-# FIXED VERSION - Replace your delete account route with this working version
-
 @app.route('/delete-account', methods=['GET', 'POST'])
 @login_required
 def delete_account():
-    """User account deletion page - FIXED VERSION"""
+    """User account deletion page"""
     if request.method == 'POST':
         # Get form data
         confirmation_text = request.form.get('confirmation_text', '').strip()
@@ -1534,34 +1531,41 @@ def delete_account():
             email = current_user.email
             user_name = f"{current_user.first_name} {current_user.last_name}"
             
-            print(f"🗑️ Account deletion request: {user_name} ({email})")
+            # Create deletion record for audit trail
+            deletion_record = {
+                'user_id': user_id,
+                'username': username,
+                'email': email,
+                'name': user_name,
+                'reason': reason,
+                'feedback': feedback,
+                'deleted_at': datetime.utcnow(),
+                'deleted_by': 'user_self_service'
+            }
             
-            # Check for active purchases/enrollments - SAFE VERSION
-            active_courses = 0
-            active_orders = 0
-            enrollments = 0
+            # Log the deletion request
+            print(f"🗑️ Account deletion request: {deletion_record}")
             
-            try:
-                active_courses = Purchase.query.filter_by(user_id=user_id, status='completed').count()
-            except:
-                active_courses = 0
-            
-            try:
-                active_orders = ProductOrder.query.filter_by(user_id=user_id, status='completed').count()
-            except:
-                active_orders = 0
-                
-            try:
-                enrollments = ClassEnrollment.query.filter_by(user_id=user_id, status='completed').count()
-            except:
-                enrollments = 0
+            # Check for active enrollments/purchases
+            active_courses = Purchase.query.filter_by(user_id=user_id, status='completed').count()
+            active_orders = ProductOrder.query.filter_by(user_id=user_id, status='completed').count()
+            enrollments = ClassEnrollment.query.filter_by(user_id=user_id, status='completed').count()
             
             if active_courses > 0 or active_orders > 0 or enrollments > 0:
-                # User has active purchases/enrollments - deactivate instead of delete
+                # User has active purchases/enrollments
                 flash(f'''
-                    Account deletion request received. You have active purchases/enrollments that require review.
-                    Your account has been deactivated and an admin will contact you within 24 hours.
+                    Account deletion request received, but you have active purchases/enrollments:
+                    • {active_courses} completed course purchases
+                    • {active_orders} completed product orders  
+                    • {enrollments} class enrollments
+                    
+                    Your account will be deactivated and an admin will review your deletion request.
+                    You will receive an email confirmation within 24 hours.
                 ''', 'warning')
+                
+                # Instead of deleting, deactivate the account
+                current_user.is_active = False  # You might need to add this field
+                # Or you could set a flag like: current_user.deletion_requested = True
                 
                 # Send notification to admins
                 try:
@@ -1581,7 +1585,9 @@ Active Data:
 • Completed Orders: {active_orders}
 • Class Enrollments: {enrollments}
 
-Please review this deletion request manually.
+Please review and process this deletion request manually.
+The user's account has been temporarily deactivated.
+
 Admin Dashboard: https://techbuxin.com/admin/users/{user_id}/edit
 """
                         send_bulk_email(admin_users, subject, message)
@@ -1601,55 +1607,39 @@ Admin Dashboard: https://techbuxin.com/admin/users/{user_id}/edit
             else:
                 # User has no active data, safe to delete immediately
                 
-                # Delete user-related data in correct order (only what exists)
-                try:
-                    # 1. Delete cart items
-                    CartItem.query.filter_by(user_id=user_id).delete()
-                    ProductCartItem.query.filter_by(user_id=user_id).delete()
-                    
-                    # 2. Delete learning materials created by user
-                    LearningMaterial.query.filter_by(created_by=user_id).delete()
-                    
-                    # 3. Delete project posts and related data (only if tables exist)
-                    try:
-                        ProjectComment.query.filter_by(user_id=user_id).delete()
-                        ProjectLike.query.filter_by(user_id=user_id).delete()
-                        StudentProject.query.filter_by(student_id=user_id).delete()
-                    except:
-                        pass  # Tables might not exist
-                    
-                    # 4. Delete password reset tokens (only if table exists)
-                    try:
-                        PasswordResetToken.query.filter_by(user_id=user_id).delete()
-                    except:
-                        pass  # Table might not exist
-                    
-                    # 5. Remove from class relationships
-                    try:
-                        for iclass in current_user.individual_classes:
-                            iclass.students.remove(current_user)
-                        for gclass in current_user.group_classes:
-                            gclass.students.remove(current_user)
-                    except:
-                        pass  # Relationships might not exist
-                    
-                    # 6. Delete pending purchases/orders/enrollments
-                    Purchase.query.filter_by(user_id=user_id, status='pending').delete()
-                    ProductOrder.query.filter_by(user_id=user_id, status='pending').delete()
-                    ClassEnrollment.query.filter_by(user_id=user_id, status='pending').delete()
-                    
-                    # 7. Delete the user account
-                    db.session.delete(current_user)
-                    db.session.commit()
-                    
-                    print(f"✅ Account deleted successfully: {user_name}")
-                    
-                except Exception as e:
-                    print(f"Error during deletion process: {e}")
-                    db.session.rollback()
-                    raise e
+                # Delete user-related data in correct order (foreign key constraints)
+                # 1. Delete cart items
+                CartItem.query.filter_by(user_id=user_id).delete()
+                ProductCartItem.query.filter_by(user_id=user_id).delete()
                 
-                # Send confirmation email
+                # 2. Delete learning materials created by user
+                LearningMaterial.query.filter_by(created_by=user_id).delete()
+                
+                # 3. Delete project posts and related data
+                ProjectComment.query.filter_by(user_id=user_id).delete()
+                ProjectLike.query.filter_by(user_id=user_id).delete()
+                StudentProject.query.filter_by(student_id=user_id).delete()
+                
+                # 4. Delete robotics submissions
+                RoboticsProjectSubmission.query.filter_by(user_id=user_id).delete()
+                
+                # 5. Delete password reset tokens
+                PasswordResetToken.query.filter_by(user_id=user_id).delete()
+                
+                # 6. Remove from class relationships
+                for iclass in current_user.individual_classes:
+                    iclass.students.remove(current_user)
+                for gclass in current_user.group_classes:
+                    gclass.students.remove(current_user)
+                
+                # 7. Delete the user account
+                db.session.delete(current_user)
+                db.session.commit()
+                
+                # Log successful deletion
+                print(f"✅ Account deleted successfully: {deletion_record}")
+                
+                # Send confirmation email (optional, since account is deleted)
                 try:
                     subject = "Account Deletion Confirmation - BuXin Future Academy"
                     message = f"""
@@ -1663,6 +1653,8 @@ Account Details:
 • Deletion Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
 
 All your personal data has been permanently removed from our systems.
+
+If you have any questions or need assistance, please contact our support team.
 
 Thank you for being part of BuXin Future Academy.
 
@@ -1691,43 +1683,22 @@ BuXin Future Academy Team
         except Exception as e:
             db.session.rollback()
             print(f"❌ Error deleting account: {e}")
-            flash(f'An error occurred while deleting your account. Please contact support.', 'danger')
+            flash(f'An error occurred while deleting your account: {str(e)}', 'danger')
             return render_template('delete_account.html')
     
-    # GET request - show deletion form with SAFE data summary
+    # GET request - show deletion form
+    # Get user's data summary
     user_data = {
+        'courses_purchased': Purchase.query.filter_by(user_id=current_user.id, status='completed').count(),
+        'products_ordered': ProductOrder.query.filter_by(user_id=current_user.id, status='completed').count(),
+        'class_enrollments': ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').count(),
+        'projects_posted': StudentProject.query.filter_by(student_id=current_user.id).count(),
+        'robotics_submissions': RoboticsProjectSubmission.query.filter_by(user_id=current_user.id).count(),
         'account_created': current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else 'Unknown'
     }
     
-    # Safely try to get each count
-    try:
-        user_data['courses_purchased'] = Purchase.query.filter_by(user_id=current_user.id, status='completed').count()
-    except:
-        user_data['courses_purchased'] = 0
-    
-    try:
-        user_data['products_ordered'] = ProductOrder.query.filter_by(user_id=current_user.id, status='completed').count()
-    except:
-        user_data['products_ordered'] = 0
-    
-    try:
-        user_data['class_enrollments'] = ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').count()
-    except:
-        user_data['class_enrollments'] = 0
-    
-    try:
-        user_data['projects_posted'] = StudentProject.query.filter_by(student_id=current_user.id).count()
-    except:
-        user_data['projects_posted'] = 0
-    
-    # For robotics submissions, we'll check by email since it doesn't have user_id
-    try:
-        user_data['robotics_submissions'] = RoboticsProjectSubmission.query.filter_by(email=current_user.email).count()
-    except:
-        user_data['robotics_submissions'] = 0
-    
     return render_template('delete_account.html', user_data=user_data)
-    
+
 
 @app.route('/admin/account-deletion-requests')
 @login_required
@@ -1792,7 +1763,6 @@ def anonymize_user_data(user_id):
         db.session.rollback()
         print(f"Error anonymizing user data: {e}")
         return False
-        
 # ========================================/////////////////////////////////////////////////////////////////
 # Add these routes to your app.py
 # ========================================
@@ -3668,49 +3638,125 @@ def admin_courses():
     courses = Course.query.order_by(Course.created_at.desc()).all()
     return render_template('admin_courses.html', courses=courses)
 
-@app.route('/admin/create_class', methods=['GET', 'POST'])
+@app.route('/admin/create_course', methods=['GET', 'POST'])
 @login_required
-def create_class():
+def create_course():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        class_type = request.form['class_type']
-        name = request.form['name']
-        description = request.form.get('description', '')
-        price = float(request.form.get('price', 100.0))  # NEW: Get price from form
-        student_ids = request.form.getlist('students')
-        
-        if class_type == 'individual':
-            new_class = IndividualClass(
-                name=name,
+        try:
+            # Basic course information
+            title = request.form['title']
+            description = request.form['description']
+            short_description = request.form.get('short_description', '')
+            price = float(request.form['price'])
+            duration_weeks = int(request.form.get('duration_weeks', 4))
+            level = request.form['level']
+            category = request.form['category']
+            image_url = request.form.get('image_url', '')
+            
+            # Create the course
+            course = Course(
+                title=title,
                 description=description,
-                price=price,  # NEW: Add price
-                teacher_id=current_user.id
+                short_description=short_description,
+                price=price,
+                duration_weeks=duration_weeks,
+                level=level,
+                category=category,
+                image_url=image_url,
+                created_by=current_user.id
             )
-        else:
-            max_students = int(request.form.get('max_students', 10))
-            new_class = GroupClass(
-                name=name,
-                description=description,
-                price=price,  # NEW: Add price
-                teacher_id=current_user.id,
-                max_students=max_students
-            )
-        
-        db.session.add(new_class)
-        db.session.commit()
-        
-        students = User.query.filter(User.id.in_(student_ids)).all()
-        new_class.students.extend(students)
-        db.session.commit()
-        
-        flash(f'{class_type.title()} class "{name}" created successfully with price ${price}!', 'success')
-        return redirect(url_for('admin_dashboard'))
+            
+            db.session.add(course)
+            db.session.flush()
+            
+            # Handle video uploads - CLOUDINARY VERSION
+            video_files = request.files.getlist('video_files')
+            video_titles = request.form.getlist('video_titles')
+            video_descriptions = request.form.getlist('video_descriptions')
+            video_orders = request.form.getlist('video_orders')
+            video_durations = request.form.getlist('video_durations')
+            
+            for i, video_file in enumerate(video_files):
+                if video_file and video_file.filename and allowed_file(video_file.filename, 'video'):
+                    video_file.seek(0, 2)
+                    file_size = video_file.tell()
+                    video_file.seek(0)
+                    
+                    if file_size > 500 * 1024 * 1024:  # 500MB
+                        flash(f'Video file {video_file.filename} is too large. Maximum size is 500MB.', 'warning')
+                        continue
+                    
+                    print(f"📤 Uploading {video_file.filename} to Cloudinary...")
+                    
+                    # Upload to Cloudinary instead of local storage
+                    upload_result = upload_video_to_cloudinary(video_file, course.id, i+1)
+                    
+                    if upload_result:
+                        # Create a fallback filename for compatibility
+                        fallback_filename = f"cloudinary_{upload_result['public_id']}.mp4"
+                        
+                        course_video = CourseVideo(
+                            course_id=course.id,
+                            title=video_titles[i] if i < len(video_titles) else f"Lesson {i+1}",
+                            description=video_descriptions[i] if i < len(video_descriptions) else "",
+                            video_filename=fallback_filename,  # Fallback filename
+                            video_url=upload_result['url'],  # Cloudinary URL
+                            duration=video_durations[i] if i < len(video_durations) and video_durations[i] else None,
+                            order_index=int(video_orders[i]) if i < len(video_orders) else i+1
+                        )
+                        db.session.add(course_video)
+                        print(f"✅ Video saved to database: {course_video.title}")
+                    else:
+                        flash(f'Failed to upload video: {video_file.filename}', 'danger')
+                        print(f"❌ Failed to upload: {video_file.filename}")
+            
+            # Handle course materials (keep local storage for materials)
+            material_files = request.files.getlist('course_materials')
+            materials_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'materials')
+            os.makedirs(materials_folder, exist_ok=True)
+            
+            for material_file in material_files:
+                if material_file and material_file.filename and allowed_file(material_file.filename, 'material'):
+                    material_file.seek(0, 2)
+                    file_size = material_file.tell()
+                    material_file.seek(0)
+                    
+                    if file_size > 10 * 1024 * 1024:
+                        flash(f'Material file {material_file.filename} is too large. Maximum size is 10MB.', 'warning')
+                        continue
+                    
+                    filename = secure_filename(material_file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                    unique_filename = f"{timestamp}{course.id}_{filename}"
+                    
+                    material_path = os.path.join(materials_folder, unique_filename)
+                    material_file.save(material_path)
+                    
+                    course_material = CourseMaterial(
+                        course_id=course.id,
+                        title=filename.rsplit('.', 1)[0],
+                        filename=unique_filename,
+                        file_type=filename.rsplit('.', 1)[1].lower(),
+                        file_size=file_size
+                    )
+                    
+                    db.session.add(course_material)
+            
+            db.session.commit()
+            
+            flash('Course created successfully with videos and materials!', 'success')
+            return redirect(url_for('admin_courses'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating course: {str(e)}', 'danger')
+            return render_template('create_course.html')
     
-    students = User.query.filter_by(is_student=True).all()
-    return render_template('create_class.html', students=students)
+    return render_template('create_course.html')
 
 @app.route('/admin/edit_course/<int:course_id>', methods=['GET', 'POST'])
 @login_required
@@ -6895,17 +6941,13 @@ def enroll_class(class_type, class_id):
         flash('You already have a pending enrollment for this class. Please wait for admin approval.', 'info')
         return redirect(url_for('student_dashboard'))
     
-    # NEW: Get dynamic pricing from the class object
-    class_fee = getattr(class_obj, 'price', None)
-    if not class_fee:
-        # Fallback to default prices if price field doesn't exist or is null
-        class_fee = 100.0 if class_type == 'individual' else 1000.0
-    
-    # Set currency and display format
+    # Set dynamic pricing based on class type
     if class_type == 'individual':
+        class_fee = 100.00  # $100 for individual classes
         currency = '$'
         fee_display = f'${class_fee:.0f}'
     else:
+        class_fee = 1000.00  # D1000 for group classes
         currency = 'D'
         fee_display = f'D{class_fee:.0f}'
     
@@ -6945,12 +6987,12 @@ def enroll_class(class_type, class_id):
                 return redirect(url_for('available_classes'))
         
         try:
-            # Create enrollment record with dynamic price from class object
+            # Create enrollment record
             enrollment = ClassEnrollment(
                 user_id=current_user.id,
                 class_id=class_id,
                 class_type=class_type,
-                amount=class_fee,  # Use dynamic price from class object instead of hardcoded
+                amount=class_fee,  # Dynamic amount based on class type
                 status='pending',
                 payment_method=payment_method,
                 transaction_id=str(uuid.uuid4())[:8].upper(),
@@ -7030,12 +7072,7 @@ Please review and approve the enrollment in the admin dashboard.
                          class_fee=class_fee,
                          currency=currency,
                          fee_display=fee_display)
-
-# Add this route to your app.py to add price columns to class tables
-
-
-                          
-                   
+    
 
 @app.route('/admin/enrollments')
 @login_required
@@ -7070,14 +7107,6 @@ def edit_class(class_type, class_id):
         class_obj.name = request.form['name']
         class_obj.description = request.form.get('description', '')
         
-        # NEW: Update price
-        try:
-            new_price = float(request.form.get('price', 100.0))
-            class_obj.price = new_price
-        except (ValueError, TypeError):
-            flash('Invalid price format. Using default value.', 'warning')
-            class_obj.price = 100.0 if class_type == 'individual' else 1000.0
-        
         # Update max_students for group classes
         if class_type == 'group':
             new_max_students = int(request.form.get('max_students', 10))
@@ -7101,13 +7130,13 @@ def edit_class(class_type, class_id):
         
         try:
             db.session.commit()
-            flash(f'{class_type.title()} class updated successfully! New price: ${class_obj.price}', 'success')
+            flash(f'{class_type.title()} class updated successfully!', 'success')
             return redirect(url_for('admin_dashboard'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating class: {str(e)}', 'danger')
     
-    # GET request - show the form with current data
+    # Get all students for the form
     students = User.query.filter_by(is_student=True).all()
     return render_template('edit_class.html', class_obj=class_obj, class_type=class_type, students=students)
 

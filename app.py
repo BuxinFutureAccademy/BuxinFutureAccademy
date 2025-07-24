@@ -2312,13 +2312,15 @@ def upload_project_file_to_cloudinary(file, submission_id, original_filename):
   
 
 #SEARCH////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-# SEARCH ROUTES - FIXED VERSION
-# Remove the first @app.route('/api/search', methods=['POST']) definition
-# Keep only this enhanced version:
+# =====================================
+# COMPLETE SEARCH SYSTEM FOR FLASK APP
+# Add these routes to your app.py file
+# =====================================
 
+# MAIN SEARCH API ROUTE
 @app.route('/api/search', methods=['POST'])
 def api_search():
-    """API endpoint for real-time search - Enhanced version"""
+    """API endpoint for real-time search - Complete version"""
     try:
         print("🔍 Search API called!")
         
@@ -2326,14 +2328,14 @@ def api_search():
         data = request.get_json()
         if not data:
             print("❌ No JSON data received")
-            return jsonify({'courses': [], 'classes': [], 'products': []})
+            return jsonify({'courses': [], 'classes': [], 'products': [], 'total': 0})
         
         query = data.get('query', '').strip()
         print(f"📝 Search query: '{query}'")
         
         if len(query) < 2:
             print("❌ Query too short")
-            return jsonify({'courses': [], 'classes': [], 'products': []})
+            return jsonify({'courses': [], 'classes': [], 'products': [], 'total': 0})
         
         search_pattern = f"%{query}%"
         print(f"🔍 Search pattern: {search_pattern}")
@@ -2343,7 +2345,7 @@ def api_search():
         class_results = []
         product_results = []
         
-        # Search Courses with error handling
+        # Search Courses
         try:
             courses = Course.query.filter(
                 db.and_(
@@ -2351,7 +2353,8 @@ def api_search():
                     db.or_(
                         Course.title.ilike(search_pattern),
                         Course.description.ilike(search_pattern),
-                        Course.category.ilike(search_pattern)
+                        Course.category.ilike(search_pattern),
+                        Course.short_description.ilike(search_pattern)
                     )
                 )
             ).limit(5).all()
@@ -2416,7 +2419,7 @@ def api_search():
         except Exception as e:
             print(f"❌ Group class search error: {e}")
         
-        # Search Products
+        # Search Products - MAIN FUNCTIONALITY
         try:
             products = Product.query.filter(
                 db.and_(
@@ -2424,36 +2427,50 @@ def api_search():
                     db.or_(
                         Product.name.ilike(search_pattern),
                         Product.description.ilike(search_pattern),
-                        Product.category.ilike(search_pattern)
+                        Product.category.ilike(search_pattern),
+                        Product.short_description.ilike(search_pattern),
+                        Product.brand.ilike(search_pattern)
                     )
                 )
-            ).limit(5).all()
+            ).limit(8).all()  # Increased limit for more results
             
             print(f"🛒 Found {len(products)} products")
             
             for product in products:
+                # Format price properly
+                price_display = float(product.price) if product.price else 0.0
+                
                 product_results.append({
                     'id': product.id,
                     'name': product.name,
                     'short_description': product.short_description or product.category,
                     'category': product.category,
-                    'price': float(product.price) if product.price else 0.0,
-                    'brand': product.brand,
-                    'image_url': product.image_url
+                    'price': price_display,
+                    'brand': product.brand or 'TechBuxin',
+                    'image_url': product.image_url,
+                    'stock_quantity': product.stock_quantity,
+                    'is_active': product.is_active
                 })
                 
         except Exception as e:
             print(f"❌ Product search error: {e}")
+            import traceback
+            traceback.print_exc()
         
         total_results = len(course_results) + len(class_results) + len(product_results)
         print(f"✅ Returning {total_results} total results")
         
-        return jsonify({
+        # Return results
+        response_data = {
             'courses': course_results,
             'classes': class_results,
             'products': product_results,
-            'total': total_results
-        })
+            'total': total_results,
+            'query': query
+        }
+        
+        print(f"📊 Response data: {response_data}")
+        return jsonify(response_data)
         
     except Exception as e:
         print(f"❌ Search API error: {e}")
@@ -2463,11 +2480,12 @@ def api_search():
             'error': str(e),
             'courses': [],
             'classes': [],
-            'products': []
+            'products': [],
+            'total': 0
         }), 500
 
 
-# Optional: Add a full search results page route
+# SEARCH RESULTS PAGE
 @app.route('/search')
 def search_results():
     """Full search results page"""
@@ -2476,9 +2494,9 @@ def search_results():
     if not query:
         return redirect(url_for('index'))
     
-    # Perform the same search as API
     search_pattern = f"%{query}%"
     
+    # Search all data types
     courses = Course.query.filter(
         db.and_(
             Course.is_active == True,
@@ -2526,6 +2544,7 @@ def search_results():
                          total_results=total_results)
 
 
+# DEBUG ROUTES FOR TROUBLESHOOTING
 @app.route('/admin/debug-search-data')
 @login_required
 def debug_search_data():
@@ -2534,52 +2553,17 @@ def debug_search_data():
         return "Access denied", 403
     
     try:
-        # Check courses
+        # Check all data
         courses = Course.query.all()
-        course_data = []
-        for course in courses:
-            course_data.append({
-                'id': course.id,
-                'title': course.title,
-                'category': course.category,
-                'price': course.price,
-                'is_active': course.is_active,
-                'image_url': course.image_url[:100] + '...' if course.image_url else None
-            })
-        
-        # Check individual classes
         individual_classes = IndividualClass.query.all()
-        individual_data = []
-        for cls in individual_classes:
-            individual_data.append({
-                'id': cls.id,
-                'name': cls.name,
-                'description': cls.description[:100] + '...' if cls.description else None
-            })
-        
-        # Check group classes
         group_classes = GroupClass.query.all()
-        group_data = []
-        for cls in group_classes:
-            group_data.append({
-                'id': cls.id,
-                'name': cls.name,
-                'description': cls.description[:100] + '...' if cls.description else None,
-                'max_students': cls.max_students
-            })
-        
-        # Check products
         products = Product.query.all()
-        product_data = []
-        for product in products:
-            product_data.append({
-                'id': product.id,
-                'name': product.name,
-                'category': product.category,
-                'price': product.price,
-                'is_active': product.is_active,
-                'image_url': product.image_url[:100] + '...' if product.image_url else None
-            })
+        active_products = Product.query.filter_by(is_active=True).all()
+        
+        # Test specific searches
+        buzzer_products = Product.query.filter(Product.name.ilike('%buzzer%')).all()
+        arduino_products = Product.query.filter(Product.name.ilike('%arduino%')).all()
+        sensor_products = Product.query.filter(Product.name.ilike('%sensor%')).all()
         
         html = f"""
         <html>
@@ -2590,42 +2574,81 @@ def debug_search_data():
             .count {{ font-weight: bold; color: #007bff; }}
             .item {{ background: #f8f9fa; margin: 5px 0; padding: 10px; border-radius: 3px; }}
             .empty {{ color: #dc3545; font-style: italic; }}
+            .good {{ color: #28a745; font-weight: bold; }}
+            .bad {{ color: #dc3545; font-weight: bold; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th {{ background-color: #f2f2f2; }}
         </style>
         </head>
         <body>
             <h1>🔍 Search Data Debug</h1>
             
             <div class="section">
-                <h2>📚 Courses <span class="count">({len(courses)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["title"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in course_data]) if course_data else '<div class="empty">No courses found</div>'}
+                <h2>📊 Database Summary</h2>
+                <table>
+                    <tr><th>Data Type</th><th>Total Count</th><th>Status</th></tr>
+                    <tr><td>📚 Courses</td><td>{len(courses)}</td><td class="{'good' if len(courses) > 0 else 'bad'}">{'✅' if len(courses) > 0 else '❌'}</td></tr>
+                    <tr><td>👤 Individual Classes</td><td>{len(individual_classes)}</td><td class="{'good' if len(individual_classes) > 0 else 'bad'}">{'✅' if len(individual_classes) > 0 else '❌'}</td></tr>
+                    <tr><td>👥 Group Classes</td><td>{len(group_classes)}</td><td class="{'good' if len(group_classes) > 0 else 'bad'}">{'✅' if len(group_classes) > 0 else '❌'}</td></tr>
+                    <tr><td>🛒 Total Products</td><td>{len(products)}</td><td class="{'good' if len(products) > 0 else 'bad'}">{'✅' if len(products) > 0 else '❌'}</td></tr>
+                    <tr><td>✅ Active Products</td><td>{len(active_products)}</td><td class="{'good' if len(active_products) > 0 else 'bad'}">{'✅' if len(active_products) > 0 else '❌'}</td></tr>
+                </table>
             </div>
             
             <div class="section">
-                <h2>👤 Individual Classes <span class="count">({len(individual_classes)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}</div>' for c in individual_data]) if individual_data else '<div class="empty">No individual classes found</div>'}
+                <h2>🔍 Search Tests</h2>
+                <table>
+                    <tr><th>Search Term</th><th>Results Found</th><th>Sample Products</th></tr>
+                    <tr><td>"Buzzer"</td><td>{len(buzzer_products)}</td><td>{', '.join([p.name for p in buzzer_products[:3]]) if buzzer_products else 'None'}</td></tr>
+                    <tr><td>"Arduino"</td><td>{len(arduino_products)}</td><td>{', '.join([p.name for p in arduino_products[:3]]) if arduino_products else 'None'}</td></tr>
+                    <tr><td>"Sensor"</td><td>{len(sensor_products)}</td><td>{', '.join([p.name for p in sensor_products[:3]]) if sensor_products else 'None'}</td></tr>
+                </table>
             </div>
             
             <div class="section">
-                <h2>👥 Group Classes <span class="count">({len(group_classes)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}<br>Max Students: {c["max_students"]}</div>' for c in group_data]) if group_data else '<div class="empty">No group classes found</div>'}
+                <h2>🛒 Sample Products (First 15)</h2>
+                <table>
+                    <tr><th>Name</th><th>Category</th><th>Price</th><th>Active</th><th>Stock</th></tr>
+        """
+        
+        for product in products[:15]:
+            html += f"""
+                <tr>
+                    <td>"{product.name}"</td>
+                    <td>{product.category}</td>
+                    <td>GMD {product.price}</td>
+                    <td class="{'good' if product.is_active else 'bad'}">{product.is_active}</td>
+                    <td>{product.stock_quantity}</td>
+                </tr>
+            """
+        
+        html += f"""
+                </table>
             </div>
             
             <div class="section">
-                <h2>🛒 Products <span class="count">({len(products)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in product_data]) if product_data else '<div class="empty">No products found</div>'}
-            </div>
-            
-            <div class="section">
-                <h3>🎯 Search Test</h3>
-                <p>Try searching for these terms if you have data:</p>
+                <h3>🎯 Test These Searches</h3>
+                <p>Based on your products, try searching for:</p>
                 <ul>
-                    <li>Course titles: {', '.join([c['title'].split()[0] for c in course_data[:3]]) if course_data else 'None'}</li>
-                    <li>Class names: {', '.join([c['name'].split()[0] for c in individual_data[:3]]) if individual_data else 'None'}</li>
-                    <li>Product names: {', '.join([c['name'].split()[0] for c in product_data[:3]]) if product_data else 'None'}</li>
+                    <li><strong>"5V Buzzer"</strong> - Should find buzzer products</li>
+                    <li><strong>"Arduino"</strong> - Should find Arduino boards</li>
+                    <li><strong>"Sensor"</strong> - Should find various sensors</li>
+                    <li><strong>"Motor"</strong> - Should find motors and drivers</li>
+                    <li><strong>"LED"</strong> - Should find LED products</li>
                 </ul>
             </div>
             
-            <p><a href="/">← Back to Homepage</a> | <a href="/admin/dashboard">Admin Dashboard</a></p>
+            <div class="section">
+                <h3>🔧 Quick Actions</h3>
+                <p>
+                    <a href="/api/test-buzzer-search" style="background:#17a2b8;color:white;padding:8px 15px;text-decoration:none;border-radius:5px;">Test API Search</a>
+                    <a href="/admin/activate-all-products" style="background:#28a745;color:white;padding:8px 15px;text-decoration:none;border-radius:5px;margin-left:10px;">Activate All Products</a>
+                    <a href="/" style="background:#007bff;color:white;padding:8px 15px;text-decoration:none;border-radius:5px;margin-left:10px;">Test Homepage Search</a>
+                </p>
+            </div>
+            
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
         </body>
         </html>
         """
@@ -2633,41 +2656,161 @@ def debug_search_data():
         return html
         
     except Exception as e:
+        import traceback
         return f"❌ Debug error: {str(e)}<br><pre>{traceback.format_exc()}</pre>"
 
 
-@app.route('/api/test-search')
-def test_search():
-    """Test search with a simple query"""
+# TEST API SEARCH
+@app.route('/api/test-buzzer-search')
+def test_buzzer_search():
+    """Test searching for specific products"""
     try:
-        query = "test"
-        search_pattern = f"%{query}%"
+        test_queries = ["5V Buzzer", "Arduino", "Sensor", "Motor", "Buzzer"]
+        results = {}
         
-        # Try searching courses
-        courses = Course.query.filter(
-            Course.title.ilike(search_pattern)
-        ).limit(3).all()
-        
-        # Try searching products  
-        products = Product.query.filter(
-            Product.name.ilike(search_pattern)
-        ).limit(3).all()
+        for query in test_queries:
+            search_pattern = f"%{query}%"
+            
+            products = Product.query.filter(
+                db.and_(
+                    Product.is_active == True,
+                    db.or_(
+                        Product.name.ilike(search_pattern),
+                        Product.description.ilike(search_pattern),
+                        Product.category.ilike(search_pattern)
+                    )
+                )
+            ).limit(5).all()
+            
+            results[query] = {
+                'count': len(products),
+                'products': [{'name': p.name, 'price': p.price, 'active': p.is_active} for p in products]
+            }
         
         return jsonify({
-            'query': query,
-            'courses_found': len(courses),
-            'products_found': len(products),
-            'course_titles': [c.title for c in courses],
-            'product_names': [p.name for p in products],
-            'status': 'success'
+            'status': 'success',
+            'test_results': results,
+            'message': 'API search test completed'
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc(),
+            'status': 'failed'
+        })
+
+
+# ACTIVATE ALL PRODUCTS
+@app.route('/admin/activate-all-products')
+@login_required
+def activate_all_products():
+    """Ensure all products are marked as active"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    try:
+        # Count inactive products
+        inactive_count = Product.query.filter_by(is_active=False).count()
+        
+        # Update all products to be active
+        updated = Product.query.update({Product.is_active: True})
+        db.session.commit()
+        
+        return f"""
+        <html>
+        <head><title>Products Activated</title>
+        <style>body{{font-family:Arial;padding:20px;text-align:center;}}</style>
+        </head>
+        <body>
+            <h1>✅ Products Activation Complete</h1>
+            <p><strong>{updated}</strong> products are now marked as active.</p>
+            <p><strong>{inactive_count}</strong> products were previously inactive.</p>
+            
+            <h3>🔍 Now Test These Searches:</h3>
+            <div style="margin:20px;">
+                <button onclick="testSearch('5V Buzzer')" style="background:#dc3545;color:white;padding:10px 15px;border:none;border-radius:5px;margin:5px;cursor:pointer;">Test "5V Buzzer"</button>
+                <button onclick="testSearch('Arduino')" style="background:#007bff;color:white;padding:10px 15px;border:none;border-radius:5px;margin:5px;cursor:pointer;">Test "Arduino"</button>
+                <button onclick="testSearch('Sensor')" style="background:#28a745;color:white;padding:10px 15px;border:none;border-radius:5px;margin:5px;cursor:pointer;">Test "Sensor"</button>
+            </div>
+            
+            <div id="test-results" style="margin:20px;padding:15px;background:#f8f9fa;border-radius:5px;display:none;">
+                <h4>Test Results:</h4>
+                <div id="results-content"></div>
+            </div>
+            
+            <p style="margin-top:30px;">
+                <a href="/" style="background:#17a2b8;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">🏠 Test Search on Homepage</a>
+                <a href="/admin/debug-search-data" style="background:#6c757d;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;margin-left:10px;">📊 Debug Data</a>
+            </p>
+            
+            <script>
+                function testSearch(query) {{
+                    fetch('/api/search', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json'
+                        }},
+                        body: JSON.stringify({{ query: query }})
+                    }})
+                    .then(response => response.json())
+                    .then(data => {{
+                        document.getElementById('test-results').style.display = 'block';
+                        document.getElementById('results-content').innerHTML = 
+                            `<strong>Search for "${{query}}":</strong><br>
+                             📚 Courses: ${{data.courses.length}}<br>
+                             👥 Classes: ${{data.classes.length}}<br>
+                             🛒 Products: ${{data.products.length}}<br>
+                             <strong>Total: ${{data.total}} results</strong>`;
+                    }})
+                    .catch(error => {{
+                        document.getElementById('test-results').style.display = 'block';
+                        document.getElementById('results-content').innerHTML = 
+                            `<span style="color:red;">Error: ${{error.message}}</span>`;
+                    }});
+                }}
+            </script>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        db.session.rollback()
+        return f"❌ Error: {str(e)}"
+
+
+# SIMPLE API TEST
+@app.route('/api/test-search')
+def test_search():
+    """Simple API test"""
+    try:
+        # Test with multiple queries
+        test_results = {}
+        test_queries = ["Arduino", "Sensor", "5V", "Buzzer", "Motor"]
+        
+        for query in test_queries:
+            products = Product.query.filter(
+                Product.name.ilike(f'%{query}%')
+            ).limit(3).all()
+            
+            test_results[query] = {
+                'count': len(products),
+                'names': [p.name for p in products]
+            }
+        
+        return jsonify({
+            'status': 'success',
+            'total_products': Product.query.count(),
+            'active_products': Product.query.filter_by(is_active=True).count(),
+            'test_searches': test_results
         })
         
     except Exception as e:
         return jsonify({
             'error': str(e),
             'status': 'failed'
-        })               
-
+        })
                                    
 # ========================================
 # STUDENT PROJECT SHOWCASE ROUTES

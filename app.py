@@ -2322,44 +2322,8 @@ def create_robotics_table():
         # Create the table
         db.create_all()
         
-        return """
-        <html>
-        <head><title>Table Created</title>
-        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
-        <body>
-            <h1>✅ Robotics Submissions Table Created!</h1>
-            <p>The robotics_project_submission table has been created successfully.</p>
-            <p><strong>Features:</strong></p>
-            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
-                <li>✅ Complete submission tracking</li>
-                <li>✅ File upload support with Cloudinary</li>
-                <li>✅ Admin review system</li>
-                <li>✅ Email notifications</li>
-                <li>✅ Export capabilities</li>
-            </ul>
-            <p style="margin-top: 2rem;">
-                <a href="/robotics-projects" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🚀 Test Submission Form</a>
-                <a href="/admin/robotics-submissions" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">📊 Admin Panel</a>
-            </p>
-        </body>
-        </html>
-        """
-        
-    except Exception as e:
-        return f"""
-        <html>
-        <head><title>Table Creation Error</title>
-        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
-        <body>
-            <h1>❌ Error Creating Table</h1>
-            <p><strong>Error:</strong> {str(e)}</p>
-            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
-        </body>
-        </html>
-        """, 500
-
-
-
+        return 
+  
 
 #SEARCH////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Add this search API route to your app.py file

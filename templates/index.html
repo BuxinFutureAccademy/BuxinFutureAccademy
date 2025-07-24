@@ -1,336 +1,533 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- App Header -->
-<div class="app-header">
-    <div class="hero-content">
-        <h1 class="hero-title">
-            {% if current_user.is_authenticated %}
-                What will you learn today, {{ current_user.first_name }}?
-            {% else %}
-                What will you design today?
-            {% endif %}
-        </h1>
-        
-        <!-- Navigation Tabs -->
-        <div class="hero-tabs">
-            <button class="hero-tab active">Your Dashboard</button>
-            <button class="hero-tab">Templates</button>
-            <button class="hero-tab">AI</button>
-        </div>
-        
-        <!-- Search Bar -->
-        <div class="hero-search">
-            <div class="search-input-wrapper">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Search courses, classes, or products..." id="globalSearch">
-                <button class="search-submit">
-                    <i class="fas fa-arrow-right"></i>
-                </button>
+<!-- Modern Hero Section -->
+<div class="hero-section">
+    <div class="hero-background"></div>
+    <div class="container">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    {% if current_user.is_authenticated %}
+                        <h1 class="hero-title">Welcome back, {{ current_user.first_name }}!</h1>
+                        <p class="hero-subtitle">Continue your robotics journey</p>
+                    {% else %}
+                        <h1 class="hero-title">What will you design today?</h1>
+                        <p class="hero-subtitle">Master robotics with hands-on learning and AI-powered tools</p>
+                    {% endif %}
+                    
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" placeholder="Search live classes, projects, or kits..." class="search-input" id="globalSearch">
+                            <button class="search-btn" onclick="performSearch()">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Search Results Dropdown -->
+                        <div class="search-results" id="searchResults" style="display: none;">
+                            <div class="search-loading" id="searchLoading" style="display: none;">
+                                <i class="fas fa-spinner fa-spin"></i> Searching...
+                            </div>
+                            <div class="search-content" id="searchContent"></div>
+                        </div>
+                    </div>
+
+                    {% if not current_user.is_authenticated %}
+                    <div class="hero-actions">
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-hero">
+                            <i class="fas fa-rocket me-2"></i>Start Learning
+                        </a>
+                        <a href="#live-classes" class="btn btn-outline-light btn-hero">
+                            <i class="fas fa-video me-2"></i>Join Live Class
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-visual">
+                    <div class="floating-card card-1">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Assistant</span>
+                    </div>
+                    <div class="floating-card card-2">
+                        <i class="fas fa-video"></i>
+                        <span>Live Classes</span>
+                    </div>
+                    <div class="floating-card card-3">
+                        <i class="fas fa-microchip"></i>
+                        <span>Arduino Projects</span>
+                    </div>
+                    <div class="hero-device">
+                        <div class="device-screen">
+                            <div class="screen-content">
+                                <div class="progress-ring">
+                                    <div class="ring-fill"></div>
+                                    <span class="progress-text">75%</span>
+                                </div>
+                                <p>Arduino Basics</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Search Results -->
-    <div class="search-results" id="searchResults" style="display: none;">
-        <div class="search-loading" id="searchLoading" style="display: none;">
-            <div class="loading-spinner"></div>
-            <span>Searching...</span>
-        </div>
-        <div class="search-content" id="searchContent"></div>
     </div>
 </div>
 
 <!-- Stats Section -->
 <div class="stats-section">
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-graduation-cap"></i>
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">10K+</div>
+                    <div class="stat-label">Students</div>
+                </div>
             </div>
-            <div class="stat-value">12</div>
-            <div class="stat-label">Courses</div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-trophy"></i>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">Projects Built</div>
+                </div>
             </div>
-            <div class="stat-value">8</div>
-            <div class="stat-label">Completed</div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-clock"></i>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">AI Support</div>
+                </div>
             </div>
-            <div class="stat-value">24h</div>
-            <div class="stat-label">This week</div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-fire"></i>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">98%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
             </div>
-            <div class="stat-value">7</div>
-            <div class="stat-label">Day streak</div>
         </div>
     </div>
 </div>
 
-
-
-<!-- Content Sections -->
-<div class="content-wrapper">
-    <!-- Continue Learning Section -->
-    {% if current_user.is_authenticated %}
-    <div class="section">
-        <div class="section-header">
-            <h2 class="section-title">Continue Learning</h2>
-            <button class="see-all-btn">See all</button>
+<!-- Main Features Grid -->
+<div class="features-section" id="features">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Everything you need to succeed</h2>
+            <p class="section-subtitle">From live mentoring to hands-on kits, we've got you covered</p>
         </div>
         
-        <div class="horizontal-scroll">
-            <div class="course-card active">
-                <div class="course-thumbnail">
-                    <div class="play-btn">
-                        <i class="fas fa-play"></i>
-                    </div>
-                    <div class="course-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 65%"></div>
+        <div class="row g-4">
+            <!-- Live Classes Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card live-classes-card" id="live-classes">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <i class="fas fa-video"></i>
                         </div>
-                        <span class="progress-text">65%</span>
-                    </div>
-                </div>
-                <div class="course-info">
-                    <h4 class="course-title">Arduino Basics</h4>
-                    <p class="course-instructor">Dr. Sarah Johnson</p>
-                    <div class="course-meta">
-                        <span class="lesson-count">
-                            <i class="fas fa-play-circle"></i>
-                            12 lessons
-                        </span>
-                        <span class="duration">
-                            <i class="fas fa-clock"></i>
-                            4h 30m
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="course-card">
-                <div class="course-thumbnail">
-                    <div class="play-btn">
-                        <i class="fas fa-play"></i>
-                    </div>
-                    <div class="course-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 20%"></div>
+                        <div class="live-indicator">
+                            <span class="live-dot"></span>
+                            <span>LIVE</span>
                         </div>
-                        <span class="progress-text">20%</span>
                     </div>
-                </div>
-                <div class="course-info">
-                    <h4 class="course-title">Smart Home IoT</h4>
-                    <p class="course-instructor">Prof. Mike Chen</p>
-                    <div class="course-meta">
-                        <span class="lesson-count">
-                            <i class="fas fa-play-circle"></i>
-                            18 lessons
-                        </span>
-                        <span class="duration">
-                            <i class="fas fa-clock"></i>
-                            6h 15m
-                        </span>
+                    <h3 class="feature-title">Live Classes</h3>
+                    <p class="feature-description">Join interactive sessions with expert instructors</p>
+                    <div class="feature-stats">
+                        <div class="stat">
+                            <span class="stat-value">12</span>
+                            <span class="stat-label">Classes Today</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">150+</span>
+                            <span class="stat-label">Students Online</span>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Quick Actions -->
-    <div class="section">
-        <div class="section-header">
-            <h2 class="section-title">Quick Actions</h2>
-        </div>
-        
-        <div class="quick-actions-grid">
-            <a href="/classes" class="action-card">
-                <div class="action-icon classes">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="action-content">
-                    <h4 class="action-title">Live Classes</h4>
-                    <p class="action-subtitle">Join interactive sessions</p>
-                </div>
-                <div class="action-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('my_courses') }}" class="action-card">
-                <div class="action-icon courses">
-                    <i class="fas fa-graduation-cap"></i>
-                </div>
-                <div class="action-content">
-                    <h4 class="action-title">My Courses</h4>
-                    <p class="action-subtitle">Self-paced learning</p>
-                </div>
-                <div class="action-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('product_stats') }}" class="action-card">
-                <div class="action-icon shop">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-                <div class="action-content">
-                    <h4 class="action-title">Shop</h4>
-                    <p class="action-subtitle">Robotics kits & parts</p>
-                </div>
-                <div class="action-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="/ai-tools" class="action-card">
-                <div class="action-icon ai">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="action-content">
-                    <h4 class="action-title">AI Assistant</h4>
-                    <p class="action-subtitle">Get coding help</p>
-                </div>
-                <div class="action-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Featured Content -->
-    <div class="section">
-        <div class="section-header">
-            <h2 class="section-title">What's New</h2>
-        </div>
-        
-        <div class="featured-cards">
-            <div class="featured-card gradient-1">
-                <div class="featured-content">
-                    <div class="featured-badge">New Course</div>
-                    <h3 class="featured-title">Advanced Robotics with AI</h3>
-                    <p class="featured-subtitle">Master robot programming with machine learning integration</p>
-                    <button class="featured-btn">Start Learning</button>
-                </div>
-                <div class="featured-visual">
-                    <i class="fas fa-robot"></i>
+                    <a href="/classes" class="feature-link">
+                        Join Now <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
             
-            <div class="featured-card gradient-2">
-                <div class="featured-content">
-                    <div class="featured-badge">New Tool</div>
-                    <h3 class="featured-title">AI Code Assistant</h3>
-                    <p class="featured-subtitle">Get instant help with your programming projects</p>
-                    <button class="featured-btn">Try Now</button>
-                </div>
-                <div class="featured-visual">
-                    <i class="fas fa-brain"></i>
+            <!-- My Learning Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card learning-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="progress-indicator">75%</div>
+                    </div>
+                    <h3 class="feature-title">My Learning</h3>
+                    <p class="feature-description">Self-paced learning with AI-powered guidance</p>
+                    <div class="learning-progress">
+                        <div class="current-lesson">
+                            <div class="lesson-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <div class="lesson-info">
+                                <h6>Arduino Basics</h6>
+                                <p>Lesson 8 of 12</p>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%"></div>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('my_courses') }}" class="feature-link">
+                        Continue Learning <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- More Options -->
-    <div class="section">
-        <div class="section-header">
-            <h2 class="section-title">More</h2>
-        </div>
-        
-        <div class="more-options">
-            <a href="{{ url_for('robotics_projects') }}" class="option-item">
-                <div class="option-icon">
-                    <i class="fas fa-lightbulb"></i>
-                </div>
-                <div class="option-content">
-                    <h4 class="option-title">Projects</h4>
-                    <p class="option-subtitle">Submit your robotics ideas</p>
-                </div>
-                <div class="option-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
             
-            <a href="/certificates" class="option-item">
-                <div class="option-icon">
-                    <i class="fas fa-certificate"></i>
+            <!-- Shop Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card shop-card" id="shop">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="new-badge">NEW</div>
+                    </div>
+                    <h3 class="feature-title">Robotics Shop</h3>
+                    <p class="feature-description">Premium kits and components for your projects</p>
+                    <div class="featured-products">
+                        <div class="product-item">
+                            <span class="product-name">Arduino Starter Kit</span>
+                            <span class="product-price">$89</span>
+                        </div>
+                        <div class="product-item">
+                            <span class="product-name">Raspberry Pi Bundle</span>
+                            <span class="product-price">$125</span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('product_stats') }}" class="feature-link">
+                        Browse Shop <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
-                <div class="option-content">
-                    <h4 class="option-title">Certificates</h4>
-                    <p class="option-subtitle">Earn industry recognition</p>
-                </div>
-                <div class="option-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
+            </div>
             
-            <a href="/community" class="option-item">
-                <div class="option-icon">
-                    <i class="fas fa-comments"></i>
+            <!-- AI Assistant Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card ai-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="ai-status">
+                            <span class="ai-dot"></span>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                    <h3 class="feature-title">AI Assistant</h3>
+                    <p class="feature-description">Get instant help with coding and debugging</p>
+                    <div class="ai-preview">
+                        <div class="ai-message">
+                            <i class="fas fa-robot ai-avatar"></i>
+                            <span>Ready to help with your Arduino project!</span>
+                        </div>
+                    </div>
+                    <a href="/ai-tools" class="feature-link">
+                        Ask AI <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
-                <div class="option-content">
-                    <h4 class="option-title">Community</h4>
-                    <p class="option-subtitle">Connect with other makers</p>
-                </div>
-                <div class="option-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
+            </div>
             
-            <a href="/support" class="option-item">
-                <div class="option-icon">
-                    <i class="fas fa-headset"></i>
+            <!-- Projects Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card projects-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="project-count">127 Projects</div>
+                    </div>
+                    <h3 class="feature-title">Project Hub</h3>
+                    <p class="feature-description">Share and discover amazing robotics projects</p>
+                    <div class="trending-projects">
+                        <div class="project-tag">#SmartHome</div>
+                        <div class="project-tag">#Drones</div>
+                        <div class="project-tag">#IoT</div>
+                    </div>
+                    <a href="{{ url_for('robotics_projects') }}" class="feature-link">
+                        Explore Projects <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
-                <div class="option-content">
-                    <h4 class="option-title">Support</h4>
-                    <p class="option-subtitle">Get help when you need it</p>
+            </div>
+            
+            <!-- Community Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card community-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="online-count">248 Online</div>
+                    </div>
+                    <h3 class="feature-title">Community</h3>
+                    <p class="feature-description">Connect with fellow makers and mentors</p>
+                    <div class="community-activity">
+                        <div class="activity-item">
+                            <div class="activity-avatar">JD</div>
+                            <span>Just completed Smart Lock project!</span>
+                        </div>
+                    </div>
+                    <a href="/community" class="feature-link">
+                        Join Community <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
-                <div class="option-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Auth CTA for Non-logged Users -->
-{% if not current_user.is_authenticated %}
-<div class="auth-cta">
-    <div class="cta-content">
-        <h2 class="cta-title">Ready to start your journey?</h2>
-        <p class="cta-subtitle">Join thousands of students learning the future of technology</p>
-        <div class="cta-buttons">
-            <a href="{{ url_for('register') }}" class="btn-primary">
-                <i class="fas fa-rocket"></i>
-                Get Started
-            </a>
-            <a href="{{ url_for('login') }}" class="btn-secondary">
-                <i class="fas fa-sign-in-alt"></i>
-                Sign In
-            </a>
+{% if current_user.is_authenticated %}
+<!-- Recent Activity Section -->
+<div class="activity-section">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Continue where you left off</h2>
+            <a href="#" class="see-all-link">See all</a>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <div class="activity-thumbnail">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="activity-menu">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="activity-content">
+                        <h5 class="activity-title">Arduino Basics</h5>
+                        <p class="activity-instructor">Dr. Sarah Johnson</p>
+                        <div class="activity-meta">
+                            <span><i class="fas fa-book"></i> 12 lessons</span>
+                            <span><i class="fas fa-clock"></i> 4h 30m</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 65%"></div>
+                            </div>
+                            <span class="progress-text">65% complete</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <div class="activity-thumbnail iot-bg">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="activity-menu">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="activity-content">
+                        <h5 class="activity-title">Smart Home IoT</h5>
+                        <p class="activity-instructor">Prof. Mike Chen</p>
+                        <div class="activity-meta">
+                            <span><i class="fas fa-book"></i> 18 lessons</span>
+                            <span><i class="fas fa-clock"></i> 6h 15m</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 20%"></div>
+                            </div>
+                            <span class="progress-text">20% complete</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <div class="activity-thumbnail project-bg">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="activity-menu">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="activity-content">
+                        <h5 class="activity-title">Smart Home Project</h5>
+                        <p class="activity-instructor">Your Project</p>
+                        <div class="activity-meta">
+                            <span><i class="fas fa-save"></i> Draft saved</span>
+                            <span><i class="fas fa-clock"></i> 2h ago</span>
+                        </div>
+                        <div class="project-status">
+                            <span class="status-badge in-progress">In Progress</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Learning Streak Section -->
+<div class="streak-section">
+    <div class="container">
+        <div class="streak-card">
+            <div class="streak-content">
+                <div class="streak-icon">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="streak-info">
+                    <h3>7 Day Streak</h3>
+                    <p>Keep it up! You're on fire 🔥</p>
+                </div>
+            </div>
+            <div class="streak-calendar">
+                <div class="day completed">M</div>
+                <div class="day completed">T</div>
+                <div class="day completed">W</div>
+                <div class="day completed">T</div>
+                <div class="day completed">F</div>
+                <div class="day completed">S</div>
+                <div class="day today">S</div>
+            </div>
         </div>
     </div>
 </div>
 {% endif %}
 
+<!-- What's New Section -->
+<div class="whats-new-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">What's new</h2>
+            <p class="section-subtitle">Latest features and updates to enhance your learning</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card gradient-1">
+                    <div class="news-content">
+                        <div class="news-badge">NEW</div>
+                        <h4 class="news-title">Advanced AI Code Assistant</h4>
+                        <p class="news-description">Get smarter debugging help and code suggestions powered by the latest AI models</p>
+                        <a href="#" class="news-link">Learn More <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="news-visual">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card gradient-2">
+                    <div class="news-content">
+                        <div class="news-badge">LIVE</div>
+                        <h4 class="news-title">EV Workshop Series</h4>
+                        <p class="news-description">Build your own electric vehicle from scratch in our new hands-on workshop</p>
+                        <a href="#" class="news-link">Register Now <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="news-visual">
+                        <i class="fas fa-car-battery"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card gradient-3">
+                    <div class="news-content">
+                        <div class="news-badge">FEATURED</div>
+                        <h4 class="news-title">Drone Programming Bootcamp</h4>
+                        <p class="news-description">Master autonomous flight control and computer vision for drones</p>
+                        <a href="#" class="news-link">Join Waitlist <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="news-visual">
+                        <i class="fas fa-helicopter"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-
-
+<!-- CTA Section -->
+{% if not current_user.is_authenticated %}
+<div class="cta-section">
+    <div class="container">
+        <div class="cta-content">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2 class="cta-title">Ready to start building?</h2>
+                    <p class="cta-subtitle">Join thousands of students mastering the future of technology with hands-on learning, expert mentorship, and AI-powered assistance.</p>
+                    <div class="cta-features">
+                        <div class="cta-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Live expert mentorship</span>
+                        </div>
+                        <div class="cta-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Hands-on robotics kits</span>
+                        </div>
+                        <div class="cta-feature">
+                            <i class="fas fa-check"></i>
+                            <span>24/7 AI assistant</span>
+                        </div>
+                    </div>
+                    <div class="cta-buttons">
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                            Start Free Trial <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                            Sign In
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="cta-visual">
+                        <div class="testimonial-card">
+                            <div class="testimonial-content">
+                                <p>"This platform transformed how I learn robotics. The AI assistant is incredible!"</p>
+                            </div>
+                            <div class="testimonial-author">
+                                <div class="author-avatar">JD</div>
+                                <div class="author-info">
+                                    <h6>John Doe</h6>
+                                    <span>Robotics Engineer</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <style>
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #8b5cf6;
+    --accent-color: #06b6d4;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --dark-color: #1f2937;
+    --light-gray: #f8fafc;
+    --medium-gray: #64748b;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    --border-radius: 16px;
+    --border-radius-lg: 24px;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -338,128 +535,1078 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: #f8fafc;
-    color: #1a202c;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
-    overflow-x: hidden;
+    color: var(--dark-color);
+    background-color: #ffffff;
 }
 
-
-
-/* App Header */
-.app-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 60vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
+/* Hero Section */
+.hero-section {
     position: relative;
-    text-align: center;
-    padding: 40px 20px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    overflow: hidden;
+    padding: 100px 0 50px;
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:rgba(255,255,255,0.1)"/><stop offset="100%" style="stop-color:rgba(255,255,255,0.05)"/></linearGradient></defs><circle cx="200" cy="100" r="50" fill="url(%23grad)"/><circle cx="800" cy="200" r="80" fill="url(%23grad)"/><circle cx="1000" cy="400" r="60" fill="url(%23grad)"/></svg>');
+    animation: heroFloat 20s ease-in-out infinite;
 }
 
 .hero-content {
-    max-width: 800px;
-    width: 100%;
+    position: relative;
+    z-index: 2;
+    padding: 50px 0;
 }
 
 .hero-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 40px;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 1rem;
     line-height: 1.2;
 }
 
-/* Hero Tabs */
-.hero-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 40px;
-    flex-wrap: wrap;
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2.5rem;
+    font-weight: 400;
 }
 
-.hero-tab {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 25px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.hero-tab.active {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(20px);
-}
-
-.hero-tab:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-/* Hero Search */
-.hero-search {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.search-input-wrapper {
+.search-container {
+    max-width: 500px;
+    margin: 0 0 2rem 0;
     position: relative;
+}
+
+.search-box {
     background: rgba(255, 255, 255, 0.95);
-    border-radius: 50px;
-    padding: 4px;
+    border-radius: 60px;
+    padding: 8px 8px 8px 24px;
     display: flex;
     align-items: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-xl);
+    transition: all 0.3s ease;
+}
+
+.search-box:focus-within {
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 }
 
 .search-icon {
-    position: absolute;
-    left: 20px;
-    color: #666;
-    font-size: 18px;
-    z-index: 10;
+    color: var(--medium-gray);
+    font-size: 1.1rem;
+    margin-right: 16px;
 }
 
 .search-input {
     flex: 1;
     border: none;
     background: none;
-    padding: 16px 20px 16px 50px;
-    font-size: 16px;
-    color: #333;
+    padding: 16px 0;
+    font-size: 1rem;
+    color: var(--dark-color);
     outline: none;
 }
 
 .search-input::placeholder {
-    color: #999;
+    color: var(--medium-gray);
 }
 
-.search-submit {
-    background: #667eea;
+.search-btn {
+    background: var(--primary-color);
     border: none;
     color: white;
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-right: 4px;
 }
 
-.search-submit:hover {
-    background: #5a6fd8;
+.search-btn:hover {
+    background: var(--primary-dark);
     transform: scale(1.05);
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-hero {
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.btn-primary.btn-hero {
+    background: white;
+    color: var(--primary-color);
+    border-color: white;
+}
+
+.btn-primary.btn-hero:hover {
+    background: transparent;
+    color: white;
+    border-color: white;
+    transform: translateY(-2px);
+}
+
+.btn-outline-light.btn-hero {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+}
+
+.btn-outline-light.btn-hero:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    transform: translateY(-2px);
+}
+
+/* Hero Visual */
+.hero-visual {
+    position: relative;
+    height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floating-card {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: var(--border-radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    color: var(--dark-color);
+    box-shadow: var(--shadow-lg);
+    animation: cardFloat 6s ease-in-out infinite;
+}
+
+.card-1 {
+    top: 20%;
+    right: 10%;
+    animation-delay: 0s;
+}
+
+.card-2 {
+    top: 50%;
+    left: 0;
+    animation-delay: 2s;
+}
+
+.card-3 {
+    bottom: 20%;
+    right: 20%;
+    animation-delay: 4s;
+}
+
+.floating-card i {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
+.hero-device {
+    width: 280px;
+    height: 320px;
+    background: var(--dark-color);
+    border-radius: 32px;
+    padding: 20px;
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.device-screen {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: white;
+}
+
+.progress-ring {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #ffffff 0deg, #ffffff 270deg, rgba(255,255,255,0.3) 270deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.progress-ring::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    background: inherit;
+    border-radius: 50%;
+}
+
+.progress-text {
+    position: relative;
+    z-index: 2;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Stats Section */
+.stats-section {
+    background: var(--light-gray);
+    padding: 40px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--medium-gray);
+    font-weight: 500;
+}
+
+/* Features Section */
+.features-section {
+    padding: 80px 0;
+    background: white;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--dark-color);
+    margin-bottom: 1rem;
+}
+
+.section-subtitle {
+    font-size: 1.1rem;
+    color: var(--medium-gray);
+    font-weight: 400;
+}
+
+.feature-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    padding: 32px;
+    height: 100%;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-color);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-xl);
+    border-color: transparent;
+}
+
+.feature-card:hover::before {
+    transform: scaleX(1);
+}
+
+.feature-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.feature-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    background: var(--primary-color);
+}
+
+.live-classes-card .feature-icon {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.learning-card .feature-icon {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+}
+
+.shop-card .feature-icon {
+    background: linear-gradient(135deg, var(--accent-color), #0891b2);
+}
+
+.ai-card .feature-icon {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+}
+
+.projects-card .feature-icon {
+    background: linear-gradient(135deg, var(--warning-color), #d97706);
+}
+
+.community-card .feature-icon {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+}
+
+.live-indicator {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background: #dc2626;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.progress-indicator {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.new-badge {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.ai-status {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ai-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--success-color);
+    border-radius: 50%;
+}
+
+.project-count {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.online-count {
+    background: rgba(236, 72, 153, 0.1);
+    color: #db2777;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.feature-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dark-color);
+    margin-bottom: 12px;
+}
+
+.feature-description {
+    color: var(--medium-gray);
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.feature-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dark-color);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--medium-gray);
+}
+
+.learning-progress {
+    margin-bottom: 24px;
+}
+
+.current-lesson {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--light-gray);
+    padding: 16px;
+    border-radius: var(--border-radius);
+    margin-bottom: 16px;
+}
+
+.lesson-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.lesson-info h6 {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 4px;
+}
+
+.lesson-info p {
+    color: var(--medium-gray);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.8rem;
+    color: var(--medium-gray);
+}
+
+.featured-products {
+    margin-bottom: 24px;
+}
+
+.product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-name {
+    font-weight: 500;
+    color: var(--dark-color);
+}
+
+.product-price {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.ai-preview {
+    background: var(--light-gray);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.ai-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ai-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--success-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.ai-message span {
+    color: var(--dark-color);
+    font-size: 0.9rem;
+}
+
+.trending-projects {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.project-tag {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.community-activity {
+    background: var(--light-gray);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.activity-avatar {
+    width: 32px;
+    height: 32px;
+    background: #ec4899;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.activity-item span {
+    color: var(--dark-color);
+    font-size: 0.9rem;
+}
+
+.feature-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.feature-link:hover {
+    color: var(--primary-dark);
+    gap: 12px;
+}
+
+/* Activity Section */
+.activity-section {
+    padding: 80px 0;
+    background: var(--light-gray);
+}
+
+.see-all-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.see-all-link:hover {
+    color: var(--primary-dark);
+}
+
+.activity-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    padding: 24px;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    height: 100%;
+}
+
+.activity-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: transparent;
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.activity-thumbnail {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+}
+
+.iot-bg {
+    background: linear-gradient(135deg, var(--accent-color), #0891b2);
+}
+
+.project-bg {
+    background: linear-gradient(135deg, var(--warning-color), #d97706);
+}
+
+.activity-menu {
+    background: none;
+    border: none;
+    color: var(--medium-gray);
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.activity-menu:hover {
+    background: var(--light-gray);
+    color: var(--dark-color);
+}
+
+.activity-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--dark-color);
+    margin-bottom: 8px;
+}
+
+.activity-instructor {
+    color: var(--medium-gray);
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+}
+
+.activity-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.activity-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--medium-gray);
+    font-size: 0.85rem;
+}
+
+.progress-container {
+    margin-top: 16px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-badge.in-progress {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+/* Streak Section */
+.streak-section {
+    padding: 40px 0;
+    background: white;
+}
+
+.streak-card {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border-radius: var(--border-radius-lg);
+    padding: 32px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.streak-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.streak-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.streak-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.streak-info p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.streak-calendar {
+    display: flex;
+    gap: 8px;
+}
+
+.day {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.day.completed {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.day.today {
+    background: white;
+    color: #ff6b6b;
+}
+
+/* What's New Section */
+.whats-new-section {
+    padding: 80px 0;
+    background: var(--light-gray);
+}
+
+.news-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    padding: 32px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.news-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.gradient-1::before {
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+.gradient-2::before {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.gradient-3::before {
+    background: linear-gradient(90deg, var(--warning-color), #d97706);
+}
+
+.news-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+    border-color: transparent;
+}
+
+.news-content {
+    position: relative;
+    z-index: 2;
+}
+
+.news-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color);
+}
+
+.gradient-2 .news-badge {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.gradient-3 .news-badge {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.news-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--dark-color);
+    margin-bottom: 12px;
+    line-height: 1.3;
+}
+
+.news-description {
+    color: var(--medium-gray);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.news-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.news-link:hover {
+    gap: 12px;
+}
+
+.news-visual {
+    position: absolute;
+    top: 32px;
+    right: 32px;
+    width: 60px;
+    height: 60px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.gradient-2 .news-visual {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.gradient-3 .news-visual {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+/* CTA Section */
+.cta-section {
+    padding: 100px 0;
+    background: linear-gradient(135deg, var(--dark-color), #374151);
+    color: white;
+}
+
+.cta-content {
+    position: relative;
+}
+
+.cta-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.cta-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.cta-features {
+    margin-bottom: 2.5rem;
+}
+
+.cta-feature {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.cta-feature i {
+    color: var(--success-color);
+    font-size: 1.1rem;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.cta-buttons .btn {
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.cta-buttons .btn:hover {
+    transform: translateY(-2px);
+}
+
+.cta-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.testimonial-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: var(--border-radius-lg);
+    padding: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 400px;
+}
+
+.testimonial-content {
+    margin-bottom: 20px;
+}
+
+.testimonial-content p {
+    font-style: italic;
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.author-avatar {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+}
+
+.author-info h6 {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.author-info span {
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
 /* Search Results */
@@ -469,620 +1616,345 @@ body {
     left: 0;
     right: 0;
     background: white;
-    border-radius: 16px;
-    margin-top: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-color);
     z-index: 1000;
     max-height: 400px;
     overflow-y: auto;
+    margin-top: 8px;
 }
 
 .search-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 20px;
-    color: #64748b;
-}
-
-.loading-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #e2e8f0;
-    border-top: 2px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Stats Section */
-.stats-section {
-    padding: 0 20px;
-    margin-top: -60px;
-    margin-bottom: 40px;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
-.stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: white;
-    margin-bottom: 12px;
-}
-
-.stat-card:nth-child(1) .stat-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
-.stat-card:nth-child(2) .stat-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
-.stat-card:nth-child(3) .stat-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-.stat-card:nth-child(4) .stat-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-
-.stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a202c;
-    margin-bottom: 4px;
-}
-
-.stat-label {
-    font-size: 14px;
-    color: #64748b;
-}
-
-
-
-/* Content Wrapper */
-.content-wrapper {
-    padding: 0 20px;
-}
-
-/* Section */
-.section {
-    margin-bottom: 32px;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.section-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1a202c;
-}
-
-.see-all-btn {
-    background: none;
-    border: none;
-    color: #667eea;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-/* Horizontal Scroll */
-.horizontal-scroll {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-.horizontal-scroll::-webkit-scrollbar {
-    display: none;
-}
-
-/* Course Card */
-.course-card {
-    min-width: 280px;
-    background: white;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-}
-
-.course-card.active {
-    border: 2px solid #667eea;
-}
-
-.course-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-}
-
-.course-thumbnail {
-    height: 140px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.play-btn {
-    width: 50px;
-    height: 50px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #667eea;
-    font-size: 20px;
-}
-
-.course-progress {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    right: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.progress-bar {
-    flex: 1;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: white;
-    border-radius: 2px;
-    transition: width 0.3s ease;
-}
-
-.progress-text {
-    color: white;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.course-info {
-    padding: 16px;
-}
-
-.course-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1a202c;
-    margin-bottom: 4px;
-}
-
-.course-instructor {
-    font-size: 14px;
-    color: #64748b;
-    margin-bottom: 12px;
-}
-
-.course-meta {
-    display: flex;
-    gap: 16px;
-}
-
-.lesson-count, .duration {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #64748b;
-}
-
-/* Quick Actions Grid */
-.quick-actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
-}
-
-.quick-action-card {
-    background: white;
-    border-radius: 20px;
-    padding: 32px 24px;
+    padding: 24px;
     text-align: center;
-    text-decoration: none;
-    color: inherit;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    color: var(--medium-gray);
 }
 
-.quick-action-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    text-decoration: none;
-    color: inherit;
+.search-section {
+    border-bottom: 1px solid var(--border-color);
 }
 
-.quick-action-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    color: white;
-    margin: 0 auto 20px;
+.search-section:last-child {
+    border-bottom: none;
 }
 
-.quick-action-icon.classes { background: linear-gradient(135deg, #667eea, #764ba2); }
-.quick-action-icon.courses { background: linear-gradient(135deg, #f093fb, #f5576c); }
-.quick-action-icon.shop { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-.quick-action-icon.ai { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-
-.quick-action-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1a202c;
-    margin-bottom: 8px;
-}
-
-.quick-action-subtitle {
-    font-size: 16px;
-    color: #64748b;
-    margin: 0;
-}
-
-/* Featured Cards */
-.featured-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 12px;
-    font-size: 14px;
+.search-section-title {
+    padding: 16px 20px 8px;
     font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.featured-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.featured-visual {
-    opacity: 0.3;
-    font-size: 60px;
-    margin-left: 20px;
-}
-
-/* More Options */
-.more-options {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.option-item {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
+    color: var(--dark-color);
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
-    gap: 16px;
-    text-decoration: none;
-    color: inherit;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
 }
 
-.option-item:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+.search-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
     text-decoration: none;
     color: inherit;
+    transition: background 0.2s ease;
 }
 
-.option-icon {
+.search-item:hover {
+    background: var(--light-gray);
+    color: inherit;
+    text-decoration: none;
+}
+
+.search-item-icon {
     width: 40px;
     height: 40px;
-    border-radius: 10px;
-    background: #f1f5f9;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    color: #64748b;
+    margin-right: 16px;
+    font-size: 1rem;
+    color: white;
 }
 
-.option-content {
+.search-item-icon.course {
+    background: var(--primary-color);
+}
+
+.search-item-icon.class {
+    background: #ef4444;
+}
+
+.search-item-icon.product {
+    background: var(--accent-color);
+}
+
+.search-item-content {
     flex: 1;
 }
 
-.option-title {
-    font-size: 16px;
+.search-item-title {
     font-weight: 600;
-    color: #1a202c;
-    margin-bottom: 2px;
+    color: var(--dark-color);
+    margin-bottom: 4px;
 }
 
-.option-subtitle {
-    font-size: 14px;
-    color: #64748b;
-    margin: 0;
+.search-item-subtitle {
+    font-size: 0.85rem;
+    color: var(--medium-gray);
 }
 
-.option-arrow {
-    color: #cbd5e0;
-    font-size: 14px;
-}
-
-/* Auth CTA */
-.auth-cta {
-    background: linear-gradient(135deg, #2c3e50, #34495e);
-    color: white;
-    padding: 32px 20px;
-    margin: 32px 20px;
-    border-radius: 20px;
-    text-align: center;
-}
-
-.cta-title {
-    font-size: 24px;
+.search-item-price {
     font-weight: 700;
+    color: var(--primary-color);
+}
+
+.no-results {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--medium-gray);
+}
+
+.no-results i {
+    font-size: 2rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.no-results p {
+    font-weight: 600;
     margin-bottom: 8px;
 }
 
-.cta-subtitle {
-    font-size: 16px;
-    opacity: 0.9;
-    margin-bottom: 24px;
+.no-results small {
+    font-size: 0.8rem;
 }
 
-.cta-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+/* Animations */
+@keyframes heroFloat {
+    0%, 100% { 
+        transform: translateY(0px) rotate(0deg); 
+    }
+    33% { 
+        transform: translateY(-10px) rotate(1deg); 
+    }
+    66% { 
+        transform: translateY(5px) rotate(-1deg); 
+    }
 }
 
-.btn-primary, .btn-secondary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 16px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
+@keyframes cardFloat {
+    0%, 100% { 
+        transform: translateY(0px); 
+    }
+    50% { 
+        transform: translateY(-10px); 
+    }
 }
 
-.btn-primary {
-    background: #667eea;
-    color: white;
-    border: none;
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1; 
+    }
+    50% { 
+        opacity: 0.5; 
+    }
 }
-
-.btn-primary:hover {
-    background: #5a6fd8;
-    color: white;
-    text-decoration: none;
-}
-
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    text-decoration: none;
-}
-
-
-
-
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+    
+    .cta-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 80px 0 40px;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-actions {
+        justify-content: center;
+    }
+    
+    .hero-visual {
+        height: 300px;
+        margin-top: 40px;
+    }
+    
+    .floating-card {
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .hero-device {
+        width: 200px;
+        height: 240px;
+    }
+    
+    .progress-ring {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .progress-text {
+        font-size: 1.2rem;
+    }
+    
+    .section-title {
         font-size: 1.8rem;
-        margin-bottom: 32px;
     }
     
-    .hero-tabs {
-        margin-bottom: 32px;
+    .feature-card {
+        padding: 24px;
     }
     
-    .hero-tab {
-        padding: 10px 20px;
-        font-size: 14px;
+    .feature-stats {
+        gap: 16px;
     }
     
-    .quick-actions-grid {
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
+    .streak-card {
+        flex-direction: column;
+        gap: 24px;
+        text-align: center;
     }
     
-    .quick-action-card {
-        padding: 24px 20px;
+    .streak-calendar {
+        justify-content: center;
     }
     
-    .quick-action-icon {
-        width: 64px;
-        height: 64px;
-        font-size: 24px;
-        margin-bottom: 16px;
+    .cta-title {
+        font-size: 1.8rem;
     }
     
-    .quick-action-title {
-        font-size: 18px;
-    }
-    
-    .quick-action-subtitle {
-        font-size: 14px;
+    .cta-buttons {
+        justify-content: center;
     }
 }
 
 @media (max-width: 576px) {
-    .app-header {
-        min-height: 50vh;
-        padding: 32px 16px;
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
     .hero-title {
-        font-size: 1.5rem;
-        margin-bottom: 24px;
+        font-size: 1.8rem;
     }
     
-    .hero-tabs {
-        margin-bottom: 24px;
-        gap: 6px;
+    .hero-subtitle {
+        font-size: 1rem;
     }
     
-    .hero-tab {
-        padding: 8px 16px;
-        font-size: 13px;
+    .search-box {
+        margin: 0 -8px;
     }
     
-    .quick-actions-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
+    .btn-hero {
+        width: 100%;
+        margin-bottom: 12px;
     }
     
     .stats-section {
-        padding: 0 16px;
-        margin-top: -40px;
+        padding: 24px 0;
     }
     
-    .content-wrapper {
-        padding: 0 16px;
-    }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    body {
-        background: #0f172a;
-        color: #e2e8f0;
+    .stat-number {
+        font-size: 2rem;
     }
     
-    .stat-card, .action-card, .option-item, .course-card {
-        background: #1e293b;
-        border-color: #334155;
+    .features-section,
+    .activity-section,
+    .whats-new-section {
+        padding: 60px 0;
     }
     
-
-    
-    .search-results {
-        background: #1e293b;
-        border-color: #334155;
+    .section-title {
+        font-size: 1.6rem;
     }
     
-    .stat-value, .action-title, .option-title, .course-title, .section-title {
-        color: #e2e8f0;
+    .feature-card {
+        padding: 20px;
+        margin-bottom: 20px;
     }
     
-    .stat-label, .action-subtitle, .option-subtitle, .course-instructor {
-        color: #94a3b8;
+    .feature-title {
+        font-size: 1.3rem;
+    }
+    
+    .news-visual {
+        position: static;
+        margin: 20px auto 0;
+    }
+    
+    .cta-section {
+        padding: 60px 0;
+    }
+    
+    .cta-title {
+        font-size: 1.6rem;
+    }
+    
+    .testimonial-card {
+        padding: 24px;
+        margin-top: 40px;
     }
 }
 
-/* Smooth scrolling */
-html {
-    scroll-behavior: smooth;
+/* Touch optimizations */
+@media (hover: none) {
+    .feature-card:hover,
+    .activity-card:hover,
+    .news-card:hover {
+        transform: none;
+    }
+    
+    .btn:hover {
+        transform: none;
+    }
 }
 
-/* Custom scrollbar for webkit browsers */
-.horizontal-scroll::-webkit-scrollbar {
-    height: 4px;
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000;
+        --medium-gray: #000;
+    }
+    
+    .feature-card,
+    .activity-card,
+    .news-card {
+        border: 2px solid var(--border-color);
+    }
 }
 
-.horizontal-scroll::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 2px;
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
-
-.horizontal-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 2px;
-}
-
-/* Loading animations */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.section {
-    animation: fadeIn 0.6s ease forwards;
-}
-
-.section:nth-child(1) { animation-delay: 0.1s; }
-.section:nth-child(2) { animation-delay: 0.2s; }
-.section:nth-child(3) { animation-delay: 0.3s; }
-.section:nth-child(4) { animation-delay: 0.4s; }
-
-/* Touch interactions */
-.quick-action-card:active,
-.option-item:active,
-.course-card:active {
-    transform: scale(0.98);
-}
-
-
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Hero tab switching functionality
-    const heroTabs = document.querySelectorAll('.hero-tab');
-    
-    heroTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Remove active class from all tabs
-            heroTabs.forEach(t => t.classList.remove('active'));
-            // Add active class to clicked tab
-            this.classList.add('active');
-            
-            console.log('Switched to tab:', this.textContent.trim());
-        });
-    });
-    
     // Search functionality
-    const searchInput = document.querySelector('.search-box');
+    const searchInput = document.querySelector('.search-input');
+    const searchBtn = document.querySelector('.search-btn');
     const searchResults = document.getElementById('searchResults');
     const searchLoading = document.getElementById('searchLoading');
     const searchContent = document.getElementById('searchContent');
@@ -1121,7 +1993,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Real-time search as user types
-    const searchInput = document.querySelector('.search-input');
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const query = this.value.trim();
@@ -1140,6 +2011,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300); // Debounce search
     });
     
+    // Handle search button click
+    searchBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+    
     // Handle Enter key
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -1150,14 +2027,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Hide results when clicking outside
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.hero-search')) {
+        if (!e.target.closest('.search-container')) {
             hideSearchResults();
         }
     });
     
     function showSearchLoading() {
         searchResults.style.display = 'block';
-        searchLoading.style.display = 'flex';
+        searchLoading.style.display = 'block';
         searchContent.style.display = 'none';
     }
     
@@ -1173,44 +2050,26 @@ document.addEventListener('DOMContentLoaded', function() {
     function displaySearchResults(data) {
         let html = '';
         
-        // Display Courses
-        if (data.courses && data.courses.length > 0) {
-            html += '<div class="search-section-mobile">';
-            html += '<h4 class="search-title">Courses</h4>';
-            
-            data.courses.forEach(course => {
-                html += `
-                    <a href="/course/${course.id}" class="search-result-item">
-                        <div class="search-result-icon">
-                            <i class="fas fa-graduation-cap"></i>
-                        </div>
-                        <div class="search-result-content">
-                            <div class="search-result-title">${course.title}</div>
-                            <div class="search-result-subtitle">${course.short_description || course.category}</div>
-                        </div>
-                        <div class="search-result-price">${course.price}</div>
-                    </a>
-                `;
-            });
-            html += '</div>';
-        }
-        
-        // Display Classes
+        // Display Live Classes
         if (data.classes && data.classes.length > 0) {
-            html += '<div class="search-section-mobile">';
-            html += '<h4 class="search-title">Classes</h4>';
+            html += `
+                <div class="search-section">
+                    <div class="search-section-title">
+                        <i class="fas fa-video me-2"></i>Live Classes (${data.classes.length})
+                    </div>
+            `;
             
             data.classes.forEach(cls => {
                 html += `
-                    <a href="/class/${cls.type}/${cls.id}" class="search-result-item">
-                        <div class="search-result-icon">
-                            <i class="fas fa-users"></i>
+                    <a href="/class/${cls.type}/${cls.id}" class="search-item">
+                        <div class="search-item-icon class">
+                            <i class="fas fa-${cls.type === 'individual' ? 'user' : 'users'}"></i>
                         </div>
-                        <div class="search-result-content">
-                            <div class="search-result-title">${cls.name}</div>
-                            <div class="search-result-subtitle">${cls.type === 'individual' ? 'Individual' : 'Group'} Class</div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${cls.name}</div>
+                            <div class="search-item-subtitle">${cls.type === 'individual' ? 'Individual' : 'Group'} Class</div>
                         </div>
-                        <div class="search-result-price">${cls.type === 'individual' ? '$100' : 'D1000'}</div>
+                        <div class="search-item-price">${cls.type === 'individual' ? '$100' : 'D1000'}</div>
                     </a>
                 `;
             });
@@ -1219,20 +2078,50 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Display Products
         if (data.products && data.products.length > 0) {
-            html += '<div class="search-section-mobile">';
-            html += '<h4 class="search-title">Products</h4>';
+            html += `
+                <div class="search-section">
+                    <div class="search-section-title">
+                        <i class="fas fa-shopping-cart me-2"></i>Products (${data.products.length})
+                    </div>
+            `;
             
             data.products.forEach(product => {
                 html += `
-                    <a href="/product/${product.id}" class="search-result-item">
-                        <div class="search-result-icon">
-                            <i class="fas fa-shopping-bag"></i>
+                    <a href="/product/${product.id}" class="search-item">
+                        <div class="search-item-icon product">
+                            <i class="fas fa-cube"></i>
                         </div>
-                        <div class="search-result-content">
-                            <div class="search-result-title">${product.name}</div>
-                            <div class="search-result-subtitle">${product.short_description || product.category}</div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${product.name}</div>
+                            <div class="search-item-subtitle">${product.short_description || product.category}</div>
                         </div>
-                        <div class="search-result-price">${product.price}</div>
+                        <div class="search-item-price">${product.price}</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Display Projects
+        if (data.projects && data.projects.length > 0) {
+            html += `
+                <div class="search-section">
+                    <div class="search-section-title">
+                        <i class="fas fa-lightbulb me-2"></i>Projects (${data.projects.length})
+                    </div>
+            `;
+            
+            data.projects.forEach(project => {
+                html += `
+                    <a href="/project/${project.id}" class="search-item">
+                        <div class="search-item-icon project">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${project.name}</div>
+                            <div class="search-item-subtitle">${project.category || 'Robotics Project'}</div>
+                        </div>
+                        <div class="search-item-price">Free</div>
                     </a>
                 `;
             });
@@ -1250,57 +2139,38 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displayNoResults() {
         searchContent.innerHTML = `
-            <div class="no-results-mobile">
+            <div class="no-results">
                 <i class="fas fa-search"></i>
-                <p>No results found</p>
-                <small>Try searching for courses, classes, or products</small>
+                <p>No results found for "${searchInput.value}"</p>
+                <small>Try searching for live classes, projects, or robotics kits</small>
             </div>
         `;
         searchResults.style.display = 'block';
     }
     
-    // Smooth scroll for horizontal content
-    const horizontalScrolls = document.querySelectorAll('.horizontal-scroll');
-    
-    horizontalScrolls.forEach(scroll => {
-        let isDown = false;
-        let startX;
-        let scrollLeft;
-        
-        scroll.addEventListener('mousedown', (e) => {
-            isDown = true;
-            startX = e.pageX - scroll.offsetLeft;
-            scrollLeft = scroll.scrollLeft;
-        });
-        
-        scroll.addEventListener('mouseleave', () => {
-            isDown = false;
-        });
-        
-        scroll.addEventListener('mouseup', () => {
-            isDown = false;
-        });
-        
-        scroll.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
             e.preventDefault();
-            const x = e.pageX - scroll.offsetLeft;
-            const walk = (x - startX) * 2;
-            scroll.scrollLeft = scrollLeft - walk;
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
         });
     });
     
-    // Add haptic feedback simulation for touch devices
-    function addHapticFeedback(element) {
-        element.addEventListener('touchstart', function() {
-            if (navigator.vibrate) {
-                navigator.vibrate(10); // Light haptic feedback
-            }
+    // Activity card menu functionality
+    const activityMenus = document.querySelectorAll('.activity-menu');
+    activityMenus.forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Add dropdown menu logic here
+            console.log('Activity menu clicked');
         });
-    }
-    
-    // Apply haptic feedback to interactive elements
-    document.querySelectorAll('.quick-action-card, .option-item, .course-card').forEach(addHapticFeedback);
+    });
     
     // Intersection Observer for animations
     const observerOptions = {
@@ -1317,218 +2187,88 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, observerOptions);
     
-    // Observe all sections for scroll animations
-    document.querySelectorAll('.section').forEach(section => {
-        section.style.opacity = '0';
-        section.style.transform = 'translateY(20px)';
-        section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(section);
+    // Observe feature cards for animation
+    document.querySelectorAll('.feature-card, .activity-card, .news-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
     });
     
-    // Update greeting based on time of day
-    function updateGreeting() {
-        const greetingText = document.querySelector('.greeting-text');
-        if (greetingText) {
-            const hour = new Date().getHours();
-            let greeting = 'Good morning';
-            
-            if (hour >= 12 && hour < 17) {
-                greeting = 'Good afternoon';
-            } else if (hour >= 17) {
-                greeting = 'Good evening';
+    // Add loading states to buttons
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (this.href && !this.href.includes('#')) {
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
             }
-            
-            greetingText.textContent = greeting;
+        });
+    });
+    
+    // Progress bar animations
+    const progressBars = document.querySelectorAll('.progress-fill');
+    const progressObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const progressBar = entry.target;
+                const width = progressBar.style.width;
+                progressBar.style.width = '0%';
+                setTimeout(() => {
+                    progressBar.style.width = width;
+                }, 200);
+            }
+        });
+    }, observerOptions);
+    
+    progressBars.forEach(bar => {
+        progressObserver.observe(bar);
+    });
+    
+    // Add ripple effect to cards
+    function createRipple(event) {
+        const card = event.currentTarget;
+        const circle = document.createElement('span');
+        const diameter = Math.max(card.clientWidth, card.clientHeight);
+        const radius = diameter / 2;
+        
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - card.offsetLeft - radius}px`;
+        circle.style.top = `${event.clientY - card.offsetTop - radius}px`;
+        circle.classList.add('ripple');
+        
+        const ripple = card.querySelector('.ripple');
+        if (ripple) {
+            ripple.remove();
         }
+        
+        card.appendChild(circle);
     }
     
-    updateGreeting();
-    
-    // Add pull-to-refresh functionality (basic implementation)
-    let startY = 0;
-    let pullDistance = 0;
-    const pullThreshold = 80;
-    
-    document.addEventListener('touchstart', function(e) {
-        startY = e.touches[0].pageY;
-    });
-    
-    document.addEventListener('touchmove', function(e) {
-        const currentY = e.touches[0].pageY;
-        pullDistance = currentY - startY;
-        
-        if (pullDistance > 0 && window.scrollY === 0) {
-            e.preventDefault();
-            
-            if (pullDistance > pullThreshold) {
-                // Visual feedback for pull-to-refresh
-                document.body.style.transform = `translateY(${Math.min(pullDistance * 0.5, 40)}px)`;
-            }
-        }
-    });
-    
-    document.addEventListener('touchend', function() {
-        if (pullDistance > pullThreshold && window.scrollY === 0) {
-            // Trigger refresh
-            location.reload();
-        }
-        
-        // Reset transform
-        document.body.style.transform = '';
-        pullDistance = 0;
+    document.querySelectorAll('.feature-card, .activity-card, .news-card').forEach(card => {
+        card.addEventListener('click', createRipple);
     });
 });
 
-// Additional search result styles
-const additionalStyles = `
-<style>
-.search-section-mobile {
-    padding: 16px;
-    border-bottom: 1px solid #e2e8f0;
+// Add ripple effect styles
+const rippleStyles = `
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.6);
+    transform: scale(0);
+    animation: ripple-animation 600ms linear;
+    pointer-events: none;
 }
 
-.search-section-mobile:last-child {
-    border-bottom: none;
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
 }
-
-.search-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.search-result-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    text-decoration: none;
-    color: inherit;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.search-result-item:last-child {
-    border-bottom: none;
-}
-
-.search-result-item:hover {
-    background: #f8fafc;
-    text-decoration: none;
-    color: inherit;
-}
-
-.search-result-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: #f1f5f9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #64748b;
-}
-
-.search-result-content {
-    flex: 1;
-}
-
-.search-result-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1a202c;
-    margin-bottom: 2px;
-}
-
-.search-result-subtitle {
-    font-size: 14px;
-    color: #64748b;
-}
-
-.search-result-price {
-    font-size: 14px;
-    font-weight: 600;
-    color: #667eea;
-}
-
-.no-results-mobile {
-    padding: 40px 20px;
-    text-align: center;
-    color: #64748b;
-}
-
-.no-results-mobile i {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
-}
-
-.no-results-mobile p {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.no-results-mobile small {
-    font-size: 14px;
-    opacity: 0.8;
-}
-</style>
 `;
 
-// Inject additional styles
-document.head.insertAdjacentHTML('beforeend', additionalStyles);
+const styleSheet = document.createElement('style');
+styleSheet.textContent = rippleStyles;
+document.head.appendChild(styleSheet);
 </script>
-{% endblock %}d-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.featured-card {
-    background: white;
-    border-radius: 20px;
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: white;
-    overflow: hidden;
-    position: relative;
-    min-height: 140px;
-}
-
-.gradient-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
-.gradient-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
-
-.featured-content {
-    flex: 1;
-    z-index: 2;
-}
-
-.featured-badge {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
-    margin-bottom: 8px;
-}
-
-.featured-title {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 8px;
-}
-
-.featured-subtitle {
-    font-size: 14px;
-    opacity: 0.9;
-    margin-bottom: 16px;
-}
-
-.feature
+{% endblock %}

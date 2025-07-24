@@ -1,44 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="homepage-container">
-    <!-- Hero Header -->
-    <div class="hero-header">
-        <div class="container">
-            <div class="text-center">
-                <h1 class="hero-title">What will you <span class="text-gradient">learn today?</span></h1>
-                <p class="hero-subtitle">Explore robotics, AI, coding, and electric vehicles</p>
+<!-- Modern Hero Section -->
+<div class="modern-hero">
+    <div class="hero-background"></div>
+    <div class="container">
+        <div class="hero-content text-center">
+            <div class="hero-greeting mb-4">
+                {% if current_user.is_authenticated %}
+                    <h1 class="greeting-text">What will you learn today, {{ current_user.first_name }}?</h1>
+                {% else %}
+                    <h1 class="greeting-text">What will you design today?</h1>
+                {% endif %}
             </div>
-        </div>
-    </div>
-
-    <!-- Quick Navigation Tabs -->
-    <div class="quick-nav-section">
-        <div class="container">
-            <div class="nav-pills-container">
-                <button class="nav-pill active" data-section="featured">
-                    <i class="fas fa-star me-2"></i>Featured
-                </button>
-                <button class="nav-pill" data-section="classes">
-                    <i class="fas fa-chalkboard-teacher me-2"></i>Classes
-                </button>
-                <button class="nav-pill" data-section="courses">
-                    <i class="fas fa-graduation-cap me-2"></i>Courses
-                </button>
-                <button class="nav-pill" data-section="ai">
-                    <i class="fas fa-robot me-2"></i>AI Tools
-                </button>
+            
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs-modern mb-5">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="main">Your Dashboard</button>
+                    <button class="tab-btn" data-tab="templates">Templates</button>
+                    <button class="tab-btn" data-tab="ai">AI</button>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Search Section -->
-    <div class="search-section">
-        <div class="container">
-            <div class="search-wrapper">
+            
+            <!-- Search Bar -->
+            <div class="search-container mb-5">
                 <div class="search-box">
                     <i class="fas fa-search search-icon"></i>
-                    <input type="text" placeholder="Search classes, courses, projects..." class="search-input">
+                    <input type="text" placeholder="Search courses, classes, or AI tools..." class="search-input">
                     <button class="search-btn">
                         <i class="fas fa-arrow-right"></i>
                     </button>
@@ -46,492 +35,361 @@
             </div>
         </div>
     </div>
-
-    <!-- Main Content Sections -->
-    <div class="content-sections">
-        <div class="container">
-            
-            <!-- Featured Section -->
-            <div class="content-section active" id="featured-section">
-                <!-- Quick Access Cards -->
-                <div class="quick-access-grid">
-                    <a href="{{ url_for('admin_dashboard') if current_user.is_authenticated and current_user.is_admin else '#' }}" class="quick-card classes-card">
-                        <div class="card-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="card-content">
-                            <h6>Classes</h6>
-                            <small>Join group or individual sessions</small>
-                        </div>
-                    </a>
-
-                    <a href="{{ url_for('courses') if url_for('courses') else '#' }}" class="quick-card courses-card">
-                        <div class="card-icon">
-                            <i class="fas fa-play-circle"></i>
-                        </div>
-                        <div class="card-content">
-                            <h6>Courses</h6>
-                            <small>Self-paced learning modules</small>
-                        </div>
-                    </a>
-
-                    <a href="{{ url_for('shop') if url_for('shop') else '#' }}" class="quick-card shop-card">
-                        <div class="card-icon">
-                            <i class="fas fa-shopping-bag"></i>
-                        </div>
-                        <div class="card-content">
-                            <h6>Shop</h6>
-                            <small>Robotics kits & components</small>
-                        </div>
-                    </a>
-
-                    <a href="{{ url_for('robotics_projects') }}" class="quick-card ai-card">
-                        <div class="card-icon">
-                            <i class="fas fa-lightbulb"></i>
-                        </div>
-                        <div class="card-content">
-                            <h6>Projects</h6>
-                            <small>Submit your robotics ideas</small>
-                        </div>
-                    </a>
-
-                    <a href="#" class="quick-card ai-tools-card">
-                        <div class="card-icon">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <div class="card-content">
-                            <h6>AI Tools</h6>
-                            <small>Smart coding assistants</small>
-                        </div>
-                    </a>
-
-                    <a href="{{ url_for('student_dashboard') if current_user.is_authenticated else url_for('register') }}" class="quick-card dashboard-card">
-                        <div class="card-icon">
-                            <i class="fas fa-tachometer-alt"></i>
-                        </div>
-                        <div class="card-content">
-                            <h6>Dashboard</h6>
-                            <small>Your learning progress</small>
-                        </div>
-                    </a>
-                </div>
-
-                <!-- What's New Section -->
-                <div class="whats-new-section">
-                    <h5 class="section-title">What's new</h5>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <div class="feature-card robotics-feature">
-                                <div class="feature-content">
-                                    <h6>Build your first robot</h6>
-                                    <p>Complete Arduino robotics course for beginners</p>
-                                    <i class="fas fa-arrow-right"></i>
-                                </div>
-                                <div class="feature-image">
-                                    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751125693/Obstacle-Avoiding-Robot-Car-Using-An-Arduino-Uno-removebg-preview_qhz2gl.png" alt="Arduino Robot">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="feature-card ai-feature">
-                                <div class="feature-content">
-                                    <h6>AI Programming Workshop</h6>
-                                    <p>Learn Python and machine learning fundamentals</p>
-                                    <i class="fas fa-arrow-right"></i>
-                                </div>
-                                <div class="feature-image">
-                                    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751140033/freepik__the-style-is-candid-image-photography-with-natural__54640_i1t9xx.png" alt="AI Technology">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="feature-card ev-feature">
-                                <div class="feature-content">
-                                    <h6>Electric Vehicle Design</h6>
-                                    <p>Build sustainable transportation solutions</p>
-                                    <i class="fas fa-arrow-right"></i>
-                                </div>
-                                <div class="feature-image">
-                                    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751139805/2022-08-16T02_30_46.690Z-%E6%9C%AA%E6%A0%87%E9%A2%98-18-removebg-preview_eeatgn.png" alt="Electric Vehicle">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Classes Section -->
-            <div class="content-section" id="classes-section">
-                <h5 class="section-title">Available Classes</h5>
-                <div class="classes-grid">
-                    <div class="class-item individual-class">
-                        <div class="class-icon">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="class-info">
-                            <h6>Individual Classes</h6>
-                            <p>One-on-one personalized learning sessions</p>
-                            <span class="class-type">Personal</span>
-                        </div>
-                        <div class="class-action">
-                            {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-primary">View</a>
-                            {% else %}
-                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary">Join</a>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="class-item group-class">
-                        <div class="class-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="class-info">
-                            <h6>Group Classes</h6>
-                            <p>Collaborative learning with peers</p>
-                            <span class="class-type">Collaborative</span>
-                        </div>
-                        <div class="class-action">
-                            {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-success">View</a>
-                            {% else %}
-                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-success">Join</a>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="class-item workshop-class">
-                        <div class="class-icon">
-                            <i class="fas fa-tools"></i>
-                        </div>
-                        <div class="class-info">
-                            <h6>Workshops</h6>
-                            <p>Hands-on project-based learning</p>
-                            <span class="class-type">Practical</span>
-                        </div>
-                        <div class="class-action">
-                            {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-warning">View</a>
-                            {% else %}
-                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-warning">Join</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Courses Section -->
-            <div class="content-section" id="courses-section">
-                <h5 class="section-title">Featured Courses</h5>
-                <div class="courses-grid">
-                    <div class="course-card">
-                        <div class="course-header robotics-course">
-                            <i class="fas fa-cogs"></i>
-                            <h6>Robotics Fundamentals</h6>
-                        </div>
-                        <div class="course-body">
-                            <p>Learn Arduino programming, sensors, and mechanical design</p>
-                            <div class="course-stats">
-                                <span><i class="fas fa-clock"></i> 8 weeks</span>
-                                <span><i class="fas fa-users"></i> 150+ students</span>
-                            </div>
-                        </div>
-                        <div class="course-footer">
-                            <span class="course-price">$99</span>
-                            {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-primary">View</a>
-                            {% else %}
-                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary">Enroll</a>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="course-card">
-                        <div class="course-header ai-course">
-                            <i class="fas fa-brain"></i>
-                            <h6>AI & Machine Learning</h6>
-                        </div>
-                        <div class="course-body">
-                            <p>Python programming and ML algorithms for beginners</p>
-                            <div class="course-stats">
-                                <span><i class="fas fa-clock"></i> 10 weeks</span>
-                                <span><i class="fas fa-users"></i> 200+ students</span>
-                            </div>
-                        </div>
-                        <div class="course-footer">
-                            <span class="course-price">$149</span>
-                            {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-success">View</a>
-                            {% else %}
-                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-success">Enroll</a>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="course-card">
-                        <div class="course-header ev-course">
-                            <i class="fas fa-bolt"></i>
-                            <h6>Electric Vehicles</h6>
-                        </div>
-                        <div class="course-body">
-                            <p>Design and build sustainable transportation solutions</p>
-                            <div class="course-stats">
-                                <span><i class="fas fa-clock"></i> 6 weeks</span>
-                                <span><i class="fas fa-users"></i> 80+ students</span>
-                            </div>
-                        </div>
-                        <div class="course-footer">
-                            <span class="course-price">$129</span>
-                            {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-warning">View</a>
-                            {% else %}
-                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-warning">Enroll</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- AI Tools Section -->
-            <div class="content-section" id="ai-section">
-                <h5 class="section-title">AI-Powered Tools</h5>
-                <div class="ai-tools-grid">
-                    <div class="ai-tool-card">
-                        <div class="tool-icon code-assistant">
-                            <i class="fas fa-code"></i>
-                        </div>
-                        <div class="tool-content">
-                            <h6>Code Assistant</h6>
-                            <p>AI-powered coding help and debugging</p>
-                            <span class="tool-status coming-soon">Coming Soon</span>
-                        </div>
-                    </div>
-
-                    <div class="ai-tool-card">
-                        <div class="tool-icon project-planner">
-                            <i class="fas fa-project-diagram"></i>
-                        </div>
-                        <div class="tool-content">
-                            <h6>Project Planner</h6>
-                            <p>Smart project planning and resource suggestions</p>
-                            <span class="tool-status beta">Beta</span>
-                        </div>
-                    </div>
-
-                    <div class="ai-tool-card">
-                        <div class="tool-icon learning-path">
-                            <i class="fas fa-route"></i>
-                        </div>
-                        <div class="tool-content">
-                            <h6>Learning Path</h6>
-                            <p>Personalized curriculum recommendations</p>
-                            <span class="tool-status active">Active</span>
-                        </div>
-                    </div>
-
-                    <div class="ai-tool-card">
-                        <div class="tool-icon tutor-bot">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <div class="tool-content">
-                            <h6>Tutor Bot</h6>
-                            <p>24/7 AI tutor for instant help</p>
-                            <span class="tool-status coming-soon">Coming Soon</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
-            {% if current_user.is_authenticated %}
-            <div class="recent-activity-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="section-title mb-0">Your Recent Activity</h5>
-                    <a href="{{ url_for('student_dashboard') }}" class="text-link">See all</a>
-                </div>
-                
-                <div class="activity-cards">
-                    <div class="activity-card">
-                        <div class="activity-icon">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                        <div class="activity-content">
-                            <h6>Continue Learning</h6>
-                            <p>Arduino Basics - Lesson 3</p>
-                            <small class="text-muted">2 days ago</small>
-                        </div>
-                    </div>
-
-                    <div class="activity-card">
-                        <div class="activity-icon">
-                            <i class="fas fa-lightbulb"></i>
-                        </div>
-                        <div class="activity-content">
-                            <h6>Project Submission</h6>
-                            <p>Robot Arm Design</p>
-                            <small class="text-muted">5 days ago</small>
-                        </div>
-                    </div>
-
-                    <div class="activity-card">
-                        <div class="activity-icon">
-                            <i class="fas fa-certificate"></i>
-                        </div>
-                        <div class="activity-content">
-                            <h6>Achievement Unlocked</h6>
-                            <p>First Robot Builder</p>
-                            <small class="text-muted">1 week ago</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Quick Actions FAB -->
-    {% if current_user.is_authenticated %}
-    <div class="fab-container">
-        <button class="fab-main" onclick="toggleFab()">
-            <i class="fas fa-plus"></i>
-        </button>
-        <div class="fab-menu">
-            <a href="{{ url_for('robotics_projects') }}" class="fab-action" data-tooltip="Submit Project">
-                <i class="fas fa-lightbulb"></i>
-            </a>
-            <a href="{{ url_for('student_dashboard') }}" class="fab-action" data-tooltip="Dashboard">
-                <i class="fas fa-tachometer-alt"></i>
-            </a>
-            <a href="{{ url_for('admin_dashboard') if current_user.is_admin else url_for('student_dashboard') }}" class="fab-action" data-tooltip="My Account">
-                <i class="fas fa-user"></i>
-            </a>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
-<style>
-/* All the existing styles remain the same */
-.homepage-container {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    min-height: 100vh;
-    padding-bottom: 2rem;
-}
+<!-- Main Features Grid -->
+<div class="features-grid-section py-5">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Classes Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('available_classes') }}" class="feature-card classes-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h5 class="feature-title">Classes</h5>
+                    <p class="feature-subtitle">Join live interactive sessions</p>
+                </a>
+            </div>
+            
+            <!-- Courses Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('courses') }}" class="feature-card courses-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h5 class="feature-title">Courses</h5>
+                    <p class="feature-subtitle">Self-paced learning paths</p>
+                </a>
+            </div>
+            
+            <!-- Shop Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('products') }}" class="feature-card shop-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h5 class="feature-title">Shop</h5>
+                    <p class="feature-subtitle">Robotics kits & components</p>
+                </a>
+            </div>
+            
+            <!-- AI Tools Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('ai_tools') }}" class="feature-card ai-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h5 class="feature-title">AI Tools</h5>
+                    <p class="feature-subtitle">Smart learning assistants</p>
+                </a>
+            </div>
+            
+            <!-- Projects Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('robotics_projects') }}" class="feature-card projects-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h5 class="feature-title">Projects</h5>
+                    <p class="feature-subtitle">Submit your robotics ideas</p>
+                </a>
+            </div>
+            
+            <!-- Certificates Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('certificates') }}" class="feature-card certificates-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <h5 class="feature-title">Certificates</h5>
+                    <p class="feature-subtitle">Earn industry recognition</p>
+                </a>
+            </div>
+            
+            <!-- Community Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('community') }}" class="feature-card community-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h5 class="feature-title">Community</h5>
+                    <p class="feature-subtitle">Connect with makers</p>
+                </a>
+            </div>
+            
+            <!-- Support Card -->
+            <div class="col-lg-3 col-md-6">
+                <a href="{{ url_for('support') }}" class="feature-card support-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h5 class="feature-title">Support</h5>
+                    <p class="feature-subtitle">Get help when you need it</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
-.hero-header {
+<!-- What's New Section -->
+<div class="whats-new-section py-5">
+    <div class="container">
+        <div class="section-header mb-4">
+            <h2 class="section-title">What's new</h2>
+        </div>
+        
+        <div class="row g-4">
+            <!-- New Course Highlight -->
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card gradient-card-1">
+                    <div class="news-content">
+                        <h5 class="news-title">Advanced Robotics Course</h5>
+                        <p class="news-subtitle">Master robot programming with AI integration</p>
+                        <i class="fas fa-arrow-right news-arrow"></i>
+                    </div>
+                    <div class="news-visual">
+                        <i class="fas fa-robot fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- New AI Tool -->
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card gradient-card-2">
+                    <div class="news-content">
+                        <h5 class="news-title">AI Code Assistant</h5>
+                        <p class="news-subtitle">Get instant help with your programming projects</p>
+                        <i class="fas fa-arrow-right news-arrow"></i>
+                    </div>
+                    <div class="news-visual">
+                        <i class="fas fa-brain fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- New Workshop -->
+            <div class="col-lg-4 col-md-6">
+                <div class="news-card gradient-card-3">
+                    <div class="news-content">
+                        <h5 class="news-title">EV Workshop Series</h5>
+                        <p class="news-subtitle">Build your own electric vehicle from scratch</p>
+                        <i class="fas fa-arrow-right news-arrow"></i>
+                    </div>
+                    <div class="news-visual">
+                        <i class="fas fa-car-battery fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Section -->
+{% if current_user.is_authenticated %}
+<div class="recent-activity-section py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Recent activity</h2>
+            <a href="#" class="see-all-link">See all</a>
+        </div>
+        
+        <div class="row g-4">
+            <!-- Recent Course -->
+            <div class="col-lg-4 col-md-6">
+                <div class="activity-card">
+                    <div class="activity-thumbnail">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h6 class="activity-title">Arduino Basics</h6>
+                        <p class="activity-subtitle">Continue where you left off</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 65%"></div>
+                        </div>
+                        <small class="progress-text">65% complete</small>
+                    </div>
+                    <button class="activity-menu">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Recent Project -->
+            <div class="col-lg-4 col-md-6">
+                <div class="activity-card">
+                    <div class="activity-thumbnail">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h6 class="activity-title">Smart Home Project</h6>
+                        <p class="activity-subtitle">Draft saved 2 hours ago</p>
+                        <div class="project-status">
+                            <span class="status-badge in-progress">In Progress</span>
+                        </div>
+                    </div>
+                    <button class="activity-menu">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Recent Purchase -->
+            <div class="col-lg-4 col-md-6">
+                <div class="activity-card">
+                    <div class="activity-thumbnail">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h6 class="activity-title">Arduino Starter Kit</h6>
+                        <p class="activity-subtitle">Delivered yesterday</p>
+                        <div class="delivery-status">
+                            <span class="status-badge delivered">Delivered</span>
+                        </div>
+                    </div>
+                    <button class="activity-menu">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- CTA Section for Non-logged Users -->
+{% if not current_user.is_authenticated %}
+<div class="auth-cta-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h2 class="cta-title mb-4">Ready to start your journey?</h2>
+                <p class="cta-subtitle mb-5">Join thousands of students learning the future of technology</p>
+                <div class="auth-buttons">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-rocket me-2"></i>Get Started
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Modern Hero Section */
+.modern-hero {
+    position: relative;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 3rem 0 2rem;
+    overflow: hidden;
 }
 
-.hero-title {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.text-gradient {
-    background: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.hero-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
-    margin: 0;
-}
-
-.quick-nav-section {
-    background: white;
-    padding: 1rem 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    position: sticky;
+.hero-background {
+    position: absolute;
     top: 0;
-    z-index: 100;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:rgba(255,255,255,0.1)"/><stop offset="100%" style="stop-color:rgba(255,255,255,0.05)"/></linearGradient></defs><circle cx="200" cy="100" r="50" fill="url(%23grad)"/><circle cx="800" cy="200" r="80" fill="url(%23grad)"/><circle cx="1000" cy="400" r="60" fill="url(%23grad)"/></svg>');
+    animation: float 20s ease-in-out infinite;
 }
 
-.nav-pills-container {
+.greeting-text {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    animation: fadeInUp 1s ease;
+}
+
+/* Navigation Tabs */
+.nav-tabs-modern {
     display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    padding: 0.25rem;
+    justify-content: center;
 }
 
-.nav-pills-container::-webkit-scrollbar {
-    display: none;
+.tab-buttons {
+    display: flex;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    padding: 8px;
+    backdrop-filter: blur(10px);
 }
 
-.nav-pill {
-    background: #f8f9fa;
+.tab-btn {
+    background: none;
     border: none;
-    border-radius: 20px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    color: #6c757d;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    font-size: 0.9rem;
-}
-
-.nav-pill.active,
-.nav-pill:hover {
-    background: #667eea;
     color: white;
-    transform: translateY(-1px);
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
-.search-section {
-    padding: 1.5rem 0;
+.tab-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
 }
 
-.search-wrapper {
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Search Container */
+.search-container {
     max-width: 600px;
     margin: 0 auto;
 }
 
 .search-box {
     position: relative;
-    background: white;
-    border-radius: 25px;
-    padding: 0.5rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50px;
+    padding: 4px 4px 4px 20px;
     display: flex;
     align-items: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(20px);
 }
 
 .search-icon {
-    color: #6c757d;
-    margin-left: 1rem;
+    color: #666;
+    margin-right: 15px;
     font-size: 1.1rem;
 }
 
 .search-input {
-    border: none;
-    outline: none;
     flex: 1;
-    padding: 0.75rem 1rem;
+    border: none;
+    background: none;
+    padding: 16px 0;
     font-size: 1rem;
-    background: transparent;
+    color: #333;
+    outline: none;
 }
 
 .search-input::placeholder {
-    color: #adb5bd;
+    color: #999;
 }
 
 .search-btn {
     background: #667eea;
     border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
     color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
@@ -540,726 +398,323 @@
     transform: scale(1.05);
 }
 
-.content-sections {
-    padding: 1rem 0 2rem;
-}
-
-.content-section {
-    display: none;
-}
-
-.content-section.active {
-    display: block;
-}
-
-.section-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 1.5rem;
-}
-
-.quick-access-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.quick-card {
-    background: white;
-    border-radius: 15px;
-    padding: 1.5rem 1rem;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    text-align: center;
-    border: 2px solid transparent;
-}
-
-.quick-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    color: inherit;
-    text-decoration: none;
-}
-
-.quick-card.classes-card:hover {
-    border-color: #667eea;
-}
-
-.quick-card.courses-card:hover {
-    border-color: #28a745;
-}
-
-.quick-card.shop-card:hover {
-    border-color: #ffc107;
-}
-
-.quick-card.ai-card:hover {
-    border-color: #17a2b8;
-}
-
-.quick-card.ai-tools-card:hover {
-    border-color: #6f42c1;
-}
-
-.quick-card.dashboard-card:hover {
-    border-color: #fd7e14;
-}
-
-.card-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    font-size: 1.5rem;
-    color: white;
-}
-
-.classes-card .card-icon {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-}
-
-.courses-card .card-icon {
-    background: linear-gradient(135deg, #28a745, #20c997);
-}
-
-.shop-card .card-icon {
-    background: linear-gradient(135deg, #ffc107, #fd7e14);
-}
-
-.ai-card .card-icon,
-.ai-tools-card .card-icon {
-    background: linear-gradient(135deg, #6f42c1, #9c27b0);
-}
-
-.dashboard-card .card-icon {
-    background: linear-gradient(135deg, #fd7e14, #f56565);
-}
-
-.card-content h6 {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    font-size: 0.9rem;
-}
-
-.card-content small {
-    color: #6c757d;
-    font-size: 0.75rem;
-    line-height: 1.3;
-}
-
-.whats-new-section {
-    margin-bottom: 2rem;
+/* Features Grid */
+.features-grid-section {
+    background: #f8f9fa;
 }
 
 .feature-card {
+    display: block;
     background: white;
-    border-radius: 15px;
-    padding: 1.5rem;
-    height: 200px;
+    border-radius: 20px;
+    padding: 30px 20px;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    height: 100%;
     position: relative;
     overflow: hidden;
-    transition: all 0.3s ease;
-    cursor: pointer;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
 }
 
 .feature-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+    color: inherit;
 }
 
-.robotics-feature {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+.feature-card:hover::before {
+    transform: scaleX(1);
 }
 
-.ai-feature {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-    color: white;
-}
-
-.ev-feature {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: white;
-}
-
-.feature-content {
-    position: relative;
-    z-index: 2;
-}
-
-.feature-content h6 {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-}
-
-.feature-content p {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    margin-bottom: 1rem;
-}
-
-.feature-content i {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-}
-
-.feature-image {
-    position: absolute;
-    top: 0;
-    right: -20px;
-    bottom: 0;
-    width: 120px;
-    opacity: 0.3;
-    z-index: 1;
-}
-
-.feature-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.classes-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.class-item {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.class-item:hover {
-    transform: translateX(5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-}
-
-.class-icon {
-    width: 50px;
-    height: 50px;
+.feature-icon {
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.8rem;
     color: white;
-    font-size: 1.25rem;
 }
 
-.individual-class .class-icon {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+.classes-card .feature-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+.courses-card .feature-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.shop-card .feature-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.ai-card .feature-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.projects-card .feature-icon { background: linear-gradient(135deg, #fa709a, #fee140); }
+.certificates-card .feature-icon { background: linear-gradient(135deg, #a8edea, #fed6e3); }
+.community-card .feature-icon { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
+.support-card .feature-icon { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
+
+.feature-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
 }
 
-.group-class .class-icon {
-    background: linear-gradient(135deg, #28a745, #20c997);
+.feature-subtitle {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
 }
 
-.workshop-class .class-icon {
-    background: linear-gradient(135deg, #ffc107, #fd7e14);
+/* What's New Section */
+.whats-new-section {
+    background: white;
 }
 
-.class-info {
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.news-card {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: white;
+    transition: all 0.3s ease;
+    min-height: 150px;
+    position: relative;
+    overflow: hidden;
+}
+
+.gradient-card-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+.gradient-card-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.gradient-card-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+
+.news-card:hover {
+    transform: translateY(-3px);
+    color: white;
+    text-decoration: none;
+}
+
+.news-content {
     flex: 1;
 }
 
-.class-info h6 {
-    margin: 0 0 0.25rem 0;
+.news-title {
+    font-size: 1.3rem;
     font-weight: 600;
-    font-size: 1rem;
+    margin-bottom: 8px;
 }
 
-.class-info p {
-    margin: 0 0 0.5rem 0;
-    color: #6c757d;
-    font-size: 0.85rem;
+.news-subtitle {
+    font-size: 0.95rem;
+    opacity: 0.9;
+    margin: 0;
 }
 
-.class-type {
+.news-visual {
+    opacity: 0.3;
+    margin-left: 20px;
+}
+
+.news-arrow {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 1.2rem;
+}
+
+/* Recent Activity Section */
+.recent-activity-section {
     background: #f8f9fa;
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    color: #6c757d;
+}
+
+.see-all-link {
+    color: #667eea;
+    text-decoration: none;
     font-weight: 500;
 }
 
-.courses-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1rem;
-}
-
-.course-card {
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.course-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.course-header {
-    padding: 1.5rem;
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.robotics-course {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-}
-
-.ai-course {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-}
-
-.ev-course {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-}
-
-.course-header i {
-    font-size: 1.5rem;
-}
-
-.course-header h6 {
-    margin: 0;
-    font-weight: 600;
-}
-
-.course-body {
-    padding: 1.5rem;
-}
-
-.course-body p {
-    color: #6c757d;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.course-stats {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.course-stats span {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
-.course-stats i {
-    margin-right: 0.25rem;
-}
-
-.course-footer {
-    padding: 0 1.5rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.course-price {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #2c3e50;
-}
-
-.ai-tools-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.ai-tool-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.ai-tool-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.tool-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    font-size: 1.5rem;
-    color: white;
-}
-
-.code-assistant {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-}
-
-.project-planner {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-}
-
-.learning-path {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-}
-
-.tutor-bot {
-    background: linear-gradient(135deg, #43e97b, #38f9d7);
-}
-
-.tool-content h6 {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-}
-
-.tool-content p {
-    color: #6c757d;
-    font-size: 0.8rem;
-    margin-bottom: 0.75rem;
-}
-
-.tool-status {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 600;
-}
-
-.tool-status.active {
-    background: #d4edda;
-    color: #155724;
-}
-
-.tool-status.beta {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.tool-status.coming-soon {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.recent-activity-section {
-    margin-top: 2rem;
-}
-
-.activity-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+.see-all-link:hover {
+    color: #5a6fd8;
+    text-decoration: underline;
 }
 
 .activity-card {
     background: white;
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: 15px;
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 16px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .activity-card:hover {
-    transform: translateX(5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+.activity-thumbnail {
+    width: 50px;
+    height: 50px;
     background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 1rem;
+    font-size: 1.3rem;
 }
 
 .activity-content {
     flex: 1;
 }
 
-.activity-content h6 {
-    margin: 0 0 0.25rem 0;
+.activity-title {
+    font-size: 1rem;
     font-weight: 600;
-    font-size: 0.9rem;
+    margin-bottom: 4px;
+    color: #333;
 }
 
-.activity-content p {
-    margin: 0 0 0.25rem 0;
-    color: #6c757d;
-    font-size: 0.8rem;
+.activity-subtitle {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 8px;
 }
 
-.text-link {
-    color: #667eea;
-    text-decoration: none;
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
-    font-size: 0.9rem;
 }
 
-.text-link:hover {
-    text-decoration: underline;
-    color: #5a6fd8;
+.status-badge.in-progress {
+    background: #fff3cd;
+    color: #856404;
 }
 
-/* Floating Action Button */
-.fab-container {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    z-index: 1000;
+.status-badge.delivered {
+    background: #d4edda;
+    color: #155724;
 }
 
-.fab-main {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+.activity-menu {
+    background: none;
     border: none;
-    color: white;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
+    color: #ccc;
+    font-size: 1rem;
     cursor: pointer;
+    padding: 8px;
 }
 
-.fab-main:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-}
-
-.fab-main.active {
-    transform: rotate(45deg);
-}
-
-.fab-menu {
-    position: absolute;
-    bottom: 70px;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(20px);
-    transition: all 0.3s ease;
-}
-
-.fab-menu.active {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.fab-action {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: white;
-    color: #667eea;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.fab-action:hover {
-    background: #667eea;
+/* Auth CTA Section */
+.auth-cta-section {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
-    transform: scale(1.1);
-    text-decoration: none;
 }
 
-.fab-action::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    right: 60px;
-    background: #2c3e50;
-    color: white;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    transform: translateX(10px);
+.cta-title {
+    font-size: 2rem;
+    font-weight: 700;
 }
 
-.fab-action:hover::before {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(0);
+.cta-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.auth-buttons .btn {
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-weight: 600;
 }
 
 /* Responsive Design */
-@media (max-width: 767px) {
-    .hero-title {
-        font-size: 1.75rem;
+@media (max-width: 768px) {
+    .greeting-text {
+        font-size: 1.8rem;
     }
     
-    .quick-access-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
+    .tab-buttons {
+        flex-direction: column;
+        width: 100%;
     }
     
-    .quick-card {
-        padding: 1rem 0.75rem;
+    .tab-btn {
+        margin-bottom: 8px;
+        width: 100%;
     }
     
-    .card-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1.25rem;
-        margin-bottom: 0.75rem;
-    }
-    
-    .card-content h6 {
-        font-size: 0.85rem;
-    }
-    
-    .card-content small {
-        font-size: 0.7rem;
+    .search-box {
+        margin: 0 20px;
     }
     
     .feature-card {
-        height: 160px;
-        padding: 1rem;
+        margin-bottom: 20px;
     }
     
-    .feature-content h6 {
-        font-size: 0.9rem;
+    .news-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
     }
     
-    .feature-content p {
-        font-size: 0.8rem;
+    .news-visual {
+        margin-left: 0;
     }
     
-    .courses-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .ai-tools-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .fab-container {
-        bottom: 1rem;
-        right: 1rem;
-    }
-    
-    .fab-main {
-        width: 50px;
-        height: 50px;
-        font-size: 1.25rem;
-    }
-    
-    .fab-action {
-        width: 42px;
-        height: 42px;
-    }
-    
-    .fab-action::before {
-        display: none;
+    .activity-card {
+        flex-direction: column;
+        text-align: center;
     }
 }
 
-@media (min-width: 768px) {
-    .hero-title {
-        font-size: 2.5rem;
-    }
-    
-    .quick-access-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .activity-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1rem;
-    }
-}
-
-@media (min-width: 1200px) {
-    .quick-access-grid {
-        grid-template-columns: repeat(6, 1fr);
-    }
-    
-    .hero-title {
-        font-size: 3rem;
-    }
-}
-
-/* Loading states */
-.loading {
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.loading::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Smooth animations */
-.fade-in {
-    animation: fadeIn 0.5s ease-in-out;
-}
-
-@keyframes fadeIn {
+/* Animations */
+@keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px);
     }
     to {
         opacity: 1;
@@ -1267,60 +722,40 @@
     }
 }
 
-/* Focus states for accessibility */
-.nav-pill:focus,
-.quick-card:focus,
-.fab-main:focus,
-.fab-action:focus {
-    outline: 2px solid #667eea;
-    outline-offset: 2px;
+@keyframes float {
+    0%, 100% { 
+        transform: translateY(0px) rotate(0deg); 
+    }
+    33% { 
+        transform: translateY(-10px) rotate(1deg); 
+    }
+    66% { 
+        transform: translateY(5px) rotate(-1deg); 
+    }
 }
 
-/* Hover effects for touch devices */
-@media (hover: none) {
-    .quick-card:hover,
-    .feature-card:hover,
-    .class-item:hover,
-    .course-card:hover,
-    .ai-tool-card:hover,
-    .activity-card:hover {
-        transform: none;
-    }
-    
-    .quick-card:active,
-    .feature-card:active {
-        transform: scale(0.98);
-    }
+/* Loading animations */
+.feature-card {
+    animation: fadeInUp 0.6s ease forwards;
+    animation-delay: calc(var(--delay, 0) * 0.1s);
 }
 </style>
 
 <script>
-// Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
-    const navPills = document.querySelectorAll('.nav-pill');
-    const contentSections = document.querySelectorAll('.content-section');
+    // Tab switching functionality
+    const tabButtons = document.querySelectorAll('.tab-btn');
     
-    navPills.forEach(pill => {
-        pill.addEventListener('click', () => {
-            // Remove active class from all pills and sections
-            navPills.forEach(p => p.classList.remove('active'));
-            contentSections.forEach(s => s.classList.remove('active'));
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
             
-            // Add active class to clicked pill
-            pill.classList.add('active');
-            
-            // Show corresponding section
-            const targetSection = pill.getAttribute('data-section') + '-section';
-            const targetElement = document.getElementById(targetSection);
-            if (targetElement) {
-                targetElement.classList.add('active');
-                targetElement.classList.add('fade-in');
-                
-                // Remove fade-in class after animation
-                setTimeout(() => {
-                    targetElement.classList.remove('fade-in');
-                }, 500);
-            }
+            // Here you can add logic to show/hide different content based on tab
+            const tabType = this.getAttribute('data-tab');
+            console.log('Switched to tab:', tabType);
         });
     });
     
@@ -1328,135 +763,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('.search-input');
     const searchBtn = document.querySelector('.search-btn');
     
-    if (searchInput && searchBtn) {
-        searchBtn.addEventListener('click', performSearch);
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
-        });
-    }
-    
-    function performSearch() {
+    searchBtn.addEventListener('click', function() {
         const query = searchInput.value.trim();
         if (query) {
-            // Add loading state
-            searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            
-            // Simulate search delay
-            setTimeout(() => {
-                searchBtn.innerHTML = '<i class="fas fa-arrow-right"></i>';
-                // Here you would typically redirect to search results
-                console.log('Searching for:', query);
-                // For now, just show an alert
-                alert('Search functionality coming soon! You searched for: ' + query);
-            }, 1000);
+            // Redirect to search results or handle search
+            window.location.href = `/search?q=${encodeURIComponent(query)}`;
         }
-    }
+    });
     
-    // Feature card click handlers
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchBtn.click();
+        }
+    });
+    
+    // Add staggered animation delays to feature cards
     const featureCards = document.querySelectorAll('.feature-card');
-    featureCards.forEach(card => {
-        card.addEventListener('click', () => {
-            // Add ripple effect
-            const ripple = document.createElement('div');
-            ripple.className = 'ripple';
-            card.appendChild(ripple);
-            
-            setTimeout(() => {
-                ripple.remove();
-            }, 600);
-            
-            // Navigate based on card type - for now just show alert
-            if (card.classList.contains('robotics-feature')) {
-                alert('Robotics course coming soon!');
-            } else if (card.classList.contains('ai-feature')) {
-                alert('AI workshop coming soon!');
-            } else if (card.classList.contains('ev-feature')) {
-                alert('Electric vehicle course coming soon!');
-            }
+    featureCards.forEach((card, index) => {
+        card.style.setProperty('--delay', index);
+    });
+    
+    // Activity card menu functionality
+    const activityMenus = document.querySelectorAll('.activity-menu');
+    activityMenus.forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Add dropdown menu logic here
+            console.log('Activity menu clicked');
         });
     });
 });
-
-// Floating Action Button functionality
-let fabOpen = false;
-
-function toggleFab() {
-    const fabMain = document.querySelector('.fab-main');
-    const fabMenu = document.querySelector('.fab-menu');
-    
-    fabOpen = !fabOpen;
-    
-    if (fabOpen) {
-        fabMain.classList.add('active');
-        fabMenu.classList.add('active');
-    } else {
-        fabMain.classList.remove('active');
-        fabMenu.classList.remove('active');
-    }
-}
-
-// Close FAB when clicking outside
-document.addEventListener('click', (e) => {
-    const fabContainer = document.querySelector('.fab-container');
-    if (fabContainer && !fabContainer.contains(e.target) && fabOpen) {
-        toggleFab();
-    }
-});
-
-// Intersection Observer for animations
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('fade-in');
-        }
-    });
-}, observerOptions);
-
-// Observe elements for animation
-document.querySelectorAll('.quick-card, .feature-card, .class-item, .course-card, .ai-tool-card').forEach(el => {
-    observer.observe(el);
-});
-
-// Smooth scrolling for anchor links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-    });
-});
-
-// Add ripple effect CSS
-const style = document.createElement('style');
-style.textContent = `
-.ripple {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.6);
-    transform: scale(0);
-    animation: ripple-animation 0.6s linear;
-    pointer-events: none;
-}
-
-@keyframes ripple-animation {
-    to {
-        transform: scale(4);
-        opacity: 0;
-    }
-}
-`;
-document.head.appendChild(style);
 </script>
 {% endblock %}

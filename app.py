@@ -2669,7 +2669,294 @@ def test_search():
         })               
 
                       
-                         
+ #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ # Add these debug routes to your Flask app to troubleshoot the search issue
+
+@app.route('/api/search-test', methods=['GET'])
+def test_search_endpoint():
+    """Simple test to check if the endpoint is reachable"""
+    return jsonify({
+        'status': 'success',
+        'message': 'Search endpoint is working',
+        'timestamp': str(datetime.now())
+    })
+
+@app.route('/api/search-debug', methods=['POST'])
+def debug_search_endpoint():
+    """Debug version with detailed error tracking"""
+    try:
+        print("🔍 DEBUG: Search endpoint called")
+        
+        # Check if request has JSON
+        if not request.is_json:
+            print("❌ DEBUG: Request is not JSON")
+            return jsonify({
+                'error': 'Request must be JSON',
+                'courses': [],
+                'classes': [],
+                'products': []
+            }), 400
+        
+        # Get JSON data
+        data = request.get_json()
+        print(f"📝 DEBUG: Request data: {data}")
+        
+        if not data:
+            print("❌ DEBUG: No JSON data received")
+            return jsonify({
+                'error': 'No data received',
+                'courses': [],
+                'classes': [],
+                'products': []
+            }), 400
+        
+        query = data.get('query', '').strip()
+        print(f"🔍 DEBUG: Search query: '{query}'")
+        
+        if len(query) < 2:
+            print("❌ DEBUG: Query too short")
+            return jsonify({
+                'courses': [],
+                'classes': [],
+                'products': [],
+                'total': 0
+            })
+        
+        search_pattern = f"%{query}%"
+        print(f"🔍 DEBUG: Search pattern: {search_pattern}")
+        
+        # Initialize results
+        course_results = []
+        class_results = []
+        product_results = []
+        
+        # Test database connection
+        try:
+            print("🔌 DEBUG: Testing database connection...")
+            db.session.execute('SELECT 1')
+            print("✅ DEBUG: Database connection OK")
+        except Exception as db_error:
+            print(f"❌ DEBUG: Database connection failed: {db_error}")
+            return jsonify({
+                'error': f'Database connection failed: {str(db_error)}',
+                'courses': [],
+                'classes': [],
+                'products': []
+            }), 500
+        
+        # Search Courses with detailed error handling
+        try:
+            print("📚 DEBUG: Searching courses...")
+            
+            # Check if Course model exists
+            if 'Course' not in globals():
+                print("❌ DEBUG: Course model not found")
+                raise Exception("Course model not imported")
+            
+            courses = Course.query.filter(
+                db.and_(
+                    Course.is_active == True,
+                    db.or_(
+                        Course.title.ilike(search_pattern),
+                        Course.description.ilike(search_pattern),
+                        Course.category.ilike(search_pattern)
+                    )
+                )
+            ).limit(5).all()
+            
+            print(f"📚 DEBUG: Found {len(courses)} courses")
+            
+            for course in courses:
+                try:
+                    course_results.append({
+                        'id': course.id,
+                        'title': course.title,
+                        'short_description': getattr(course, 'short_description', None) or course.category,
+                        'category': course.category,
+                        'price': float(course.price) if course.price else 0.0,
+                        'image_url': getattr(course, 'image_url', None)
+                    })
+                except Exception as course_error:
+                    print(f"❌ DEBUG: Error processing course {course.id}: {course_error}")
+                    continue
+                
+        except Exception as e:
+            print(f"❌ DEBUG: Course search error: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Search Individual Classes
+        try:
+            print("👤 DEBUG: Searching individual classes...")
+            
+            if 'IndividualClass' not in globals():
+                print("❌ DEBUG: IndividualClass model not found")
+            else:
+                individual_classes = IndividualClass.query.filter(
+                    db.or_(
+                        IndividualClass.name.ilike(search_pattern),
+                        IndividualClass.description.ilike(search_pattern)
+                    )
+                ).limit(3).all()
+                
+                print(f"👤 DEBUG: Found {len(individual_classes)} individual classes")
+                
+                for cls in individual_classes:
+                    try:
+                        class_results.append({
+                            'id': cls.id,
+                            'name': cls.name,
+                            'description': getattr(cls, 'description', None) or 'Individual class',
+                            'type': 'individual'
+                        })
+                    except Exception as cls_error:
+                        print(f"❌ DEBUG: Error processing individual class {cls.id}: {cls_error}")
+                        continue
+                        
+        except Exception as e:
+            print(f"❌ DEBUG: Individual class search error: {e}")
+        
+        # Search Group Classes
+        try:
+            print("👥 DEBUG: Searching group classes...")
+            
+            if 'GroupClass' not in globals():
+                print("❌ DEBUG: GroupClass model not found")
+            else:
+                group_classes = GroupClass.query.filter(
+                    db.or_(
+                        GroupClass.name.ilike(search_pattern),
+                        GroupClass.description.ilike(search_pattern)
+                    )
+                ).limit(3).all()
+                
+                print(f"👥 DEBUG: Found {len(group_classes)} group classes")
+                
+                for cls in group_classes:
+                    try:
+                        class_results.append({
+                            'id': cls.id,
+                            'name': cls.name,
+                            'description': getattr(cls, 'description', None) or 'Group class',
+                            'type': 'group',
+                            'max_students': getattr(cls, 'max_students', 10)
+                        })
+                    except Exception as cls_error:
+                        print(f"❌ DEBUG: Error processing group class {cls.id}: {cls_error}")
+                        continue
+                        
+        except Exception as e:
+            print(f"❌ DEBUG: Group class search error: {e}")
+        
+        # Search Products
+        try:
+            print("🛒 DEBUG: Searching products...")
+            
+            if 'Product' not in globals():
+                print("❌ DEBUG: Product model not found")
+            else:
+                products = Product.query.filter(
+                    db.and_(
+                        Product.is_active == True,
+                        db.or_(
+                            Product.name.ilike(search_pattern),
+                            Product.description.ilike(search_pattern),
+                            Product.category.ilike(search_pattern)
+                        )
+                    )
+                ).limit(5).all()
+                
+                print(f"🛒 DEBUG: Found {len(products)} products")
+                
+                for product in products:
+                    try:
+                        product_results.append({
+                            'id': product.id,
+                            'name': product.name,
+                            'short_description': getattr(product, 'short_description', None) or product.category,
+                            'category': product.category,
+                            'price': float(product.price) if product.price else 0.0,
+                            'brand': getattr(product, 'brand', None),
+                            'image_url': getattr(product, 'image_url', None)
+                        })
+                    except Exception as product_error:
+                        print(f"❌ DEBUG: Error processing product {product.id}: {product_error}")
+                        continue
+                        
+        except Exception as e:
+            print(f"❌ DEBUG: Product search error: {e}")
+        
+        total_results = len(course_results) + len(class_results) + len(product_results)
+        print(f"✅ DEBUG: Returning {total_results} total results")
+        
+        return jsonify({
+            'courses': course_results,
+            'classes': class_results,
+            'products': product_results,
+            'total': total_results,
+            'debug_info': {
+                'query': query,
+                'pattern': search_pattern,
+                'course_count': len(course_results),
+                'class_count': len(class_results),
+                'product_count': len(product_results)
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ DEBUG: Critical search error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': f'Search failed: {str(e)}',
+            'courses': [],
+            'classes': [],
+            'products': [],
+            'debug_info': {
+                'error_type': type(e).__name__,
+                'error_message': str(e)
+            }
+        }), 500
+
+# Also add a simple dummy data endpoint for testing
+@app.route('/api/search-dummy', methods=['POST'])
+def dummy_search():
+    """Returns dummy data to test frontend"""
+    data = request.get_json()
+    query = data.get('query', '') if data else ''
+    
+    return jsonify({
+        'courses': [
+            {
+                'id': 1,
+                'title': f'Arduino Course matching "{query}"',
+                'short_description': 'Learn Arduino programming basics',
+                'category': 'Electronics',
+                'price': 99.99,
+                'image_url': None
+            }
+        ],
+        'classes': [
+            {
+                'id': 1,
+                'name': f'Traffic Light Class for "{query}"',
+                'description': 'Build a traffic light with Arduino',
+                'type': 'individual'
+            }
+        ],
+        'products': [
+            {
+                'id': 1,
+                'name': f'Arduino Kit for "{query}"',
+                'short_description': 'Complete starter kit',
+                'category': 'Kits',
+                'price': 49.99,
+                'brand': 'Arduino',
+                'image_url': None
+            }
+        ],
+        'total': 3
+    })               
 # ========================================
 # STUDENT PROJECT SHOWCASE ROUTES
 # ========================================

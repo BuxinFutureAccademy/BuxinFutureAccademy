@@ -2361,7 +2361,191 @@ def create_robotics_table():
 
 
 
+#SEARCH////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Add this search API route to your app.py file
 
+@app.route('/api/search', methods=['POST'])
+def api_search():
+    """API endpoint for real-time search"""
+    try:
+        data = request.get_json()
+        query = data.get('query', '').strip()
+        
+        if len(query) < 2:
+            return jsonify({
+                'courses': [],
+                'classes': [],
+                'products': []
+            })
+        
+        # Search query pattern
+        search_pattern = f"%{query}%"
+        
+        # Search Courses
+        courses = Course.query.filter(
+            db.and_(
+                Course.is_active == True,
+                db.or_(
+                    Course.title.ilike(search_pattern),
+                    Course.description.ilike(search_pattern),
+                    Course.category.ilike(search_pattern),
+                    Course.short_description.ilike(search_pattern)
+                )
+            )
+        ).limit(5).all()
+        
+        # Search Individual Classes
+        individual_classes = IndividualClass.query.filter(
+            db.or_(
+                IndividualClass.name.ilike(search_pattern),
+                IndividualClass.description.ilike(search_pattern)
+            )
+        ).limit(3).all()
+        
+        # Search Group Classes
+        group_classes = GroupClass.query.filter(
+            db.or_(
+                GroupClass.name.ilike(search_pattern),
+                GroupClass.description.ilike(search_pattern)
+            )
+        ).limit(3).all()
+        
+        # Search Products
+        products = Product.query.filter(
+            db.and_(
+                Product.is_active == True,
+                db.or_(
+                    Product.name.ilike(search_pattern),
+                    Product.description.ilike(search_pattern),
+                    Product.category.ilike(search_pattern),
+                    Product.short_description.ilike(search_pattern),
+                    Product.brand.ilike(search_pattern)
+                )
+            )
+        ).limit(5).all()
+        
+        # Format results
+        course_results = []
+        for course in courses:
+            course_results.append({
+                'id': course.id,
+                'title': course.title,
+                'short_description': course.short_description or course.category,
+                'category': course.category,
+                'price': course.price,
+                'image_url': course.image_url
+            })
+        
+        class_results = []
+        # Add individual classes
+        for cls in individual_classes:
+            class_results.append({
+                'id': cls.id,
+                'name': cls.name,
+                'description': cls.description,
+                'type': 'individual',
+                'price': getattr(cls, 'price', 100)  # Default to 100 if no price field
+            })
+        
+        # Add group classes
+        for cls in group_classes:
+            class_results.append({
+                'id': cls.id,
+                'name': cls.name,
+                'description': cls.description,
+                'type': 'group',
+                'price': getattr(cls, 'price', 1000),  # Default to 1000 if no price field
+                'max_students': cls.max_students
+            })
+        
+        product_results = []
+        for product in products:
+            product_results.append({
+                'id': product.id,
+                'name': product.name,
+                'short_description': product.short_description or product.category,
+                'category': product.category,
+                'price': product.price,
+                'brand': product.brand,
+                'image_url': product.image_url,
+                'in_stock': product.is_in_stock()
+            })
+        
+        return jsonify({
+            'courses': course_results,
+            'classes': class_results,
+            'products': product_results,
+            'total': len(course_results) + len(class_results) + len(product_results)
+        })
+        
+    except Exception as e:
+        print(f"Search API error: {e}")
+        return jsonify({
+            'error': 'Search failed',
+            'courses': [],
+            'classes': [],
+            'products': []
+        }), 500
+
+
+# Optional: Add a full search results page route
+@app.route('/search')
+def search_results():
+    """Full search results page"""
+    query = request.args.get('q', '').strip()
+    
+    if not query:
+        return redirect(url_for('index'))
+    
+    # Perform the same search as API
+    search_pattern = f"%{query}%"
+    
+    courses = Course.query.filter(
+        db.and_(
+            Course.is_active == True,
+            db.or_(
+                Course.title.ilike(search_pattern),
+                Course.description.ilike(search_pattern),
+                Course.category.ilike(search_pattern)
+            )
+        )
+    ).all()
+    
+    individual_classes = IndividualClass.query.filter(
+        db.or_(
+            IndividualClass.name.ilike(search_pattern),
+            IndividualClass.description.ilike(search_pattern)
+        )
+    ).all()
+    
+    group_classes = GroupClass.query.filter(
+        db.or_(
+            GroupClass.name.ilike(search_pattern),
+            GroupClass.description.ilike(search_pattern)
+        )
+    ).all()
+    
+    products = Product.query.filter(
+        db.and_(
+            Product.is_active == True,
+            db.or_(
+                Product.name.ilike(search_pattern),
+                Product.description.ilike(search_pattern),
+                Product.category.ilike(search_pattern)
+            )
+        )
+    ).all()
+    
+    total_results = len(courses) + len(individual_classes) + len(group_classes) + len(products)
+    
+    return render_template('search_results.html',
+                         query=query,
+                         courses=courses,
+                         individual_classes=individual_classes,
+                         group_classes=group_classes,
+                         products=products,
+                         total_results=total_results)
+                         
 # ========================================
 # STUDENT PROJECT SHOWCASE ROUTES
 # ========================================

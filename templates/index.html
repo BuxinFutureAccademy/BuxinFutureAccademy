@@ -55,7 +55,7 @@
             <div class="content-section active" id="featured-section">
                 <!-- Quick Access Cards -->
                 <div class="quick-access-grid">
-                    <a href="{{ url_for('classes') }}" class="quick-card classes-card">
+                    <a href="{{ url_for('admin_dashboard') if current_user.is_authenticated and current_user.is_admin else '#' }}" class="quick-card classes-card">
                         <div class="card-icon">
                             <i class="fas fa-users"></i>
                         </div>
@@ -65,7 +65,7 @@
                         </div>
                     </a>
 
-                    <a href="{{ url_for('courses') }}" class="quick-card courses-card">
+                    <a href="{{ url_for('courses') if url_for('courses') else '#' }}" class="quick-card courses-card">
                         <div class="card-icon">
                             <i class="fas fa-play-circle"></i>
                         </div>
@@ -75,7 +75,7 @@
                         </div>
                     </a>
 
-                    <a href="{{ url_for('shop') }}" class="quick-card shop-card">
+                    <a href="{{ url_for('shop') if url_for('shop') else '#' }}" class="quick-card shop-card">
                         <div class="card-icon">
                             <i class="fas fa-shopping-bag"></i>
                         </div>
@@ -174,7 +174,11 @@
                             <span class="class-type">Personal</span>
                         </div>
                         <div class="class-action">
-                            <a href="{{ url_for('classes') }}" class="btn btn-sm btn-primary">Join</a>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-primary">View</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary">Join</a>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -188,7 +192,11 @@
                             <span class="class-type">Collaborative</span>
                         </div>
                         <div class="class-action">
-                            <a href="{{ url_for('classes') }}" class="btn btn-sm btn-success">Join</a>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-success">View</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-success">Join</a>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -202,7 +210,11 @@
                             <span class="class-type">Practical</span>
                         </div>
                         <div class="class-action">
-                            <a href="{{ url_for('classes') }}" class="btn btn-sm btn-warning">Join</a>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-warning">View</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-warning">Join</a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -226,7 +238,11 @@
                         </div>
                         <div class="course-footer">
                             <span class="course-price">$99</span>
-                            <a href="{{ url_for('courses') }}" class="btn btn-sm btn-primary">Enroll</a>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-primary">View</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary">Enroll</a>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -244,7 +260,11 @@
                         </div>
                         <div class="course-footer">
                             <span class="course-price">$149</span>
-                            <a href="{{ url_for('courses') }}" class="btn btn-sm btn-success">Enroll</a>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-success">View</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-success">Enroll</a>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -262,7 +282,11 @@
                         </div>
                         <div class="course-footer">
                             <span class="course-price">$129</span>
-                            <a href="{{ url_for('courses') }}" class="btn btn-sm btn-warning">Enroll</a>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-warning">View</a>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-sm btn-warning">Enroll</a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -279,7 +303,7 @@
                         <div class="tool-content">
                             <h6>Code Assistant</h6>
                             <p>AI-powered coding help and debugging</p>
-                            <span class="tool-status">Coming Soon</span>
+                            <span class="tool-status coming-soon">Coming Soon</span>
                         </div>
                     </div>
 
@@ -290,7 +314,7 @@
                         <div class="tool-content">
                             <h6>Project Planner</h6>
                             <p>Smart project planning and resource suggestions</p>
-                            <span class="tool-status">Beta</span>
+                            <span class="tool-status beta">Beta</span>
                         </div>
                     </div>
 
@@ -301,7 +325,7 @@
                         <div class="tool-content">
                             <h6>Learning Path</h6>
                             <p>Personalized curriculum recommendations</p>
-                            <span class="tool-status">Active</span>
+                            <span class="tool-status active">Active</span>
                         </div>
                     </div>
 
@@ -312,7 +336,7 @@
                         <div class="tool-content">
                             <h6>Tutor Bot</h6>
                             <p>24/7 AI tutor for instant help</p>
-                            <span class="tool-status">Coming Soon</span>
+                            <span class="tool-status coming-soon">Coming Soon</span>
                         </div>
                     </div>
                 </div>
@@ -375,11 +399,11 @@
             <a href="{{ url_for('robotics_projects') }}" class="fab-action" data-tooltip="Submit Project">
                 <i class="fas fa-lightbulb"></i>
             </a>
-            <a href="{{ url_for('classes') }}" class="fab-action" data-tooltip="Join Class">
-                <i class="fas fa-users"></i>
+            <a href="{{ url_for('student_dashboard') }}" class="fab-action" data-tooltip="Dashboard">
+                <i class="fas fa-tachometer-alt"></i>
             </a>
-            <a href="{{ url_for('courses') }}" class="fab-action" data-tooltip="Browse Courses">
-                <i class="fas fa-graduation-cap"></i>
+            <a href="{{ url_for('admin_dashboard') if current_user.is_admin else url_for('student_dashboard') }}" class="fab-action" data-tooltip="My Account">
+                <i class="fas fa-user"></i>
             </a>
         </div>
     </div>
@@ -387,7 +411,7 @@
 </div>
 
 <style>
-/* Modern Homepage Styles */
+/* All the existing styles remain the same */
 .homepage-container {
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
@@ -927,17 +951,17 @@
     font-weight: 600;
 }
 
-.tool-status:contains("Active") {
+.tool-status.active {
     background: #d4edda;
     color: #155724;
 }
 
-.tool-status:contains("Beta") {
+.tool-status.beta {
     background: #fff3cd;
     color: #856404;
 }
 
-.tool-status:contains("Coming Soon") {
+.tool-status.coming-soon {
     background: #f8d7da;
     color: #721c24;
 }
@@ -1324,6 +1348,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchBtn.innerHTML = '<i class="fas fa-arrow-right"></i>';
                 // Here you would typically redirect to search results
                 console.log('Searching for:', query);
+                // For now, just show an alert
+                alert('Search functionality coming soon! You searched for: ' + query);
             }, 1000);
         }
     }
@@ -1341,13 +1367,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 ripple.remove();
             }, 600);
             
-            // Navigate based on card type
+            // Navigate based on card type - for now just show alert
             if (card.classList.contains('robotics-feature')) {
-                window.location.href = "{{ url_for('courses') }}";
+                alert('Robotics course coming soon!');
             } else if (card.classList.contains('ai-feature')) {
-                window.location.href = "{{ url_for('courses') }}";
+                alert('AI workshop coming soon!');
             } else if (card.classList.contains('ev-feature')) {
-                window.location.href = "{{ url_for('courses') }}";
+                alert('Electric vehicle course coming soon!');
             }
         });
     });
@@ -1411,26 +1437,6 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
-
-// Dynamic greeting based on time
-function updateGreeting() {
-    const hour = new Date().getHours();
-    const heroTitle = document.querySelector('.hero-title');
-    let greeting = 'What will you';
-    
-    if (hour < 12) {
-        greeting = 'What will you';
-    } else if (hour < 17) {
-        greeting = 'What will you';
-    } else {
-        greeting = 'What will you';
-    }
-    
-    // Keep the original title as it's more engaging
-}
-
-// Call updateGreeting on page load
-updateGreeting();
 
 // Add ripple effect CSS
 const style = document.createElement('style');

@@ -734,10 +734,86 @@
     }
 }
 
-/* Loading animations */
-.feature-card {
-    animation: fadeInUp 0.6s ease forwards;
-    animation-delay: calc(var(--delay, 0) * 0.1s);
+/* Container padding for mobile */
+.container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Mobile-first grid system */
+.row.g-4 {
+    --bs-gutter-x: 1rem;
+    --bs-gutter-y: 1rem;
+}
+
+/* Ensure proper spacing on mobile */
+.col-lg-3.col-md-6 {
+    margin-bottom: 1rem;
+}
+
+/* Touch-friendly interactions */
+.feature-card, .news-card, .activity-card {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Optimize button sizes for mobile */
+.btn {
+    min-height: 44px;
+    touch-action: manipulation;
+}
+
+/* Improve text readability on mobile */
+@media (max-width: 576px) {
+    body {
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    .modern-hero {
+        min-height: 45vh;
+        padding: 1.5rem 0;
+    }
+    
+    .greeting-text {
+        font-size: 1.2rem;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+    }
+    
+    .nav-tabs-modern {
+        margin-bottom: 1.5rem;
+    }
+    
+    .search-container {
+        margin-bottom: 2rem;
+    }
+    
+    .features-grid-section {
+        padding: 1.5rem 0;
+    }
+    
+    .whats-new-section {
+        padding: 1.5rem 0;
+    }
+    
+    .recent-activity-section {
+        padding: 1.5rem 0;
+    }
+    
+    .auth-cta-section {
+        padding: 1.5rem 0;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
 }
 </style>
 

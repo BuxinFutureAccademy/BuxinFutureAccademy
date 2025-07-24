@@ -1,53 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Status Bar -->
-<div class="status-bar">
-    <div class="status-left">
-        <span>9:41</span>
-    </div>
-    <div class="status-right">
-        <i class="fas fa-signal"></i>
-        <i class="fas fa-wifi"></i>
-        <div class="battery">
-            <div class="battery-fill"></div>
-        </div>
-    </div>
-</div>
-
 <!-- App Header -->
 <div class="app-header">
-    <div class="header-top">
-        <div class="profile-section">
-            <div class="profile-avatar">
-                {% if current_user.is_authenticated %}
-                    {{ current_user.first_name[0] if current_user.first_name else 'U' }}
-                {% else %}
-                    <i class="fas fa-user"></i>
-                {% endif %}
-            </div>
-            <div class="profile-info">
-                <div class="greeting-text">Good morning</div>
-                <div class="user-name">
-                    {% if current_user.is_authenticated %}
-                        {{ current_user.first_name }}
-                    {% else %}
-                        Welcome back
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div class="header-actions">
-            <button class="header-btn">
-                <i class="fas fa-bell"></i>
-            </button>
-            <button class="header-btn">
-                <i class="fas fa-user-circle"></i>
-            </button>
-        </div>
-    </div>
-    
     <!-- Search Bar -->
     <div class="search-container">
         <div class="search-icon">
@@ -106,25 +61,7 @@
     </div>
 </div>
 
-<!-- Navigation Tabs -->
-<div class="nav-tabs">
-    <button class="nav-tab active" data-tab="home">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-    </button>
-    <button class="nav-tab" data-tab="courses">
-        <i class="fas fa-play"></i>
-        <span>Courses</span>
-    </button>
-    <button class="nav-tab" data-tab="shop">
-        <i class="fas fa-shopping-bag"></i>
-        <span>Shop</span>
-    </button>
-    <button class="nav-tab" data-tab="ai">
-        <i class="fas fa-robot"></i>
-        <span>AI</span>
-    </button>
-</div>
+
 
 <!-- Content Sections -->
 <div class="content-wrapper">
@@ -372,32 +309,9 @@
 </div>
 {% endif %}
 
-<!-- Bottom Navigation -->
-<div class="bottom-nav">
-    <a href="/" class="nav-item active">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-    </a>
-    <a href="/courses" class="nav-item">
-        <i class="fas fa-graduation-cap"></i>
-        <span>Learn</span>
-    </a>
-    <a href="/shop" class="nav-item">
-        <i class="fas fa-shopping-bag"></i>
-        <span>Shop</span>
-    </a>
-    <a href="/profile" class="nav-item">
-        <i class="fas fa-user"></i>
-        <span>Profile</span>
-    </a>
-</div>
 
-<!-- Floating Action Button -->
-<div class="fab">
-    <button class="fab-btn">
-        <i class="fas fa-plus"></i>
-    </button>
-</div>
+
+
 
 <style>
 * {
@@ -412,61 +326,9 @@ body {
     color: #1a202c;
     line-height: 1.6;
     overflow-x: hidden;
-    padding-bottom: 80px;
 }
 
-/* Status Bar */
-.status-bar {
-    background: #000;
-    color: white;
-    padding: 8px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
 
-.status-left {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.status-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.battery {
-    width: 24px;
-    height: 12px;
-    border: 1px solid white;
-    border-radius: 2px;
-    position: relative;
-}
-
-.battery::after {
-    content: '';
-    position: absolute;
-    right: -3px;
-    top: 3px;
-    width: 2px;
-    height: 6px;
-    background: white;
-    border-radius: 0 1px 1px 0;
-}
-
-.battery-fill {
-    background: #4ade80;
-    height: 100%;
-    width: 75%;
-    border-radius: 1px;
-}
 
 /* App Header */
 .app-header {
@@ -475,67 +337,6 @@ body {
     color: white;
     border-radius: 0 0 24px 24px;
     position: relative;
-}
-
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-}
-
-.profile-section {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.profile-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.greeting-text {
-    font-size: 14px;
-    opacity: 0.9;
-    margin-bottom: 2px;
-}
-
-.user-name {
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.header-actions {
-    display: flex;
-    gap: 12px;
-}
-
-.header-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.header-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
 }
 
 /* Search Bar */
@@ -679,40 +480,7 @@ body {
     color: #64748b;
 }
 
-/* Navigation Tabs */
-.nav-tabs {
-    display: flex;
-    background: white;
-    margin: 0 20px 24px;
-    border-radius: 16px;
-    padding: 6px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
 
-.nav-tab {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 12px 8px;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.nav-tab.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-}
-
-.nav-tab i {
-    font-size: 16px;
-}
 
 /* Content Wrapper */
 .content-wrapper {
@@ -1074,73 +842,9 @@ body {
     text-decoration: none;
 }
 
-/* Bottom Navigation */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    display: flex;
-    padding: 12px 0;
-    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-}
 
-.nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    text-decoration: none;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
 
-.nav-item.active {
-    color: #667eea;
-}
 
-.nav-item i {
-    font-size: 20px;
-}
-
-.nav-item:hover {
-    color: #667eea;
-    text-decoration: none;
-}
-
-/* Floating Action Button */
-.fab {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    z-index: 50;
-}
-
-.fab-btn {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    border: none;
-    color: white;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
-    transition: all 0.3s ease;
-}
-
-.fab-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6);
-}
 
 /* Responsive Adjustments */
 @media (max-width: 375px) {
@@ -1183,10 +887,7 @@ body {
         border-color: #334155;
     }
     
-    .nav-tabs, .bottom-nav {
-        background: #1e293b;
-        border-color: #334155;
-    }
+
     
     .search-results {
         background: #1e293b;
@@ -1244,41 +945,11 @@ html {
     transform: scale(0.98);
 }
 
-.fab-btn:active {
-    transform: scale(0.95);
-}
 
-/* Safe area for devices with notches */
-@supports (padding-top: env(safe-area-inset-top)) {
-    .app-header {
-        padding-top: calc(20px + env(safe-area-inset-top));
-    }
-    
-    .bottom-nav {
-        padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    }
-}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching functionality
-    const navTabs = document.querySelectorAll('.nav-tab');
-    
-    navTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Remove active class from all tabs
-            navTabs.forEach(t => t.classList.remove('active'));
-            // Add active class to clicked tab
-            this.classList.add('active');
-            
-            const tabType = this.getAttribute('data-tab');
-            console.log('Switched to tab:', tabType);
-            
-            // Here you can add logic to show/hide different content based on tab
-            // For example, filter content or navigate to different sections
-        });
-    });
     
     // Search functionality
     const searchInput = document.querySelector('.search-box');
@@ -1457,39 +1128,6 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.style.display = 'block';
     }
     
-    // Bottom navigation functionality
-    const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
-    
-    bottomNavItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all items
-            bottomNavItems.forEach(navItem => navItem.classList.remove('active'));
-            // Add active class to clicked item
-            this.classList.add('active');
-            
-            // Handle navigation
-            const href = this.getAttribute('href');
-            if (href && href !== '#') {
-                // You can implement client-side routing here
-                // or let the default navigation happen
-                window.location.href = href;
-            }
-        });
-    });
-    
-    // FAB functionality
-    const fabBtn = document.querySelector('.fab-btn');
-    
-    fabBtn.addEventListener('click', function() {
-        // Add your FAB action here
-        console.log('FAB clicked');
-        
-        // Example: Show a modal or navigate to create new content
-        // You can implement a slide-up menu or modal here
-    });
-    
     // Smooth scroll for horizontal content
     const horizontalScrolls = document.querySelectorAll('.horizontal-scroll');
     
@@ -1531,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Apply haptic feedback to interactive elements
-    document.querySelectorAll('.action-card, .option-item, .course-card, .fab-btn, .nav-item').forEach(addHapticFeedback);
+    document.querySelectorAll('.action-card, .option-item, .course-card').forEach(addHapticFeedback);
     
     // Intersection Observer for animations
     const observerOptions = {

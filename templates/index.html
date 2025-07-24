@@ -823,6 +823,197 @@
         margin-bottom: 1rem;
     }
 }
+
+/* Existing styles... keep all your current styles and ADD these: */
+
+/* Search Results Dropdown Styles */
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    margin-top: 10px;
+    max-height: 500px;
+    overflow-y: auto;
+    z-index: 1000;
+    border: 1px solid #e9ecef;
+}
+
+.search-loading {
+    padding: 30px;
+    text-align: center;
+    color: #667eea;
+    font-size: 1rem;
+}
+
+.search-loading i {
+    margin-right: 10px;
+}
+
+.search-content {
+    padding: 0;
+}
+
+.search-section {
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.search-section:last-child {
+    border-bottom: none;
+}
+
+.search-section-title {
+    padding: 15px 20px 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.search-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid #f1f3f4;
+    transition: all 0.2s ease;
+    gap: 15px;
+}
+
+.search-item:last-child {
+    border-bottom: none;
+}
+
+.search-item:hover {
+    background: #f8f9fa;
+    text-decoration: none;
+    color: inherit;
+}
+
+.search-item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.search-item-icon.course {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+.search-item-icon.class {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.search-item-icon.product {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+.search-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-item-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-item-subtitle {
+    font-size: 0.8rem;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-item-price {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+.no-results {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+}
+
+.no-results i {
+    font-size: 2rem;
+    color: #ccc;
+    margin-bottom: 15px;
+}
+
+.no-results p {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.no-results small {
+    color: #999;
+}
+
+/* Make search container relative for dropdown positioning */
+.search-container {
+    position: relative;
+}
+
+/* Mobile styles for search results */
+@media (max-width: 768px) {
+    .search-results {
+        margin-left: -20px;
+        margin-right: -20px;
+        border-radius: 15px;
+        max-height: 400px;
+    }
+    
+    .search-item {
+        padding: 12px 15px;
+        gap: 12px;
+    }
+    
+    .search-item-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+    
+    .search-item-title {
+        font-size: 0.9rem;
+    }
+    
+    .search-item-subtitle {
+        font-size: 0.75rem;
+    }
+    
+    .search-item-price {
+        font-size: 0.85rem;
+    }
+    
+    .search-section-title {
+        padding: 12px 15px 8px;
+        font-size: 0.85rem;
+    }
+}
 </style>
 
 <script>
@@ -832,12 +1023,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     tabButtons.forEach(button => {
         button.addEventListener('click', function() {
-            // Remove active class from all buttons
             tabButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active class to clicked button
             this.classList.add('active');
             
-            // Here you can add logic to show/hide different content based on tab
             const tabType = this.getAttribute('data-tab');
             console.log('Switched to tab:', tabType);
         });
@@ -855,6 +1043,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Perform search function
     window.performSearch = function() {
         const query = searchInput.value.trim();
+        console.log('🔍 Performing search for:', query);
+        
         if (query.length < 2) {
             hideSearchResults();
             return;
@@ -871,15 +1061,22 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({ query: query })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('📡 Search response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('📊 Search data received:', data);
             hideSearchLoading();
             displaySearchResults(data);
         })
         .catch(error => {
+            console.error('❌ Search error:', error);
             hideSearchLoading();
-            console.error('Search error:', error);
-            displayNoResults();
+            displayErrorResults(error);
         });
     };
     
@@ -899,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         searchTimeout = setTimeout(() => {
             performSearch();
-        }, 300); // Debounce search
+        }, 300);
     });
     
     // Handle search button click
@@ -924,21 +1121,33 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function showSearchLoading() {
+        console.log('🔄 Showing search loading...');
         searchResults.style.display = 'block';
         searchLoading.style.display = 'block';
         searchContent.style.display = 'none';
     }
     
     function hideSearchLoading() {
+        console.log('✅ Hiding search loading...');
         searchLoading.style.display = 'none';
         searchContent.style.display = 'block';
     }
     
     function hideSearchResults() {
+        console.log('❌ Hiding search results...');
         searchResults.style.display = 'none';
     }
     
+    // Format price function
+    function formatPrice(price) {
+        if (!price || price === 0) return 'Free';
+        if (typeof price === 'string' && price.includes('$')) return price;
+        if (typeof price === 'string' && price.includes('D')) return price;
+        return `$${parseFloat(price).toFixed(2)}`;
+    }
+    
     function displaySearchResults(data) {
+        console.log('🎨 Displaying search results:', data);
         let html = '';
         
         // Display Courses
@@ -958,9 +1167,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="search-item-content">
                             <div class="search-item-title">${course.title}</div>
-                            <div class="search-item-subtitle">${course.short_description || course.category}</div>
+                            <div class="search-item-subtitle">${course.short_description || course.category || 'Course'}</div>
                         </div>
-                        <div class="search-item-price">${course.price}</div>
+                        <div class="search-item-price">${formatPrice(course.price)}</div>
                     </a>
                 `;
             });
@@ -977,6 +1186,9 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             data.classes.forEach(cls => {
+                const classType = cls.type === 'individual' ? 'Individual' : 'Group';
+                const classPrice = cls.type === 'individual' ? '$100' : 'D1000';
+                
                 html += `
                     <a href="/class/${cls.type}/${cls.id}" class="search-item">
                         <div class="search-item-icon class">
@@ -984,9 +1196,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="search-item-content">
                             <div class="search-item-title">${cls.name}</div>
-                            <div class="search-item-subtitle">${cls.type === 'individual' ? 'Individual' : 'Group'} Class</div>
+                            <div class="search-item-subtitle">${classType} Class</div>
                         </div>
-                        <div class="search-item-price">${cls.type === 'individual' ? '$100' : 'D1000'}</div>
+                        <div class="search-item-price">${classPrice}</div>
                     </a>
                 `;
             });
@@ -1010,9 +1222,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="search-item-content">
                             <div class="search-item-title">${product.name}</div>
-                            <div class="search-item-subtitle">${product.short_description || product.category}</div>
+                            <div class="search-item-subtitle">${product.short_description || product.category || 'Product'}</div>
                         </div>
-                        <div class="search-item-price">${product.price}</div>
+                        <div class="search-item-price">${formatPrice(product.price)}</div>
                     </a>
                 `;
             });
@@ -1024,11 +1236,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        console.log('✅ Setting search content HTML');
         searchContent.innerHTML = html;
         searchResults.style.display = 'block';
     }
     
     function displayNoResults() {
+        console.log('📭 Displaying no results');
         searchContent.innerHTML = `
             <div class="no-results">
                 <i class="fas fa-search"></i>
@@ -1039,21 +1253,25 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.style.display = 'block';
     }
     
+    function displayErrorResults(error) {
+        console.log('💥 Displaying error results:', error);
+        searchContent.innerHTML = `
+            <div class="no-results">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Search temporarily unavailable</p>
+                <small>Please try again in a moment</small>
+            </div>
+        `;
+        searchResults.style.display = 'block';
+    }
+    
     // Add staggered animation delays to feature cards
     const featureCards = document.querySelectorAll('.feature-card');
     featureCards.forEach((card, index) => {
         card.style.setProperty('--delay', index);
     });
-    
-    // Activity card menu functionality
-    const activityMenus = document.querySelectorAll('.activity-menu');
-    activityMenus.forEach(menu => {
-        menu.addEventListener('click', function(e) {
-            e.stopPropagation();
-            // Add dropdown menu logic here
-            console.log('Activity menu clicked');
-        });
-    });
+});
+</script>
 });
 </script>
 {% endblock %}

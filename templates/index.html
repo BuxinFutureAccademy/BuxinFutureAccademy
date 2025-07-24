@@ -1,373 +1,409 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Hero Section with Image Slider -->
-<div class="hero-section">
-    <div class="hero-content">
+<div class="homepage-container">
+    <!-- Hero Header -->
+    <div class="hero-header">
         <div class="container">
-            <div class="row align-items-center">
-                <!-- Left side - Text content -->
-                <div class="col-lg-6 col-md-12 text-center text-lg-start">
-                    <div class="hero-icon mb-3">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <h1 class="hero-title mb-3">
-                        Welcome to <span class="text-gradient">BuXin Future Academy</span>
-                    </h1>
-                    <p class="hero-subtitle mb-4">
-                        Empowering the next generation with cutting-edge <strong>Robotics</strong>, <strong>AI</strong>, 
-                        <strong>Coding</strong>, and <strong>Electric Vehicle Technology</strong>
-                    </p>
-                    
-                    {% if not current_user.is_authenticated %}
-                        <div class="hero-buttons">
-                            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg mb-2 me-md-3">
-                                <i class="fas fa-rocket me-2"></i>Start Journey
-                            </a>
-                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg mb-2">
-                                <i class="fas fa-sign-in-alt me-2"></i>Login
-                            </a>
-                        </div>
-                    {% else %}
-                        <div class="welcome-back">
-                            <h4 class="text-light mb-3">Welcome back, {{ current_user.first_name }}!</h4>
-                            <a href="{{ url_for('student_dashboard') if current_user.is_student else url_for('admin_dashboard') }}" class="btn btn-success btn-lg">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                            </a>
-                        </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Right side - Image Slider -->
-                <div class="col-lg-6 col-md-12 text-center">
-                    <div class="hero-slider">
-                        <div class="slider-container">
-                            <!-- Slide 1 -->
-                            <div class="slide active">
-                                <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751139805/with-a-bit-of-3d-printing-and-an-arduino-you-can-technovation-via-instructables-210706-removebg-preview_uvihf6.png" alt="Robotics Technology" class="img-fluid hero-img">
-                            </div>
-                            <!-- Slide 2 -->
-                            <div class="slide">
-                                <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751140033/freepik__the-style-is-candid-image-photography-with-natural__54640_i1t9xx.png" alt="AI Technology" class="img-fluid hero-img">
-                            </div>
-                            <!-- Slide 3 -->
-                            <div class="slide">
-                                <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751139805/2022-08-16T02_30_46.690Z-%E6%9C%AA%E6%A0%87%E9%A2%98-18-removebg-preview_eeatgn.png" alt="Electric Vehicle Technology" class="img-fluid hero-img">
-                            </div>
-                            <!-- Slide 4 -->
-                            <div class="slide">
-                                <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751125693/Obstacle-Avoiding-Robot-Car-Using-An-Arduino-Uno-removebg-preview_qhz2gl.png" alt="Coding Technology" class="img-fluid hero-img">
-                            </div>
-                        </div>
-                        
-                        <!-- Navigation arrows -->
-                        <button class="slider-btn prev-btn" onclick="changeSlide(-1)">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <button class="slider-btn next-btn" onclick="changeSlide(1)">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                        
-                        <!-- Dots indicator -->
-                        <div class="slider-dots">
-                            <span class="dot active" onclick="currentSlide(1)"></span>
-                            <span class="dot" onclick="currentSlide(2)"></span>
-                            <span class="dot" onclick="currentSlide(3)"></span>
-                            <span class="dot" onclick="currentSlide(4)"></span>
-                        </div>
-                    </div>
+            <div class="text-center">
+                <h1 class="hero-title">What will you <span class="text-gradient">learn today?</span></h1>
+                <p class="hero-subtitle">Explore robotics, AI, coding, and electric vehicles</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation Tabs -->
+    <div class="quick-nav-section">
+        <div class="container">
+            <div class="nav-pills-container">
+                <button class="nav-pill active" data-section="featured">
+                    <i class="fas fa-star me-2"></i>Featured
+                </button>
+                <button class="nav-pill" data-section="classes">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>Classes
+                </button>
+                <button class="nav-pill" data-section="courses">
+                    <i class="fas fa-graduation-cap me-2"></i>Courses
+                </button>
+                <button class="nav-pill" data-section="ai">
+                    <i class="fas fa-robot me-2"></i>AI Tools
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+        <div class="container">
+            <div class="search-wrapper">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" placeholder="Search classes, courses, projects..." class="search-input">
+                    <button class="search-btn">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Stats Section -->
-<div class="stats-section py-4">
-    <div class="container">
-        <div class="row text-center">
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-item">
-                    <div class="stat-number text-primary" data-count="500">0</div>
-                    <div class="stat-label">Students</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-item">
-                    <div class="stat-number text-success" data-count="50">0</div>
-                    <div class="stat-label">Projects</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-item">
-                    <div class="stat-number text-warning" data-count="15">0</div>
-                    <div class="stat-label">Instructors</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-item">
-                    <div class="stat-number text-info" data-count="95">0</div>
-                    <div class="stat-label">Success %</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    <!-- Main Content Sections -->
+    <div class="content-sections">
+        <div class="container">
+            
+            <!-- Featured Section -->
+            <div class="content-section active" id="featured-section">
+                <!-- Quick Access Cards -->
+                <div class="quick-access-grid">
+                    <a href="{{ url_for('classes') }}" class="quick-card classes-card">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-content">
+                            <h6>Classes</h6>
+                            <small>Join group or individual sessions</small>
+                        </div>
+                    </a>
 
-<!-- Classes Section -->
-<div class="classes-section py-4">
-    <div class="container">
-        <div class="section-header text-center mb-4">
-            <h2 class="section-title">Our <span class="text-gradient">Popular Classes</span></h2>
-            <p class="section-subtitle">Discover the future of technology</p>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <div class="class-card robotics">
-                    <div class="class-icon">
-                        <i class="fas fa-cogs"></i>
-                    </div>
-                    <div class="class-content">
-                        <h5 class="class-title">Robotics & Electronics</h5>
-                        <p class="class-description">Build real robots using Arduino and Raspberry Pi. Learn sensors and mechanical design.</p>
-                        <div class="class-features">
-                            <span class="feature-tag">Arduino</span>
-                            <span class="feature-tag">Sensors</span>
+                    <a href="{{ url_for('courses') }}" class="quick-card courses-card">
+                        <div class="card-icon">
+                            <i class="fas fa-play-circle"></i>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <div class="class-card coding">
-                    <div class="class-icon">
-                        <i class="fas fa-code"></i>
-                    </div>
-                    <div class="class-content">
-                        <h5 class="class-title">Coding & AI</h5>
-                        <p class="class-description">Learn Python, C++, and explore machine learning and artificial intelligence basics.</p>
-                        <div class="class-features">
-                            <span class="feature-tag">Python</span>
-                            <span class="feature-tag">AI</span>
+                        <div class="card-content">
+                            <h6>Courses</h6>
+                            <small>Self-paced learning modules</small>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <div class="class-card autonomous">
-                    <div class="class-icon">
-                        <i class="fas fa-car"></i>
-                    </div>
-                    <div class="class-content">
-                        <h5 class="class-title">Self-Driving Cars</h5>
-                        <p class="class-description">Build autonomous vehicles with advanced sensors, cameras, and AI algorithms.</p>
-                        <div class="class-features">
-                            <span class="feature-tag">Computer Vision</span>
-                            <span class="feature-tag">AI Nav</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <div class="class-card electric">
-                    <div class="class-icon">
-                        <i class="fas fa-bolt"></i>
-                    </div>
-                    <div class="class-content">
-                        <h5 class="class-title">Electric Vehicles</h5>
-                        <p class="class-description">Design electric scooters, mini tractors, solar panels, and sustainable tech solutions.</p>
-                        <div class="class-features">
-                            <span class="feature-tag">Battery Tech</span>
-                            <span class="feature-tag">Solar</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+                    </a>
 
-<!-- Project Submission Section -->
-<div class="project-section py-4">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="project-card">
-                    <div class="project-header text-center mb-4">
-                        <div class="project-icon mb-3">
+                    <a href="{{ url_for('shop') }}" class="quick-card shop-card">
+                        <div class="card-icon">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <div class="card-content">
+                            <h6>Shop</h6>
+                            <small>Robotics kits & components</small>
+                        </div>
+                    </a>
+
+                    <a href="{{ url_for('robotics_projects') }}" class="quick-card ai-card">
+                        <div class="card-icon">
                             <i class="fas fa-lightbulb"></i>
                         </div>
-                        <h2 class="project-title">Got a <span class="text-gradient">Robotics Idea?</span></h2>
-                        <p class="project-subtitle">Share your project and get expert mentorship!</p>
-                    </div>
-                    
+                        <div class="card-content">
+                            <h6>Projects</h6>
+                            <small>Submit your robotics ideas</small>
+                        </div>
+                    </a>
+
+                    <a href="#" class="quick-card ai-tools-card">
+                        <div class="card-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="card-content">
+                            <h6>AI Tools</h6>
+                            <small>Smart coding assistants</small>
+                        </div>
+                    </a>
+
+                    <a href="{{ url_for('student_dashboard') if current_user.is_authenticated else url_for('register') }}" class="quick-card dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="card-content">
+                            <h6>Dashboard</h6>
+                            <small>Your learning progress</small>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- What's New Section -->
+                <div class="whats-new-section">
+                    <h5 class="section-title">What's new</h5>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-user-tie"></i>
-                                <div>
-                                    <h6>Expert Guidance</h6>
-                                    <small>Get advice from robotics professionals</small>
+                        <div class="col-md-4 mb-3">
+                            <div class="feature-card robotics-feature">
+                                <div class="feature-content">
+                                    <h6>Build your first robot</h6>
+                                    <p>Complete Arduino robotics course for beginners</p>
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                                <div class="feature-image">
+                                    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751125693/Obstacle-Avoiding-Robot-Car-Using-An-Arduino-Uno-removebg-preview_qhz2gl.png" alt="Arduino Robot">
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-tools"></i>
-                                <div>
-                                    <h6>Component Help</h6>
-                                    <small>Choose the right parts for your project</small>
+                        <div class="col-md-4 mb-3">
+                            <div class="feature-card ai-feature">
+                                <div class="feature-content">
+                                    <h6>AI Programming Workshop</h6>
+                                    <p>Learn Python and machine learning fundamentals</p>
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                                <div class="feature-image">
+                                    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751140033/freepik__the-style-is-candid-image-photography-with-natural__54640_i1t9xx.png" alt="AI Technology">
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-code"></i>
-                                <div>
-                                    <h6>Programming Support</h6>
-                                    <small>Get help with coding and debugging</small>
+                        <div class="col-md-4 mb-3">
+                            <div class="feature-card ev-feature">
+                                <div class="feature-content">
+                                    <h6>Electric Vehicle Design</h6>
+                                    <p>Build sustainable transportation solutions</p>
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                                <div class="feature-image">
+                                    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1751139805/2022-08-16T02_30_46.690Z-%E6%9C%AA%E6%A0%87%E9%A2%98-18-removebg-preview_eeatgn.png" alt="Electric Vehicle">
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-video"></i>
-                                <div>
-                                    <h6>Feature Opportunity</h6>
-                                    <small>Your project could be on our YouTube channel</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center mt-4">
-                        <a href="{{ url_for('robotics_projects') }}" class="btn btn-gradient btn-lg">
-                            <i class="fas fa-rocket me-2"></i>Submit Your Project Idea
-                        </a>
-                        <div class="mt-2">
-                            <small class="text-muted">Free mentorship • All skill levels welcome</small>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Features Section -->
-<div class="features-section py-4">
-    <div class="container">
-        <h2 class="text-center mb-4">Why Choose <span class="text-gradient">BuXin Academy?</span></h2>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-tools"></i>
+            <!-- Classes Section -->
+            <div class="content-section" id="classes-section">
+                <h5 class="section-title">Available Classes</h5>
+                <div class="classes-grid">
+                    <div class="class-item individual-class">
+                        <div class="class-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="class-info">
+                            <h6>Individual Classes</h6>
+                            <p>One-on-one personalized learning sessions</p>
+                            <span class="class-type">Personal</span>
+                        </div>
+                        <div class="class-action">
+                            <a href="{{ url_for('classes') }}" class="btn btn-sm btn-primary">Join</a>
+                        </div>
                     </div>
-                    <div class="feature-content">
-                        <h6>Hands-On Learning</h6>
-                        <p>Build real projects with actual hardware</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="feature-content">
-                        <h6>Expert Instructors</h6>
-                        <p>Learn from industry professionals</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-certificate"></i>
-                    </div>
-                    <div class="feature-content">
-                        <h6>Industry Certification</h6>
-                        <p>Earn recognized certificates</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-laptop-code"></i>
-                    </div>
-                    <div class="feature-content">
-                        <h6>Modern Equipment</h6>
-                        <p>Access to latest technology</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- CTA Section -->
-{% if not current_user.is_authenticated %}
-<div class="cta-section py-4">
-    <div class="container">
-        <div class="text-center mb-4">
-            <h2 class="cta-title">Ready to Shape the Future?</h2>
-            <p class="cta-subtitle">Join thousands building tomorrow's technology</p>
-        </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <div class="cta-card">
-                    <i class="fas fa-user-plus fa-2x mb-3"></i>
-                    <h5>New Student?</h5>
-                    <p>Create an account to join our innovative classes</p>
-                    <a href="{{ url_for('register') }}" class="btn btn-success">
-                        <i class="fas fa-rocket me-2"></i>Register Now
-                    </a>
+                    <div class="class-item group-class">
+                        <div class="class-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="class-info">
+                            <h6>Group Classes</h6>
+                            <p>Collaborative learning with peers</p>
+                            <span class="class-type">Collaborative</span>
+                        </div>
+                        <div class="class-action">
+                            <a href="{{ url_for('classes') }}" class="btn btn-sm btn-success">Join</a>
+                        </div>
+                    </div>
+
+                    <div class="class-item workshop-class">
+                        <div class="class-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="class-info">
+                            <h6>Workshops</h6>
+                            <p>Hands-on project-based learning</p>
+                            <span class="class-type">Practical</span>
+                        </div>
+                        <div class="class-action">
+                            <a href="{{ url_for('classes') }}" class="btn btn-sm btn-warning">Join</a>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6 mb-3">
-                <div class="cta-card">
-                    <i class="fas fa-sign-in-alt fa-2x mb-3"></i>
-                    <h5>Already Registered?</h5>
-                    <p>Sign in to access your dashboard and courses</p>
-                    <a href="{{ url_for('login') }}" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt me-2"></i>Login
-                    </a>
+
+            <!-- Courses Section -->
+            <div class="content-section" id="courses-section">
+                <h5 class="section-title">Featured Courses</h5>
+                <div class="courses-grid">
+                    <div class="course-card">
+                        <div class="course-header robotics-course">
+                            <i class="fas fa-cogs"></i>
+                            <h6>Robotics Fundamentals</h6>
+                        </div>
+                        <div class="course-body">
+                            <p>Learn Arduino programming, sensors, and mechanical design</p>
+                            <div class="course-stats">
+                                <span><i class="fas fa-clock"></i> 8 weeks</span>
+                                <span><i class="fas fa-users"></i> 150+ students</span>
+                            </div>
+                        </div>
+                        <div class="course-footer">
+                            <span class="course-price">$99</span>
+                            <a href="{{ url_for('courses') }}" class="btn btn-sm btn-primary">Enroll</a>
+                        </div>
+                    </div>
+
+                    <div class="course-card">
+                        <div class="course-header ai-course">
+                            <i class="fas fa-brain"></i>
+                            <h6>AI & Machine Learning</h6>
+                        </div>
+                        <div class="course-body">
+                            <p>Python programming and ML algorithms for beginners</p>
+                            <div class="course-stats">
+                                <span><i class="fas fa-clock"></i> 10 weeks</span>
+                                <span><i class="fas fa-users"></i> 200+ students</span>
+                            </div>
+                        </div>
+                        <div class="course-footer">
+                            <span class="course-price">$149</span>
+                            <a href="{{ url_for('courses') }}" class="btn btn-sm btn-success">Enroll</a>
+                        </div>
+                    </div>
+
+                    <div class="course-card">
+                        <div class="course-header ev-course">
+                            <i class="fas fa-bolt"></i>
+                            <h6>Electric Vehicles</h6>
+                        </div>
+                        <div class="course-body">
+                            <p>Design and build sustainable transportation solutions</p>
+                            <div class="course-stats">
+                                <span><i class="fas fa-clock"></i> 6 weeks</span>
+                                <span><i class="fas fa-users"></i> 80+ students</span>
+                            </div>
+                        </div>
+                        <div class="course-footer">
+                            <span class="course-price">$129</span>
+                            <a href="{{ url_for('courses') }}" class="btn btn-sm btn-warning">Enroll</a>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- AI Tools Section -->
+            <div class="content-section" id="ai-section">
+                <h5 class="section-title">AI-Powered Tools</h5>
+                <div class="ai-tools-grid">
+                    <div class="ai-tool-card">
+                        <div class="tool-icon code-assistant">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h6>Code Assistant</h6>
+                            <p>AI-powered coding help and debugging</p>
+                            <span class="tool-status">Coming Soon</span>
+                        </div>
+                    </div>
+
+                    <div class="ai-tool-card">
+                        <div class="tool-icon project-planner">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h6>Project Planner</h6>
+                            <p>Smart project planning and resource suggestions</p>
+                            <span class="tool-status">Beta</span>
+                        </div>
+                    </div>
+
+                    <div class="ai-tool-card">
+                        <div class="tool-icon learning-path">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h6>Learning Path</h6>
+                            <p>Personalized curriculum recommendations</p>
+                            <span class="tool-status">Active</span>
+                        </div>
+                    </div>
+
+                    <div class="ai-tool-card">
+                        <div class="tool-icon tutor-bot">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h6>Tutor Bot</h6>
+                            <p>24/7 AI tutor for instant help</p>
+                            <span class="tool-status">Coming Soon</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            {% if current_user.is_authenticated %}
+            <div class="recent-activity-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="section-title mb-0">Your Recent Activity</h5>
+                    <a href="{{ url_for('student_dashboard') }}" class="text-link">See all</a>
+                </div>
+                
+                <div class="activity-cards">
+                    <div class="activity-card">
+                        <div class="activity-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>Continue Learning</h6>
+                            <p>Arduino Basics - Lesson 3</p>
+                            <small class="text-muted">2 days ago</small>
+                        </div>
+                    </div>
+
+                    <div class="activity-card">
+                        <div class="activity-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>Project Submission</h6>
+                            <p>Robot Arm Design</p>
+                            <small class="text-muted">5 days ago</small>
+                        </div>
+                    </div>
+
+                    <div class="activity-card">
+                        <div class="activity-icon">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>Achievement Unlocked</h6>
+                            <p>First Robot Builder</p>
+                            <small class="text-muted">1 week ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Quick Actions FAB -->
+    {% if current_user.is_authenticated %}
+    <div class="fab-container">
+        <button class="fab-main" onclick="toggleFab()">
+            <i class="fas fa-plus"></i>
+        </button>
+        <div class="fab-menu">
+            <a href="{{ url_for('robotics_projects') }}" class="fab-action" data-tooltip="Submit Project">
+                <i class="fas fa-lightbulb"></i>
+            </a>
+            <a href="{{ url_for('classes') }}" class="fab-action" data-tooltip="Join Class">
+                <i class="fas fa-users"></i>
+            </a>
+            <a href="{{ url_for('courses') }}" class="fab-action" data-tooltip="Browse Courses">
+                <i class="fas fa-graduation-cap"></i>
+            </a>
+        </div>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
 
 <style>
-/* Mobile-First Responsive Design */
-.hero-section {
+/* Modern Homepage Styles */
+.homepage-container {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding-bottom: 2rem;
+}
+
+.hero-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 80vh;
-    display: flex;
-    align-items: center;
     color: white;
-    padding: 3rem 0;
-}
-
-.hero-content {
-    width: 100%;
-}
-
-.hero-icon {
-    font-size: 3rem;
-    animation: float 3s ease-in-out infinite;
+    padding: 3rem 0 2rem;
 }
 
 .hero-title {
     font-size: 2rem;
     font-weight: 700;
-    line-height: 1.2;
+    margin-bottom: 0.5rem;
 }
 
 .text-gradient {
@@ -380,146 +416,823 @@
 .hero-subtitle {
     font-size: 1rem;
     opacity: 0.9;
-    line-height: 1.4;
+    margin: 0;
 }
 
-.hero-buttons .btn {
-    border-radius: 25px;
-    font-weight: 600;
+.quick-nav-section {
+    background: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-pills-container {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0.25rem;
+}
+
+.nav-pills-container::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-pill {
+    background: #f8f9fa;
+    border: none;
+    border-radius: 20px;
     padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    font-size: 0.9rem;
 }
 
-/* Hero Slider Styles */
-.hero-slider {
-    position: relative;
-    max-width: 100%;
+.nav-pill.active,
+.nav-pill:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.search-section {
+    padding: 1.5rem 0;
+}
+
+.search-wrapper {
+    max-width: 600px;
     margin: 0 auto;
 }
 
-.slider-container {
+.search-box {
     position: relative;
-    overflow: hidden;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    animation: float 6s ease-in-out infinite;
+    background: white;
+    border-radius: 25px;
+    padding: 0.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
 }
 
-.slide {
+.search-icon {
+    color: #6c757d;
+    margin-left: 1rem;
+    font-size: 1.1rem;
+}
+
+.search-input {
+    border: none;
+    outline: none;
+    flex: 1;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    background: transparent;
+}
+
+.search-input::placeholder {
+    color: #adb5bd;
+}
+
+.search-btn {
+    background: #667eea;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+    background: #5a6fd8;
+    transform: scale(1.05);
+}
+
+.content-sections {
+    padding: 1rem 0 2rem;
+}
+
+.content-section {
     display: none;
-    position: relative;
-    animation: slideIn 0.5s ease-in-out;
 }
 
-.slide.active {
+.content-section.active {
     display: block;
 }
 
-.slide img {
-    width: 100%;
-    height: auto;
-    max-height: 500px;
-    object-fit: cover;
-    border-radius: 20px;
-}
-
-/* Navigation buttons */
-.slider-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: white;
-    padding: 15px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1.2rem;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-    z-index: 10;
-}
-
-.slider-btn:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-50%) scale(1.1);
-}
-
-.prev-btn {
-    left: 15px;
-}
-
-.next-btn {
-    right: 15px;
-}
-
-/* Dots indicator */
-.slider-dots {
-    text-align: center;
-    margin-top: 20px;
-}
-
-.dot {
-    height: 12px;
-    width: 12px;
-    margin: 0 5px;
-    background-color: rgba(255,255,255,0.4);
-    border-radius: 50%;
-    display: inline-block;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.dot.active,
-.dot:hover {
-    background-color: rgba(255,255,255,0.9);
-    transform: scale(1.2);
-}
-
-/* Slide animations */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes float {
-    0%, 100% { 
-        transform: translateY(0px); 
-    }
-    50% { 
-        transform: translateY(-10px); 
-    }
-}
-
-/* Stats Section */
-.stats-section {
-    background: #f8f9fa;
-}
-
-.stat-item {
-    padding: 1rem 0.5rem;
-}
-
-.stat-number {
-    font-size: 2rem;
+.section-title {
+    font-size: 1.25rem;
     font-weight: 700;
-    margin-bottom: 0.25rem;
-    opacity: 0;
-    animation: fadeInUp 1s ease forwards;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
 }
 
-.stat-label {
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.quick-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    text-align: center;
+    border: 2px solid transparent;
+}
+
+.quick-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    color: inherit;
+    text-decoration: none;
+}
+
+.quick-card.classes-card:hover {
+    border-color: #667eea;
+}
+
+.quick-card.courses-card:hover {
+    border-color: #28a745;
+}
+
+.quick-card.shop-card:hover {
+    border-color: #ffc107;
+}
+
+.quick-card.ai-card:hover {
+    border-color: #17a2b8;
+}
+
+.quick-card.ai-tools-card:hover {
+    border-color: #6f42c1;
+}
+
+.quick-card.dashboard-card:hover {
+    border-color: #fd7e14;
+}
+
+.card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.classes-card .card-icon {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.courses-card .card-icon {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.shop-card .card-icon {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.ai-card .card-icon,
+.ai-tools-card .card-icon {
+    background: linear-gradient(135deg, #6f42c1, #9c27b0);
+}
+
+.dashboard-card .card-icon {
+    background: linear-gradient(135deg, #fd7e14, #f56565);
+}
+
+.card-content h6 {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
     font-size: 0.9rem;
+}
+
+.card-content small {
+    color: #6c757d;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.whats-new-section {
+    margin-bottom: 2rem;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.robotics-feature {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.ai-feature {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+}
+
+.ev-feature {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: white;
+}
+
+.feature-content {
+    position: relative;
+    z-index: 2;
+}
+
+.feature-content h6 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.feature-content p {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+}
+
+.feature-content i {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.feature-image {
+    position: absolute;
+    top: 0;
+    right: -20px;
+    bottom: 0;
+    width: 120px;
+    opacity: 0.3;
+    z-index: 1;
+}
+
+.feature-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.classes-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.class-item {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.class-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.class-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.individual-class .class-icon {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.group-class .class-icon {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.workshop-class .class-icon {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.class-info {
+    flex: 1;
+}
+
+.class-info h6 {
+    margin: 0 0 0.25rem 0;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.class-info p {
+    margin: 0 0 0.5rem 0;
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+.class-type {
+    background: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
     color: #6c757d;
     font-weight: 500;
 }
 
-@keyframes fadeInUp {
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.course-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.course-header {
+    padding: 1.5rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.robotics-course {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.ai-course {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+.ev-course {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+.course-header i {
+    font-size: 1.5rem;
+}
+
+.course-header h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.course-body {
+    padding: 1.5rem;
+}
+
+.course-body p {
+    color: #6c757d;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.course-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.course-stats span {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.course-stats i {
+    margin-right: 0.25rem;
+}
+
+.course-footer {
+    padding: 0 1.5rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.course-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.ai-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.ai-tool-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.ai-tool-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.tool-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.code-assistant {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.project-planner {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+.learning-path {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+.tutor-bot {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+}
+
+.tool-content h6 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.tool-content p {
+    color: #6c757d;
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+}
+
+.tool-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.tool-status:contains("Active") {
+    background: #d4edda;
+    color: #155724;
+}
+
+.tool-status:contains("Beta") {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.tool-status:contains("Coming Soon") {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.recent-activity-section {
+    margin-top: 2rem;
+}
+
+.activity-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.activity-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.activity-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-content h6 {
+    margin: 0 0 0.25rem 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.activity-content p {
+    margin: 0 0 0.25rem 0;
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.text-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.text-link:hover {
+    text-decoration: underline;
+    color: #5a6fd8;
+}
+
+/* Floating Action Button */
+.fab-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+}
+
+.fab-main {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.fab-main:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.fab-main.active {
+    transform: rotate(45deg);
+}
+
+.fab-menu {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.fab-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.fab-action {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    color: #667eea;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.fab-action:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.1);
+    text-decoration: none;
+}
+
+.fab-action::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: 60px;
+    background: #2c3e50;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    transform: translateX(10px);
+}
+
+.fab-action:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+/* Responsive Design */
+@media (max-width: 767px) {
+    .hero-title {
+        font-size: 1.75rem;
+    }
+    
+    .quick-access-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .quick-card {
+        padding: 1rem 0.75rem;
+    }
+    
+    .card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-content h6 {
+        font-size: 0.85rem;
+    }
+    
+    .card-content small {
+        font-size: 0.7rem;
+    }
+    
+    .feature-card {
+        height: 160px;
+        padding: 1rem;
+    }
+    
+    .feature-content h6 {
+        font-size: 0.9rem;
+    }
+    
+    .feature-content p {
+        font-size: 0.8rem;
+    }
+    
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .ai-tools-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .fab-container {
+        bottom: 1rem;
+        right: 1rem;
+    }
+    
+    .fab-main {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .fab-action {
+        width: 42px;
+        height: 42px;
+    }
+    
+    .fab-action::before {
+        display: none;
+    }
+}
+
+@media (min-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .quick-access-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .activity-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .quick-access-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    
+    .hero-title {
+        font-size: 3rem;
+    }
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Smooth animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -530,438 +1243,214 @@
     }
 }
 
-/* Classes Section */
-.classes-section {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+/* Focus states for accessibility */
+.nav-pill:focus,
+.quick-card:focus,
+.fab-main:focus,
+.fab-action:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
 }
 
-.section-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.section-subtitle {
-    font-size: 1rem;
-    color: #6c757d;
-}
-
-.class-card {
-    position: relative;
-    height: 280px;
-    border-radius: 15px;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.class-card.robotics {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.class-card.coding {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.class-card.autonomous {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.class-card.electric {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-}
-
-.class-card:hover {
-    transform: translateY(-5px);
-}
-
-.class-icon {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 2rem;
-    color: white;
-}
-
-.class-content {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
-    color: white;
-}
-
-.class-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.class-description {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin-bottom: 0.75rem;
-    opacity: 0.9;
-}
-
-.class-features {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.feature-tag {
-    background: rgba(255,255,255,0.2);
-    padding: 0.25rem 0.5rem;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    backdrop-filter: blur(10px);
-}
-
-/* Project Submission Section */
-.project-section {
-    background: white;
-}
-
-.project-card {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 20px;
-    padding: 2rem;
-    border: 1px solid #dee2e6;
-}
-
-.project-icon {
-    font-size: 3rem;
-    color: #667eea;
-}
-
-.project-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.project-subtitle {
-    font-size: 1rem;
-    color: #6c757d;
-}
-
-.benefit-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.benefit-item i {
-    font-size: 1.5rem;
-    color: #667eea;
-    min-width: 24px;
-}
-
-.benefit-item h6 {
-    margin: 0;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.benefit-item small {
-    color: #6c757d;
-    font-size: 0.8rem;
-}
-
-.btn-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: white;
-    border-radius: 25px;
-    font-weight: 600;
-    padding: 0.75rem 2rem;
-}
-
-.btn-gradient:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-    color: white;
-    transform: translateY(-2px);
-}
-
-/* Features Section */
-.features-section {
-    background: #f8f9fa;
-}
-
-.feature-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    transition: transform 0.3s ease;
-}
-
-.feature-item:hover {
-    transform: translateY(-2px);
-}
-
-.feature-icon {
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.25rem;
-    min-width: 50px;
-}
-
-.feature-content h6 {
-    margin: 0 0 0.25rem 0;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.feature-content p {
-    margin: 0;
-    color: #6c757d;
-    font-size: 0.85rem;
-}
-
-/* CTA Section */
-.cta-section {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    color: white;
-}
-
-.cta-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-}
-
-.cta-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
-}
-
-.cta-card {
-    background: rgba(255,255,255,0.1);
-    padding: 2rem 1.5rem;
-    border-radius: 15px;
-    text-align: center;
-    height: 100%;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    transition: transform 0.3s ease;
-}
-
-.cta-card:hover {
-    transform: translateY(-3px);
-}
-
-.cta-card h5 {
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-}
-
-.cta-card p {
-    opacity: 0.9;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-}
-
-.cta-card .btn {
-    border-radius: 25px;
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 991.98px) {
-    .hero-section {
-        min-height: 70vh;
-        padding: 2rem 0;
+/* Hover effects for touch devices */
+@media (hover: none) {
+    .quick-card:hover,
+    .feature-card:hover,
+    .class-item:hover,
+    .course-card:hover,
+    .ai-tool-card:hover,
+    .activity-card:hover {
+        transform: none;
     }
     
-    .hero-slider {
-        margin-top: 2rem;
-    }
-    
-    .slide img {
-        max-height: 350px;
-    }
-    
-    .slider-btn {
-        padding: 12px;
-        font-size: 1rem;
-    }
-    
-    .prev-btn {
-        left: 10px;
-    }
-    
-    .next-btn {
-        right: 10px;
-    }
-    
-    .class-card {
-        height: 320px;
-    }
-}
-
-/* Desktop Responsive */
-@media (min-width: 768px) {
-    .hero-title {
-        font-size: 3rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.2rem;
-    }
-    
-    .hero-icon {
-        font-size: 4rem;
-    }
-    
-    .section-title {
-        font-size: 2.25rem;
-    }
-    
-    .project-title {
-        font-size: 2.25rem;
-    }
-    
-    .cta-title {
-        font-size: 2.25rem;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-    }
-}
-
-@media (min-width: 1200px) {
-    .slide img {
-        max-height: 600px;
+    .quick-card:active,
+    .feature-card:active {
+        transform: scale(0.98);
     }
 }
 </style>
 
 <script>
-// Hero Image Slider
-let currentSlideIndex = 0;
-const slides = document.querySelectorAll('.slide');
-const dots = document.querySelectorAll('.dot');
-const totalSlides = slides.length;
-
-// Auto slide functionality
-let autoSlideInterval;
-
-function showSlide(index) {
-    // Hide all slides
-    slides.forEach(slide => slide.classList.remove('active'));
-    dots.forEach(dot => dot.classList.remove('active'));
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const navPills = document.querySelectorAll('.nav-pill');
+    const contentSections = document.querySelectorAll('.content-section');
     
-    // Show current slide
-    slides[index].classList.add('active');
-    dots[index].classList.add('active');
-}
-
-function changeSlide(direction) {
-    currentSlideIndex += direction;
+    navPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            // Remove active class from all pills and sections
+            navPills.forEach(p => p.classList.remove('active'));
+            contentSections.forEach(s => s.classList.remove('active'));
+            
+            // Add active class to clicked pill
+            pill.classList.add('active');
+            
+            // Show corresponding section
+            const targetSection = pill.getAttribute('data-section') + '-section';
+            const targetElement = document.getElementById(targetSection);
+            if (targetElement) {
+                targetElement.classList.add('active');
+                targetElement.classList.add('fade-in');
+                
+                // Remove fade-in class after animation
+                setTimeout(() => {
+                    targetElement.classList.remove('fade-in');
+                }, 500);
+            }
+        });
+    });
     
-    if (currentSlideIndex >= totalSlides) {
-        currentSlideIndex = 0;
-    } else if (currentSlideIndex < 0) {
-        currentSlideIndex = totalSlides - 1;
+    // Search functionality
+    const searchInput = document.querySelector('.search-input');
+    const searchBtn = document.querySelector('.search-btn');
+    
+    if (searchInput && searchBtn) {
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
     }
     
-    showSlide(currentSlideIndex);
-    resetAutoSlide();
-}
-
-function currentSlide(index) {
-    currentSlideIndex = index - 1;
-    showSlide(currentSlideIndex);
-    resetAutoSlide();
-}
-
-function nextSlide() {
-    changeSlide(1);
-}
-
-function startAutoSlide() {
-    autoSlideInterval = setInterval(nextSlide, 4000); // Change slide every 4 seconds
-}
-
-function resetAutoSlide() {
-    clearInterval(autoSlideInterval);
-    startAutoSlide();
-}
-
-// Initialize slider when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    if (slides.length > 0) {
-        showSlide(0);
-        startAutoSlide();
-        
-        // Pause auto-slide on hover
-        const sliderContainer = document.querySelector('.slider-container');
-        if (sliderContainer) {
-            sliderContainer.addEventListener('mouseenter', () => {
-                clearInterval(autoSlideInterval);
-            });
+    function performSearch() {
+        const query = searchInput.value.trim();
+        if (query) {
+            // Add loading state
+            searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             
-            sliderContainer.addEventListener('mouseleave', () => {
-                startAutoSlide();
-            });
+            // Simulate search delay
+            setTimeout(() => {
+                searchBtn.innerHTML = '<i class="fas fa-arrow-right"></i>';
+                // Here you would typically redirect to search results
+                console.log('Searching for:', query);
+            }, 1000);
         }
     }
     
-    // Animate counter numbers
-    const counters = document.querySelectorAll('.stat-number');
-    
-    const animateCounter = (counter) => {
-        const target = parseInt(counter.getAttribute('data-count'));
-        const duration = 2000;
-        const increment = target / (duration / 16);
-        let current = 0;
-        
-        const updateCounter = () => {
-            current += increment;
-            if (current < target) {
-                counter.textContent = Math.floor(current);
-                requestAnimationFrame(updateCounter);
-            } else {
-                counter.textContent = target;
-            }
-        };
-        
-        updateCounter();
-    };
-    
-    // Intersection Observer for stats animation
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const counter = entry.target.querySelector('.stat-number');
-                if (counter && !counter.classList.contains('animated')) {
-                    counter.classList.add('animated');
-                    animateCounter(counter);
-                }
+    // Feature card click handlers
+    const featureCards = document.querySelectorAll('.feature-card');
+    featureCards.forEach(card => {
+        card.addEventListener('click', () => {
+            // Add ripple effect
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            card.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+            
+            // Navigate based on card type
+            if (card.classList.contains('robotics-feature')) {
+                window.location.href = "{{ url_for('courses') }}";
+            } else if (card.classList.contains('ai-feature')) {
+                window.location.href = "{{ url_for('courses') }}";
+            } else if (card.classList.contains('ev-feature')) {
+                window.location.href = "{{ url_for('courses') }}";
             }
         });
-    }, { threshold: 0.5 });
-    
-    // Observe stat items
-    document.querySelectorAll('.stat-item').forEach(item => {
-        observer.observe(item);
     });
 });
+
+// Floating Action Button functionality
+let fabOpen = false;
+
+function toggleFab() {
+    const fabMain = document.querySelector('.fab-main');
+    const fabMenu = document.querySelector('.fab-menu');
+    
+    fabOpen = !fabOpen;
+    
+    if (fabOpen) {
+        fabMain.classList.add('active');
+        fabMenu.classList.add('active');
+    } else {
+        fabMain.classList.remove('active');
+        fabMenu.classList.remove('active');
+    }
+}
+
+// Close FAB when clicking outside
+document.addEventListener('click', (e) => {
+    const fabContainer = document.querySelector('.fab-container');
+    if (fabContainer && !fabContainer.contains(e.target) && fabOpen) {
+        toggleFab();
+    }
+});
+
+// Intersection Observer for animations
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('fade-in');
+        }
+    });
+}, observerOptions);
+
+// Observe elements for animation
+document.querySelectorAll('.quick-card, .feature-card, .class-item, .course-card, .ai-tool-card').forEach(el => {
+    observer.observe(el);
+});
+
+// Smooth scrolling for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
+// Dynamic greeting based on time
+function updateGreeting() {
+    const hour = new Date().getHours();
+    const heroTitle = document.querySelector('.hero-title');
+    let greeting = 'What will you';
+    
+    if (hour < 12) {
+        greeting = 'What will you';
+    } else if (hour < 17) {
+        greeting = 'What will you';
+    } else {
+        greeting = 'What will you';
+    }
+    
+    // Keep the original title as it's more engaging
+}
+
+// Call updateGreeting on page load
+updateGreeting();
+
+// Add ripple effect CSS
+const style = document.createElement('style');
+style.textContent = `
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    pointer-events: none;
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

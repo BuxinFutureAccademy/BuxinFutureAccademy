@@ -1041,67 +1041,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let searchTimeout;
     
     // Perform search function
-  // Replace your performSearch function with this enhanced version:
-
-window.performSearch = function() {
-    const query = searchInput.value.trim();
-    console.log('🔍 Performing search for:', query);
-    
-    if (query.length < 2) {
-        hideSearchResults();
-        return;
-    }
-    
-    showSearchLoading();
-    
-    // Try the debug endpoint first, then fallback to regular endpoint
-    const searchEndpoint = '/api/search-debug'; // Change this to test different endpoints
-    
-    fetch(searchEndpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ query: query })
-    })
-    .then(response => {
-        console.log('📡 Search response status:', response.status);
-        console.log('📡 Search response headers:', response.headers);
-        
-        // Log the response text for debugging
-        return response.text().then(text => {
-            console.log('📄 Raw response:', text);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${text}`);
-            }
-            
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                throw new Error(`Invalid JSON response: ${text}`);
-            }
-        });
-    })
-    .then(data => {
-        console.log('📊 Search data received:', data);
-        hideSearchLoading();
-        
-        if (data.error) {
-            displayErrorResults(new Error(data.error));
-        } else {
-            displaySearchResults(data);
+   window.performSearch = function() {
+        const query = searchInput.value.trim();
+        if (query.length < 2) {
+            hideSearchResults();
+            return;
         }
-    })
-    .catch(error => {
-        console.error('❌ Search error:', error);
-        hideSearchLoading();
-        displayErrorResults(error);
-    });
-};
-    
         
+        showSearchLoading();
+       
         // Make AJAX request to search endpoint
         fetch('/api/search', {
             method: 'POST',

@@ -2309,20 +2309,6 @@ def upload_project_file_to_cloudinary(file, submission_id, original_filename):
     except Exception as e:
         print(f"❌ Cloudinary upload error: {str(e)}")
         return None
-
-# Create database table migration helper
-@app.route('/admin/create-robotics-table')
-@login_required
-def create_robotics_table():
-    """Create robotics submissions table - ADMIN ONLY"""
-    if not current_user.is_admin:
-        return "Access denied: Admin privileges required", 403
-    
-    try:
-        # Create the table
-        db.create_all()
-        
-        return 
   
 
 #SEARCH////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

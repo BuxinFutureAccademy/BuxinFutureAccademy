@@ -2495,6 +2495,304 @@ def search_results():
                          group_classes=group_classes,
                          products=products,
                          total_results=total_results)
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+@app.route('/admin/debug-search-data')
+@login_required
+def debug_search_data():
+    """Debug what data exists for search"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    try:
+        # Check courses
+        courses = Course.query.all()
+        course_data = []
+        for course in courses:
+            course_data.append({
+                'id': course.id,
+                'title': course.title,
+                'category': course.category,
+                'price': course.price,
+                'is_active': course.is_active,
+                'image_url': course.image_url[:100] + '...' if course.image_url else None
+            })
+        
+        # Check individual classes
+        individual_classes = IndividualClass.query.all()
+        individual_data = []
+        for cls in individual_classes:
+            individual_data.append({
+                'id': cls.id,
+                'name': cls.name,
+                'description': cls.description[:100] + '...' if cls.description else None
+            })
+        
+        # Check group classes
+        group_classes = GroupClass.query.all()
+        group_data = []
+        for cls in group_classes:
+            group_data.append({
+                'id': cls.id,
+                'name': cls.name,
+                'description': cls.description[:100] + '...' if cls.description else None,
+                'max_students': cls.max_students
+            })
+        
+        # Check products
+        products = Product.query.all()
+        product_data = []
+        for product in products:
+            product_data.append({
+                'id': product.id,
+                'name': product.name,
+                'category': product.category,
+                'price': product.price,
+                'is_active': product.is_active,
+                'image_url': product.image_url[:100] + '...' if product.image_url else None
+            })
+        
+        html = f"""
+        <html>
+        <head><title>Search Data Debug</title>
+        <style>
+            body {{ font-family: Arial; padding: 20px; }}
+            .section {{ margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }}
+            .count {{ font-weight: bold; color: #007bff; }}
+            .item {{ background: #f8f9fa; margin: 5px 0; padding: 10px; border-radius: 3px; }}
+            .empty {{ color: #dc3545; font-style: italic; }}
+        </style>
+        </head>
+        <body>
+            <h1>🔍 Search Data Debug</h1>
+            
+            <div class="section">
+                <h2>📚 Courses <span class="count">({len(courses)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["title"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in course_data]) if course_data else '<div class="empty">No courses found</div>'}
+            </div>
+            
+            <div class="section">
+                <h2>👤 Individual Classes <span class="count">({len(individual_classes)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}</div>' for c in individual_data]) if individual_data else '<div class="empty">No individual classes found</div>'}
+            </div>
+            
+            <div class="section">
+                <h2>👥 Group Classes <span class="count">({len(group_classes)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}<br>Max Students: {c["max_students"]}</div>' for c in group_data]) if group_data else '<div class="empty">No group classes found</div>'}
+            </div>
+            
+            <div class="section">
+                <h2>🛒 Products <span class="count">({len(products)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in product_data]) if product_data else '<div class="empty">No products found</div>'}
+            </div>
+            
+            <div class="section">
+                <h3>🎯 Search Test</h3>
+                <p>Try searching for these terms if you have data:</p>
+                <ul>
+                    <li>Course titles: {', '.join([c['title'].split()[0] for c in course_data[:3]]) if course_data else 'None'}</li>
+                    <li>Class names: {', '.join([c['name'].split()[0] for c in individual_data[:3]]) if individual_data else 'None'}</li>
+                    <li>Product names: {', '.join([c['name'].split()[0] for c in product_data[:3]]) if product_data else 'None'}</li>
+                </ul>
+            </div>
+            
+            <p><a href="/">← Back to Homepage</a> | <a href="/admin/dashboard">Admin Dashboard</a></p>
+        </body>
+        </html>
+        """
+        
+        return html
+        
+    except Exception as e:
+        return f"❌ Debug error: {str(e)}<br><pre>{traceback.format_exc()}</pre>"
+
+
+# Also add this simple test search route
+@app.route('/api/test-search')
+def test_search():
+    """Test search with a simple query"""
+    try:
+        query = "test"
+        search_pattern = f"%{query}%"
+        
+        # Try searching courses
+        courses = Course.query.filter(
+            Course.title.ilike(search_pattern)
+        ).limit(3).all()
+        
+        # Try searching products  
+        products = Product.query.filter(
+            Product.name.ilike(search_pattern)
+        ).limit(3).all()
+        
+        return jsonify({
+            'query': query,
+            'courses_found': len(courses),
+            'products_found': len(products),
+            'course_titles': [c.title for c in courses],
+            'product_names': [p.name for p in products],
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'failed'
+        })
+
+
+# Enhanced search API with better error handling
+@app.route('/api/search', methods=['POST'])
+def api_search():
+    """API endpoint for real-time search - Enhanced version"""
+    try:
+        print("🔍 Search API called!")
+        
+        # Get JSON data
+        data = request.get_json()
+        if not data:
+            print("❌ No JSON data received")
+            return jsonify({'courses': [], 'classes': [], 'products': []})
+        
+        query = data.get('query', '').strip()
+        print(f"📝 Search query: '{query}'")
+        
+        if len(query) < 2:
+            print("❌ Query too short")
+            return jsonify({'courses': [], 'classes': [], 'products': []})
+        
+        search_pattern = f"%{query}%"
+        print(f"🔍 Search pattern: {search_pattern}")
+        
+        # Initialize results
+        course_results = []
+        class_results = []
+        product_results = []
+        
+        # Search Courses with error handling
+        try:
+            courses = Course.query.filter(
+                db.and_(
+                    Course.is_active == True,
+                    db.or_(
+                        Course.title.ilike(search_pattern),
+                        Course.description.ilike(search_pattern),
+                        Course.category.ilike(search_pattern)
+                    )
+                )
+            ).limit(5).all()
+            
+            print(f"📚 Found {len(courses)} courses")
+            
+            for course in courses:
+                course_results.append({
+                    'id': course.id,
+                    'title': course.title,
+                    'short_description': course.short_description or course.category,
+                    'category': course.category,
+                    'price': float(course.price) if course.price else 0.0,
+                    'image_url': course.image_url
+                })
+                
+        except Exception as e:
+            print(f"❌ Course search error: {e}")
+        
+        # Search Individual Classes
+        try:
+            individual_classes = IndividualClass.query.filter(
+                db.or_(
+                    IndividualClass.name.ilike(search_pattern),
+                    IndividualClass.description.ilike(search_pattern)
+                )
+            ).limit(3).all()
+            
+            print(f"👤 Found {len(individual_classes)} individual classes")
+            
+            for cls in individual_classes:
+                class_results.append({
+                    'id': cls.id,
+                    'name': cls.name,
+                    'description': cls.description or 'Individual class',
+                    'type': 'individual'
+                })
+                
+        except Exception as e:
+            print(f"❌ Individual class search error: {e}")
+        
+        # Search Group Classes
+        try:
+            group_classes = GroupClass.query.filter(
+                db.or_(
+                    GroupClass.name.ilike(search_pattern),
+                    GroupClass.description.ilike(search_pattern)
+                )
+            ).limit(3).all()
+            
+            print(f"👥 Found {len(group_classes)} group classes")
+            
+            for cls in group_classes:
+                class_results.append({
+                    'id': cls.id,
+                    'name': cls.name,
+                    'description': cls.description or 'Group class',
+                    'type': 'group',
+                    'max_students': cls.max_students
+                })
+                
+        except Exception as e:
+            print(f"❌ Group class search error: {e}")
+        
+        # Search Products
+        try:
+            products = Product.query.filter(
+                db.and_(
+                    Product.is_active == True,
+                    db.or_(
+                        Product.name.ilike(search_pattern),
+                        Product.description.ilike(search_pattern),
+                        Product.category.ilike(search_pattern)
+                    )
+                )
+            ).limit(5).all()
+            
+            print(f"🛒 Found {len(products)} products")
+            
+            for product in products:
+                product_results.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'short_description': product.short_description or product.category,
+                    'category': product.category,
+                    'price': float(product.price) if product.price else 0.0,
+                    'brand': product.brand,
+                    'image_url': product.image_url
+                })
+                
+        except Exception as e:
+            print(f"❌ Product search error: {e}")
+        
+        total_results = len(course_results) + len(class_results) + len(product_results)
+        print(f"✅ Returning {total_results} total results")
+        
+        return jsonify({
+            'courses': course_results,
+            'classes': class_results,
+            'products': product_results,
+            'total': total_results
+        })
+        
+    except Exception as e:
+        print(f"❌ Search API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(e),
+            'courses': [],
+            'classes': [],
+            'products': []
+        }), 500                      
+
+                      
                          
 # ========================================
 # STUDENT PROJECT SHOWCASE ROUTES

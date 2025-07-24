@@ -27,10 +27,18 @@
             <div class="search-container mb-5">
                 <div class="search-box">
                     <i class="fas fa-search search-icon"></i>
-                    <input type="text" placeholder="Search courses, classes, or AI tools..." class="search-input">
-                    <button class="search-btn">
+                    <input type="text" placeholder="Search courses, classes, or products..." class="search-input" id="globalSearch">
+                    <button class="search-btn" onclick="performSearch()">
                         <i class="fas fa-arrow-right"></i>
                     </button>
+                </div>
+                
+                <!-- Search Results Dropdown -->
+                <div class="search-results" id="searchResults" style="display: none;">
+                    <div class="search-loading" id="searchLoading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Searching...
+                    </div>
+                    <div class="search-content" id="searchContent"></div>
                 </div>
             </div>
         </div>
@@ -838,20 +846,198 @@ document.addEventListener('DOMContentLoaded', function() {
     // Search functionality
     const searchInput = document.querySelector('.search-input');
     const searchBtn = document.querySelector('.search-btn');
+    const searchResults = document.getElementById('searchResults');
+    const searchLoading = document.getElementById('searchLoading');
+    const searchContent = document.getElementById('searchContent');
     
-    searchBtn.addEventListener('click', function() {
+    let searchTimeout;
+    
+    // Perform search function
+    window.performSearch = function() {
         const query = searchInput.value.trim();
-        if (query) {
-            // Redirect to search results or handle search
-            window.location.href = `/search?q=${encodeURIComponent(query)}`;
+        if (query.length < 2) {
+            hideSearchResults();
+            return;
         }
+        
+        showSearchLoading();
+        
+        // Make AJAX request to search endpoint
+        fetch('/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideSearchLoading();
+            displaySearchResults(data);
+        })
+        .catch(error => {
+            hideSearchLoading();
+            console.error('Search error:', error);
+            displayNoResults();
+        });
+    };
+    
+    // Real-time search as user types
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length === 0) {
+            hideSearchResults();
+            return;
+        }
+        
+        if (query.length < 2) {
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            performSearch();
+        }, 300); // Debounce search
     });
     
+    // Handle search button click
+    searchBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+    
+    // Handle Enter key
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            searchBtn.click();
+            e.preventDefault();
+            performSearch();
         }
     });
+    
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            hideSearchResults();
+        }
+    });
+    
+    function showSearchLoading() {
+        searchResults.style.display = 'block';
+        searchLoading.style.display = 'block';
+        searchContent.style.display = 'none';
+    }
+    
+    function hideSearchLoading() {
+        searchLoading.style.display = 'none';
+        searchContent.style.display = 'block';
+    }
+    
+    function hideSearchResults() {
+        searchResults.style.display = 'none';
+    }
+    
+    function displaySearchResults(data) {
+        let html = '';
+        
+        // Display Courses
+        if (data.courses && data.courses.length > 0) {
+            html += `
+                <div class="search-section">
+                    <div class="search-section-title">
+                        <i class="fas fa-graduation-cap me-2"></i>Courses (${data.courses.length})
+                    </div>
+            `;
+            
+            data.courses.forEach(course => {
+                html += `
+                    <a href="/course/${course.id}" class="search-item">
+                        <div class="search-item-icon course">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${course.title}</div>
+                            <div class="search-item-subtitle">${course.short_description || course.category}</div>
+                        </div>
+                        <div class="search-item-price">${course.price}</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Display Classes
+        if (data.classes && data.classes.length > 0) {
+            html += `
+                <div class="search-section">
+                    <div class="search-section-title">
+                        <i class="fas fa-users me-2"></i>Classes (${data.classes.length})
+                    </div>
+            `;
+            
+            data.classes.forEach(cls => {
+                html += `
+                    <a href="/class/${cls.type}/${cls.id}" class="search-item">
+                        <div class="search-item-icon class">
+                            <i class="fas fa-${cls.type === 'individual' ? 'user' : 'users'}"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${cls.name}</div>
+                            <div class="search-item-subtitle">${cls.type === 'individual' ? 'Individual' : 'Group'} Class</div>
+                        </div>
+                        <div class="search-item-price">${cls.type === 'individual' ? '$100' : 'D1000'}</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Display Products
+        if (data.products && data.products.length > 0) {
+            html += `
+                <div class="search-section">
+                    <div class="search-section-title">
+                        <i class="fas fa-shopping-cart me-2"></i>Products (${data.products.length})
+                    </div>
+            `;
+            
+            data.products.forEach(product => {
+                html += `
+                    <a href="/product/${product.id}" class="search-item">
+                        <div class="search-item-icon product">
+                            <i class="fas fa-cube"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${product.name}</div>
+                            <div class="search-item-subtitle">${product.short_description || product.category}</div>
+                        </div>
+                        <div class="search-item-price">${product.price}</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        if (html === '') {
+            displayNoResults();
+            return;
+        }
+        
+        searchContent.innerHTML = html;
+        searchResults.style.display = 'block';
+    }
+    
+    function displayNoResults() {
+        searchContent.innerHTML = `
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <p>No results found for "${searchInput.value}"</p>
+                <small>Try searching for courses, classes, or products</small>
+            </div>
+        `;
+        searchResults.style.display = 'block';
+    }
     
     // Add staggered animation delays to feature cards
     const featureCards = document.querySelectorAll('.feature-card');

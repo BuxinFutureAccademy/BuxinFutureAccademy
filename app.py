@@ -2312,336 +2312,10 @@ def upload_project_file_to_cloudinary(file, submission_id, original_filename):
   
 
 #SEARCH////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-# Add this search API route to your app.py file
+# SEARCH ROUTES - FIXED VERSION
+# Remove the first @app.route('/api/search', methods=['POST']) definition
+# Keep only this enhanced version:
 
-@app.route('/api/search', methods=['POST'])
-def api_search():
-    """API endpoint for real-time search"""
-    try:
-        data = request.get_json()
-        query = data.get('query', '').strip()
-        
-        if len(query) < 2:
-            return jsonify({
-                'courses': [],
-                'classes': [],
-                'products': []
-            })
-        
-        # Search query pattern
-        search_pattern = f"%{query}%"
-        
-        # Search Courses
-        courses = Course.query.filter(
-            db.and_(
-                Course.is_active == True,
-                db.or_(
-                    Course.title.ilike(search_pattern),
-                    Course.description.ilike(search_pattern),
-                    Course.category.ilike(search_pattern),
-                    Course.short_description.ilike(search_pattern)
-                )
-            )
-        ).limit(5).all()
-        
-        # Search Individual Classes
-        individual_classes = IndividualClass.query.filter(
-            db.or_(
-                IndividualClass.name.ilike(search_pattern),
-                IndividualClass.description.ilike(search_pattern)
-            )
-        ).limit(3).all()
-        
-        # Search Group Classes
-        group_classes = GroupClass.query.filter(
-            db.or_(
-                GroupClass.name.ilike(search_pattern),
-                GroupClass.description.ilike(search_pattern)
-            )
-        ).limit(3).all()
-        
-        # Search Products
-        products = Product.query.filter(
-            db.and_(
-                Product.is_active == True,
-                db.or_(
-                    Product.name.ilike(search_pattern),
-                    Product.description.ilike(search_pattern),
-                    Product.category.ilike(search_pattern),
-                    Product.short_description.ilike(search_pattern),
-                    Product.brand.ilike(search_pattern)
-                )
-            )
-        ).limit(5).all()
-        
-        # Format results
-        course_results = []
-        for course in courses:
-            course_results.append({
-                'id': course.id,
-                'title': course.title,
-                'short_description': course.short_description or course.category,
-                'category': course.category,
-                'price': course.price,
-                'image_url': course.image_url
-            })
-        
-        class_results = []
-        # Add individual classes
-        for cls in individual_classes:
-            class_results.append({
-                'id': cls.id,
-                'name': cls.name,
-                'description': cls.description,
-                'type': 'individual',
-                'price': getattr(cls, 'price', 100)  # Default to 100 if no price field
-            })
-        
-        # Add group classes
-        for cls in group_classes:
-            class_results.append({
-                'id': cls.id,
-                'name': cls.name,
-                'description': cls.description,
-                'type': 'group',
-                'price': getattr(cls, 'price', 1000),  # Default to 1000 if no price field
-                'max_students': cls.max_students
-            })
-        
-        product_results = []
-        for product in products:
-            product_results.append({
-                'id': product.id,
-                'name': product.name,
-                'short_description': product.short_description or product.category,
-                'category': product.category,
-                'price': product.price,
-                'brand': product.brand,
-                'image_url': product.image_url,
-                'in_stock': product.is_in_stock()
-            })
-        
-        return jsonify({
-            'courses': course_results,
-            'classes': class_results,
-            'products': product_results,
-            'total': len(course_results) + len(class_results) + len(product_results)
-        })
-        
-    except Exception as e:
-        print(f"Search API error: {e}")
-        return jsonify({
-            'error': 'Search failed',
-            'courses': [],
-            'classes': [],
-            'products': []
-        }), 500
-
-
-# Optional: Add a full search results page route
-@app.route('/search')
-def search_results():
-    """Full search results page"""
-    query = request.args.get('q', '').strip()
-    
-    if not query:
-        return redirect(url_for('index'))
-    
-    # Perform the same search as API
-    search_pattern = f"%{query}%"
-    
-    courses = Course.query.filter(
-        db.and_(
-            Course.is_active == True,
-            db.or_(
-                Course.title.ilike(search_pattern),
-                Course.description.ilike(search_pattern),
-                Course.category.ilike(search_pattern)
-            )
-        )
-    ).all()
-    
-    individual_classes = IndividualClass.query.filter(
-        db.or_(
-            IndividualClass.name.ilike(search_pattern),
-            IndividualClass.description.ilike(search_pattern)
-        )
-    ).all()
-    
-    group_classes = GroupClass.query.filter(
-        db.or_(
-            GroupClass.name.ilike(search_pattern),
-            GroupClass.description.ilike(search_pattern)
-        )
-    ).all()
-    
-    products = Product.query.filter(
-        db.and_(
-            Product.is_active == True,
-            db.or_(
-                Product.name.ilike(search_pattern),
-                Product.description.ilike(search_pattern),
-                Product.category.ilike(search_pattern)
-            )
-        )
-    ).all()
-    
-    total_results = len(courses) + len(individual_classes) + len(group_classes) + len(products)
-    
-    return render_template('search_results.html',
-                         query=query,
-                         courses=courses,
-                         individual_classes=individual_classes,
-                         group_classes=group_classes,
-                         products=products,
-                         total_results=total_results)
-
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-@app.route('/admin/debug-search-data')
-@login_required
-def debug_search_data():
-    """Debug what data exists for search"""
-    if not current_user.is_admin:
-        return "Access denied", 403
-    
-    try:
-        # Check courses
-        courses = Course.query.all()
-        course_data = []
-        for course in courses:
-            course_data.append({
-                'id': course.id,
-                'title': course.title,
-                'category': course.category,
-                'price': course.price,
-                'is_active': course.is_active,
-                'image_url': course.image_url[:100] + '...' if course.image_url else None
-            })
-        
-        # Check individual classes
-        individual_classes = IndividualClass.query.all()
-        individual_data = []
-        for cls in individual_classes:
-            individual_data.append({
-                'id': cls.id,
-                'name': cls.name,
-                'description': cls.description[:100] + '...' if cls.description else None
-            })
-        
-        # Check group classes
-        group_classes = GroupClass.query.all()
-        group_data = []
-        for cls in group_classes:
-            group_data.append({
-                'id': cls.id,
-                'name': cls.name,
-                'description': cls.description[:100] + '...' if cls.description else None,
-                'max_students': cls.max_students
-            })
-        
-        # Check products
-        products = Product.query.all()
-        product_data = []
-        for product in products:
-            product_data.append({
-                'id': product.id,
-                'name': product.name,
-                'category': product.category,
-                'price': product.price,
-                'is_active': product.is_active,
-                'image_url': product.image_url[:100] + '...' if product.image_url else None
-            })
-        
-        html = f"""
-        <html>
-        <head><title>Search Data Debug</title>
-        <style>
-            body {{ font-family: Arial; padding: 20px; }}
-            .section {{ margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }}
-            .count {{ font-weight: bold; color: #007bff; }}
-            .item {{ background: #f8f9fa; margin: 5px 0; padding: 10px; border-radius: 3px; }}
-            .empty {{ color: #dc3545; font-style: italic; }}
-        </style>
-        </head>
-        <body>
-            <h1>🔍 Search Data Debug</h1>
-            
-            <div class="section">
-                <h2>📚 Courses <span class="count">({len(courses)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["title"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in course_data]) if course_data else '<div class="empty">No courses found</div>'}
-            </div>
-            
-            <div class="section">
-                <h2>👤 Individual Classes <span class="count">({len(individual_classes)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}</div>' for c in individual_data]) if individual_data else '<div class="empty">No individual classes found</div>'}
-            </div>
-            
-            <div class="section">
-                <h2>👥 Group Classes <span class="count">({len(group_classes)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}<br>Max Students: {c["max_students"]}</div>' for c in group_data]) if group_data else '<div class="empty">No group classes found</div>'}
-            </div>
-            
-            <div class="section">
-                <h2>🛒 Products <span class="count">({len(products)})</span></h2>
-                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in product_data]) if product_data else '<div class="empty">No products found</div>'}
-            </div>
-            
-            <div class="section">
-                <h3>🎯 Search Test</h3>
-                <p>Try searching for these terms if you have data:</p>
-                <ul>
-                    <li>Course titles: {', '.join([c['title'].split()[0] for c in course_data[:3]]) if course_data else 'None'}</li>
-                    <li>Class names: {', '.join([c['name'].split()[0] for c in individual_data[:3]]) if individual_data else 'None'}</li>
-                    <li>Product names: {', '.join([c['name'].split()[0] for c in product_data[:3]]) if product_data else 'None'}</li>
-                </ul>
-            </div>
-            
-            <p><a href="/">← Back to Homepage</a> | <a href="/admin/dashboard">Admin Dashboard</a></p>
-        </body>
-        </html>
-        """
-        
-        return html
-        
-    except Exception as e:
-        return f"❌ Debug error: {str(e)}<br><pre>{traceback.format_exc()}</pre>"
-
-
-# Also add this simple test search route
-@app.route('/api/test-search')
-def test_search():
-    """Test search with a simple query"""
-    try:
-        query = "test"
-        search_pattern = f"%{query}%"
-        
-        # Try searching courses
-        courses = Course.query.filter(
-            Course.title.ilike(search_pattern)
-        ).limit(3).all()
-        
-        # Try searching products  
-        products = Product.query.filter(
-            Product.name.ilike(search_pattern)
-        ).limit(3).all()
-        
-        return jsonify({
-            'query': query,
-            'courses_found': len(courses),
-            'products_found': len(products),
-            'course_titles': [c.title for c in courses],
-            'product_names': [p.name for p in products],
-            'status': 'success'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'error': str(e),
-            'status': 'failed'
-        })
-
-
-# Enhanced search API with better error handling
 @app.route('/api/search', methods=['POST'])
 def api_search():
     """API endpoint for real-time search - Enhanced version"""
@@ -2790,7 +2464,209 @@ def api_search():
             'courses': [],
             'classes': [],
             'products': []
-        }), 500                      
+        }), 500
+
+
+# Optional: Add a full search results page route
+@app.route('/search')
+def search_results():
+    """Full search results page"""
+    query = request.args.get('q', '').strip()
+    
+    if not query:
+        return redirect(url_for('index'))
+    
+    # Perform the same search as API
+    search_pattern = f"%{query}%"
+    
+    courses = Course.query.filter(
+        db.and_(
+            Course.is_active == True,
+            db.or_(
+                Course.title.ilike(search_pattern),
+                Course.description.ilike(search_pattern),
+                Course.category.ilike(search_pattern)
+            )
+        )
+    ).all()
+    
+    individual_classes = IndividualClass.query.filter(
+        db.or_(
+            IndividualClass.name.ilike(search_pattern),
+            IndividualClass.description.ilike(search_pattern)
+        )
+    ).all()
+    
+    group_classes = GroupClass.query.filter(
+        db.or_(
+            GroupClass.name.ilike(search_pattern),
+            GroupClass.description.ilike(search_pattern)
+        )
+    ).all()
+    
+    products = Product.query.filter(
+        db.and_(
+            Product.is_active == True,
+            db.or_(
+                Product.name.ilike(search_pattern),
+                Product.description.ilike(search_pattern),
+                Product.category.ilike(search_pattern)
+            )
+        )
+    ).all()
+    
+    total_results = len(courses) + len(individual_classes) + len(group_classes) + len(products)
+    
+    return render_template('search_results.html',
+                         query=query,
+                         courses=courses,
+                         individual_classes=individual_classes,
+                         group_classes=group_classes,
+                         products=products,
+                         total_results=total_results)
+
+
+@app.route('/admin/debug-search-data')
+@login_required
+def debug_search_data():
+    """Debug what data exists for search"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    try:
+        # Check courses
+        courses = Course.query.all()
+        course_data = []
+        for course in courses:
+            course_data.append({
+                'id': course.id,
+                'title': course.title,
+                'category': course.category,
+                'price': course.price,
+                'is_active': course.is_active,
+                'image_url': course.image_url[:100] + '...' if course.image_url else None
+            })
+        
+        # Check individual classes
+        individual_classes = IndividualClass.query.all()
+        individual_data = []
+        for cls in individual_classes:
+            individual_data.append({
+                'id': cls.id,
+                'name': cls.name,
+                'description': cls.description[:100] + '...' if cls.description else None
+            })
+        
+        # Check group classes
+        group_classes = GroupClass.query.all()
+        group_data = []
+        for cls in group_classes:
+            group_data.append({
+                'id': cls.id,
+                'name': cls.name,
+                'description': cls.description[:100] + '...' if cls.description else None,
+                'max_students': cls.max_students
+            })
+        
+        # Check products
+        products = Product.query.all()
+        product_data = []
+        for product in products:
+            product_data.append({
+                'id': product.id,
+                'name': product.name,
+                'category': product.category,
+                'price': product.price,
+                'is_active': product.is_active,
+                'image_url': product.image_url[:100] + '...' if product.image_url else None
+            })
+        
+        html = f"""
+        <html>
+        <head><title>Search Data Debug</title>
+        <style>
+            body {{ font-family: Arial; padding: 20px; }}
+            .section {{ margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }}
+            .count {{ font-weight: bold; color: #007bff; }}
+            .item {{ background: #f8f9fa; margin: 5px 0; padding: 10px; border-radius: 3px; }}
+            .empty {{ color: #dc3545; font-style: italic; }}
+        </style>
+        </head>
+        <body>
+            <h1>🔍 Search Data Debug</h1>
+            
+            <div class="section">
+                <h2>📚 Courses <span class="count">({len(courses)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["title"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in course_data]) if course_data else '<div class="empty">No courses found</div>'}
+            </div>
+            
+            <div class="section">
+                <h2>👤 Individual Classes <span class="count">({len(individual_classes)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}</div>' for c in individual_data]) if individual_data else '<div class="empty">No individual classes found</div>'}
+            </div>
+            
+            <div class="section">
+                <h2>👥 Group Classes <span class="count">({len(group_classes)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Description: {c["description"] or "None"}<br>Max Students: {c["max_students"]}</div>' for c in group_data]) if group_data else '<div class="empty">No group classes found</div>'}
+            </div>
+            
+            <div class="section">
+                <h2>🛒 Products <span class="count">({len(products)})</span></h2>
+                {''.join([f'<div class="item"><strong>{c["name"]}</strong><br>Category: {c["category"]}<br>Price: ${c["price"]}<br>Active: {c["is_active"]}<br>Image: {c["image_url"] or "None"}</div>' for c in product_data]) if product_data else '<div class="empty">No products found</div>'}
+            </div>
+            
+            <div class="section">
+                <h3>🎯 Search Test</h3>
+                <p>Try searching for these terms if you have data:</p>
+                <ul>
+                    <li>Course titles: {', '.join([c['title'].split()[0] for c in course_data[:3]]) if course_data else 'None'}</li>
+                    <li>Class names: {', '.join([c['name'].split()[0] for c in individual_data[:3]]) if individual_data else 'None'}</li>
+                    <li>Product names: {', '.join([c['name'].split()[0] for c in product_data[:3]]) if product_data else 'None'}</li>
+                </ul>
+            </div>
+            
+            <p><a href="/">← Back to Homepage</a> | <a href="/admin/dashboard">Admin Dashboard</a></p>
+        </body>
+        </html>
+        """
+        
+        return html
+        
+    except Exception as e:
+        return f"❌ Debug error: {str(e)}<br><pre>{traceback.format_exc()}</pre>"
+
+
+@app.route('/api/test-search')
+def test_search():
+    """Test search with a simple query"""
+    try:
+        query = "test"
+        search_pattern = f"%{query}%"
+        
+        # Try searching courses
+        courses = Course.query.filter(
+            Course.title.ilike(search_pattern)
+        ).limit(3).all()
+        
+        # Try searching products  
+        products = Product.query.filter(
+            Product.name.ilike(search_pattern)
+        ).limit(3).all()
+        
+        return jsonify({
+            'query': query,
+            'courses_found': len(courses),
+            'products_found': len(products),
+            'course_titles': [c.title for c in courses],
+            'product_names': [p.name for p in products],
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'failed'
+        })               
 
                       
                          

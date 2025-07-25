@@ -1172,5 +1172,56 @@ function downloadMaterial(materialId) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+// Enhance material-content: detect and render links, images, and videos
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.material-content').forEach(function(content) {
+        // Only process if not already processed
+        if (content.dataset.enhanced === "1") return;
+        let raw = content.innerText.trim();
+
+        // Detect YouTube links
+        const ytRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_\-]+))/gi;
+        raw = raw.replace(ytRegex, function(match, url, id) {
+            let videoId = id;
+            if (!videoId && url.includes('v=')) {
+                videoId = url.split('v=')[1].split('&')[0];
+            }
+            return `<div class="media-container"><iframe class="media-video" src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe></div>`;
+        });
+
+        // Detect image links (jpg, png, gif, jpeg, webp)
+        const imgRegex = /(https?:\/\/[^\s]+?\.(?:jpg|jpeg|png|gif|webp))/gi;
+        raw = raw.replace(imgRegex, function(match, url) {
+            return `<div class="media-container"><img src="${url}" class="media-image" alt="Image" onclick="window.open('${url}','_blank')"></div>`;
+        });
+
+        // Detect PDF links
+        const pdfRegex = /(https?:\/\/[^\s]+?\.pdf)/gi;
+        raw = raw.replace(pdfRegex, function(match, url) {
+            return `<div class="media-pdf"><span class="pdf-icon"><i class="fas fa-file-pdf"></i></span><br><a href="${url}" target="_blank" class="pdf-button"><i class="fas fa-eye"></i>View PDF</a></div>`;
+        });
+
+        // Detect other links
+        const urlRegex = /(https?:\/\/[^\s]+)/gi;
+        raw = raw.replace(urlRegex, function(match, url) {
+            // Don't double-link images/videos
+            if (url.match(/\.(jpg|jpeg|png|gif|webp|pdf)$/i) || url.includes('youtube.com') || url.includes('youtu.be')) return match;
+            return `<a href="${url}" class="link-preview" target="_blank"><span class="link-icon"><i class="fas fa-link"></i></span><span class="link-text">${url}</span></a>`;
+        });
+
+        content.innerHTML = raw;
+        content.dataset.enhanced = "1";
+
+        // Expand/collapse on click
+        content.addEventListener('click', function(e) {
+            // Only expand/collapse if not clicking a link or media
+            if (e.target.tagName === 'A' || e.target.tagName === 'IMG' || e.target.tagName === 'IFRAME' || e.target.closest('.media-container') || e.target.closest('.media-pdf')) {
+                return;
+            }
+            this.classList.toggle('expanded');
+        });
+    });
+});
 </script>
 {% endblock %}

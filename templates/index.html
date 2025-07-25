@@ -782,18 +782,19 @@
 
 .robot-arm {
     position: absolute;
-    top: 80px;
+    top: -100px; /* Move it higher above the heading */
     left: 50%;
     transform: translateX(-50%);
     animation: float 4s ease-in-out infinite;
-    z-index: 1;
+    z-index: 2;
 }
 
 .robot-arm img {
-    width: 150px;
+    width: 220px; /* Increase size */
     height: auto;
     pointer-events: none;
 }
+
 
 /* Float animation */
 @keyframes float {

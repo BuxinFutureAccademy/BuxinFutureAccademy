@@ -2,158 +2,499 @@
 
 {% block content %}
 <style>
-    .hover-scale:hover {
-        transform: scale(1.03);
-        box-shadow: 0 8px 20px rgba(0, 97, 255, 0.2);
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --surface: #ffffff;
+        --background: #f8fafc;
+        --on-surface: #1e293b;
+        --text-secondary: #64748b;
+        --border: #e2e8f0;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --radius: 16px;
+        --radius-sm: 8px;
     }
-    .btn-gradient {
-        background: linear-gradient(135deg, #007bff, #00c6ff);
-        color: white !important;
-        border: none;
-        transition: all 0.3s ease;
+
+    body {
+        background: var(--background);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-    .btn-gradient:hover {
-        background: linear-gradient(135deg, #0056d2, #00a3cc);
-        box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+
+    /* Modern Header */
+    .classroom-header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
     }
-    
-    /* Enhanced Material Cards */
-    .material-card {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1.5rem;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        border: 1px solid #e9ecef;
+
+    .welcome-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
-    
-    .material-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+    .welcome-content h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--on-surface);
+        margin: 0;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
-    
-    .material-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+
+    .welcome-subtitle {
+        color: var(--text-secondary);
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+    }
+
+    .quick-stats {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .stat-card {
+        background: var(--surface);
         padding: 1rem 1.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        text-align: center;
+        min-width: 100px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    /* Main Layout */
+    .classroom-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Quick Actions Sidebar */
+    .quick-actions {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        height: fit-content;
+        position: sticky;
+        top: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--on-surface);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--on-surface);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
-    
-    .material-header::before {
+
+    .action-btn::before {
         content: '';
         position: absolute;
         top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: var(--primary-gradient);
+        transition: left 0.3s ease;
+        z-index: 0;
+    }
+
+    .action-btn:hover::before {
         left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     }
-    
-    .material-header h6 {
-        margin: 0;
-        font-weight: 600;
+
+    .action-btn:hover {
+        color: white;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .action-btn i,
+    .action-btn span {
         position: relative;
-        z-index: 2;
+        z-index: 1;
     }
-    
-    .material-content {
+
+    .action-btn .badge {
+        margin-left: auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Main Content Area */
+    .main-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    /* Learning Materials Feed */
+    .materials-feed {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .feed-header {
+        background: var(--primary-gradient);
+        color: white;
         padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
-    
-    .material-text {
-        color: #495057;
+
+    .feed-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .feed-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .feed-btn:hover,
+    .feed-btn.active {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
+
+    .materials-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    .material-item {
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .material-item:hover {
+        background: #f8fafc;
+    }
+
+    .material-item:last-child {
+        border-bottom: none;
+    }
+
+    .material-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .class-badge {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .material-time {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .material-content {
+        color: var(--on-surface);
         line-height: 1.6;
         margin-bottom: 1rem;
-        white-space: pre-wrap;
-        word-wrap: break-word;
     }
-    
-    .material-text a {
-        color: #007bff;
+
+    .material-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .material-action {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .material-action:hover {
+        background: var(--primary-gradient);
+        color: white;
+        border-color: transparent;
+    }
+
+    /* Tools Sidebar */
+    .tools-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .tool-widget {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 2rem;
+    }
+
+    /* Clock Widget */
+    .clock-widget {
+        text-align: center;
+        background: var(--primary-gradient);
+        color: white;
+    }
+
+    .current-time {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .current-date {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Calendar Widget */
+    .calendar-widget {
+        background: var(--success-gradient);
+        color: white;
+    }
+
+    .calendar-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .calendar-day:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .calendar-day.today {
+        background: rgba(255, 255, 255, 0.3);
+        font-weight: 700;
+    }
+
+    /* Notes Widget */
+    .notes-widget textarea {
+        width: 100%;
+        min-height: 120px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        font-family: inherit;
+        resize: vertical;
+        transition: all 0.3s ease;
+    }
+
+    .notes-widget textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Progress Widget */
+    .progress-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .progress-label {
+        font-size: 0.875rem;
+        color: var(--on-surface);
         font-weight: 500;
-        text-decoration: none;
     }
-    
-    .material-text a:hover {
-        text-decoration: underline;
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0;
     }
-    
-    /* Media Display Styles */
+
+    .progress-fill {
+        height: 100%;
+        background: var(--primary-gradient);
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+
+    /* Media Styles */
     .media-container {
         margin: 1rem 0;
-        border-radius: 10px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
-        border: 1px solid #e9ecef;
+        border: 1px solid var(--border);
     }
-    
+
     .media-image {
         max-width: 100%;
         height: auto;
         display: block;
-        margin: 0 auto;
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
         transition: transform 0.3s ease;
     }
-    
+
     .media-image:hover {
         transform: scale(1.02);
     }
-    
+
     .media-video {
         width: 100%;
         height: 300px;
-        border-radius: 10px;
         border: none;
     }
-    
+
     .media-pdf {
-        background: #f8f9fa;
-        border: 2px dashed #007bff;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #fef7f7 0%, #fef2f2 100%);
+        border: 2px dashed #f87171;
+        border-radius: var(--radius-sm);
         padding: 2rem;
         text-align: center;
         margin: 1rem 0;
         transition: all 0.3s ease;
     }
-    
+
     .media-pdf:hover {
-        background: #e3f2fd;
-        border-color: #0056b3;
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border-color: #ef4444;
     }
-    
+
     .pdf-icon {
         font-size: 3rem;
-        color: #dc3545;
+        color: #ef4444;
         margin-bottom: 1rem;
     }
-    
+
     .pdf-button {
-        background: linear-gradient(135deg, #dc3545, #c82333);
+        background: var(--danger-gradient);
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
         border-radius: 25px;
         font-weight: 600;
         text-decoration: none;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        box-shadow: var(--shadow);
     }
-    
+
     .pdf-button:hover {
         color: white;
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        box-shadow: var(--shadow-lg);
         text-decoration: none;
     }
-    
+
     .link-preview {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border: 1px solid #dee2e6;
-        border-radius: 10px;
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
         padding: 1rem;
         margin: 0.5rem 0;
         display: flex;
@@ -162,269 +503,389 @@
         color: inherit;
         transition: all 0.3s ease;
     }
-    
+
     .link-preview:hover {
-        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        background: var(--surface);
         transform: translateX(5px);
         color: inherit;
         text-decoration: none;
+        box-shadow: var(--shadow);
     }
-    
+
     .link-icon {
         font-size: 2rem;
         margin-right: 1rem;
-        color: #007bff;
+        color: #667eea;
     }
-    
+
     .link-text {
         flex-grow: 1;
     }
-    
+
     .link-title {
         font-weight: 600;
-        color: #495057;
+        color: var(--on-surface);
         margin-bottom: 0.25rem;
     }
-    
+
     .link-url {
         font-size: 0.875rem;
-        color: #6c757d;
+        color: var(--text-secondary);
         word-break: break-all;
     }
-    
-    .material-meta {
-        padding: 1rem 1.5rem;
-        background: #f8f9fa;
-        border-top: 1px solid #e9ecef;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .material-time {
-        color: #6c757d;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-    }
-    
-    .material-badge {
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .badge-individual {
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        color: white;
-    }
-    
-    .badge-group {
-        background: linear-gradient(135deg, #ffc107, #e0a800);
-        color: #212529;
-    }
-    
+
+    /* Empty State */
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
-        color: #6c757d;
+        color: var(--text-secondary);
     }
-    
+
     .empty-state i {
         font-size: 4rem;
         margin-bottom: 1.5rem;
         opacity: 0.5;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
-    
-    /* Simplified scrollable materials */
-    .materials-scrollable {
-        max-height: 600px;
-        overflow-y: auto;
-        padding: 1.5rem;
-        background: #f8f9fa;
+
+    /* Custom Scrollbar */
+    .materials-container::-webkit-scrollbar {
+        width: 8px;
     }
-    
-    /* Custom scrollbar */
-    .materials-scrollable::-webkit-scrollbar {
-        width: 10px;
+
+    .materials-container::-webkit-scrollbar-track {
+        background: var(--background);
     }
-    
-    .materials-scrollable::-webkit-scrollbar-track {
-        background: #e9ecef;
-        border-radius: 10px;
+
+    .materials-container::-webkit-scrollbar-thumb {
+        background: var(--primary-gradient);
+        border-radius: 4px;
     }
-    
-    .materials-scrollable::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        border-radius: 10px;
+
+    .materials-container::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #5a67d8, #6b46c1);
     }
-    
-    .materials-scrollable::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #0056b3, #004085);
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .classroom-container {
+            grid-template-columns: 1fr 2fr;
+        }
+        
+        .tools-sidebar {
+            grid-column: 1 / -1;
+            grid-row: 3;
+            flex-direction: row;
+            overflow-x: auto;
+        }
+        
+        .tool-widget {
+            min-width: 280px;
+            position: static;
+        }
     }
-    
-    /* Firefox scrollbar */
-    .materials-scrollable {
-        scrollbar-width: thin;
-        scrollbar-color: #007bff #e9ecef;
-    }
-    
+
     @media (max-width: 768px) {
-        .dashboard-container {
-            height: auto;
-            overflow: visible;
-        }
-        
-        .dashboard-content {
-            height: auto;
-            overflow: visible;
-            padding: 1rem;
-        }
-        
-        .dashboard-row {
-            height: auto;
-            flex-direction: column;
+        .classroom-container {
+            grid-template-columns: 1fr;
             gap: 1rem;
         }
         
-        .classes-column {
+        .welcome-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .quick-stats {
             width: 100%;
+            justify-content: space-between;
         }
         
-        .materials-column {
-            width: 100%;
+        .tools-sidebar {
+            flex-direction: column;
         }
         
-        .materials-card {
-            height: auto;
+        .tool-widget {
+            min-width: auto;
         }
         
-        .materials-body {
-            height: 60vh;
-            overflow-y: auto;
+        .quick-actions {
+            position: static;
         }
         
-        .material-card {
-            margin-bottom: 1rem;
-        }
-        
-        .material-content {
-            padding: 1rem;
+        .materials-container {
+            max-height: 400px;
         }
         
         .media-video {
             height: 200px;
         }
-        
-        .link-preview {
-            flex-direction: column;
-            text-align: center;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
-        
-        .link-icon {
-            margin-right: 0;
-            margin-bottom: 0.5rem;
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
+    }
+
+    .material-item {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+
+    /* Focus Styles */
+    .action-btn:focus,
+    .material-action:focus,
+    .feed-btn:focus {
+        outline: 2px solid #667eea;
+        outline-offset: 2px;
     }
 </style>
 
-<div class="container-fluid mt-4 px-4">
-    <!-- Page Heading -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2 class="fw-bold">
-                <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
-            </h2>
-            <p class="text-muted">Welcome back, {{ current_user.first_name }}! Let's keep learning and growing 🚀</p>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <!-- My Classes Section -->
-        <div class="col-md-4">
-            <div class="card shadow-sm rounded-4 h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-chalkboard me-2"></i>My Classes
-                    </h5>
+<!-- Modern Classroom Header -->
+<div class="classroom-header">
+    <div class="container">
+        <div class="welcome-section">
+            <div class="welcome-content">
+                <h1>Good {{ 'morning' if (now().hour < 12) else ('afternoon' if now().hour < 18 else 'evening') }}, {{ current_user.first_name }}! 👋</h1>
+                <p class="welcome-subtitle">Ready to continue your learning journey?</p>
+            </div>
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ individual_classes|length + group_classes|length }}</div>
+                    <div class="stat-label">Active Classes</div>
                 </div>
-                <div class="card-body">
-                    <!-- Individual Classes -->
-                    <h6 class="fw-bold text-dark">Individual Classes</h6>
-                    {% for class in individual_classes %}
-                        <div class="border-bottom pb-2 mb-2">
-                            <strong>{{ class.name }}</strong>
-                            <p class="text-muted small mb-0">{{ class.description or 'No description' }}</p>
-                        </div>
-                    {% else %}
-                        <p class="text-muted">Not enrolled in any individual classes.</p>
-                    {% endfor %}
-
-                    <!-- Group Classes -->
-                    <h6 class="fw-bold text-dark mt-3">Group Classes</h6>
-                    {% for class in group_classes %}
-                        <div class="border-bottom pb-2 mb-2">
-                            <strong>{{ class.name }}</strong>
-                            <p class="text-muted small mb-1">{{ class.description or 'No description' }}</p>
-                            <small class="text-success">{{ class.students|length }}/{{ class.max_students }} students</small>
-                        </div>
-                    {% else %}
-                        <p class="text-muted">Not enrolled in any group classes.</p>
-                    {% endfor %}
-
-                    <!-- Browse Available Classes -->
-                    <a href="{{ url_for('available_classes') }}"
-                       class="btn btn-gradient w-100 rounded-pill mt-4 py-2 fw-bold d-flex align-items-center justify-content-center gap-2 hover-scale">
-                        <i class="fas fa-rocket"></i>
-                        <span>Register To New Classes Now</span>
-                    </a>
+                <div class="stat-card">
+                    <div class="stat-number">{{ materials|length }}</div>
+                    <div class="stat-label">New Materials</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ (individual_classes|length + group_classes|length) * 85 // 100 }}%</div>
+                    <div class="stat-label">Progress</div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Recent Learning Materials Section -->
-        <div class="col-md-8">
-            <div class="card shadow-sm rounded-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-book me-2"></i>Recent Learning Materials
-                    </h5>
+<div class="container">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show mb-4">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-                <!-- Scrollable Materials Content -->
-                <div class="materials-scrollable">
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Classroom Layout -->
+    <div class="classroom-container">
+        <!-- Quick Actions Sidebar -->
+        <div class="quick-actions">
+            <h3 class="section-title">
+                <i class="fas fa-bolt"></i>
+                Quick Actions
+            </h3>
+            
+            <a href="{{ url_for('store') }}" class="action-btn">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Browse Courses</span>
+                <span class="badge bg-primary">New</span>
+            </a>
+            
+            <a href="{{ url_for('available_classes') }}" class="action-btn">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>Join Classes</span>
+            </a>
+            
+            <a href="{{ url_for('student_projects') }}" class="action-btn">
+                <i class="fas fa-project-diagram"></i>
+                <span>Student Projects</span>
+            </a>
+            
+            <a href="{{ url_for('create_project') }}" class="action-btn">
+                <i class="fas fa-plus-circle"></i>
+                <span>Create Project</span>
+            </a>
+            
+            <a href="{{ url_for('ai_assistant') }}" class="action-btn">
+                <i class="fas fa-robot"></i>
+                <span>AI Assistant</span>
+                <span class="badge bg-success">24/7</span>
+            </a>
+            
+            <a href="{{ url_for('my_course_orders') }}" class="action-btn">
+                <i class="fas fa-receipt"></i>
+                <span>My Orders</span>
+            </a>
+
+            <!-- My Classes Summary -->
+            <div class="mt-4">
+                <h4 class="section-title">
+                    <i class="fas fa-book-open"></i>
+                    My Classes
+                </h4>
+                
+                {% if individual_classes or group_classes %}
+                    <div class="class-summary">
+                        {% for class in individual_classes %}
+                            <div class="action-btn mb-2" style="cursor: default;">
+                                <i class="fas fa-user"></i>
+                                <span>{{ class.name }}</span>
+                                <span class="badge bg-info">1:1</span>
+                            </div>
+                        {% endfor %}
+                        
+                        {% for class in group_classes %}
+                            <div class="action-btn mb-2" style="cursor: default;">
+                                <i class="fas fa-users"></i>
+                                <span>{{ class.name }}</span>
+                                <span class="badge bg-warning">{{ class.students|length }}/{{ class.max_students }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small">No classes enrolled yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Main Learning Feed -->
+        <div class="main-content">
+            <div class="materials-feed">
+                <div class="feed-header">
+                    <div>
+                        <h3 style="margin: 0; font-weight: 600;">
+                            <i class="fas fa-stream me-2"></i>
+                            Learning Materials
+                        </h3>
+                        <small style="opacity: 0.9;">Latest updates from your classes</small>
+                    </div>
+                    <div class="feed-controls">
+                        <button class="feed-btn active" onclick="filterMaterials('all')">All</button>
+                        <button class="feed-btn" onclick="filterMaterials('today')">Today</button>
+                        <button class="feed-btn" onclick="filterMaterials('week')">This Week</button>
+                    </div>
+                </div>
+                
+                <div class="materials-container" id="materials-container">
                     {% if materials %}
                         {% for material in materials %}
-                            <div class="material-card">
+                            <div class="material-item" data-date="{{ material.created_at.strftime('%Y-%m-%d') }}">
                                 <div class="material-header">
-                                    <h6>{{ material.class_name }}</h6>
-                                </div>
-                                <div class="material-content">
-                                    <div class="material-text" id="material-{{ material.id }}">
-                                        <!-- Raw content will be processed by JavaScript -->
-                                        {{ material.content }}
-                                    </div>
-                                </div>
-                                <div class="material-meta">
+                                    <span class="class-badge">{{ material.class_name }}</span>
                                     <div class="material-time">
-                                        <i class="fas fa-clock me-2"></i>
-                                        {{ material.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                        <i class="fas fa-clock"></i>
+                                        {{ material.created_at.strftime('%b %d, %I:%M %p') }}
                                     </div>
-                                    <span class="material-badge badge-{{ material.class_type }}">
-                                        {{ material.class_type.title() }}
-                                    </span>
+                                </div>
+                                
+                                <div class="material-content" id="material-{{ material.id }}">
+                                    {{ material.content }}
+                                </div>
+                                
+                                <div class="material-actions">
+                                    <button class="material-action" onclick="bookmarkMaterial({{ material.id }})">
+                                        <i class="fas fa-bookmark"></i>
+                                        Bookmark
+                                    </button>
+                                    <button class="material-action" onclick="shareMaterial({{ material.id }})">
+                                        <i class="fas fa-share"></i>
+                                        Share
+                                    </button>
+                                    <button class="material-action" onclick="downloadMaterial({{ material.id }})">
+                                        <i class="fas fa-download"></i>
+                                        Save
+                                    </button>
                                 </div>
                             </div>
                         {% endfor %}
                     {% else %}
                         <div class="empty-state">
                             <i class="fas fa-book-open"></i>
-                            <h5>No learning materials available yet</h5>
-                            <p>Materials shared by your teachers will appear here soon.</p>
+                            <h4>No learning materials yet</h4>
+                            <p>Materials shared by your instructors will appear here.</p>
+                            <a href="{{ url_for('available_classes') }}" class="btn" style="background: var(--primary-gradient); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; margin-top: 1rem; display: inline-block;">
+                                <i class="fas fa-plus me-2"></i>Join a Class
+                            </a>
                         </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools & Widgets Sidebar -->
+        <div class="tools-sidebar">
+            <!-- Live Clock Widget -->
+            <div class="tool-widget clock-widget">
+                <div class="current-time" id="current-time">--:--</div>
+                <div class="current-date" id="current-date">--</div>
+            </div>
+
+            <!-- Quick Calendar -->
+            <div class="tool-widget calendar-widget">
+                <h4 class="section-title" style="color: white; margin-bottom: 1rem;">
+                    <i class="fas fa-calendar-alt"></i>
+                    Calendar
+                </h4>
+                <div class="calendar-header" id="calendar-month">-- 2024</div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Quick Notes -->
+            <div class="tool-widget notes-widget">
+                <h4 class="section-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Quick Notes
+                </h4>
+                <textarea placeholder="Jot down your thoughts..." id="quick-notes"></textarea>
+                <button class="btn btn-sm mt-2" style="background: var(--primary-gradient); color: white; border: none; border-radius: 20px; padding: 0.5rem 1rem;" onclick="saveNotes()">
+                    <i class="fas fa-save me-1"></i>Save
+                </button>
+            </div>
+
+            <!-- Learning Progress -->
+            <div class="tool-widget">
+                <h4 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Progress
+                </h4>
+                
+                <div class="progress-item">
+                    <span class="progress-label">Course Completion</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                    <small class="text-muted">75%</small>
+                </div>
+                
+                <div class="progress-item">
+                    <span class="progress-label">Assignments</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 60%"></div>
+                    </div>
+                    <small class="text-muted">60%</small>
+                </div>
+                
+                <div class="progress-item">
+                    <span class="progress-label">Projects</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 90%"></div>
+                    </div>
+                    <small class="text-muted">90%</small>
                 </div>
             </div>
         </div>
@@ -432,164 +893,50 @@
 </div>
 
 <script>
+// Initialize the modern classroom
 document.addEventListener('DOMContentLoaded', function() {
-    // Process each material content
-    document.querySelectorAll('[id^="material-"]').forEach(function(element) {
-        processContent(element);
-    });
+    updateClock();
+    generateCalendar();
+    processAllMaterials();
+    loadSavedNotes();
+    
+    setInterval(updateClock, 1000);
 });
 
-function processContent(element) {
-    const content = element.textContent;
-    let processedContent = '';
-    
-    // Split content by lines
-    const lines = content.split('\n');
-    
-    lines.forEach(function(line) {
-        const trimmedLine = line.trim();
-        
-        if (trimmedLine === '') {
-            processedContent += '<br>';
-            return;
-        }
-        
-        // Check for different types of media
-        if (isImageUrl(trimmedLine)) {
-            processedContent += createImageElement(trimmedLine);
-        } else if (isPdfUrl(trimmedLine)) {
-            processedContent += createPdfElement(trimmedLine);
-        } else if (isVideoUrl(trimmedLine)) {
-            processedContent += createVideoElement(trimmedLine);
-        } else if (isUrl(trimmedLine)) {
-            processedContent += createLinkElement(trimmedLine);
-        } else {
-            // Regular text with auto-linking
-            processedContent += autoLinkText(trimmedLine) + '<br>';
-        }
+// Real-time clock
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const dateString = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
     
-    element.innerHTML = processedContent;
+    document.getElementById('current-time').textContent = timeString;
+    document.getElementById('current-date').textContent = dateString;
 }
 
-function isImageUrl(url) {
-    return /\.(jpg|jpeg|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url);
-}
-
-function isPdfUrl(url) {
-    return /\.pdf(\?.*)?$/i.test(url) || url.toLowerCase().includes('pdf');
-}
-
-function isVideoUrl(url) {
-    return /youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/|\.mp4(\?.*)?$/i.test(url);
-}
-
-function isUrl(text) {
-    return /^https?:\/\/.+/i.test(text.trim());
-}
-
-function createImageElement(url) {
-    return `
-        <div class="media-container">
-            <img src="${url}" alt="Shared Image" class="media-image" 
-                 onclick="openImageModal('${url}')" style="cursor: pointer;">
-        </div>
-    `;
-}
-
-function createPdfElement(url) {
-    const filename = url.split('/').pop().split('?')[0] || 'Document.pdf';
-    return `
-        <div class="media-pdf">
-            <i class="fas fa-file-pdf pdf-icon"></i>
-            <h6>PDF Document</h6>
-            <p class="text-muted mb-3">${filename}</p>
-            <a href="${url}" target="_blank" class="pdf-button">
-                <i class="fas fa-external-link-alt me-2"></i>Open PDF
-            </a>
-        </div>
-    `;
-}
-
-function createVideoElement(url) {
-    let embedUrl = url;
+// Generate calendar
+function generateCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
     
-    // Convert YouTube URLs to embed format
-    if (url.includes('youtube.com/watch?v=')) {
-        const videoId = url.split('v=')[1].split('&')[0];
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (url.includes('youtu.be/')) {
-        const videoId = url.split('youtu.be/')[1].split('?')[0];
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (url.includes('vimeo.com/')) {
-        const videoId = url.split('vimeo.com/')[1].split('?')[0];
-        embedUrl = `https://player.vimeo.com/video/${videoId}`;
-    }
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
     
-    return `
-        <div class="media-container">
-            <iframe src="${embedUrl}" class="media-video" 
-                    frameborder="0" allowfullscreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-            </iframe>
-        </div>
-    `;
-}
-
-function createLinkElement(url) {
-    const domain = url.replace(/^https?:\/\//, '').split('/')[0];
-    return `
-        <a href="${url}" target="_blank" class="link-preview">
-            <i class="fas fa-link link-icon"></i>
-            <div class="link-text">
-                <div class="link-title">External Link</div>
-                <div class="link-url">${domain}</div>
-            </div>
-            <i class="fas fa-external-link-alt"></i>
-        </a>
-    `;
-}
-
-function autoLinkText(text) {
-    // Auto-link URLs in regular text
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
-}
-
-function openImageModal(imageSrc) {
-    // Create modal for image viewing
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        cursor: pointer;
-    `;
+    document.getElementById('calendar-month').textContent = `${monthNames[month]} ${year}`;
     
-    const img = document.createElement('img');
-    img.src = imageSrc;
-    img.style.cssText = `
-        max-width: 90%;
-        max-height: 90%;
-        object-fit: contain;
-        border-radius: 10px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    `;
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    modal.appendChild(img);
-    document.body.appendChild(modal);
-    
-    modal.addEventListener('click', function() {
-        document.body.removeChild(modal);
-    });
-}
-</script>
-
-{% endblock %}
+    const calendarGrid = document.getElementByI

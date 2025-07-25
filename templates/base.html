@@ -375,21 +375,14 @@
                                 <i class="fas fa-info-circle me-1"></i>About
                             </a>
                         </li>
-                        
-                        <!-- Auth Dropdown for Guests -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-1"></i>Account
+
+                         <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('about_us') }}">
+                                <i class="fas fa-info-circle me-1"></i>About
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('login') }}">
-                                    <i class="fas fa-sign-in-alt me-2"></i>Login
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('register') }}">
-                                    <i class="fas fa-user-plus me-2"></i>Register
-                                </a></li>
-                            </ul>
                         </li>
+                        
+    
                     {% endif %}
                 </ul>
             </div>

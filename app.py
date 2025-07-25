@@ -831,8 +831,6 @@ def generate_whatsapp_links(recipients, message):
 
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-from flask import request, jsonify
-
 @app.route('/contact-support', methods=['POST'])
 def contact_support():
     """Handle chat popup support messages and send to admin email."""
@@ -860,6 +858,7 @@ Message:
         def __init__(self, email, first_name):
             self.email = email
             self.first_name = email.split('@')[0]
+            self.last_name = ""
 
     admin_email = app.config.get('MAIL_DEFAULT_SENDER', 'worldvlog13@gmail.com')
     temp_admin = TempUser(admin_email, "Admin")

@@ -1767,10 +1767,6 @@ def anonymize_user_data(user_id):
 #============================================================
 #=delete_material
 #=================================================
-class Material(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    # ... other fields ...
-
 @app.route('/admin/material/delete/<int:material_id>', methods=['POST'])
 @login_required
 def delete_material(material_id):

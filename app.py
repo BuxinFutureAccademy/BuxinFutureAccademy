@@ -832,30 +832,46 @@ def generate_whatsapp_links(recipients, message):
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 from flask import request, jsonify
-from flask_mail import Message
-from app import mail, app
 
 @app.route('/contact-support', methods=['POST'])
 def contact_support():
+    """Handle chat popup support messages and send to admin email."""
     data = request.get_json()
-    email = data.get('email')
-    whatsapp = data.get('whatsapp')
-    message = data.get('message')
-    if not email or not whatsapp or not message:
-        return jsonify(success=False), 400
+    email = data.get('email', '').strip()
+    whatsapp = data.get('whatsapp', '').strip()
+    message = data.get('message', '').strip()
 
-    msg = Message(
-        subject='New Support Message from Website',
-        sender=app.config['MAIL_DEFAULT_SENDER'],
-        recipients=[app.config['MAIL_DEFAULT_SENDER']],
-        body=f"Email: {email}\nWhatsApp: {whatsapp}\n\nMessage:\n{message}"
-    )
+    if not email or not whatsapp or not message:
+        return jsonify(success=False, error="All fields are required."), 400
+
+    # Compose email
+    subject = "New Support Message from Website"
+    body = f"""You have received a new support message from the website:
+
+Email: {email}
+WhatsApp: {whatsapp}
+
+Message:
+{message}
+"""
+
+    # Use your existing send_bulk_email helper (creates a temp user object)
+    class TempUser:
+        def __init__(self, email, first_name):
+            self.email = email
+            self.first_name = email.split('@')[0]
+
+    admin_email = app.config.get('MAIL_DEFAULT_SENDER', 'worldvlog13@gmail.com')
+    temp_admin = TempUser(admin_email, "Admin")
     try:
-        mail.send(msg)
-        return jsonify(success=True)
+        sent_count = send_bulk_email([temp_admin], subject, body)
+        if sent_count > 0:
+            return jsonify(success=True)
+        else:
+            return jsonify(success=False, error="Failed to send email."), 500
     except Exception as e:
-        print("Email send error:", e)
-        return jsonify(success=False), 500
+        print(f"Error sending support email: {e}")
+        return jsonify(success=False, error="Internal error."), 500
         
 #''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 

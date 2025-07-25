@@ -186,7 +186,7 @@
         border-radius: var(--radius-sm);
         margin-top: 8px;
         box-shadow: var(--shadow-lg);
-        z-index: 1000;
+        z-index: 2000;
         max-height: 400px;
         overflow-y: auto;
         opacity: 0;
@@ -271,7 +271,9 @@
     .search-item-icon.course { background: linear-gradient(135deg, var(--primary-solid), var(--secondary)); }
     .search-item-icon.class { background: linear-gradient(135deg, #ef4444, #dc2626); }
     .search-item-icon.product { background: linear-gradient(135deg, var(--accent), #0891b2); }
-    .search-item-icon.ai { background: linear-gradient(135deg, var(--success), #059669); }
+    .search-item-icon.project { background: linear-gradient(135deg, var(--success), #059669); }
+    .search-item-icon.user { background: linear-gradient(135deg, #ec4899, #db2777); }
+    .search-item-icon.material { background: linear-gradient(135deg, var(--warning), #d97706); }
 
     .search-item-content {
         flex: 1;
@@ -1177,22 +1179,44 @@ document.addEventListener('DOMContentLoaded', function() {
     function displaySearchResults(data) {
         let html = '';
         
-        // Display Classes
-        if (data.classes && data.classes.length > 0) {
+        // Display Individual Classes
+        if (data.individual_classes && data.individual_classes.length > 0) {
             html += '<div class="search-section">';
-            html += '<div class="search-section-title">Live Classes</div>';
+            html += '<div class="search-section-title">Individual Classes</div>';
             
-            data.classes.forEach(cls => {
+            data.individual_classes.forEach(cls => {
                 html += `
-                    <a href="/classes/${cls.id}" class="search-item">
+                    <a href="/class/individual/${cls.id}" class="search-item">
                         <div class="search-item-icon class">
-                            <i class="fas fa-video"></i>
+                            <i class="fas fa-user"></i>
                         </div>
                         <div class="search-item-content">
                             <div class="search-item-title">${cls.name}</div>
-                            <div class="search-item-subtitle">${cls.instructor} • ${cls.duration}</div>
+                            <div class="search-item-subtitle">Individual Class • ${cls.teacher_name || 'Expert Instructor'}</div>
                         </div>
-                        <div class="search-item-price">${cls.price || 'Free'}</div>
+                        <div class="search-item-price">$100</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Display Group Classes
+        if (data.group_classes && data.group_classes.length > 0) {
+            html += '<div class="search-section">';
+            html += '<div class="search-section-title">Group Classes</div>';
+            
+            data.group_classes.forEach(cls => {
+                html += `
+                    <a href="/class/group/${cls.id}" class="search-item">
+                        <div class="search-item-icon class">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${cls.name}</div>
+                            <div class="search-item-subtitle">Group Class • Max ${cls.max_students || 10} students</div>
+                        </div>
+                        <div class="search-item-price">D1000</div>
                     </a>
                 `;
             });
@@ -1206,15 +1230,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             data.courses.forEach(course => {
                 html += `
-                    <a href="/courses/${course.id}" class="search-item">
+                    <a href="/course/${course.id}" class="search-item">
                         <div class="search-item-icon course">
                             <i class="fas fa-graduation-cap"></i>
                         </div>
                         <div class="search-item-content">
                             <div class="search-item-title">${course.title}</div>
-                            <div class="search-item-subtitle">${course.instructor} • ${course.lessons} lessons</div>
+                            <div class="search-item-subtitle">${course.category} • ${course.level || 'Beginner'}</div>
                         </div>
-                        <div class="search-item-price">${course.price}</div>
+                        <div class="search-item-price">${course.price || '0'}</div>
                     </a>
                 `;
             });
@@ -1228,37 +1252,103 @@ document.addEventListener('DOMContentLoaded', function() {
             
             data.products.forEach(product => {
                 html += `
-                    <a href="/shop/${product.id}" class="search-item">
+                    <a href="/product/${product.id}" class="search-item">
                         <div class="search-item-icon product">
                             <i class="fas fa-cube"></i>
                         </div>
                         <div class="search-item-content">
                             <div class="search-item-title">${product.name}</div>
-                            <div class="search-item-subtitle">${product.category} • ${product.rating}★</div>
+                            <div class="search-item-subtitle">${product.category} • ${product.product_type || 'Physical'}</div>
                         </div>
-                        <div class="search-item-price">${product.price}</div>
+                        <div class="search-item-price">${product.price || '0'}</div>
                     </a>
                 `;
             });
             html += '</div>';
         }
         
-        // Display AI Tools
-        if (data.ai_tools && data.ai_tools.length > 0) {
+        // Display Student Projects
+        if (data.projects && data.projects.length > 0) {
             html += '<div class="search-section">';
-            html += '<div class="search-section-title">AI Tools</div>';
+            html += '<div class="search-section-title">Student Projects</div>';
             
-            data.ai_tools.forEach(tool => {
+            data.projects.forEach(project => {
                 html += `
-                    <a href="/ai-tools/${tool.id}" class="search-item">
-                        <div class="search-item-icon ai">
+                    <a href="/projects/${project.id}" class="search-item">
+                        <div class="search-item-icon project">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${project.title}</div>
+                            <div class="search-item-subtitle">By ${project.student_name} • ${project.like_count || 0} likes</div>
+                        </div>
+                        <div class="search-item-price">${project.featured ? 'Featured' : 'Project'}</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Display Users/Students
+        if (data.users && data.users.length > 0) {
+            html += '<div class="search-section">';
+            html += '<div class="search-section-title">Students & Instructors</div>';
+            
+            data.users.forEach(user => {
+                html += `
+                    <a href="/profile/${user.id}" class="search-item">
+                        <div class="search-item-icon user">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${user.first_name} ${user.last_name}</div>
+                            <div class="search-item-subtitle">${user.is_admin ? 'Instructor' : 'Student'} • Joined ${user.join_date || 'Recently'}</div>
+                        </div>
+                        <div class="search-item-price">${user.is_admin ? 'Teacher' : 'Student'}</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Display Learning Materials
+        if (data.materials && data.materials.length > 0) {
+            html += '<div class="search-section">';
+            html += '<div class="search-section-title">Learning Materials</div>';
+            
+            data.materials.forEach(material => {
+                html += `
+                    <a href="/materials/${material.id}" class="search-item">
+                        <div class="search-item-icon material">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="search-item-content">
+                            <div class="search-item-title">${material.title || 'Study Material'}</div>
+                            <div class="search-item-subtitle">${material.class_type} Class • By ${material.creator_name}</div>
+                        </div>
+                        <div class="search-item-price">Material</div>
+                    </a>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Display Robotics Project Submissions
+        if (data.robotics_submissions && data.robotics_submissions.length > 0) {
+            html += '<div class="search-section">';
+            html += '<div class="search-section-title">Robotics Submissions</div>';
+            
+            data.robotics_submissions.forEach(submission => {
+                html += `
+                    <a href="/robotics-projects/${submission.id}" class="search-item">
+                        <div class="search-item-icon project">
                             <i class="fas fa-robot"></i>
                         </div>
                         <div class="search-item-content">
-                            <div class="search-item-title">${tool.name}</div>
-                            <div class="search-item-subtitle">${tool.description}</div>
+                            <div class="search-item-title">${submission.project_title}</div>
+                            <div class="search-item-subtitle">By ${submission.name} • ${submission.status}</div>
                         </div>
-                        <div class="search-item-price">${tool.access}</div>
+                        <div class="search-item-price">${submission.education_level}</div>
                     </a>
                 `;
             });
@@ -1279,7 +1369,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="no-results">
                 <i class="fas fa-search"></i>
                 <p>No results found for "${searchInput.value}"</p>
-                <small>Try searching for classes, courses, products, or AI tools</small>
+                <small>Try searching for classes, courses, products, projects, or people</small>
             </div>
         `;
         showSearchResults();

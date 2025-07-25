@@ -336,20 +336,12 @@
                             </li>
                         {% endif %}
 
-                        <!-- User Account Dropdown -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle me-1"></i>{{ current_user.first_name }}
+                        <!-- User Account Dropdown: Show Sign Out -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i>Sign Out
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><h6 class="dropdown-header">Welcome, {{ current_user.first_name }}!</h6></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                </a></li>
-                            </ul>
                         </li>
-
                     {% else %}
                         <!-- Guest Navigation -->
                         <li class="nav-item">

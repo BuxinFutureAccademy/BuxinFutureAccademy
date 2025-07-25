@@ -789,7 +789,15 @@
     animation: float 4s ease-in-out infinite;
     z-index: 2;
     pointer-events: none;
-    transform: scaleX(-1); /* <-- Flip horizontally */
+}
+/* Left Arm - flip to face left */
+.left-arm img {
+    transform: scaleX(-1);
+}
+
+/* Right Arm - keep facing right (default) */
+.right-arm img {
+    transform: scaleX(1);
 }
 
 

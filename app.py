@@ -1770,13 +1770,11 @@ def anonymize_user_data(user_id):
 @app.route('/admin/material/delete/<int:material_id>', methods=['POST'])
 @login_required
 def delete_material(material_id):
-    from yourapp import db
-    from yourapp.models import Material  # Adjust import as needed
     material = Material.query.get_or_404(material_id)
     db.session.delete(material)
     db.session.commit()
     flash('Material deleted successfully.', 'success')
-    return redirect(url_for('admin_dashboard',
+    return redirect(url_for('admin_dashboard', _anchor='materials'))
 # ========================================/////////////////////////////////////////////////////////////////
 # Add these routes to your app.py
 # ========================================

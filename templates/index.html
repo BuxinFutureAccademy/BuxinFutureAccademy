@@ -775,14 +775,15 @@
         }
     }
 
-    .hero-section {
+.hero-section {
+    padding-top: 250px; /* Adjust if still tight */
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .robot-arm {
     position: absolute;
-    top: -100px; /* Move it higher above the heading */
+    top: -220px; /* Previously -100px, now 2x higher */
     left: 50%;
     transform: translateX(-50%);
     animation: float 4s ease-in-out infinite;
@@ -790,7 +791,7 @@
 }
 
 .robot-arm img {
-    width: 220px; /* Increase size */
+    width: 220px;
     height: auto;
     pointer-events: none;
 }

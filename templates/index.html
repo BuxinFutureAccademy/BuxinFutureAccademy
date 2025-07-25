@@ -774,6 +774,37 @@
             padding-bottom: env(safe-area-inset-bottom);
         }
     }
+
+    .hero-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.robot-arm {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: float 4s ease-in-out infinite;
+    z-index: 1;
+}
+
+.robot-arm img {
+    width: 150px;
+    height: auto;
+    pointer-events: none;
+}
+
+/* Float animation */
+@keyframes float {
+    0%, 100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    50% {
+        transform: translateX(-50%) translateY(-15px);
+    }
+}
+
 </style>
 
 <!-- Use this for Font Awesome 5.15.4 (works for both icons) -->
@@ -783,6 +814,12 @@
 <div class="hero-section">
     <div class="hero-bg-pattern"></div>
     <div class="hero-content">
+
+        <!-- Robotic Arm Animation -->
+        <div class="robot-arm">
+            <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Animation">
+        </div>
+
         {% if current_user.is_authenticated %}
             <div class="hero-greeting">Welcome back</div>
             <h1 class="hero-title">What will you learn today, {{ current_user.first_name }}?</h1>

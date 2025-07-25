@@ -829,7 +829,34 @@ def generate_whatsapp_links(recipients, message):
         })
     return whatsapp_links
 
+#///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+from flask import request, jsonify
+from flask_mail import Message
+from app import mail, app
+
+@app.route('/contact-support', methods=['POST'])
+def contact_support():
+    data = request.get_json()
+    email = data.get('email')
+    whatsapp = data.get('whatsapp')
+    message = data.get('message')
+    if not email or not whatsapp or not message:
+        return jsonify(success=False), 400
+
+    msg = Message(
+        subject='New Support Message from Website',
+        sender=app.config['MAIL_DEFAULT_SENDER'],
+        recipients=[app.config['MAIL_DEFAULT_SENDER']],
+        body=f"Email: {email}\nWhatsApp: {whatsapp}\n\nMessage:\n{message}"
+    )
+    try:
+        mail.send(msg)
+        return jsonify(success=True)
+    except Exception as e:
+        print("Email send error:", e)
+        return jsonify(success=False), 500
+        
 #''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 # Add these routes to your app.py file

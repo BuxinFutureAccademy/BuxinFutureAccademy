@@ -879,7 +879,7 @@
                                 </div>
                                 
                                 <div class="material-content" id="material-{{ material.id }}">
-                                    {{ material.content }}
+                                    {{ material.content|urlize(target='_blank')|safe }}
                                 </div>
                                 
                                 <div class="material-actions">
@@ -1172,5 +1172,58 @@ function downloadMaterial(materialId) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+// Enhance material-content: show YouTube/image preview without expanding div
+document.querySelectorAll('.material-content').forEach(function(div) {
+    const html = div.innerHTML;
+    // YouTube
+    const ytMatch = html.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-]+)/);
+    if (ytMatch) {
+        const videoId = ytMatch[1];
+        const thumb = document.createElement('img');
+        thumb.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        thumb.alt = "YouTube Preview";
+        thumb.className = "media-image";
+        thumb.style.position = "absolute";
+        thumb.style.top = "0.5rem";
+        thumb.style.right = "0.5rem";
+        thumb.style.width = "60px";
+        thumb.style.height = "34px";
+        thumb.style.objectFit = "cover";
+        thumb.style.borderRadius = "6px";
+        thumb.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
+        thumb.style.cursor = "pointer";
+        thumb.onclick = function(e) {
+            e.stopPropagation();
+            window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+        };
+        div.style.position = "relative";
+        div.appendChild(thumb);
+    }
+    // Image
+    const imgMatch = html.match(/https?:\/\/[^\s'"]+\.(jpg|jpeg|png|gif)/i);
+    if (imgMatch) {
+        const imgUrl = imgMatch[0];
+        const img = document.createElement('img');
+        img.src = imgUrl;
+        img.alt = "Image Preview";
+        img.className = "media-image";
+        img.style.position = "absolute";
+        img.style.top = "0.5rem";
+        img.style.right = ytMatch ? "70px" : "0.5rem";
+        img.style.width = "40px";
+        img.style.height = "40px";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "6px";
+        img.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
+        img.style.cursor = "pointer";
+        img.onclick = function(e) {
+            e.stopPropagation();
+            window.open(imgUrl, '_blank');
+        };
+        div.style.position = "relative";
+        div.appendChild(img);
+    }
+});
 </script>
 {% endblock %}

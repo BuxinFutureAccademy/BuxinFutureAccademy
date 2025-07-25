@@ -1,4 +1,51 @@
-{% extends "base.html" %}
+/* Responsive Design */
+    @media (min-width: 768px) {
+        .hero-section {
+            padding: 120px 40px 140px;
+        }
+
+        .hero-content {
+            max-width: 700px;
+        }
+
+        .hero-greeting {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .hero-subtitle {
+            font-size: 22px;
+            margin-bottom: 56px;
+        }
+
+        .search-container {
+            margin-bottom: 56px;
+        }
+
+        .search-bar {
+            padding: 24px 28px;
+        }
+
+        .search-input {
+            font-size: 20px;
+        }
+
+        .quick-actions {
+            gap: 24px;
+            max-width: 400px;
+        }
+
+        .quick-action {
+            padding: 32px 24px;
+            min-height: 140px;
+        }
+
+        .quick-action-icon {
+            width: 64px;
+            height: 64px;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }{% extends "base.html" %}
 
 {% block content %}
 <style>
@@ -48,9 +95,12 @@
         background: var(--primary);
         min-height: 100vh;
         display: flex;
+        flex-direction: column;
+        justify-content: center;
         align-items: center;
         overflow: hidden;
-        padding: 80px 20px 40px;
+        padding: 80px 20px 120px;
+        text-align: center;
     }
 
     .hero-bg-pattern {
@@ -64,71 +114,80 @@
         position: relative;
         z-index: 10;
         width: 100%;
-        max-width: 400px;
+        max-width: 600px;
         margin: 0 auto;
         text-align: center;
     }
 
     .hero-greeting {
         color: rgba(255, 255, 255, 0.9);
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 500;
-        margin-bottom: 8px;
+        margin-bottom: 16px;
         opacity: 0;
         animation: slideUp 0.8s ease forwards 0.2s;
+        letter-spacing: 0.5px;
     }
 
     .hero-title {
         color: white;
-        font-size: clamp(2.5rem, 8vw, 3.5rem);
+        font-size: clamp(3rem, 10vw, 4.5rem);
         font-weight: 800;
         line-height: 1.1;
-        margin-bottom: 16px;
+        margin-bottom: 24px;
         opacity: 0;
         animation: slideUp 0.8s ease forwards 0.4s;
+        letter-spacing: -0.02em;
     }
 
     .hero-subtitle {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 18px;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 20px;
         font-weight: 400;
-        margin-bottom: 40px;
+        margin-bottom: 48px;
         opacity: 0;
         animation: slideUp 0.8s ease forwards 0.6s;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     /* Premium Search Bar */
     .search-container {
-        margin-bottom: 32px;
+        margin-bottom: 48px;
         opacity: 0;
         animation: slideUp 0.8s ease forwards 0.8s;
         position: relative;
+        max-width: 600px;
+        width: 100%;
     }
 
     .search-bar {
         position: relative;
-        background: var(--glass);
+        background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 25px;
-        padding: 16px 20px;
+        border-radius: 60px;
+        padding: 20px 24px;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     }
 
     .search-bar:focus-within {
         background: rgba(255, 255, 255, 0.95);
         border-color: rgba(255, 255, 255, 0.5);
         transform: scale(1.02);
-        box-shadow: var(--shadow-lg);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     }
 
     .search-icon {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 18px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 20px;
         transition: color 0.3s ease;
+        min-width: 20px;
     }
 
     .search-bar:focus-within .search-icon {
@@ -141,12 +200,13 @@
         border: none;
         outline: none;
         color: white;
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 500;
     }
 
     .search-input::placeholder {
-        color: rgba(255, 255, 255, 0.6);
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 400;
     }
 
     .search-bar:focus-within .search-input {
@@ -158,8 +218,8 @@
     }
 
     .voice-search {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
         background: rgba(255, 255, 255, 0.2);
         border: none;
         border-radius: 50%;
@@ -169,6 +229,7 @@
         color: white;
         cursor: pointer;
         transition: all 0.3s ease;
+        min-width: 48px;
     }
 
     .voice-search:hover {
@@ -183,16 +244,16 @@
         left: 0;
         right: 0;
         background: white;
-        border-radius: var(--radius-sm);
-        margin-top: 8px;
-        box-shadow: var(--shadow-lg);
-        z-index: 2000;
-        max-height: 400px;
+        border-radius: var(--radius);
+        margin-top: 12px;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+        z-index: 3000;
+        max-height: 500px;
         overflow-y: auto;
         opacity: 0;
         visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
+        transform: translateY(-20px);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .search-results.show {
@@ -206,22 +267,23 @@
         align-items: center;
         justify-content: center;
         gap: 12px;
-        padding: 24px;
+        padding: 32px;
         color: var(--gray);
+        font-size: 16px;
     }
 
     .loading-spinner {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #e2e8f0;
-        border-top: 2px solid var(--primary-solid);
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e2e8f0;
+        border-top: 3px solid var(--primary-solid);
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
 
     .search-section {
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--border);
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.5);
     }
 
     .search-section:last-child {
@@ -231,41 +293,47 @@
     .search-section-title {
         font-size: 14px;
         font-weight: 700;
-        color: var(--gray);
+        color: var(--primary-solid);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 12px;
+        letter-spacing: 0.8px;
+        margin-bottom: 16px;
     }
 
     .search-item {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 12px 0;
+        gap: 16px;
+        padding: 16px 0;
         text-decoration: none;
         color: inherit;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid rgba(241, 245, 249, 0.8);
         transition: all 0.3s ease;
+        border-radius: 12px;
+        margin-bottom: 8px;
     }
 
     .search-item:last-child {
         border-bottom: none;
+        margin-bottom: 0;
     }
 
     .search-item:hover {
-        background: #f8fafc;
-        transform: translateX(4px);
+        background: rgba(99, 102, 241, 0.05);
+        transform: translateX(8px);
+        padding-left: 12px;
+        padding-right: 12px;
     }
 
     .search-item-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
+        font-size: 18px;
         color: white;
+        min-width: 48px;
     }
 
     .search-item-icon.course { background: linear-gradient(135deg, var(--primary-solid), var(--secondary)); }
@@ -277,47 +345,69 @@
 
     .search-item-content {
         flex: 1;
+        min-width: 0;
     }
 
     .search-item-title {
         font-size: 16px;
         font-weight: 600;
         color: var(--dark);
-        margin-bottom: 2px;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .search-item-subtitle {
         font-size: 14px;
         color: var(--gray);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .search-item-price {
         font-size: 14px;
         font-weight: 700;
         color: var(--primary-solid);
+        min-width: fit-content;
     }
 
     .no-results {
         text-align: center;
-        padding: 40px 20px;
+        padding: 48px 24px;
         color: var(--gray);
     }
 
     .no-results i {
-        font-size: 48px;
-        margin-bottom: 16px;
+        font-size: 56px;
+        margin-bottom: 20px;
         opacity: 0.5;
+        color: var(--gray);
+    }
+
+    .no-results p {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--dark);
+    }
+
+    .no-results small {
+        font-size: 14px;
+        opacity: 0.8;
+        color: var(--gray);
     }
 
     /* Stats Section */
     .stats-section {
         background: white;
-        margin: -20px 20px 0;
+        margin: -60px 20px 0;
         border-radius: var(--radius) var(--radius) 0 0;
-        padding: 40px 20px 20px;
+        padding: 50px 20px 30px;
         position: relative;
         z-index: 10;
-        box-shadow: var(--shadow);
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
     }
 
     .stats-grid {
@@ -779,21 +869,15 @@
 <div class="hero-section">
     <div class="hero-bg-pattern"></div>
     <div class="hero-content">
-        {% if current_user.is_authenticated %}
-            <div class="hero-greeting">Welcome back</div>
-            <h1 class="hero-title">What will you learn today, {{ current_user.first_name }}?</h1>
-            <p class="hero-subtitle">Continue your robotics journey</p>
-        {% else %}
-            <div class="hero-greeting">Discover & Learn</div>
-            <h1 class="hero-title">What will you design today?</h1>
-            <p class="hero-subtitle">Build the future with AI-powered learning</p>
-        {% endif %}
+        <div class="hero-greeting">Discover & Learn</div>
+        <h1 class="hero-title">Master Robotics</h1>
+        <p class="hero-subtitle">Build the future with AI-powered learning</p>
 
         <!-- Premium Search -->
         <div class="search-container">
             <div class="search-bar">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Search courses, classes, products..." id="globalSearch">
+                <input type="text" class="search-input" placeholder="Search courses, projects, kits..." id="globalSearch">
                 <button class="voice-search">
                     <i class="fas fa-microphone"></i>
                 </button>
@@ -808,6 +892,39 @@
                 <div class="search-content" id="searchContent"></div>
             </div>
         </div>
+
+        <!-- Quick Actions -->
+        {% if not current_user.is_authenticated %}
+        <div class="quick-actions">
+            <a href="{{ url_for('register') }}" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="quick-action-label">Start Free</div>
+            </a>
+            <a href="{{ url_for('login') }}" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <div class="quick-action-label">Sign In</div>
+            </a>
+        </div>
+        {% else %}
+        <div class="quick-actions">
+            <a href="/classes" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="quick-action-label">Live Class</div>
+            </a>
+            <a href="{{ url_for('my_courses') }}" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="quick-action-label">My Courses</div>
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 

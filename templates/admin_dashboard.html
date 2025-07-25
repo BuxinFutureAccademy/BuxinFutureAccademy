@@ -307,6 +307,57 @@ body {
 }
 </style>
 
+<!-- Place this at the top of your admin_dashboard.html, above the main content if you want a visible admin dropdown -->
+<div class="dropdown mb-4" style="text-align:right;">
+    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="adminMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-cog me-1"></i> Admin
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminMenuButton">
+        <!-- Dashboard at the very top -->
+        <li>
+            <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li><h6 class="dropdown-header">Content Management</h6></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_courses') }}">
+            <i class="fas fa-graduation-cap me-2"></i>Manage Courses
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_products') }}">
+            <i class="fas fa-box me-2"></i>Manage Products
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_projects') }}">
+            <i class="fas fa-project-diagram me-2"></i>Student Projects
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_robotics_submissions') }}">
+            <i class="fas fa-robot me-2"></i>Robotics Submissions
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><h6 class="dropdown-header">Orders & Users</h6></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_course_orders') }}">
+            <i class="fas fa-receipt me-2"></i>Course Orders
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_product_orders') }}">
+            <i class="fas fa-truck me-2"></i>Product Orders
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_enrollments') }}">
+            <i class="fas fa-user-graduate me-2"></i>Class Enrollments
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_users') }}">
+            <i class="fas fa-users me-2"></i>Manage Users
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><h6 class="dropdown-header">Communication</h6></li>
+        <li><a class="dropdown-item" href="{{ url_for('bulk_message') }}">
+            <i class="fas fa-envelope me-2"></i>Bulk Messages
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('payments') }}">
+            <i class="fas fa-credit-card me-2"></i>All Payments
+        </a></li>
+    </ul>
+</div>
+
 <div class="admin-container">
     <!-- Page Header -->
     <div class="page-header">

@@ -783,28 +783,38 @@
 
 .robot-arm {
     position: absolute;
-    top: -220px; /* Previously -100px, now 2x higher */
-    left: 50%;
-    transform: translateX(-50%);
-    animation: float 4s ease-in-out infinite;
-    z-index: 2;
-}
-
-.robot-arm img {
+    top: -220px;
     width: 220px;
     height: auto;
+    animation: float 4s ease-in-out infinite;
+    z-index: 2;
     pointer-events: none;
 }
 
+.robot-arm img {
+    width: 100%;
+    height: auto;
+}
 
-/* Float animation */
+/* Floating animation */
 @keyframes float {
     0%, 100% {
-        transform: translateX(-50%) translateY(0);
+        transform: translateY(0);
     }
     50% {
-        transform: translateX(-50%) translateY(-15px);
+        transform: translateY(-15px);
     }
+}
+
+/* Left Arm */
+.left-arm {
+    left: 20%;
+}
+
+/* Right Arm */
+.right-arm {
+    right: 20%;
+    transform: scaleX(-1); /* Mirror horizontally */
 }
 
 </style>
@@ -818,9 +828,16 @@
     <div class="hero-content">
 
         <!-- Robotic Arm Animation -->
-        <div class="robot-arm">
-            <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Animation">
-        </div>
+ <!-- Left Robot Arm -->
+<div class="robot-arm left-arm">
+    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Left">
+</div>
+
+<!-- Right Robot Arm -->
+<div class="robot-arm right-arm">
+    <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Right">
+</div>
+
 
         {% if current_user.is_authenticated %}
             <div class="hero-greeting">Welcome back</div>

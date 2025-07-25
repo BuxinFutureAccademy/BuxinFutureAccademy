@@ -1178,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.material-content').forEach(function(content) {
         // Only process if not already processed
         if (content.dataset.enhanced === "1") return;
-        let raw = content.innerText.trim();
+        let raw = content.innerHTML.trim(); // <-- Use innerHTML here
 
         // Detect YouTube links
         const ytRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_\-]+))/gi;
@@ -1215,7 +1215,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Expand/collapse on click
         content.addEventListener('click', function(e) {
-            // Only expand/collapse if not clicking a link or media
             if (e.target.tagName === 'A' || e.target.tagName === 'IMG' || e.target.tagName === 'IFRAME' || e.target.closest('.media-container') || e.target.closest('.media-pdf')) {
                 return;
             }

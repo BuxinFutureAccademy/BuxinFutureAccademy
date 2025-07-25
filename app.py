@@ -2312,7 +2312,12 @@ def upload_project_file_to_cloudinary(file, submission_id, original_filename):
   
 
 #SEARCH////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-# =====================================
+from datetime import datetime
+
+@app.context_processor
+def inject_now():
+    return {'now': datetime.now}
+ # =====================================
 # COMPLETE SEARCH SYSTEM FOR FLASK APP
 # Add these routes to your app.py file
 # =====================================

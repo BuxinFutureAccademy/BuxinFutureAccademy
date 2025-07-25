@@ -273,6 +273,41 @@
         color: var(--on-surface);
         line-height: 1.6;
         margin-bottom: 1rem;
+        cursor: pointer;
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 0.5rem;
+        transition: background 0.2s;
+        position: relative;
+        max-height: 2.5em;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .material-content.expanded {
+        background: #fffbe7;
+        max-height: none;
+        white-space: normal;
+        overflow: visible;
+        z-index: 2;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .material-content::after {
+        content: 'Tap to expand';
+        position: absolute;
+        right: 1rem;
+        bottom: 0.5rem;
+        font-size: 0.8em;
+        color: #b5b5b5;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .material-content.expanded::after {
+        content: 'Tap to collapse';
+        color: #eab308;
     }
 
     .material-actions {
@@ -622,6 +657,58 @@
         
         .media-video {
             height: 200px;
+        }
+    }
+
+    /* Responsive Design: Improve for phone size */
+    @media (max-width: 600px) {
+        .classroom-container {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .quick-actions,
+        .tools-sidebar,
+        .main-content,
+        .tool-widget {
+            padding: 0.75rem !important;
+            border-radius: 10px !important;
+            min-width: 0 !important;
+        }
+        .feed-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+        .materials-container {
+            max-height: 300px;
+            padding: 0.5rem;
+        }
+        .material-item {
+            padding: 1rem;
+            font-size: 1rem;
+        }
+        .material-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        .material-actions {
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .material-action {
+            width: 100%;
+            justify-content: flex-start;
+        }
+        .tool-widget {
+            margin-bottom: 1rem;
+        }
+        .notes-widget textarea {
+            min-height: 80px;
+            font-size: 1rem;
         }
     }
 
@@ -1028,22 +1115,62 @@ function loadSavedNotes() {
     }
 }
 
-// Bookmark material
+// Make material-content clickable to expand/collapse
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.material-content').forEach(function(content) {
+        content.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('expanded');
+        });
+    });
+});
+
+// Bookmark material: copy content to clipboard
 function bookmarkMaterial(materialId) {
-    // Implement bookmark functionality
-    alert('Bookmarked material ID: ' + materialId);
+    const content = document.getElementById('material-' + materialId).innerText;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(content).then(function() {
+            alert('Material content copied to clipboard!');
+        }, function() {
+            alert('Failed to copy content.');
+        });
+    } else {
+        alert('Clipboard not supported.');
+    }
 }
 
-// Share material
+// Share material: use Web Share API or fallback to copy
 function shareMaterial(materialId) {
-    // Implement share functionality
-    alert('Shared material ID: ' + materialId);
+    const content = document.getElementById('material-' + materialId).innerText;
+    if (navigator.share) {
+        navigator.share({
+            title: 'Learning Material',
+            text: content,
+            url: window.location.href
+        }).catch(() => {
+            // User cancelled or not supported
+        });
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(content).then(function() {
+            alert('Content copied! You can now paste it anywhere.');
+        });
+    } else {
+        alert('Sharing not supported.');
+    }
 }
 
-// Download material
+// Download material: save content as .txt file
 function downloadMaterial(materialId) {
-    // Implement download functionality
-    alert('Downloaded material ID: ' + materialId);
+    const content = document.getElementById('material-' + materialId).innerText;
+    const blob = new Blob([content], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'material-' + materialId + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 </script>
 {% endblock %}

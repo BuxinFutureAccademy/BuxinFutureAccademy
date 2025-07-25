@@ -1079,6 +1079,21 @@
     <i class="fas fa-robot"></i>
 </button>
 
+<!-- Chat Modal (AI Assistant) -->
+<div id="chatModal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:20px; max-width:350px; width:90vw; margin:auto; padding:32px 24px; box-shadow:0 10px 40px rgba(0,0,0,0.15); position:relative;">
+    <button onclick="closeChatModal()" style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:22px; color:#888; cursor:pointer;">&times;</button>
+    <h3 style="margin-bottom:18px;">Contact Us</h3>
+    <form id="chatForm">
+      <input type="email" name="email" placeholder="Your Email" required style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid #ddd;">
+      <input type="text" name="whatsapp" placeholder="WhatsApp Number" required style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid #ddd;">
+      <textarea name="message" placeholder="Your Message" required style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid #ddd;min-height:80px;"></textarea>
+      <button type="submit" style="width:100%;padding:12px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-weight:700;">Send</button>
+      <div id="chatFormStatus" style="margin-top:10px;font-size:14px;"></div>
+    </form>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Enhanced search with voice support
@@ -1399,13 +1414,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // AI Assistant
     window.openAIAssistant = function() {
-        // Add haptic feedback
-        if (navigator.vibrate) {
-            navigator.vibrate([10, 50, 10]);
-        }
-        
-        // In a real app, this would open an AI chat interface
-        window.location.href = '/ai-tools';
+        document.getElementById('chatModal').style.display = 'flex';
+    };
+    
+    window.closeChatModal = function() {
+        document.getElementById('chatModal').style.display = 'none';
+    };
+    
+    document.getElementById('chatForm').onsubmit = function(e) {
+        e.preventDefault();
+        var form = this;
+        var status = document.getElementById('chatFormStatus');
+        status.textContent = "Sending...";
+        fetch('/contact-support', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                email: form.email.value,
+                whatsapp: form.whatsapp.value,
+                message: form.message.value
+            })
+        }).then(r => r.json()).then(data => {
+            if(data.success) {
+                status.style.color = "green";
+                status.textContent = "Message sent! We'll reply soon.";
+                form.reset();
+            } else {
+                status.style.color = "red";
+                status.textContent = "Failed to send. Try again.";
+            }
+        }).catch(() => {
+            status.style.color = "red";
+            status.textContent = "Error sending message.";
+        });
     };
     
     // Enhanced card interactions with ripple effect

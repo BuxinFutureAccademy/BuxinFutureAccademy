@@ -939,4 +939,111 @@ function generateCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    const calendarGrid = document.getElementByI
+    const calendarGrid = document.getElementById('calendar-grid');
+    calendarGrid.innerHTML = '';
+
+    // Fill empty days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day';
+        emptyCell.style.visibility = 'hidden';
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    // Fill days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day';
+        if (day === today) {
+            dayCell.classList.add('today');
+        }
+        dayCell.textContent = day;
+        calendarGrid.appendChild(dayCell);
+    }
+}
+
+// Filter materials by time frame
+function filterMaterials(timeFrame) {
+    const allMaterials = document.querySelectorAll('.material-item');
+    
+    allMaterials.forEach(material => {
+        material.style.display = 'block';
+        
+        const materialDate = new Date(material.getAttribute('data-date'));
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        
+        if (timeFrame === 'today' && materialDate.toDateString() !== today.toDateString()) {
+            material.style.display = 'none';
+        } else if (timeFrame === 'week' && materialDate < oneWeekAgo) {
+            material.style.display = 'none';
+        }
+    });
+}
+
+// Process all materials (expand, highlight, etc.)
+function processAllMaterials() {
+    const allMaterials = document.querySelectorAll('.material-item');
+    
+    allMaterials.forEach(material => {
+        const contentDiv = material.querySelector('.material-content');
+        const fullContent = contentDiv.innerHTML;
+        
+        // Expand content if it contains links
+        if (fullContent.includes('http') || fullContent.includes('www')) {
+            contentDiv.style.maxHeight = '200px';
+            contentDiv.style.overflow = 'hidden';
+        } else {
+            contentDiv.style.maxHeight = 'none';
+        }
+        
+        // Highlight new materials
+        const materialDate = new Date(material.getAttribute('data-date'));
+        const today = new Date();
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(today.getDate() - 3);
+        
+        if (materialDate > threeDaysAgo) {
+            material.style.borderLeft = '4px solid var(--primary-gradient)';
+            material.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+        } else {
+            material.style.borderLeft = '4px solid transparent';
+        }
+    });
+}
+
+// Save notes to local storage
+function saveNotes() {
+    const notesContent = document.getElementById('quick-notes').value;
+    localStorage.setItem('quickNotes', notesContent);
+    alert('Notes saved!');
+}
+
+// Load saved notes from local storage
+function loadSavedNotes() {
+    const savedNotes = localStorage.getItem('quickNotes');
+    if (savedNotes) {
+        document.getElementById('quick-notes').value = savedNotes;
+    }
+}
+
+// Bookmark material
+function bookmarkMaterial(materialId) {
+    // Implement bookmark functionality
+    alert('Bookmarked material ID: ' + materialId);
+}
+
+// Share material
+function shareMaterial(materialId) {
+    // Implement share functionality
+    alert('Shared material ID: ' + materialId);
+}
+
+// Download material
+function downloadMaterial(materialId) {
+    // Implement download functionality
+    alert('Downloaded material ID: ' + materialId);
+}
+</script>
+{% endblock %}

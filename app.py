@@ -15,6 +15,8 @@ from email.message import EmailMessage
 import secrets
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from twilio.rest import Client
 
 # ========================================
 # APPLICATION CONFIGURATION
@@ -71,6 +73,12 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# Load Twilio credentials
+load_dotenv()
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_FROM = 'whatsapp:+14155238886'  # Twilio sandbox number
+
 # ========================================
 # DATABASE MODELS (Copy all your models here)
 # ========================================
@@ -109,7 +117,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_student = db.Column(db.Boolean, default=True)
     first_name = db.Column(db.String(50), nullable=False)
@@ -7140,16 +7148,36 @@ def bulk_message():
 
         email_count = 0
         whatsapp_count = 0
+        whatsapp_results = []
 
         if send_email:
             email_count = send_bulk_email(recipients, message_subject, message_content)
 
         if send_whatsapp:
-            whatsapp_count = len(recipients)
-            whatsapp_links = generate_whatsapp_links(recipients, message_content)
-            flash(f'WhatsApp links generated for {whatsapp_count} users. Check the results below.', 'info')
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            for user in recipients:
+                if not user.whatsapp_number:
+                    continue
+                phone = ''.join(filter(str.isdigit, user.whatsapp_number))
+                if not user.whatsapp_number.strip().startswith('+'):
+                    phone = f'+{phone}'
+                else:
+                    phone = f'+{phone}' if not phone.startswith('+') else phone
+                to_whatsapp = f'whatsapp:{phone}'
+                body = f"Hello {user.first_name},\\n\\n{message_content}\\n\\nBest regards,\\nLearning Management System"
+                try:
+                    message = client.messages.create(
+                        from_=TWILIO_WHATSAPP_FROM,
+                        body=body,
+                        to=to_whatsapp
+                    )
+                    whatsapp_results.append({'user': user, 'status': 'sent', 'sid': message.sid})
+                    whatsapp_count += 1
+                except Exception as e:
+                    whatsapp_results.append({'user': user, 'status': f'error: {e}'})
+            flash(f'WhatsApp messages sent to {whatsapp_count} users. See details below.', 'info')
             return render_template('bulk_message_result.html',
-                                   whatsapp_links=whatsapp_links,
+                                   whatsapp_results=whatsapp_results,
                                    email_count=email_count,
                                    message=message_content)
 

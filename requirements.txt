@@ -28,3 +28,4 @@ email-validator==2.1.0
 
 # Additional utilities
 python-dotenv==1.0.0
+twilio

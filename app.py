@@ -17,6 +17,7 @@ from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from twilio.rest import Client
+from sqlalchemy import not_
 
 # ========================================
 # APPLICATION CONFIGURATION
@@ -7136,6 +7137,12 @@ def bulk_message():
             recipients = User.query.filter_by(is_admin=True).all()
         elif recipient_type == 'students':
             recipients = User.query.filter_by(is_student=True).all()
+        elif recipient_type == 'enrolled_students':
+            enrolled_ids = db.session.query(ClassEnrollment.user_id).distinct()
+            recipients = User.query.filter(User.id.in_(enrolled_ids), User.is_student == True).all()
+        elif recipient_type == 'unenrolled_students':
+            enrolled_ids = db.session.query(ClassEnrollment.user_id).distinct()
+            recipients = User.query.filter(User.is_student == True, ~User.id.in_(enrolled_ids)).all()
         elif recipient_type == 'selected' and selected_users:
             recipients = User.query.filter(User.id.in_(selected_users)).all()
         else:
@@ -7186,8 +7193,14 @@ def bulk_message():
 
         return redirect(url_for('bulk_message'))
 
+    enrolled_ids = db.session.query(ClassEnrollment.user_id).distinct()
+    enrolled_students = User.query.filter(User.id.in_(enrolled_ids), User.is_student == True).all()
+    unenrolled_students = User.query.filter(User.is_student == True, ~User.id.in_(enrolled_ids)).all()
     users = User.query.order_by(User.first_name, User.last_name).all()
-    return render_template('bulk_message.html', users=users)
+    return render_template('bulk_message.html',
+                           users=users,
+                           enrolled_students=enrolled_students,
+                           unenrolled_students=unenrolled_students)
 
 # ========================================
 # FILE SERVING ROUTES

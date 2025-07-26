@@ -136,7 +136,12 @@
                         <!-- Recipient Type -->
                         <div class="mb-3">
                             <label for="recipient_type" class="form-label">Recipient Group</label>
-                            <select class="form-select" id="recipient_type" name="recipient_type" onchange="toggleUserSelection()" data-all-count="{{ users|length }}" data-admins-count="{{ users|selectattr('is_admin')|list|length }}" data-students-count="{{ users|selectattr('is_student')|list|length }}">
+                            <select class="form-select" id="recipient_type" name="recipient_type" onchange="toggleUserSelection()"
+                                data-all-count="{{ users|length }}"
+                                data-admins-count="{{ users|selectattr('is_admin')|list|length }}"
+                                data-students-count="{{ users|selectattr('is_student')|list|length }}"
+                                data-enrolled-count="{{ enrolled_students|length }}"
+                                data-unenrolled-count="{{ unenrolled_students|length }}">
                                 <option value="all">All Users</option>
                                 <option value="admins">All Admins</option>
                                 <option value="students">All Students</option>

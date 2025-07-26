@@ -783,22 +783,21 @@
 
 .robot-arm {
     position: absolute;
-    top: -250px;
+    top: -100px;
     width: 400px;
     height: auto;
     animation: float 4s ease-in-out infinite;
     z-index: 2;
     pointer-events: none;
 }
-/* Left Arm - flip to face left */
 .left-arm img {
-    transform: scaleX(-1);
+    transform: scaleX(-1) scale(2); /* 1.5x size */
 }
 
-/* Right Arm - keep facing right (default) */
 .right-arm img {
-    transform: scaleX(1);
+    transform: scaleX(1) scale(2);
 }
+
 
 
 /* Floating animation */

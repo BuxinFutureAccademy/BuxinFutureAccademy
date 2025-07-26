@@ -145,8 +145,8 @@
                                 <option value="all">All Users</option>
                                 <option value="admins">All Admins</option>
                                 <option value="students">All Students</option>
-                                <option value="enrolled">Enrolled Students</option>
-                                <option value="unenrolled">Unenrolled Students</option>
+                                <option value="enrolled_students">Enrolled Students</option>
+                                <option value="unenrolled_students">Unenrolled Students</option>
                                 <option value="selected">Selected Users</option>
                             </select>
                         </div>
@@ -314,11 +314,11 @@
                     recipientText = 'All Students';
                     recipientCount = parseInt(document.getElementById('recipient_type').getAttribute('data-students-count'));
                     break;
-                case 'enrolled':
+                case 'enrolled_students':
                     recipientText = 'Enrolled Students';
                     recipientCount = parseInt(document.getElementById('recipient_type').getAttribute('data-enrolled-count'));
                     break;
-                case 'unenrolled':
+                case 'unenrolled_students':
                     recipientText = 'Unenrolled Students';
                     recipientCount = parseInt(document.getElementById('recipient_type').getAttribute('data-unenrolled-count'));
                     break;

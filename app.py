@@ -74,10 +74,10 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # Load Twilio credentials
-load_dotenv()
-TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
-TWILIO_WHATSAPP_FROM = 'whatsapp:+14155238886'  # Twilio sandbox number
+# WhatsApp API credentials (replace with your actual values or use environment variables)
+WHATSAPP_ACCESS_TOKEN = "EAFcTRBv7cJMBPBKNkoDGtZApYs2ZA995mV9MifIV3APi0aEQyrbszOWiJ3JF5JNAmKa8VnXjL52ye09o23oksWZBNGaZBVZCWfxhUSX8z2joYYiEwX7TfuZBZAsIZCZB80mPTYSZBeGUwTJl58I5lW9xKS4EYncP1fsT7pvX6i4pEOWO79y99rN1mQCiRjXwBZAwX2kC9dF32r82d7sdbyLiggIpMMZAgAazc69DnBBBdt7Pfi5e6QZDZD"
+WHATSAPP_PHONE_NUMBER_ID = "679601781911539"
+BUSINESS_NAME = "TechBuxin Academy"
 
 # ========================================
 # DATABASE MODELS (Copy all your models here)

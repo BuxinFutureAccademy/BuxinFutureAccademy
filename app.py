@@ -16,8 +16,7 @@ import secrets
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from twilio.rest import Client
-from sqlalchemy import not_
+import time
 
 # ========================================
 # APPLICATION CONFIGURATION
@@ -7161,7 +7160,8 @@ def bulk_message():
             email_count = send_bulk_email(recipients, message_subject, message_content)
 
         if send_whatsapp:
-            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            whatsapp_count = 0
+            whatsapp_results = []
             for user in recipients:
                 if not user.whatsapp_number:
                     continue
@@ -7170,18 +7170,34 @@ def bulk_message():
                     phone = f'+{phone}'
                 else:
                     phone = f'+{phone}' if not phone.startswith('+') else phone
-                to_whatsapp = f'whatsapp:{phone}'
-                body = f"Hello {user.first_name},\\n\\n{message_content}\\n\\nBest regards,\\nLearning Management System"
+                # WhatsApp API expects phone without '+'
+                clean_phone = phone.replace('+', '')
+                url = f"https://graph.facebook.com/v22.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+                headers = {
+                    "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+                    "Content-Type": "application/json"
+                }
+                body = f"Hello {user.first_name},\n\n{message_content}\n\nBest regards,\nLearning Management System"
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "to": clean_phone,
+                    "type": "text",
+                    "text": {"body": body}
+                }
                 try:
-                    message = client.messages.create(
-                        from_=TWILIO_WHATSAPP_FROM,
-                        body=body,
-                        to=to_whatsapp
-                    )
-                    whatsapp_results.append({'user': user, 'status': 'sent', 'sid': message.sid})
-                    whatsapp_count += 1
+                    response = requests.post(url, headers=headers, json=payload)
+                    if response.status_code == 200:
+                        data = response.json()
+                        message_id = data.get('messages', [{}])[0].get('id', 'Unknown')
+                        whatsapp_results.append({'user': user, 'status': 'sent', 'sid': message_id})
+                        whatsapp_count += 1
+                    else:
+                        error = response.json().get('error', {}).get('message', 'Unknown error')
+                        whatsapp_results.append({'user': user, 'status': f'error: {error}'})
                 except Exception as e:
                     whatsapp_results.append({'user': user, 'status': f'error: {e}'})
+                # Rate limiting
+                time.sleep(3)
             flash(f'WhatsApp messages sent to {whatsapp_count} users. See details below.', 'info')
             return render_template('bulk_message_result.html',
                                    whatsapp_results=whatsapp_results,

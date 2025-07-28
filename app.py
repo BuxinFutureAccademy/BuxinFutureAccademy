@@ -528,6 +528,317 @@ If you need assistance, contact us at support@techbuxin.com
         print(f"Failed to send password reset email: {e}")
         return False
 
+#test333333333333555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555
+# Add this debugging route to your Flask app for testing
+@app.route('/admin/debug-whatsapp', methods=['GET', 'POST'])
+@login_required
+def debug_whatsapp():
+    """Debug WhatsApp configuration and test sending"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    debug_results = []
+    
+    if request.method == 'POST':
+        test_phone = request.form.get('test_phone', '').strip()
+        test_message = request.form.get('test_message', 'This is a test message from TechBuxin Academy.')
+        
+        # Test 1: Check configuration
+        debug_results.append("=== CONFIGURATION CHECK ===")
+        debug_results.append(f"✅ ACCESS_TOKEN: {'SET' if WHATSAPP_ACCESS_TOKEN else 'MISSING'}")
+        debug_results.append(f"✅ PHONE_NUMBER_ID: {WHATSAPP_PHONE_NUMBER_ID if WHATSAPP_PHONE_NUMBER_ID else 'MISSING'}")
+        debug_results.append(f"✅ Test Phone: {test_phone}")
+        
+        if not WHATSAPP_ACCESS_TOKEN:
+            debug_results.append("❌ WHATSAPP_ACCESS_TOKEN is missing!")
+            return render_template('admin/debug_whatsapp.html', debug_results=debug_results)
+        
+        if not WHATSAPP_PHONE_NUMBER_ID:
+            debug_results.append("❌ WHATSAPP_PHONE_NUMBER_ID is missing!")
+            return render_template('admin/debug_whatsapp.html', debug_results=debug_results)
+        
+        # Test 2: Phone number validation
+        debug_results.append("\n=== PHONE NUMBER VALIDATION ===")
+        if not test_phone:
+            debug_results.append("❌ No test phone number provided!")
+            return render_template('admin/debug_whatsapp.html', debug_results=debug_results)
+        
+        clean_phone = ''.join(filter(str.isdigit, test_phone.replace('+', '')))
+        debug_results.append(f"📱 Original: {test_phone}")
+        debug_results.append(f"📱 Cleaned: {clean_phone}")
+        debug_results.append(f"📱 Length: {len(clean_phone)} digits")
+        
+        if len(clean_phone) < 6 or len(clean_phone) > 15:
+            debug_results.append(f"❌ Invalid phone number length: {len(clean_phone)}")
+            return render_template('admin/debug_whatsapp.html', debug_results=debug_results)
+        
+        # Test 3: API Endpoint Test
+        debug_results.append("\n=== API ENDPOINT TEST ===")
+        url = f"https://graph.facebook.com/v22.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+        headers = {
+            "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        debug_results.append(f"🌐 URL: {url}")
+        debug_results.append(f"🔑 Token (first 20 chars): {WHATSAPP_ACCESS_TOKEN[:20]}...")
+        
+        # Test 4: Send actual message
+        debug_results.append("\n=== SENDING TEST MESSAGE ===")
+        
+        formatted_message = f"""🎓 *Hello Test User!*
+
+📢 *DEBUG MESSAGE from TechBuxin Academy*
+
+{test_message}
+
+📞 *Contact Us:*
+WhatsApp: +91 93190 38312
+Email: support@techbuxin.com
+
+*This is a test message.*
+_TechBuxin Academy Team_ 🚀
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📱 Reply STOP to unsubscribe"""
+        
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": clean_phone,
+            "type": "text",
+            "text": {"body": formatted_message}
+        }
+        
+        debug_results.append(f"📤 Payload prepared for: {clean_phone}")
+        debug_results.append(f"📝 Message length: {len(formatted_message)} characters")
+        
+        try:
+            import time
+            start_time = time.time()
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            end_time = time.time()
+            
+            debug_results.append(f"⏱️ Request took: {end_time - start_time:.2f} seconds")
+            debug_results.append(f"📊 Response Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    message_id = data.get('messages', [{}])[0].get('id', 'Unknown')
+                    wa_id = data.get('contacts', [{}])[0].get('wa_id', 'Unknown')
+                    
+                    debug_results.append("✅ SUCCESS! Message sent successfully!")
+                    debug_results.append(f"📧 Message ID: {message_id}")
+                    debug_results.append(f"📱 WhatsApp ID: {wa_id}")
+                    debug_results.append(f"📋 Full Response: {data}")
+                    
+                    flash('✅ Test message sent successfully! Check your WhatsApp.', 'success')
+                    
+                except Exception as e:
+                    debug_results.append(f"✅ Message sent but response parsing failed: {e}")
+                    debug_results.append(f"📋 Raw Response: {response.text}")
+                    
+            else:
+                debug_results.append(f"❌ API Request Failed!")
+                debug_results.append(f"📊 Status Code: {response.status_code}")
+                
+                try:
+                    error_data = response.json()
+                    debug_results.append(f"📋 Error Response: {error_data}")
+                    
+                    error_message = error_data.get('error', {}).get('message', 'Unknown error')
+                    error_code = error_data.get('error', {}).get('code', 'Unknown')
+                    error_type = error_data.get('error', {}).get('type', 'Unknown')
+                    
+                    debug_results.append(f"❌ Error Code: {error_code}")
+                    debug_results.append(f"❌ Error Type: {error_type}")
+                    debug_results.append(f"❌ Error Message: {error_message}")
+                    
+                    # Common error solutions
+                    if error_code == 190:
+                        debug_results.append("\n🔧 SOLUTION: Access token expired or invalid")
+                        debug_results.append("   - Generate new access token in Facebook Developer Console")
+                        debug_results.append("   - Update WHATSAPP_ACCESS_TOKEN in your configuration")
+                    elif error_code == 131058:
+                        debug_results.append("\n🔧 SOLUTION: Hello World template restriction")
+                        debug_results.append("   - Use approved templates or ensure recipient messaged you first")
+                    elif error_code == 132001:
+                        debug_results.append("\n🔧 SOLUTION: Template not found")
+                        debug_results.append("   - Create and approve message templates")
+                        debug_results.append("   - Or use free-form messages to users who messaged you first")
+                    
+                except Exception as e:
+                    debug_results.append(f"❌ Could not parse error response: {e}")
+                    debug_results.append(f"📋 Raw Response: {response.text}")
+                
+        except requests.exceptions.Timeout:
+            debug_results.append("❌ REQUEST TIMEOUT!")
+            debug_results.append("   - Check your internet connection")
+            debug_results.append("   - Facebook servers might be slow")
+            
+        except requests.exceptions.ConnectionError:
+            debug_results.append("❌ CONNECTION ERROR!")
+            debug_results.append("   - Check your internet connection")
+            debug_results.append("   - Facebook API might be down")
+            
+        except Exception as e:
+            debug_results.append(f"❌ UNEXPECTED ERROR: {str(e)}")
+            debug_results.append("   - Check your Python environment")
+            debug_results.append("   - Ensure requests library is installed")
+    
+    return render_template('admin/debug_whatsapp.html', debug_results=debug_results)
+
+# Add this simple test function
+def quick_whatsapp_test():
+    """Quick test function you can call from Python console"""
+    test_phone = "+2202217288"  # Replace with your test number
+    test_message = "Quick test from console"
+    
+    clean_phone = ''.join(filter(str.isdigit, test_phone.replace('+', '')))
+    
+    url = f"https://graph.facebook.com/v22.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": clean_phone,
+        "type": "text",
+        "text": {"body": test_message}
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        print(f"Status: {response.status_code}")
+        print(f"Response: {response.json()}")
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+# Create this template: templates/admin/debug_whatsapp.html
+DEBUG_WHATSAPP_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Debug - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .debug-output {
+            background: #1e1e1e;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 8px;
+            white-space: pre-line;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .config-check {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-bug me-2"></i>WhatsApp Debug Console</h2>
+                    <a href="{{ url_for('bulk_message') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Bulk Message
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Form -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-vial me-2"></i>Test WhatsApp Sending</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="test_phone" class="form-label">Test Phone Number</label>
+                                <input type="text" class="form-control" id="test_phone" name="test_phone" 
+                                       placeholder="+2202217288" required>
+                                <div class="form-text">Include country code (e.g., +220, +91, +1)</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="test_message" class="form-label">Test Message</label>
+                                <textarea class="form-control" id="test_message" name="test_message" rows="3"
+                                          placeholder="This is a test message">This is a test message from TechBuxin Academy debug console.</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i>Send Test Message
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Configuration Check -->
+                <div class="config-check mt-4">
+                    <h6><i class="fas fa-cog me-2"></i>Configuration Status</h6>
+                    <p><strong>Access Token:</strong> {{ 'Configured' if config.get('WHATSAPP_ACCESS_TOKEN') else 'Missing' }}</p>
+                    <p><strong>Phone Number ID:</strong> {{ config.get('WHATSAPP_PHONE_NUMBER_ID', 'Missing') }}</p>
+                    <p><strong>API Version:</strong> v22.0</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <!-- Debug Output -->
+                {% if debug_results %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-terminal me-2"></i>Debug Output</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="debug-output">
+{% for result in debug_results %}{{ result }}
+{% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Common Issues -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Common Issues</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><strong>Error 190:</strong> Access token expired - Generate new token</li>
+                            <li><strong>Error 131058:</strong> Need template or user must message first</li>
+                            <li><strong>Error 132001:</strong> Template doesn't exist</li>
+                            <li><strong>Timeout:</strong> Network or server issues</li>
+                            <li><strong>No delivery:</strong> Check recipient's WhatsApp settings</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+'''
+
+# Save the template above as templates/admin/debug_whatsapp.html
+
 #////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 # Add these new database models to your app.py file

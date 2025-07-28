@@ -2329,6 +2329,2337 @@ def robotics_submissions_stats():
         return {'error': str(e)}, 500
 
 # Add this helper function to upload files to Cloudinary with proper error handling
+# app.py - Complete Flask Application (Production Ready)
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory , jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from datetime import datetime
+import os
+import uuid
+import requests
+import json
+import smtplib
+import urllib.parse
+from email.message import EmailMessage
+import secrets
+from itsdangerous import URLSafeTimedSerializer
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import time
+
+# ========================================
+# APPLICATION CONFIGURATION
+# ========================================
+
+app = Flask(__name__)
+
+# Production configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
+
+# Database configuration for production
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    # Handle PostgreSQL URL for Render
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    # Fallback to SQLite for local development
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///learning_management.db'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# File upload configuration
+app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
+
+# AI Assistant Configuration
+app.config['DEEPINFRA_API_KEY'] = os.environ.get('DEEPINFRA_API_KEY', "JJT2oAUiJNKaEzkGAcP0PpzZ1hBoExqz")
+app.config['DEEPINFRA_API_URL'] = "https://api.deepinfra.com/v1/openai/chat/completions"
+
+# Flask app email configurations
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'worldvlog13@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'mfrp osrt pwki lmmx')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'worldvlog13@gmail.com')
+
+# WhatsApp Web fixed number URL base
+app.config['WHATSAPP_WEB_URL'] = 'https://web.whatsapp.com/send?phone=+919319038312'
+
+# Create upload directories if they don't exist
+try:
+    os.makedirs(app.config.get('UPLOAD_FOLDER', 'static/uploads'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'materials'), exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create upload directories: {e}")
+
+# Initialize extensions
+db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Load Twilio credentials
+# WhatsApp API credentials (replace with your actual values or use environment variables)
+WHATSAPP_ACCESS_TOKEN = "EAFcTRBv7cJMBPBKNkoDGtZApYs2ZA995mV9MifIV3APi0aEQyrbszOWiJ3JF5JNAmKa8VnXjL52ye09o23oksWZBNGaZBVZCWfxhUSX8z2joYYiEwX7TfuZBZAsIZCZB80mPTYSZBeGUwTJl58I5lW9xKS4EYncP1fsT7pvX6i4pEOWO79y99rN1mQCiRjXwBZAwX2kC9dF32r82d7sdbyLiggIpMMZAgAazc69DnBBBdt7Pfi5e6QZDZD"
+WHATSAPP_PHONE_NUMBER_ID = "679601781911539"
+BUSINESS_NAME = "TechBuxin Academy"
+
+# ========================================
+# DATABASE MODELS (Copy all your models here)
+# ========================================
+
+# Association tables for many-to-many relationships
+individual_class_students = db.Table('individual_class_students',
+    db.Column('class_id', db.Integer, db.ForeignKey('individual_class.id'), primary_key=True),
+    db.Column('student_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+)
+
+group_class_students = db.Table('group_class_students',
+    db.Column('class_id', db.Integer, db.ForeignKey('group_class.id'), primary_key=True),
+    db.Column('student_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+)
+
+class ClassEnrollment(db.Model):
+    """Model for tracking class enrollments and payments"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    class_id = db.Column(db.Integer, nullable=False)
+    class_type = db.Column(db.String(20), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    payment_method = db.Column(db.String(50))
+    transaction_id = db.Column(db.String(100))
+    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    customer_name = db.Column(db.String(100))
+    customer_phone = db.Column(db.String(20))
+    customer_email = db.Column(db.String(120))
+    customer_address = db.Column(db.Text)
+    payment_proof = db.Column(db.String(255))
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+
+class User(UserMixin, db.Model):
+    """User model for authentication and user management"""
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    is_student = db.Column(db.Boolean, default=True)
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
+    whatsapp_number = db.Column(db.String(20), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+class IndividualClass(db.Model):
+    """Model for individual classes"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    teacher = db.relationship('User', foreign_keys=[teacher_id], lazy='select')
+    students = db.relationship('User', secondary=individual_class_students, 
+                             lazy='select', back_populates='individual_classes')
+
+class GroupClass(db.Model):
+    """Model for group classes"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    max_students = db.Column(db.Integer, default=10)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    teacher = db.relationship('User', foreign_keys=[teacher_id], lazy='select')
+    students = db.relationship('User', secondary=group_class_students, 
+                             lazy='select', back_populates='group_classes')  # ✅ FIXED
+
+class Course(db.Model):
+    """Model for courses in the store"""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    short_description = db.Column(db.String(500))
+    price = db.Column(db.Float, nullable=False, default=0.0)
+    duration_weeks = db.Column(db.Integer, default=4)
+    level = db.Column(db.String(20), default='Beginner')
+    category = db.Column(db.String(100), nullable=False)
+    image_url = db.Column(db.String(500))
+    is_active = db.Column(db.Boolean, default=True)
+    featured = db.Column(db.Boolean, default=False)  # ADD THIS LINE
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    creator = db.relationship('User', foreign_keys=[created_by], lazy='select')
+
+    
+    def get_enrolled_count(self):
+        return Purchase.query.filter_by(course_id=self.id, status='completed').count()
+    
+    def get_video_count(self):
+        return CourseVideo.query.filter_by(course_id=self.id).count()
+    
+    def get_total_duration(self):
+        videos = CourseVideo.query.filter_by(course_id=self.id).all()
+        total_minutes = 0
+        for video in videos:
+            if video.duration:
+                try:
+                    time_parts = video.duration.split(':')
+                    minutes = int(time_parts[0])
+                    seconds = int(time_parts[1]) if len(time_parts) > 1 else 0
+                    total_minutes += minutes + (seconds / 60)
+                except:
+                    pass
+        if total_minutes == 0:
+            return ""
+        elif total_minutes >= 60:
+            hours = int(total_minutes // 60)
+            minutes = int(total_minutes % 60)
+            return f"{hours}h {minutes}m"
+        else:
+            return f"{int(total_minutes)}m"
+
+class CourseVideo(db.Model):
+    """Model for course videos/lessons"""
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    video_filename = db.Column(db.String(255), nullable=False)
+    video_url = db.Column(db.String(500))
+    duration = db.Column(db.String(10))
+    order_index = db.Column(db.Integer, default=1)
+    is_preview = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    course = db.relationship('Course', backref=db.backref('videos', lazy=True, order_by='CourseVideo.order_index'))
+
+class CourseMaterial(db.Model):
+    """Model for course materials (PDFs, docs, etc.)"""
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    file_type = db.Column(db.String(50))
+    file_size = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    course = db.relationship('Course', backref=db.backref('materials', lazy=True))
+    
+    def get_file_size_mb(self):
+        return round(self.file_size / (1024 * 1024), 2) if self.file_size else 0
+
+class Purchase(db.Model):
+    """Model for course purchases/payments"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    payment_method = db.Column(db.String(50), default='bank_transfer')
+    transaction_id = db.Column(db.String(100))
+    purchased_at = db.Column(db.DateTime, default=datetime.utcnow)
+    customer_name = db.Column(db.String(100))
+    customer_phone = db.Column(db.String(20))
+    customer_email = db.Column(db.String(120))
+    customer_address = db.Column(db.Text)
+    payment_proof = db.Column(db.String(255))
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    course = db.relationship('Course', foreign_keys=[course_id], lazy='select')
+
+class Product(db.Model):
+    """Model for products in the store"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    short_description = db.Column(db.String(500))
+    price = db.Column(db.Float, nullable=False, default=0.0)
+    product_type = db.Column(db.String(20), default='Physical')
+    category = db.Column(db.String(100), nullable=False)
+    brand = db.Column(db.String(100))
+    sku = db.Column(db.String(50), unique=True)
+    stock_quantity = db.Column(db.Integer, default=0)
+    image_url = db.Column(db.String(500))
+    is_active = db.Column(db.Boolean, default=True)
+    featured = db.Column(db.Boolean, default=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    creator = db.relationship('User', foreign_keys=[created_by], lazy='select')
+    
+    def get_sales_count(self):
+        return ProductOrder.query.filter_by(product_id=self.id, status='completed').count()
+    
+    def is_in_stock(self):
+        return self.product_type == 'Digital' or self.stock_quantity > 0
+
+class ProductOrder(db.Model):
+    """Model for product orders"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    unit_price = db.Column(db.Float, nullable=False)
+    total_amount = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    payment_method = db.Column(db.String(50), default='bank_transfer')
+    transaction_id = db.Column(db.String(100))
+    shipping_address = db.Column(db.Text)
+    tracking_number = db.Column(db.String(100))
+    ordered_at = db.Column(db.DateTime, default=datetime.utcnow)
+    shipped_at = db.Column(db.DateTime)
+    delivered_at = db.Column(db.DateTime)
+    customer_name = db.Column(db.String(100))
+    customer_phone = db.Column(db.String(20))
+    customer_email = db.Column(db.String(120))
+    customer_address = db.Column(db.Text)
+    payment_proof = db.Column(db.String(255))
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    product = db.relationship('Product', foreign_keys=[product_id], lazy='select')
+
+class CartItem(db.Model):
+    """Model for course cart items"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    course = db.relationship('Course', foreign_keys=[course_id], lazy='select')
+
+class ProductCartItem(db.Model):
+    """Model for product cart items"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    product = db.relationship('Product', foreign_keys=[product_id], lazy='select')
+    
+    def get_total_price(self):
+        return self.product.price * self.quantity
+
+
+#////////////////////////////////////////////////////////////////////////////
+
+class DigitalProductFile(db.Model):
+    """Enhanced model for digital product files with Cloudinary support"""
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    
+    # File information
+    filename = db.Column(db.String(255), nullable=False)  # Local filename (backup)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_type = db.Column(db.String(50))
+    file_size = db.Column(db.Integer)
+    
+    # Cloudinary information
+    cloudinary_url = db.Column(db.String(500))  # Cloudinary secure URL
+    cloudinary_public_id = db.Column(db.String(255))  # Cloudinary public ID
+    cloudinary_resource_type = db.Column(db.String(20), default='raw')  # raw, image, video
+    
+    # Storage type
+    storage_type = db.Column(db.String(20), default='cloudinary')  # 'local' or 'cloudinary'
+    
+    # Metadata
+    download_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    product = db.relationship('Product', backref=db.backref('digital_files', lazy=True))
+    
+    def get_file_size_mb(self):
+        return round(self.file_size / (1024 * 1024), 2) if self.file_size else 0
+    
+    def get_download_url(self):
+        """Get the download URL (prefer Cloudinary)"""
+        if self.storage_type == 'cloudinary' and self.cloudinary_url:
+            return self.cloudinary_url
+        else:
+            # Fallback to local file
+            return url_for('download_digital_product', file_id=self.id)
+    
+    def is_cloudinary_stored(self):
+        """Check if file is stored on Cloudinary"""
+        return self.storage_type == 'cloudinary' and self.cloudinary_url
+
+
+# Add this database model to your app.py with your other models//////////////////////////////////////////////////////////////////////
+class RoboticsProjectSubmission(db.Model):
+    """Model for robotics project submissions"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Personal Information
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(20))
+    location = db.Column(db.String(100))
+    education_level = db.Column(db.String(50), nullable=False)
+    
+    # Project Details
+    project_title = db.Column(db.String(200), nullable=False)
+    project_description = db.Column(db.Text, nullable=False)
+    problem_solved = db.Column(db.Text)
+    components = db.Column(db.Text)
+    progress = db.Column(db.Text)
+    project_goal = db.Column(db.Text)
+    
+    # Help Needed (stored as comma-separated values)
+    help_needed = db.Column(db.Text)
+    
+    # Additional Information
+    additional_comments = db.Column(db.Text)
+    
+    # File Uploads (stored as JSON array of file info)
+    uploaded_files = db.Column(db.Text)  # JSON string of file URLs/paths
+    
+    # Status and Admin Fields
+    status = db.Column(db.String(20), default='pending')  # pending, reviewed, selected, declined
+    admin_notes = db.Column(db.Text)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reviewed_at = db.Column(db.DateTime)
+    
+    # Timestamps
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by], lazy='select')
+    
+    def get_help_needed_list(self):
+        """Return help needed as a list"""
+        if self.help_needed:
+            return self.help_needed.split(',')
+        return []
+    
+    def get_uploaded_files_list(self):
+        """Return uploaded files as a list"""
+        if self.uploaded_files:
+            try:
+                import json
+                return json.loads(self.uploaded_files)
+            except:
+                return []
+        return []
+
+#,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+# Add this configuration after your existing app.config settings
+app.config['RESET_TOKEN_SALT'] = os.environ.get('RESET_TOKEN_SALT', 'password-reset-salt-change-in-production')
+
+# Add this new model to your database models section
+class PasswordResetToken(db.Model):
+    """Model for password reset tokens"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(255), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    
+    def __init__(self, user_id, **kwargs):
+        super().__init__(**kwargs)
+        self.user_id = user_id
+        self.token = secrets.token_urlsafe(32)
+        # Token expires in 1 hour
+        self.expires_at = datetime.utcnow() + timedelta(hours=1)
+    
+    def is_expired(self):
+        return datetime.utcnow() > self.expires_at
+    
+    def is_valid(self):
+        return not self.used and not self.is_expired()
+
+# Add these helper functions after your existing helper functions
+def generate_reset_token(user):
+    """Generate a secure password reset token"""
+    try:
+        # Clean up old expired tokens for this user
+        PasswordResetToken.query.filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.expires_at < datetime.utcnow()
+        ).delete()
+        
+        # Create new token
+        reset_token = PasswordResetToken(user_id=user.id)
+        db.session.add(reset_token)
+        db.session.commit()
+        
+        return reset_token.token
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error generating reset token: {e}")
+        return None
+
+def verify_reset_token(token):
+    """Verify and return user for valid reset token"""
+    try:
+        reset_token = PasswordResetToken.query.filter_by(token=token).first()
+        
+        if not reset_token or not reset_token.is_valid():
+            return None
+        
+        return reset_token.user
+    except Exception as e:
+        print(f"Error verifying reset token: {e}")
+        return None
+
+def send_password_reset_email(user, reset_token):
+    """Send password reset email"""
+    try:
+        reset_url = url_for('reset_password', token=reset_token, _external=True)
+        
+        subject = "🔒 Reset Your BuXin Academy Password"
+        message = f"""
+Hello {user.first_name},
+
+We received a request to reset your password for your BuXin Academy account.
+
+Click the link below to reset your password:
+{reset_url}
+
+This link will expire in 1 hour for your security.
+
+If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
+
+For security reasons:
+- Never share this link with anyone
+- This link can only be used once
+- If you need help, contact our support team
+
+Best regards,
+BuXin Academy Team
+
+---
+This is an automated email. Please do not reply to this email.
+If you need assistance, contact us at support@techbuxin.com
+"""
+        
+        # Create a temporary user object for the email function
+        class TempUser:
+            def __init__(self, email, first_name):
+                self.email = email
+                self.first_name = first_name
+        
+        temp_user = TempUser(user.email, user.first_name)
+        sent_count = send_bulk_email([temp_user], subject, message)
+        
+        return sent_count > 0
+        
+    except Exception as e:
+        print(f"Failed to send password reset email: {e}")
+        return False
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+# Add these new database models to your app.py file
+# Place them with your other models (after the existing models)
+
+class StudentProject(db.Model):
+    """Model for student project posts"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Project Information
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    
+    # Media Content
+    image_url = db.Column(db.String(500))  # Project image URL (Cloudinary)
+    youtube_url = db.Column(db.String(500))  # YouTube video URL
+    project_link = db.Column(db.String(500))  # Additional project link (GitHub, demo, etc.)
+    
+    # Student Information
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    student = db.relationship('User', foreign_keys=[student_id], lazy='select')
+    
+    # Metadata
+    is_active = db.Column(db.Boolean, default=True)
+    featured = db.Column(db.Boolean, default=False)  # Admin can feature projects
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    likes = db.relationship('ProjectLike', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('ProjectComment', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def get_like_count(self):
+        """Get total likes for this project"""
+        return self.likes.filter_by(is_like=True).count()
+    
+    def get_dislike_count(self):
+        """Get total dislikes for this project"""
+        return self.likes.filter_by(is_like=False).count()
+    
+    def get_comment_count(self):
+        """Get total comments for this project"""
+        return self.comments.count()
+    
+    def user_reaction(self, user_id):
+        """Get user's like/dislike status for this project"""
+        if not user_id:
+            return None
+        like = self.likes.filter_by(user_id=user_id).first()
+        return like.is_like if like else None
+    
+    def get_youtube_embed_url(self):
+        """Convert YouTube URL to embed URL"""
+        if not self.youtube_url:
+            return None
+        
+        # Handle different YouTube URL formats
+        import re
+        youtube_patterns = [
+            r'(?:https?://)?(?:www\.)?youtube\.com/watch\?v=([a-zA-Z0-9_-]+)',
+            r'(?:https?://)?(?:www\.)?youtu\.be/([a-zA-Z0-9_-]+)',
+            r'(?:https?://)?(?:www\.)?youtube\.com/embed/([a-zA-Z0-9_-]+)'
+        ]
+        
+        for pattern in youtube_patterns:
+            match = re.search(pattern, self.youtube_url)
+            if match:
+                video_id = match.group(1)
+                return f"https://www.youtube.com/embed/{video_id}"
+        
+        return None
+
+
+class ProjectLike(db.Model):
+    """Model for project likes/dislikes"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('student_project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_like = db.Column(db.Boolean, nullable=False)  # True for like, False for dislike
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    
+    # Ensure one reaction per user per project
+    __table_args__ = (db.UniqueConstraint('project_id', 'user_id', name='unique_user_project_reaction'),)
+
+
+class ProjectComment(db.Model):
+    """Model for project comments"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('student_project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comment = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+
+
+# Helper function to upload project images to Cloudinary
+def upload_project_image_to_cloudinary(image_file, project_id, user_id):
+    """Upload project image to Cloudinary"""
+    try:
+        print(f"📤 Uploading project image to Cloudinary...")
+        
+        # Reset file pointer to beginning
+        image_file.seek(0)
+        
+        # Create a unique public_id for the image
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        public_id = f"project_{project_id}_{user_id}_{timestamp}"
+        
+        # Get file size for logging
+        image_file.seek(0, 2)
+        file_size = image_file.tell()
+        image_file.seek(0)
+        print(f"📁 File size: {file_size / (1024*1024):.1f}MB")
+        
+        # Upload to Cloudinary with optimized settings
+        upload_params = {
+            'resource_type': "image",
+            'public_id': public_id,
+            'folder': "student_projects",
+            'overwrite': True,
+            'format': "jpg",  # Convert to JPG for optimization
+            'quality': "auto",  # Optimize quality automatically
+            'transformation': [
+                {'width': 800, 'height': 600, 'crop': 'limit'},  # Limit max size
+                {'quality': 'auto:good'}  # Good quality optimization
+            ]
+        }
+        
+        print(f"📤 Uploading to Cloudinary with params: {upload_params}")
+        
+        # Perform the upload
+        result = cloudinary.uploader.upload(image_file, **upload_params)
+        
+        print(f"✅ Cloudinary upload successful!")
+        print(f"   URL: {result.get('secure_url', 'No URL')}")
+        print(f"   Public ID: {result.get('public_id', 'No ID')}")
+        print(f"   Size: {result.get('bytes', 0) / (1024*1024):.1f}MB")
+        
+        return result['secure_url']
+        
+    except Exception as e:
+        print(f"❌ Cloudinary upload error: {str(e)}")
+        import traceback
+        print("Full traceback:")
+        traceback.print_exc()
+        return None
+
+
+class LearningMaterial(db.Model):
+    """Model for learning materials shared in classes"""
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    class_id = db.Column(db.String(50), nullable=False)
+    class_type = db.Column(db.String(20), nullable=False)
+    actual_class_id = db.Column(db.Integer, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    creator = db.relationship('User', foreign_keys=[created_by], lazy='select')
+    
+@property
+def class_name(self):
+    if self.class_id.startswith('student_'):
+        # Individual student sharing
+        student_id = int(self.class_id.replace('student_', ''))
+        student = User.query.get(student_id)
+        return f"👤 {student.first_name} {student.last_name}" if student else "Unknown Student"
+    
+    elif self.class_type == 'individual':
+        class_obj = IndividualClass.query.get(self.actual_class_id)
+        return f"📖 {class_obj.name}" if class_obj else "Unknown Individual Class"
+    
+    elif self.class_type == 'group':
+        class_obj = GroupClass.query.get(self.actual_class_id)
+        return f"🎓 {class_obj.name}" if class_obj else "Unknown Group Class"
+    
+    return "Unknown Class"
+
+# Add back_populates to User model relationships
+User.individual_classes = db.relationship('IndividualClass', 
+                                         secondary=individual_class_students,
+                                         back_populates='students', lazy='select')
+User.group_classes = db.relationship('GroupClass', 
+                                    secondary=group_class_students,
+                                    back_populates='students', lazy='select')
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+                              
+@app.route('/admin/fix-password-hash-length')
+@login_required
+def fix_password_hash_length():
+    """Fix password_hash field length - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Increase password_hash field length from 120 to 255 characters
+        with db.engine.connect() as conn:
+            # PostgreSQL syntax for Render
+            conn.execute(db.text('ALTER TABLE "user" ALTER COLUMN password_hash TYPE VARCHAR(255)'))
+            conn.commit()
+        
+        return """
+        <html>
+        <head><title>Database Fixed</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Database Fixed Successfully!</h1>
+            <p><strong>password_hash</strong> field expanded from 120 to 255 characters</p>
+            <p>Registration should now work properly.</p>
+            <br>
+            <p><a href="/register" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🧪 Test Registration</a></p>
+            <p><a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Admin</a></p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p>Contact support if this persists.</p>
+            <p><a href="/admin/dashboard">← Back to Admin</a></p>
+        </body>
+        </html>
+        """, 500
+
+        
+# ========================================
+# HELPER FUNCTIONS
+# ========================================
+
+def allowed_file(filename, file_type='general'):
+    """Check if file extension is allowed for upload"""
+    if file_type == 'video':
+        allowed_extensions = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'}
+    elif file_type == 'material':
+        allowed_extensions = {'pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'zip', 'rar'}
+    else:
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'mp4', 'avi', 'mov'}
+    
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+def send_bulk_email(recipients, subject, message):
+    """Send bulk emails to recipients using EmailMessage and SMTP."""
+    sent_count = 0
+    try:
+        server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+        server.starttls()
+        server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+
+        for user in recipients:
+            try:
+                msg = EmailMessage()
+                msg['From'] = app.config['MAIL_DEFAULT_SENDER']
+                msg['To'] = user.email
+                msg['Subject'] = subject or "Message from Learning Management System"
+
+                body = f"""Dear {user.first_name} {user.last_name},
+
+{message}
+
+Best regards,
+Learning Management System Team
+"""
+                msg.set_content(body)
+                server.send_message(msg)
+                sent_count += 1
+            except Exception as e:
+                print(f"Failed to send email to {user.email}: {e}")
+                continue
+        server.quit()
+    except Exception as e:
+        print(f"Failed to connect to email server: {e}")
+        return 0
+    return sent_count
+
+def generate_whatsapp_links(recipients, message):
+    whatsapp_links = []
+    for user in recipients:
+        if not user.whatsapp_number:
+            continue
+
+        phone = ''.join(filter(str.isdigit, user.whatsapp_number))
+        formatted_message = f"Hello {user.first_name},\n\n{message}\n\nBest regards,\nLearning Management System"
+        encoded_message = urllib.parse.quote(formatted_message)
+
+        whatsapp_link = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_message}"
+        whatsapp_links.append({
+            'user': user,
+            'link': whatsapp_link,
+            'message': formatted_message
+        })
+    return whatsapp_links
+
+#///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+@app.route('/contact-support', methods=['POST'])
+def contact_support():
+    """Handle chat popup support messages and send to admin email."""
+    data = request.get_json()
+    email = data.get('email', '').strip()
+    whatsapp = data.get('whatsapp', '').strip()
+    message = data.get('message', '').strip()
+
+    if not email or not whatsapp or not message:
+        return jsonify(success=False, error="All fields are required."), 400
+
+    # Compose email
+    subject = "New Support Message from Website"
+    body = f"""You have received a new support message from the website:
+
+Email: {email}
+WhatsApp: {whatsapp}
+
+Message:
+{message}
+"""
+
+    # Use your existing send_bulk_email helper (creates a temp user object)
+    class TempUser:
+        def __init__(self, email, first_name):
+            self.email = email
+            self.first_name = email.split('@')[0]
+            self.last_name = ""
+
+    admin_email = app.config.get('MAIL_DEFAULT_SENDER', 'worldvlog13@gmail.com')
+    temp_admin = TempUser(admin_email, "Admin")
+    try:
+        sent_count = send_bulk_email([temp_admin], subject, body)
+        if sent_count > 0:
+            return jsonify(success=True)
+        else:
+            return jsonify(success=False, error="Failed to send email."), 500
+    except Exception as e:
+        print(f"Error sending support email: {e}")
+        return jsonify(success=False, error="Internal error."), 500
+        
+#''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+# Add these routes to your app.py file
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Handle forgot password requests - DEBUGGED VERSION"""
+    if current_user.is_authenticated:
+        flash('You are already logged in.', 'info')
+        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+    
+    if request.method == 'POST':
+        # Debug: Print all form data
+        print("=== FORGOT PASSWORD DEBUG ===")
+        print(f"Request method: {request.method}")
+        print(f"Form data: {request.form}")
+        print(f"Raw form data: {dict(request.form)}")
+        
+        # Try multiple ways to get the email
+        email = None
+        
+        # Method 1: Standard form field
+        if 'email' in request.form:
+            email = request.form.get('email', '').strip().lower()
+            print(f"Method 1 - Standard: email = '{email}'")
+        
+        # Method 2: Check for any field that might contain email
+        for key, value in request.form.items():
+            print(f"Form field: '{key}' = '{value}'")
+            if 'email' in key.lower() or '@' in str(value):
+                email = str(value).strip().lower()
+                print(f"Method 2 - Found email-like field: '{key}' = '{email}'")
+                break
+        
+        # Method 3: Check if it's JSON data
+        if request.is_json:
+            json_data = request.get_json()
+            print(f"JSON data: {json_data}")
+            if json_data and 'email' in json_data:
+                email = json_data.get('email', '').strip().lower()
+                print(f"Method 3 - JSON: email = '{email}'")
+        
+        print(f"Final email value: '{email}'")
+        print("=== END DEBUG ===")
+        
+        # Validation
+        if not email or email == '':
+            print("❌ Email validation failed - empty or None")
+            flash('Please enter your email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        # Validate email format
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            print(f"❌ Email format validation failed for: '{email}'")
+            flash('Please enter a valid email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        print(f"✅ Email validation passed for: '{email}'")
+        
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
+        print(f"User lookup result: {user}")
+        
+        if user:
+            try:
+                print(f"Found user: {user.username} ({user.email})")
+                
+                # Check if user already has a recent unused token (prevent spam)
+                recent_token = PasswordResetToken.query.filter(
+                    PasswordResetToken.user_id == user.id,
+                    PasswordResetToken.created_at > datetime.utcnow() - timedelta(minutes=5),
+                    PasswordResetToken.used == False
+                ).first()
+                
+                if recent_token:
+                    print("⚠️ Recent token exists")
+                    flash('A password reset email was already sent recently. Please check your email or wait 5 minutes before requesting another.', 'warning')
+                    return render_template('forgot_password.html')
+                
+                # Generate reset token
+                print("Generating reset token...")
+                reset_token = generate_reset_token(user)
+                
+                if reset_token:
+                    print(f"✅ Reset token generated: {reset_token[:10]}...")
+                    
+                    # Send email
+                    print("Sending reset email...")
+                    email_sent = send_password_reset_email(user, reset_token)
+                    
+                    if email_sent:
+                        print("✅ Email sent successfully")
+                        flash('📧 Password reset instructions have been sent to your email address. Please check your inbox and spam folder.', 'success')
+                        return redirect(url_for('login'))
+                    else:
+                        print("❌ Email sending failed")
+                        flash('Failed to send reset email. Please try again later or contact support.', 'danger')
+                else:
+                    print("❌ Token generation failed")
+                    flash('Failed to generate reset token. Please try again later.', 'danger')
+                    
+            except Exception as e:
+                print(f"❌ Exception in forgot password: {e}")
+                import traceback
+                traceback.print_exc()
+                flash('An error occurred. Please try again later.', 'danger')
+        else:
+            print(f"User not found for email: {email}")
+            # Don't reveal whether email exists or not (security best practice)
+            # Show success message anyway to prevent email enumeration
+            flash('📧 If an account with that email exists, password reset instructions have been sent.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Handle password reset with token"""
+    if current_user.is_authenticated:
+        flash('You are already logged in.', 'info')
+        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+    
+    # Verify token
+    user = verify_reset_token(token)
+    if not user:
+        flash('❌ Invalid or expired password reset link. Please request a new password reset.', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        
+        # Validate password
+        if not password:
+            flash('Password is required.', 'danger')
+            return render_template('reset_password.html', token=token, user=user)
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'danger')
+            return render_template('reset_password.html', token=token, user=user)
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return render_template('reset_password.html', token=token, user=user)
+        
+        try:
+            # Update user password
+            user.set_password(password)
+            
+            # Mark token as used
+            reset_token = PasswordResetToken.query.filter_by(token=token).first()
+            if reset_token:
+                reset_token.used = True
+            
+            # Clean up old tokens for this user
+            PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.id != (reset_token.id if reset_token else 0)
+            ).delete()
+            
+            db.session.commit()
+            
+            # Send confirmation email
+            try:
+                subject = "✅ Your BuXin Academy Password Has Been Reset"
+                message = f"""
+Hello {user.first_name},
+
+Your password has been successfully reset for your BuXin Academy account.
+
+If you made this change, you can safely ignore this email.
+
+If you didn't reset your password, please contact our support team immediately at support@techbuxin.com
+
+For your security:
+- Always use a strong, unique password
+- Never share your login credentials
+- Log out from shared devices
+
+Best regards,
+BuXin Academy Team
+"""
+                class TempUser:
+                    def __init__(self, email, first_name):
+                        self.email = email
+                        self.first_name = first_name
+                
+                temp_user = TempUser(user.email, user.first_name)
+                send_bulk_email([temp_user], subject, message)
+            except Exception as e:
+                print(f"Failed to send confirmation email: {e}")
+            
+            flash('✅ Your password has been successfully reset! You can now log in with your new password.', 'success')
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error resetting password: {e}")
+            flash('An error occurred while resetting your password. Please try again.', 'danger')
+    
+    return render_template('reset_password.html', token=token, user=user)
+
+@app.route('/admin/password-reset-tokens')
+@login_required
+def admin_password_reset_tokens():
+    """Admin view for password reset tokens - for debugging/monitoring"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get recent tokens (last 7 days)
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    tokens = PasswordResetToken.query.filter(
+        PasswordResetToken.created_at >= seven_days_ago
+    ).order_by(PasswordResetToken.created_at.desc()).all()
+    
+    # Get statistics
+    total_tokens = len(tokens)
+    used_tokens = sum(1 for t in tokens if t.used)
+    expired_tokens = sum(1 for t in tokens if t.is_expired() and not t.used)
+    active_tokens = sum(1 for t in tokens if t.is_valid())
+    
+    return render_template('admin_password_reset_tokens.html',
+                         tokens=tokens,
+                         total_tokens=total_tokens,
+                         used_tokens=used_tokens,
+                         expired_tokens=expired_tokens,
+                         active_tokens=active_tokens)
+
+# Add this migration route to create the password reset table
+@app.route('/admin/create-password-reset-table')
+@login_required
+def create_password_reset_table():
+    """Create password reset tokens table - ADMIN ONLY"""
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    
+    try:
+        # Create the table
+        db.create_all()
+        
+        return """
+        <html>
+        <head><title>Password Reset Table Created</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Password Reset System Enabled!</h1>
+            <p>The password_reset_token table has been created successfully.</p>
+            <p><strong>Features Added:</strong></p>
+            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
+                <li>✅ Secure token generation (32-byte URL-safe)</li>
+                <li>✅ 1-hour token expiration</li>
+                <li>✅ Single-use tokens</li>
+                <li>✅ Email notifications</li>
+                <li>✅ Rate limiting (5-minute cooldown)</li>
+                <li>✅ Automatic cleanup of old tokens</li>
+                <li>✅ Admin monitoring dashboard</li>
+            </ul>
+            <p style="margin-top: 2rem;">
+                <a href="/forgot-password" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🔒 Test Forgot Password</a>
+                <a href="/admin/password-reset-tokens" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">📊 View Tokens</a>
+            </p>
+            <p style="margin-top: 1rem;">
+                <a href="/admin/dashboard">← Back to Admin Dashboard</a>
+            </p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Table Creation Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Error Creating Table</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p><a href="/admin/dashboard">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """, 500
+
+
+# Add these additional routes to your app.py file to complete the forgot password system
+
+
+
+# Additional helper routes for the admin password reset management
+
+@app.route('/admin/password-reset-token/<int:token_id>')
+@login_required
+def get_password_reset_token_details(token_id):
+    """Get detailed information about a specific password reset token"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        token = PasswordResetToken.query.get_or_404(token_id)
+        user = token.user
+        
+        # Calculate time remaining
+        time_remaining = (token.expires_at - datetime.utcnow()).total_seconds() / 60
+        
+        html = f'''
+        <div class="token-details">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="mb-3"><i class="fas fa-user me-2"></i>User Information</h6>
+                    <div class="detail-item">
+                        <strong>Name:</strong> {user.first_name} {user.last_name}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Username:</strong> {user.username}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Email:</strong> {user.email}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Account Type:</strong> {'Admin' if user.is_admin else 'Student'}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Account Created:</strong> {user.created_at.strftime('%Y-%m-%d %H:%M')}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="mb-3"><i class="fas fa-key me-2"></i>Token Information</h6>
+                    <div class="detail-item">
+                        <strong>Token ID:</strong> {token.id}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Created:</strong> {token.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Expires:</strong> {token.expires_at.strftime('%Y-%m-%d %H:%M:%S')}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Status:</strong> 
+                        {'✅ Used' if token.used else ('⏰ Active' if time_remaining > 0 else '❌ Expired')}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Time Remaining:</strong> 
+                        {f'{int(time_remaining)} minutes' if time_remaining > 0 else 'Expired'}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h6 class="mb-3"><i class="fas fa-shield-alt me-2"></i>Security Information</h6>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <strong>Full Token:</strong><br>
+                            <code style="word-break: break-all;">{token.token}</code>
+                        </div>
+                        {'<div class="alert alert-success">This token has been used successfully.</div>' if token.used else ''}
+                        {'<div class="alert alert-danger">This token has expired and cannot be used.</div>' if token.is_expired() and not token.used else ''}
+                        {f'<div class="alert alert-warning">This token will expire in {int(time_remaining)} minutes.</div>' if not token.used and time_remaining > 0 and time_remaining < 30 else ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .detail-item {{
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f3f4;
+        }}
+        .detail-item:last-child {{
+            border-bottom: none;
+        }}
+        .detail-item strong {{
+            color: #495057;
+            font-weight: 600;
+        }}
+        </style>
+        '''
+        
+        return html
+        
+    except Exception as e:
+        return f'<div class="alert alert-danger">Error loading token details: {str(e)}</div>', 500
+
+@app.route('/admin/revoke-reset-token/<int:token_id>', methods=['POST'])
+@login_required
+def revoke_password_reset_token(token_id):
+    """Revoke a password reset token"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        token = PasswordResetToken.query.get_or_404(token_id)
+        
+        if token.used:
+            return {'success': False, 'error': 'Token has already been used'}, 400
+        
+        # Mark token as used (effectively revoking it)
+        token.used = True
+        db.session.commit()
+        
+        return {'success': True, 'message': 'Token revoked successfully'}
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+@app.route('/admin/cleanup-expired-tokens', methods=['POST'])
+@login_required
+def cleanup_expired_password_reset_tokens():
+    """Clean up expired password reset tokens"""
+    if not current_user.is_admin:
+        return {'success': False, 'error': 'Access denied'}, 403
+    
+    try:
+        # Delete all expired tokens
+        deleted_count = PasswordResetToken.query.filter(
+            PasswordResetToken.expires_at < datetime.utcnow()
+        ).delete()
+        
+        db.session.commit()
+        
+        return {'success': True, 'deleted_count': deleted_count}
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+@app.route('/admin/password-reset-stats')
+@login_required
+def get_password_reset_stats():
+    """Get password reset statistics for admin dashboard"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        # Get tokens from last 7 days
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        tokens = PasswordResetToken.query.filter(
+            PasswordResetToken.created_at >= seven_days_ago
+        ).all()
+        
+        total_tokens = len(tokens)
+        used_tokens = sum(1 for t in tokens if t.used)
+        expired_tokens = sum(1 for t in tokens if t.is_expired() and not t.used)
+        active_tokens = sum(1 for t in tokens if t.is_valid())
+        
+        return {
+            'total_tokens': total_tokens,
+            'used_tokens': used_tokens,
+            'expired_tokens': expired_tokens,
+            'active_tokens': active_tokens
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/admin/export-password-reset-tokens')
+@login_required
+def export_password_reset_tokens():
+    """Export password reset tokens to CSV"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        import csv
+        from io import StringIO
+        from flask import Response
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'ID', 'User ID', 'Username', 'Email', 'Full Name', 'Token', 
+            'Created At', 'Expires At', 'Used', 'Is Expired', 'Status'
+        ])
+        
+        # Get tokens from last 30 days
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        tokens = PasswordResetToken.query.filter(
+            PasswordResetToken.created_at >= thirty_days_ago
+        ).order_by(PasswordResetToken.created_at.desc()).all()
+        
+        # Write token data
+        for token in tokens:
+            user = token.user
+            status = 'Used' if token.used else ('Expired' if token.is_expired() else 'Active')
+            
+            writer.writerow([
+                token.id,
+                user.id,
+                user.username,
+                user.email,
+                f"{user.first_name} {user.last_name}",
+                token.token,
+                token.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                token.expires_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'Yes' if token.used else 'No',
+                'Yes' if token.is_expired() else 'No',
+                status
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=password_reset_tokens_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+        
+    except Exception as e:
+        flash(f'Error exporting tokens: {str(e)}', 'danger')
+        return redirect(url_for('admin_password_reset_tokens'))
+
+# Add this cleanup task that runs automatically
+@app.route('/admin/auto-cleanup-expired-tokens')
+def auto_cleanup_expired_tokens():
+    """Automatic cleanup of expired tokens (can be called by a cron job)"""
+    try:
+        # Delete tokens older than 24 hours past expiration
+        cleanup_time = datetime.utcnow() - timedelta(hours=24)
+        deleted_count = PasswordResetToken.query.filter(
+            PasswordResetToken.expires_at < cleanup_time
+        ).delete()
+        
+        db.session.commit()
+        
+        return {
+            'success': True, 
+            'deleted_count': deleted_count,
+            'message': f'Cleaned up {deleted_count} old expired tokens'
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}, 500
+
+# Enhanced user edit route to show password reset history
+@app.route('/admin/users/<int:user_id>/password-resets')
+@login_required
+def user_password_reset_history(user_id):
+    """View password reset history for a specific user"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Get password reset tokens for this user (last 90 days)
+    ninety_days_ago = datetime.utcnow() - timedelta(days=90)
+    reset_tokens = PasswordResetToken.query.filter(
+        PasswordResetToken.user_id == user_id,
+        PasswordResetToken.created_at >= ninety_days_ago
+    ).order_by(PasswordResetToken.created_at.desc()).all()
+    
+    return render_template('user_password_reset_history.html', 
+                         user=user, 
+                         reset_tokens=reset_tokens)
+
+# Security enhancement: Rate limiting for forgot password requests
+password_reset_attempts = {}
+
+def is_rate_limited(email):
+    """Check if email is rate limited for password reset requests"""
+    now = datetime.utcnow()
+    if email in password_reset_attempts:
+        attempts = password_reset_attempts[email]
+        # Remove attempts older than 1 hour
+        attempts = [attempt for attempt in attempts if (now - attempt).total_seconds() < 3600]
+        password_reset_attempts[email] = attempts
+        
+        # Allow max 3 attempts per hour
+        if len(attempts) >= 3:
+            return True
+    
+    return False
+
+def record_password_reset_attempt(email):
+    """Record a password reset attempt"""
+    now = datetime.utcnow()
+    if email not in password_reset_attempts:
+        password_reset_attempts[email] = []
+    password_reset_attempts[email].append(now)
+
+# Update the forgot_password route to include rate limiting
+# (Replace the existing forgot_password route with this enhanced version)
+
+@app.route('/forgot-password-enhanced', methods=['GET', 'POST'])
+def forgot_password_enhanced():
+    """Enhanced forgot password with rate limiting"""
+    if current_user.is_authenticated:
+        flash('You are already logged in.', 'info')
+        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        
+        if not email:
+            flash('Please enter your email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        # Check rate limiting
+        if is_rate_limited(email):
+            flash('Too many password reset requests. Please wait an hour before trying again.', 'warning')
+            return render_template('forgot_password.html')
+        
+        # Record this attempt
+        record_password_reset_attempt(email)
+        
+        # Validate email format
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            flash('Please enter a valid email address.', 'danger')
+            return render_template('forgot_password.html')
+        
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            try:
+                # Check if user already has a recent unused token (prevent spam)
+                recent_token = PasswordResetToken.query.filter(
+                    PasswordResetToken.user_id == user.id,
+                    PasswordResetToken.created_at > datetime.utcnow() - timedelta(minutes=5),
+                    PasswordResetToken.used == False
+                ).first()
+                
+                if recent_token:
+                    flash('A password reset email was already sent recently. Please check your email or wait 5 minutes before requesting another.', 'warning')
+                    return render_template('forgot_password.html')
+                
+                # Generate reset token
+                reset_token = generate_reset_token(user)
+                
+                if reset_token:
+                    # Send email
+                    email_sent = send_password_reset_email(user, reset_token)
+                    
+                    if email_sent:
+                        flash('📧 Password reset instructions have been sent to your email address. Please check your inbox and spam folder.', 'success')
+                        return redirect(url_for('login'))
+                    else:
+                        flash('Failed to send reset email. Please try again later or contact support.', 'danger')
+                else:
+                    flash('Failed to generate reset token. Please try again later.', 'danger')
+                    
+            except Exception as e:
+                print(f"Error in forgot password: {e}")
+                flash('An error occurred. Please try again later.', 'danger')
+        else:
+            # Don't reveal whether email exists or not (security best practice)
+            flash('📧 If an account with that email exists, password reset instructions have been sent.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html')
+# ========================================/////////////////////////////////////////////////////////////////
+@app.route('/privacy-policy')
+def privacy_policy():
+    """Privacy Policy page"""
+    context = {
+        'page_title': 'Privacy Policy - BuXin Future Academy',
+        'meta_description': 'Privacy Policy for BuXin Future Academy - How we collect, use, and protect your personal information.'
+    }
+    return render_template('privacy_policy.html', **context)
+
+# Add these routes to your app.py file
+
+@app.route('/delete-account', methods=['GET', 'POST'])
+@login_required
+def delete_account():
+    """User account deletion page"""
+    if request.method == 'POST':
+        # Get form data
+        confirmation_text = request.form.get('confirmation_text', '').strip()
+        password = request.form.get('password', '').strip()
+        reason = request.form.get('reason', '').strip()
+        feedback = request.form.get('feedback', '').strip()
+        
+        # Validate confirmation text
+        if confirmation_text.lower() != 'delete my account':
+            flash('Please type "DELETE MY ACCOUNT" exactly to confirm deletion.', 'danger')
+            return render_template('delete_account.html')
+        
+        # Validate password
+        if not current_user.check_password(password):
+            flash('Incorrect password. Please enter your current password to confirm deletion.', 'danger')
+            return render_template('delete_account.html')
+        
+        try:
+            # Store user info for logging before deletion
+            user_id = current_user.id
+            username = current_user.username
+            email = current_user.email
+            user_name = f"{current_user.first_name} {current_user.last_name}"
+            
+            # Create deletion record for audit trail
+            deletion_record = {
+                'user_id': user_id,
+                'username': username,
+                'email': email,
+                'name': user_name,
+                'reason': reason,
+                'feedback': feedback,
+                'deleted_at': datetime.utcnow(),
+                'deleted_by': 'user_self_service'
+            }
+            
+            # Log the deletion request
+            print(f"🗑️ Account deletion request: {deletion_record}")
+            
+            # Check for active enrollments/purchases
+            active_courses = Purchase.query.filter_by(user_id=user_id, status='completed').count()
+            active_orders = ProductOrder.query.filter_by(user_id=user_id, status='completed').count()
+            enrollments = ClassEnrollment.query.filter_by(user_id=user_id, status='completed').count()
+            
+            if active_courses > 0 or active_orders > 0 or enrollments > 0:
+                # User has active purchases/enrollments
+                flash(f'''
+                    Account deletion request received, but you have active purchases/enrollments:
+                    • {active_courses} completed course purchases
+                    • {active_orders} completed product orders  
+                    • {enrollments} class enrollments
+                    
+                    Your account will be deactivated and an admin will review your deletion request.
+                    You will receive an email confirmation within 24 hours.
+                ''', 'warning')
+                
+                # Instead of deleting, deactivate the account
+                current_user.is_active = False  # You might need to add this field
+                # Or you could set a flag like: current_user.deletion_requested = True
+                
+                # Send notification to admins
+                try:
+                    admin_users = User.query.filter_by(is_admin=True).all()
+                    if admin_users:
+                        subject = f"Account Deletion Request - {user_name}"
+                        message = f"""
+Account deletion request received:
+
+User: {user_name} ({username})
+Email: {email}
+Reason: {reason}
+Feedback: {feedback}
+
+Active Data:
+• Completed Courses: {active_courses}
+• Completed Orders: {active_orders}
+• Class Enrollments: {enrollments}
+
+Please review and process this deletion request manually.
+The user's account has been temporarily deactivated.
+
+Admin Dashboard: https://techbuxin.com/admin/users/{user_id}/edit
+"""
+                        send_bulk_email(admin_users, subject, message)
+                except Exception as e:
+                    print(f"Failed to send admin notification: {e}")
+                
+                db.session.commit()
+                logout_user()
+                
+                return render_template('deletion_pending.html', 
+                                     user_name=user_name, 
+                                     email=email,
+                                     active_courses=active_courses,
+                                     active_orders=active_orders,
+                                     enrollments=enrollments)
+            
+            else:
+                # User has no active data, safe to delete immediately
+                
+                # Delete user-related data in correct order (foreign key constraints)
+                # 1. Delete cart items
+                CartItem.query.filter_by(user_id=user_id).delete()
+                ProductCartItem.query.filter_by(user_id=user_id).delete()
+                
+                # 2. Delete learning materials created by user
+                LearningMaterial.query.filter_by(created_by=user_id).delete()
+                
+                # 3. Delete project posts and related data
+                ProjectComment.query.filter_by(user_id=user_id).delete()
+                ProjectLike.query.filter_by(user_id=user_id).delete()
+                StudentProject.query.filter_by(student_id=user_id).delete()
+                
+                # 4. Delete robotics submissions
+                RoboticsProjectSubmission.query.filter_by(user_id=user_id).delete()
+                
+                # 5. Delete password reset tokens
+                PasswordResetToken.query.filter_by(user_id=user_id).delete()
+                
+                # 6. Remove from class relationships
+                for iclass in current_user.individual_classes:
+                    iclass.students.remove(current_user)
+                for gclass in current_user.group_classes:
+                    gclass.students.remove(current_user)
+                
+                # 7. Delete the user account
+                db.session.delete(current_user)
+                db.session.commit()
+                
+                # Log successful deletion
+                print(f"✅ Account deleted successfully: {deletion_record}")
+                
+                # Send confirmation email (optional, since account is deleted)
+                try:
+                    subject = "Account Deletion Confirmation - BuXin Future Academy"
+                    message = f"""
+Dear {user_name},
+
+Your BuXin Future Academy account has been successfully deleted as requested.
+
+Account Details:
+• Username: {username}
+• Email: {email}
+• Deletion Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
+
+All your personal data has been permanently removed from our systems.
+
+If you have any questions or need assistance, please contact our support team.
+
+Thank you for being part of BuXin Future Academy.
+
+Best regards,
+BuXin Future Academy Team
+"""
+                    # Create temporary user object for email
+                    class TempUser:
+                        def __init__(self, email, first_name):
+                            self.email = email
+                            self.first_name = first_name
+                    
+                    temp_user = TempUser(email, user_name.split()[0])
+                    send_bulk_email([temp_user], subject, message)
+                except Exception as e:
+                    print(f"Failed to send deletion confirmation email: {e}")
+                
+                # Logout user
+                logout_user()
+                
+                # Show success page
+                return render_template('deletion_success.html', 
+                                     user_name=user_name, 
+                                     email=email)
+        
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error deleting account: {e}")
+            flash(f'An error occurred while deleting your account: {str(e)}', 'danger')
+            return render_template('delete_account.html')
+    
+    # GET request - show deletion form
+    # Get user's data summary
+    user_data = {
+        'courses_purchased': Purchase.query.filter_by(user_id=current_user.id, status='completed').count(),
+        'products_ordered': ProductOrder.query.filter_by(user_id=current_user.id, status='completed').count(),
+        'class_enrollments': ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').count(),
+        'projects_posted': StudentProject.query.filter_by(student_id=current_user.id).count(),
+        'robotics_submissions': RoboticsProjectSubmission.query.filter_by(user_id=current_user.id).count(),
+        'account_created': current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else 'Unknown'
+    }
+    
+    return render_template('delete_account.html', user_data=user_data)
+
+
+@app.route('/admin/account-deletion-requests')
+@login_required
+def admin_account_deletion_requests():
+    """Admin view for account deletion requests"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get users who requested deletion (you might need to add a field for this)
+    # For now, this is a placeholder - you'd need to implement the tracking
+    
+    return render_template('admin_deletion_requests.html')
+
+
+# Add this utility function to handle data anonymization instead of deletion
+def anonymize_user_data(user_id):
+    """Anonymize user data instead of deleting (alternative approach)"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return False
+        
+        # Anonymize personal data
+        user.username = f"deleted_user_{user_id}"
+        user.email = f"deleted_{user_id}@techbuxin.com"
+        user.first_name = "Deleted"
+        user.last_name = "User"
+        user.whatsapp_number = None
+        user.is_student = False
+        user.is_admin = False
+        
+        # Keep purchase/enrollment history for business records
+        # but anonymize personal details in those records
+        purchases = Purchase.query.filter_by(user_id=user_id).all()
+        for purchase in purchases:
+            purchase.customer_name = "Deleted User"
+            purchase.customer_email = f"deleted_{user_id}@techbuxin.com"
+            purchase.customer_phone = None
+            purchase.customer_address = None
+        
+        # Similar anonymization for orders and enrollments
+        orders = ProductOrder.query.filter_by(user_id=user_id).all()
+        for order in orders:
+            order.customer_name = "Deleted User"
+            order.customer_email = f"deleted_{user_id}@techbuxin.com"
+            order.customer_phone = None
+            order.customer_address = None
+            order.shipping_address = None
+        
+        enrollments = ClassEnrollment.query.filter_by(user_id=user_id).all()
+        for enrollment in enrollments:
+            enrollment.customer_name = "Deleted User"
+            enrollment.customer_email = f"deleted_{user_id}@techbuxin.com"
+            enrollment.customer_phone = None
+            enrollment.customer_address = None
+        
+        db.session.commit()
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error anonymizing user data: {e}")
+        return False
+
+#============================================================
+#=delete_material
+#=================================================
+@app.route('/admin/material/delete/<int:material_id>', methods=['POST'])
+@login_required
+def delete_material(material_id):
+    material = Material.query.get_or_404(material_id)
+    db.session.delete(material)
+    db.session.commit()
+    flash('Material deleted successfully.', 'success')
+    return redirect(url_for('admin_dashboard', _anchor='materials'))
+# ========================================/////////////////////////////////////////////////////////////////
+# Add these routes to your app.py
+# ========================================
+
+# Add these routes to your app.py
+
+@app.route('/robotics-projects')
+def robotics_projects():
+    """Show the robotics project submission page"""
+    return render_template('robotics_projects.html')
+
+@app.route('/robotics-projects', methods=['POST'])
+def submit_robotics_project():
+    """Handle robotics project submission"""
+    try:
+        # Get form data
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        location = request.form.get('location', '').strip()
+        education_level = request.form.get('education_level', '').strip()
+        
+        project_title = request.form.get('project_title', '').strip()
+        project_description = request.form.get('project_description', '').strip()
+        problem_solved = request.form.get('problem_solved', '').strip()
+        components = request.form.get('components', '').strip()
+        progress = request.form.get('progress', '').strip()
+        project_goal = request.form.get('project_goal', '').strip()
+        additional_comments = request.form.get('additional_comments', '').strip()
+        
+        # Get help needed as comma-separated string
+        help_needed_list = request.form.getlist('help_needed')
+        help_needed = ','.join(help_needed_list) if help_needed_list else ''
+        
+        # Validate required fields
+        if not all([name, email, education_level, project_title, project_description]):
+            flash('Please fill in all required fields!', 'danger')
+            return redirect(url_for('robotics_projects'))
+        
+        # Handle file uploads to Cloudinary
+        uploaded_files = []
+        project_files = request.files.getlist('project_files')
+        
+        for file in project_files:
+            if file and file.filename:
+                # Check file size (max 10MB per file)
+                file.seek(0, 2)
+                file_size = file.tell()
+                file.seek(0)
+                
+                if file_size > 10 * 1024 * 1024:  # 10MB
+                    flash(f'File {file.filename} is too large. Maximum size is 10MB per file.', 'warning')
+                    continue
+                
+                # Check file type
+                allowed_extensions = {'jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'txt'}
+                file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                
+                if file_extension not in allowed_extensions:
+                    flash(f'File {file.filename} has an unsupported format. Allowed: {", ".join(allowed_extensions)}', 'warning')
+                    continue
+                
+                try:
+                    # Upload to Cloudinary
+                    print(f"📤 Uploading project file: {file.filename}")
+                    
+                    # Generate unique public_id
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    safe_filename = secure_filename(file.filename).replace('.', '_')
+                    public_id = f"robotics_project_{timestamp}_{safe_filename}"
+                    
+                    # Determine resource type
+                    if file_extension in ['jpg', 'jpeg', 'png']:
+                        resource_type = "image"
+                    else:
+                        resource_type = "raw"
+                    
+                    result = cloudinary.uploader.upload(
+                        file,
+                        resource_type=resource_type,
+                        public_id=public_id,
+                        folder="robotics_projects",
+                        overwrite=True
+                    )
+                    
+                    uploaded_files.append({
+                        'filename': file.filename,
+                        'url': result['secure_url'],
+                        'public_id': result['public_id'],
+                        'size': file_size,
+                        'type': file_extension
+                    })
+                    
+                    print(f"✅ Successfully uploaded: {file.filename}")
+                    
+                except Exception as e:
+                    print(f"❌ Failed to upload {file.filename}: {e}")
+                    flash(f'Failed to upload {file.filename}. Please try again.', 'warning')
+        
+        # Create submission record
+        submission = RoboticsProjectSubmission(
+            name=name,
+            email=email,
+            phone=phone,
+            location=location,
+            education_level=education_level,
+            project_title=project_title,
+            project_description=project_description,
+            problem_solved=problem_solved,
+            components=components,
+            progress=progress,
+            project_goal=project_goal,
+            help_needed=help_needed,
+            additional_comments=additional_comments,
+            uploaded_files=json.dumps(uploaded_files) if uploaded_files else None
+        )
+        
+        db.session.add(submission)
+        db.session.commit()
+        
+        # Send confirmation email to submitter
+        try:
+            subject = f"🚀 Your Robotics Project Submission Received - {project_title}"
+            message = f"""
+Dear {name},
+
+Thank you for submitting your robotics project idea: "{project_title}"
+
+I have received your submission and will personally review it. Here's what happens next:
+
+✅ Your submission details:
+- Project: {project_title}
+- Education Level: {education_level.replace('_', ' ').title()}
+- Help Needed: {', '.join([h.replace('_', ' ').title() for h in help_needed_list]) if help_needed_list else 'Not specified'}
+- Files Uploaded: {len(uploaded_files)} file(s)
+
+🔍 What's Next:
+1. I'll review your project idea within 1-2 weeks
+2. Selected projects will receive direct mentorship and support
+3. You may be featured on my YouTube channel or social media
+4. I'll connect you with resources, components, or other makers if possible
+
+🤝 Remember:
+Whether selected or not, keep building and experimenting! The robotics community is always here to support passionate makers like you.
+
+If you have any questions, feel free to reply to this email.
+
+Keep innovating!
+Best regards,
+BuXin Future Academy Team
+
+---
+Submission ID: #{submission.id}
+Submitted on: {submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}
+"""
+            
+            # Create a temporary user object for the email function
+            class TempUser:
+                def __init__(self, email, first_name):
+                    self.email = email
+                    self.first_name = first_name
+            
+            temp_user = TempUser(email, name.split()[0])
+            send_bulk_email([temp_user], subject, message)
+            
+        except Exception as e:
+            print(f"Failed to send confirmation email: {e}")
+            # Don't fail the submission if email fails
+        
+        # Send notification to admin
+        try:
+            admin_users = User.query.filter_by(is_admin=True).all()
+            if admin_users:
+                admin_subject = f"🤖 New Robotics Project Submission - {project_title}"
+                admin_message = f"""
+New robotics project submission received:
+
+👤 Submitter: {name} ({email})
+📍 Location: {location or 'Not specified'}
+🎓 Level: {education_level.replace('_', ' ').title()}
+
+🚀 Project: {project_title}
+📝 Description: {project_description[:200]}{'...' if len(project_description) > 200 else ''}
+
+🤝 Help Needed: {', '.join([h.replace('_', ' ').title() for h in help_needed_list]) if help_needed_list else 'Not specified'}
+
+📎 Files: {len(uploaded_files)} uploaded
+
+View full submission in admin panel: https://www.techbuxin.com/admin/robotics-submissions
+
+Submission ID: #{submission.id}
+"""
+                send_bulk_email(admin_users, admin_subject, admin_message)
+                
+        except Exception as e:
+            print(f"Failed to send admin notification: {e}")
+        
+        flash('🎉 Your robotics project submission has been received! Check your email for confirmation details.', 'success')
+        return redirect(url_for('robotics_projects'))
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error submitting robotics project: {e}")
+        flash('An error occurred while submitting your project. Please try again.', 'danger')
+        return redirect(url_for('robotics_projects'))
+
+# Admin routes for managing submissions
+
+@app.route('/admin/robotics-submissions')
+@login_required
+def admin_robotics_submissions():
+    """Admin view for all robotics project submissions"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    status_filter = request.args.get('status', '')
+    education_filter = request.args.get('education', '')
+    search = request.args.get('search', '')
+    sort_by = request.args.get('sort', 'newest')
+    
+    # Start with base query
+    query = RoboticsProjectSubmission.query
+    
+    # Apply filters
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    if education_filter:
+        query = query.filter_by(education_level=education_filter)
+    
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                RoboticsProjectSubmission.name.like(search_filter),
+                RoboticsProjectSubmission.email.like(search_filter),
+                RoboticsProjectSubmission.project_title.like(search_filter),
+                RoboticsProjectSubmission.project_description.like(search_filter)
+            )
+        )
+    
+    # Apply sorting
+    if sort_by == 'name':
+        query = query.order_by(RoboticsProjectSubmission.name.asc())
+    elif sort_by == 'title':
+        query = query.order_by(RoboticsProjectSubmission.project_title.asc())
+    elif sort_by == 'status':
+        query = query.order_by(RoboticsProjectSubmission.status.asc())
+    elif sort_by == 'oldest':
+        query = query.order_by(RoboticsProjectSubmission.submitted_at.asc())
+    else:  # newest
+        query = query.order_by(RoboticsProjectSubmission.submitted_at.desc())
+    
+    submissions = query.all()
+    
+    # Get statistics
+    total_submissions = RoboticsProjectSubmission.query.count()
+    pending_submissions = RoboticsProjectSubmission.query.filter_by(status='pending').count()
+    selected_submissions = RoboticsProjectSubmission.query.filter_by(status='selected').count()
+    reviewed_submissions = RoboticsProjectSubmission.query.filter_by(status='reviewed').count()
+    
+    return render_template('admin_robotics_submissions.html',
+                         submissions=submissions,
+                         total_submissions=total_submissions,
+                         pending_submissions=pending_submissions,
+                         selected_submissions=selected_submissions,
+                         reviewed_submissions=reviewed_submissions,
+                         status_filter=status_filter,
+                         education_filter=education_filter,
+                         search_term=search,
+                         sort_by=sort_by)
+
+@app.route('/admin/robotics-submission/<int:submission_id>')
+@login_required
+def view_robotics_submission(submission_id):
+    """View detailed robotics submission"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    submission = RoboticsProjectSubmission.query.get_or_404(submission_id)
+    return render_template('view_robotics_submission.html', submission=submission)
+
+@app.route('/admin/update-robotics-submission/<int:submission_id>', methods=['POST'])
+@login_required
+def update_robotics_submission(submission_id):
+    """Update submission status and notes"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    submission = RoboticsProjectSubmission.query.get_or_404(submission_id)
+    
+    try:
+        new_status = request.form.get('status')
+        admin_notes = request.form.get('admin_notes', '').strip()
+        
+        if new_status in ['pending', 'reviewed', 'selected', 'declined']:
+            old_status = submission.status
+            submission.status = new_status
+            submission.admin_notes = admin_notes
+            submission.reviewed_by = current_user.id
+            submission.reviewed_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            # Send status update email to submitter
+            try:
+                status_messages = {
+                    'reviewed': '👀 Your project has been reviewed',
+                    'selected': '🎉 Congratulations! Your project has been selected for mentorship',
+                    'declined': '📝 Thank you for your submission'
+                }
+                
+                if new_status != old_status and new_status in status_messages:
+                    subject = f"🤖 Project Update: {submission.project_title}"
+                    
+                    if new_status == 'selected':
+                        message = f"""
+Dear {submission.name},
+
+Exciting news! 🎉
+
+Your robotics project "{submission.project_title}" has been SELECTED for mentorship and support!
+
+🚀 What this means:
+- You'll receive direct guidance and mentorship
+- Help with component selection and circuit design
+- Programming assistance and code examples
+- Possible feature on YouTube or social media
+- Access to resources and community connections
+
+📧 Next Steps:
+I'll be reaching out to you directly within the next few days to discuss your project in detail and plan our collaboration.
+
+{f'💬 Personal Note from Reviewer: {admin_notes}' if admin_notes else ''}
+
+Keep that innovative spirit alive!
+
+Best regards,
+BuXin Future Academy Team
+"""
+                    else:
+                        message = f"""
+Dear {submission.name},
+
+Thank you for submitting your robotics project "{submission.project_title}".
+
+Your submission has been reviewed and marked as: {status_messages[new_status]}
+
+{f'💬 Feedback: {admin_notes}' if admin_notes else ''}
+
+Remember: Whether selected or not, keep building and experimenting! The robotics community is always here to support passionate makers like you.
+
+Feel free to submit new project ideas anytime.
+
+Best regards,
+BuXin Future Academy Team
+"""
+                    
+                    # Create temp user for email
+                    class TempUser:
+                        def __init__(self, email, first_name):
+                            self.email = email
+                            self.first_name = first_name
+                    
+                    temp_user = TempUser(submission.email, submission.name.split()[0])
+                    send_bulk_email([temp_user], subject, message)
+                    
+            except Exception as e:
+                print(f"Failed to send status update email: {e}")
+            
+            flash(f'Submission status updated to "{new_status}" successfully!', 'success')
+        else:
+            flash('Invalid status selected!', 'danger')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating submission: {str(e)}', 'danger')
+    
+    return redirect(url_for('view_robotics_submission', submission_id=submission_id))
+
+@app.route('/admin/robotics-submissions/export')
+@login_required
+def export_robotics_submissions():
+    """Export submissions to CSV"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        import csv
+        from io import StringIO
+        from flask import Response
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'ID', 'Name', 'Email', 'Phone', 'Location', 'Education Level',
+            'Project Title', 'Project Description', 'Problem Solved', 'Components',
+            'Progress', 'Project Goal', 'Help Needed', 'Additional Comments',
+            'Status', 'Admin Notes', 'Submitted At', 'Reviewed At', 'Files Count'
+        ])
+        
+        # Write submission data
+        submissions = RoboticsProjectSubmission.query.order_by(RoboticsProjectSubmission.submitted_at.desc()).all()
+        for submission in submissions:
+            files_count = len(submission.get_uploaded_files_list())
+            
+            writer.writerow([
+                submission.id,
+                submission.name,
+                submission.email,
+                submission.phone or '',
+                submission.location or '',
+                submission.education_level,
+                submission.project_title,
+                submission.project_description,
+                submission.problem_solved or '',
+                submission.components or '',
+                submission.progress or '',
+                submission.project_goal or '',
+                submission.help_needed or '',
+                submission.additional_comments or '',
+                submission.status,
+                submission.admin_notes or '',
+                submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S'),
+                submission.reviewed_at.strftime('%Y-%m-%d %H:%M:%S') if submission.reviewed_at else '',
+                files_count
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=robotics_submissions_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+        
+    except Exception as e:
+        flash(f'Error exporting submissions: {str(e)}', 'danger')
+        return redirect(url_for('admin_robotics_submissions'))
+
+@app.route('/admin/robotics-submissions/stats')
+@login_required
+def robotics_submissions_stats():
+    """Get submission statistics"""
+    if not current_user.is_admin:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        # Basic stats
+        total = RoboticsProjectSubmission.query.count()
+        pending = RoboticsProjectSubmission.query.filter_by(status='pending').count()
+        reviewed = RoboticsProjectSubmission.query.filter_by(status='reviewed').count()
+        selected = RoboticsProjectSubmission.query.filter_by(status='selected').count()
+        declined = RoboticsProjectSubmission.query.filter_by(status='declined').count()
+        
+        # Education level breakdown
+        education_stats = db.session.query(
+            RoboticsProjectSubmission.education_level,
+            db.func.count(RoboticsProjectSubmission.id)
+        ).group_by(RoboticsProjectSubmission.education_level).all()
+        
+        education_data = [{'level': stat[0], 'count': stat[1]} for stat in education_stats]
+        
+        # Help needed breakdown
+        help_stats = {}
+        submissions = RoboticsProjectSubmission.query.all()
+        for submission in submissions:
+            help_list = submission.get_help_needed_list()
+            for help_type in help_list:
+                help_stats[help_type] = help_stats.get(help_type, 0) + 1
+        
+        help_data = [{'type': k, 'count': v} for k, v in help_stats.items()]
+        
+        # Recent submissions (last 30 days)
+        from datetime import timedelta
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        recent_submissions = RoboticsProjectSubmission.query.filter(
+            RoboticsProjectSubmission.submitted_at >= thirty_days_ago
+        ).count()
+        
+        return {
+            'total_submissions': total,
+            'pending_submissions': pending,
+            'reviewed_submissions': reviewed,
+            'selected_submissions': selected,
+            'declined_submissions': declined,
+            'recent_submissions': recent_submissions,
+            'education_breakdown': education_data,
+            'help_needed_breakdown': help_data
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+# Add this helper function to upload files to Cloudinary with proper error handling
 def upload_project_file_to_cloudinary(file, submission_id, original_filename):
     """Upload project file to Cloudinary with proper categorization"""
     try:
@@ -7162,61 +9493,276 @@ def bulk_message():
         if send_whatsapp:
             whatsapp_count = 0
             whatsapp_results = []
-            for user in recipients:
+            whatsapp_links = []
+            
+            print(f"🚀 Starting WhatsApp bulk campaign to {len(recipients)} recipients")
+            
+            for i, user in enumerate(recipients, 1):
+                # Skip users without WhatsApp numbers
                 if not user.whatsapp_number:
+                    whatsapp_results.append({
+                        'user': user, 
+                        'status': 'skipped - no WhatsApp number',
+                        'phone': 'N/A'
+                    })
                     continue
+                
+                # Clean and format phone number
                 phone = ''.join(filter(str.isdigit, user.whatsapp_number))
+                
+                # Add country code if missing
                 if not user.whatsapp_number.strip().startswith('+'):
-                    phone = f'+{phone}'
+                    formatted_phone = f'+{phone}'
                 else:
-                    phone = f'+{phone}' if not phone.startswith('+') else phone
-                # WhatsApp API expects phone without '+'
-                clean_phone = phone.replace('+', '')
+                    formatted_phone = f'+{phone}' if not phone.startswith('+') else f'+{phone}'
+                
+                # Clean phone for API (remove +)
+                clean_phone = phone
+                
+                # WhatsApp API configuration
                 url = f"https://graph.facebook.com/v22.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
                 headers = {
                     "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
                     "Content-Type": "application/json"
                 }
-                body = f"Hello {user.first_name},\n\n{message_content}\n\nBest regards,\nLearning Management System"
+                
+                # Create personalized message with TechBuxin branding
+                personalized_message = f"""🎓 *Hello {user.first_name}!*
+
+📢 *Message from TechBuxin Academy*
+
+{message_content}
+
+📞 *Contact Us:*
+WhatsApp: +91 93190 38312
+Email: support@techbuxin.com
+Website: https://www.techbuxin.com
+
+*Best regards,*
+_TechBuxin Academy Team_ 🚀
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📱 Reply STOP to unsubscribe"""
+                
+                # WhatsApp API payload
                 payload = {
                     "messaging_product": "whatsapp",
                     "to": clean_phone,
                     "type": "text",
-                    "text": {"body": body}
+                    "text": {"body": personalized_message}
                 }
+                
+                # Create WhatsApp Web link for manual backup
+                encoded_message = urllib.parse.quote(personalized_message)
+                whatsapp_link = f"https://web.whatsapp.com/send?phone={clean_phone}&text={encoded_message}"
+                whatsapp_links.append({
+                    'user': user,
+                    'link': whatsapp_link,
+                    'message': personalized_message,
+                    'phone': formatted_phone
+                })
+                
+                print(f"📱 Sending to {user.first_name} ({formatted_phone}) [{i}/{len(recipients)}]")
+                
+                # Send WhatsApp message
                 try:
-                    response = requests.post(url, headers=headers, json=payload)
+                    response = requests.post(url, headers=headers, json=payload, timeout=10)
+                    
                     if response.status_code == 200:
                         data = response.json()
                         message_id = data.get('messages', [{}])[0].get('id', 'Unknown')
-                        whatsapp_results.append({'user': user, 'status': 'sent', 'sid': message_id})
+                        wa_id = data.get('contacts', [{}])[0].get('wa_id', clean_phone)
+                        
+                        whatsapp_results.append({
+                            'user': user, 
+                            'status': 'sent', 
+                            'sid': message_id,
+                            'wa_id': wa_id,
+                            'phone': formatted_phone
+                        })
                         whatsapp_count += 1
+                        print(f"   ✅ SUCCESS - Message ID: {message_id}")
+                        
                     else:
-                        error = response.json().get('error', {}).get('message', 'Unknown error')
-                        whatsapp_results.append({'user': user, 'status': f'error: {error}'})
+                        # Handle API errors
+                        try:
+                            error_data = response.json()
+                            error_message = error_data.get('error', {}).get('message', 'Unknown API error')
+                            error_code = error_data.get('error', {}).get('code', 'Unknown')
+                        except:
+                            error_message = f"HTTP {response.status_code}"
+                            error_code = response.status_code
+                        
+                        whatsapp_results.append({
+                            'user': user, 
+                            'status': f'failed: {error_message}',
+                            'error_code': error_code,
+                            'phone': formatted_phone
+                        })
+                        print(f"   ❌ FAILED - Error: {error_message}")
+                        
+                except requests.exceptions.Timeout:
+                    whatsapp_results.append({
+                        'user': user, 
+                        'status': 'failed: request timeout',
+                        'phone': formatted_phone
+                    })
+                    print(f"   ⏰ TIMEOUT - Request timed out")
+                    
+                except requests.exceptions.ConnectionError:
+                    whatsapp_results.append({
+                        'user': user, 
+                        'status': 'failed: connection error',
+                        'phone': formatted_phone
+                    })
+                    print(f"   🌐 CONNECTION ERROR - Network issue")
+                    
                 except Exception as e:
-                    whatsapp_results.append({'user': user, 'status': f'error: {e}'})
-                # Rate limiting
-                time.sleep(3)
-            flash(f'WhatsApp messages sent to {whatsapp_count} users. See details below.', 'info')
+                    whatsapp_results.append({
+                        'user': user, 
+                        'status': f'failed: {str(e)}',
+                        'phone': formatted_phone
+                    })
+                    print(f"   ❌ EXCEPTION - {str(e)}")
+                
+                # Rate limiting with progress indicator
+                if i < len(recipients):
+                    print(f"   ⏳ Waiting 3 seconds before next message...")
+                    time.sleep(3)
+            
+            # Calculate success metrics
+            total_attempted = len([r for r in whatsapp_results if not r['status'].startswith('skipped')])
+            success_rate = (whatsapp_count / total_attempted * 100) if total_attempted > 0 else 0
+            skipped_count = len([r for r in whatsapp_results if r['status'].startswith('skipped')])
+            
+            print(f"\n📊 Campaign Summary:")
+            print(f"   📱 Total Recipients: {len(recipients)}")
+            print(f"   ✅ Successful: {whatsapp_count}")
+            print(f"   ❌ Failed: {total_attempted - whatsapp_count}")
+            print(f"   ⏭️ Skipped: {skipped_count}")
+            print(f"   📈 Success Rate: {success_rate:.1f}%")
+            
+            # Flash appropriate messages
+            if whatsapp_count > 0:
+                flash(f'✅ WhatsApp messages sent to {whatsapp_count} users! Success rate: {success_rate:.1f}%', 'success')
+            else:
+                flash('❌ No WhatsApp messages were sent successfully. Check the results below.', 'warning')
+            
+            if total_attempted - whatsapp_count > 0:
+                flash(f'⚠️ {total_attempted - whatsapp_count} messages failed to send.', 'info')
+            
+            if skipped_count > 0:
+                flash(f'ℹ️ {skipped_count} users skipped (no WhatsApp number).', 'info')
+            
+            # Return comprehensive results page
             return render_template('bulk_message_result.html',
                                    whatsapp_results=whatsapp_results,
+                                   whatsapp_links=whatsapp_links,
                                    email_count=email_count,
-                                   message=message_content)
+                                   message=message_content,
+                                   success_count=whatsapp_count,
+                                   total_attempted=total_attempted,
+                                   skipped_count=skipped_count,
+                                   success_rate=success_rate,
+                                   recipient_type=recipient_type)
 
         if email_count > 0:
             flash(f'Successfully sent {email_count} emails!', 'success')
 
         return redirect(url_for('bulk_message'))
 
+    # GET request - show the form
     enrolled_ids = db.session.query(ClassEnrollment.user_id).distinct()
     enrolled_students = User.query.filter(User.id.in_(enrolled_ids), User.is_student == True).all()
     unenrolled_students = User.query.filter(User.is_student == True, ~User.id.in_(enrolled_ids)).all()
     users = User.query.order_by(User.first_name, User.last_name).all()
+    
+    # Count users with WhatsApp numbers
+    users_with_whatsapp = User.query.filter(User.whatsapp_number.isnot(None)).count()
+    
     return render_template('bulk_message.html',
                            users=users,
                            enrolled_students=enrolled_students,
-                           unenrolled_students=unenrolled_students)
+                           unenrolled_students=unenrolled_students,
+                           users_with_whatsapp=users_with_whatsapp)
+
+# Helper function for message formatting
+def create_whatsapp_message(user_name, message_content, business_name="TechBuxin Academy"):
+    """Create a professional WhatsApp message with TechBuxin branding"""
+    return f"""🎓 *Hello {user_name}!*
+
+📢 *Message from {business_name}*
+
+{message_content}
+
+📞 *Contact Us:*
+WhatsApp: +91 93190 38312
+Email: support@techbuxin.com
+Website: https://www.techbuxin.com
+
+*Best regards,*
+_{business_name} Team_ 🚀
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📱 Reply STOP to unsubscribe"""
+
+# Test function for single WhatsApp message (optional)
+def send_test_whatsapp_message(phone_number, message, user_name="Test User"):
+    """Send a test WhatsApp message to verify setup"""
+    # Clean phone number
+    clean_phone = ''.join(filter(str.isdigit, phone_number.replace('+', '')))
+    
+    url = f"https://graph.facebook.com/v22.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    # Create formatted message
+    formatted_message = create_whatsapp_message(user_name, message)
+    
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": clean_phone,
+        "type": "text",
+        "text": {"body": formatted_message}
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            message_id = data.get('messages', [{}])[0].get('id', 'Unknown')
+            return True, f"Message sent successfully. ID: {message_id}"
+        else:
+            error_data = response.json()
+            error_message = error_data.get('error', {}).get('message', 'Unknown error')
+            return False, f"API Error: {error_message}"
+            
+    except Exception as e:
+        return False, f"Exception: {str(e)}"
+
+# Optional: Quick test route for WhatsApp
+@app.route('/admin/test-whatsapp-quick')
+@login_required
+def test_whatsapp_quick():
+    """Quick test endpoint - replace with your phone number"""
+    if not current_user.is_admin:
+        return "Access denied", 403
+    
+    # Test with a known working number
+    test_phone = "+2202217288"  # Replace with your test number
+    test_message = "This is a test message from TechBuxin Academy admin panel."
+    
+    success, result = send_test_whatsapp_message(test_phone, test_message, "Admin Test")
+    
+    if success:
+        flash(f'✅ Test WhatsApp message sent! {result}', 'success')
+    else:
+        flash(f'❌ Test failed: {result}', 'danger')
+    
+    return redirect(url_for('bulk_message'))
 
 # ========================================
 # FILE SERVING ROUTES

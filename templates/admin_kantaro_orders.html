@@ -537,7 +537,7 @@
                             </td>
                             <td>
                                 {% if order.payment_proof %}
-                                    <a href="{{ url_for('payment_proof', filename=order.payment_proof) }}" target="_blank" class="proof-btn">
+                                    <a href="{{ order.payment_proof }}" target="_blank" class="proof-btn">
                                         👁️ View Proof
                                     </a>
                                 {% else %}

@@ -4472,15 +4472,14 @@ def delete_material(material_id):
 #////////////////////////////////////////////////////////////////////////////////////////////////////////kantaro
 
 # ... existing code ...
-@app.route('/kantaro')
-def kantaro():
-    # Example images for the slider (replace with your actual image URLs)
-    images = [
-        url_for('static', filename='kantaro/kantaro1.jpg'),
-        url_for('static', filename='kantaro/kantaro2.jpg'),
-        url_for('static', filename='kantaro/kantaro3.jpg'),
-    ]
-    return render_template('kantaro.html', images=images)
+@app.route('/admin/kantaro_orders')
+@login_required
+def admin_kantaro_orders():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    orders = KantaroOrder.query.order_by(KantaroOrder.ordered_at.desc()).all()
+    return render_template('admin_kantaro_orders.html', orders=orders)
 # ... existing code ...
 
 
@@ -4508,6 +4507,47 @@ class KantaroOrder(db.Model):
     status = db.Column(db.String(20), default='pending')
     payment_proof = db.Column(db.String(255))
     ordered_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+@app.route('/process_kantaro_payment', methods=['POST'])
+def process_kantaro_payment():
+    payment_method = request.form.get('payment_method')
+    full_name = request.form.get('full_name')
+    phone = request.form.get('phone')
+    email = request.form.get('email')
+    address = request.form.get('address')
+
+    valid_methods = ['bank_transfer', 'wave', 'western_union', 'moneygram', 'ria']
+    if payment_method not in valid_methods:
+        flash('Please select a valid payment method', 'danger')
+        return redirect(url_for('kantaro'))
+
+    payment_proof = request.files.get('payment_proof')
+    proof_url, error = handle_payment_proof_upload(
+        payment_proof, 'kantaro', 'batch', None
+    )
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('kantaro'))
+
+    order = KantaroOrder(
+        customer_name=full_name,
+        customer_email=email,
+        customer_phone=phone,
+        customer_address=address,
+        payment_method=payment_method,
+        total_amount=500,
+        status='pending',
+        payment_proof=proof_url
+    )
+    db.session.add(order)
+    db.session.commit()
+    return redirect(url_for('kantaro_receipt', order_id=order.id))
+
+@app.route('/kantaro_receipt/<int:order_id>')
+def kantaro_receipt(order_id):
+    order = KantaroOrder.query.get_or_404(order_id)
+    return render_template('kantaro_receipt.html', order=order)
 
 # ========================================/////////////////////////////////////////////////////////////////
 # Add these routes to your app.py
@@ -12411,6 +12451,7 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 

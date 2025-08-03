@@ -4472,18 +4472,14 @@ def delete_material(material_id):
 #////////////////////////////////////////////////////////////////////////////////////////////////////////kantaro
 
 
-@app.route('/admin/kantaro-orders')
+@app.route('/admin/kantaro_orders')
 @login_required
 def admin_kantaro_orders():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('index'))
-    # Find all ProductOrder records for Kantaro (by product name)
-    kantaro_orders = ProductOrder.query.join(Product, isouter=True).filter(
-        (Product.name == 'Kantaro') | (ProductOrder.customer_name.ilike('%kantaro%'))
-    ).order_by(ProductOrder.ordered_at.desc()).all()
-    return render_template('admin_kantaro_orders.html', orders=kantaro_orders)
-
+    orders = KantaroOrder.query.order_by(KantaroOrder.ordered_at.desc()).all()
+    return render_template('admin_kantaro_orders.html', orders=orders)
 
 class KantaroOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -12440,6 +12436,7 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 

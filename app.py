@@ -4483,6 +4483,19 @@ def kantaro():
     return render_template('kantaro.html', images=images)
 # ... existing code ...
 
+
+@app.route('/admin/kantaro-orders')
+@login_required
+def admin_kantaro_orders():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('index'))
+    # Find all ProductOrder records for Kantaro (by product name)
+    kantaro_orders = ProductOrder.query.join(Product, isouter=True).filter(
+        (Product.name == 'Kantaro') | (ProductOrder.customer_name.ilike('%kantaro%'))
+    ).order_by(ProductOrder.ordered_at.desc()).all()
+    return render_template('admin_kantaro_orders.html', orders=kantaro_orders)
+
 # ========================================/////////////////////////////////////////////////////////////////
 # Add these routes to your app.py
 # ========================================
@@ -12385,5 +12398,6 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 

@@ -4496,6 +4496,19 @@ def admin_kantaro_orders():
     ).order_by(ProductOrder.ordered_at.desc()).all()
     return render_template('admin_kantaro_orders.html', orders=kantaro_orders)
 
+
+class KantaroOrder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_name = db.Column(db.String(100))
+    customer_email = db.Column(db.String(120))
+    customer_phone = db.Column(db.String(20))
+    customer_address = db.Column(db.Text)
+    payment_method = db.Column(db.String(50))
+    total_amount = db.Column(db.Float)
+    status = db.Column(db.String(20), default='pending')
+    payment_proof = db.Column(db.String(255))
+    ordered_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 # ========================================/////////////////////////////////////////////////////////////////
 # Add these routes to your app.py
 # ========================================
@@ -12398,6 +12411,7 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 

@@ -4468,6 +4468,21 @@ def delete_material(material_id):
     db.session.commit()
     flash('Material deleted successfully.', 'success')
     return redirect(url_for('admin_dashboard', _anchor='materials'))
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////////kantaro
+
+# ... existing code ...
+@app.route('/kantaro')
+def kantaro_landing():
+    # Example images for the slider (replace with your actual image URLs)
+    images = [
+        url_for('static', filename='kantaro/kantaro1.jpg'),
+        url_for('static', filename='kantaro/kantaro2.jpg'),
+        url_for('static', filename='kantaro/kantaro3.jpg'),
+    ]
+    return render_template('kantaro_landing.html', images=images)
+# ... existing code ...
+
 # ========================================/////////////////////////////////////////////////////////////////
 # Add these routes to your app.py
 # ========================================
@@ -12370,3 +12385,4 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+

@@ -4471,17 +4471,6 @@ def delete_material(material_id):
 
 #////////////////////////////////////////////////////////////////////////////////////////////////////////kantaro
 
-# ... existing code ...
-@app.route('/admin/kantaro_orders')
-@login_required
-def admin_kantaro_orders():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
-    orders = KantaroOrder.query.order_by(KantaroOrder.ordered_at.desc()).all()
-    return render_template('admin_kantaro_orders.html', orders=orders)
-# ... existing code ...
-
 
 @app.route('/admin/kantaro-orders')
 @login_required
@@ -12451,6 +12440,7 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 

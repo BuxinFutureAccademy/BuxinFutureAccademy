@@ -412,40 +412,263 @@
         line-height: 1.5;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         .main-content {
             grid-template-columns: 1fr;
             gap: 30px;
-            padding: 40px 20px;
-        }
-
-        .header {
-            padding: 40px 20px 30px;
-        }
-
-        .logo {
-            font-size: 36px;
-        }
-
-        .subtitle {
-            font-size: 18px;
-        }
-
-        .product-info h1 {
-            font-size: 28px;
-        }
-
-        .price {
-            font-size: 32px;
+            padding: 40px 30px;
         }
 
         .purchase-card {
             position: static;
-            padding: 24px;
+            order: -1;
+            margin-bottom: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .main-content {
+            grid-template-columns: 1fr;
+            gap: 24px;
+            padding: 20px 16px;
+        }
+
+        .header {
+            padding: 30px 16px 20px;
+        }
+
+        .logo {
+            font-size: 32px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+        }
+
+        .product-info h1 {
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .price {
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .description {
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .purchase-card {
+            position: static;
+            padding: 20px;
+            margin: 0 0 20px 0;
+            order: -1;
+            border-radius: 16px;
         }
 
         .main-image {
-            height: 300px;
+            height: 250px;
+            font-size: 18px;
+        }
+
+        .image-thumbnails {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: 60px;
+            font-size: 12px;
+        }
+
+        .features-list {
+            margin-bottom: 24px;
+        }
+
+        .features-list li {
+            font-size: 14px;
+            padding: 8px 0;
+        }
+
+        .form-section h3 {
+            font-size: 18px;
+        }
+
+        .payment-method {
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .payment-method-title {
+            font-size: 14px;
+        }
+
+        .payment-method-details {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .form-input {
+            font-size: 16px;
+            padding: 12px 14px;
+        }
+
+        .buy-button {
+            padding: 16px;
+            font-size: 16px;
+            border-radius: 12px;
+        }
+
+        .submit-button {
+            padding: 16px;
+            font-size: 16px;
+            border-radius: 12px;
+        }
+
+        .file-upload {
+            padding: 20px 16px;
+        }
+
+        .file-upload-icon {
+            font-size: 24px;
+        }
+
+        .file-upload-text {
+            font-size: 13px;
+        }
+
+        .alert {
+            font-size: 13px;
+            padding: 12px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .header {
+            padding: 20px 12px 16px;
+        }
+
+        .logo {
+            font-size: 28px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+        }
+
+        .main-content {
+            padding: 16px 12px;
+            gap: 20px;
+        }
+
+        .product-info h1 {
+            font-size: 22px;
+        }
+
+        .price {
+            font-size: 24px;
+        }
+
+        .description {
+            font-size: 15px;
+        }
+
+        .purchase-card {
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        .main-image {
+            height: 200px;
+            font-size: 16px;
+        }
+
+        .payment-method {
+            padding: 10px;
+        }
+
+        .payment-method-details {
+            font-size: 11px;
+        }
+
+        .form-input {
+            padding: 10px 12px;
+        }
+
+        .buy-button,
+        .submit-button {
+            padding: 14px;
+            font-size: 15px;
+        }
+
+        .features-list li {
+            font-size: 13px;
+        }
+
+        .features-list li::before {
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            margin-right: 8px;
+        }
+    }
+
+    /* Touch-friendly improvements */
+    @media (hover: none) and (pointer: coarse) {
+        .buy-button,
+        .submit-button,
+        .payment-method,
+        .thumbnail {
+            min-height: 44px;
+        }
+
+        .form-input {
+            min-height: 44px;
+        }
+
+        .file-upload {
+            min-height: 60px;
+        }
+
+        .payment-method {
+            margin-bottom: 16px;
+        }
+
+        .thumbnail {
+            min-height: 50px;
+        }
+    }
+
+    /* Improved focus states for mobile */
+    .form-input:focus,
+    .buy-button:focus,
+    .submit-button:focus {
+        outline: 3px solid rgba(102, 126, 234, 0.5);
+        outline-offset: 2px;
+    }
+
+    /* Better spacing for small screens */
+    @media (max-width: 360px) {
+        .main-content {
+            padding: 12px 8px;
+        }
+
+        .purchase-card {
+            padding: 12px;
+        }
+
+        .header {
+            padding: 16px 8px 12px;
         }
     }
 </style>

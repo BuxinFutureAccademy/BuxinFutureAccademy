@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-lg mx-auto" style="max-width: 600px;">
+        <div class="card-body">
+            <h2 class="mb-4 text-center">Kantaro Payment Receipt</h2>
+            <hr>
+            <p><strong>Name:</strong> {{ order.customer_name }}</p>
+            <p><strong>Email:</strong> {{ order.customer_email }}</p>
+            <p><strong>Phone:</strong> {{ order.customer_phone }}</p>
+            <p><strong>Address:</strong> {{ order.customer_address }}</p>
+            <p><strong>Payment Method:</strong> {{ order.payment_method|replace('_', ' ')|title }}</p>
+            <p><strong>Amount Paid:</strong> GMD {{ '%.2f'|format(order.total_amount) }}</p>
+            <p><strong>Status:</strong> <span class="badge bg-warning">{{ order.status|title }}</span></p>
+            <p><strong>Order Date:</strong> {{ order.ordered_at.strftime('%Y-%m-%d %H:%M') if order.ordered_at else '' }}</p>
+            {% if order.payment_proof %}
+            <p><strong>Payment Proof:</strong><br>
+                <img src="{{ order.payment_proof }}" alt="Payment Proof" style="max-width:100%;max-height:300px;">
+            </p>
+            {% endif %}
+            <hr>
+            <div class="text-center">
+                <button class="btn btn-primary" onclick="window.print()">Download Receipt (PDF)</button>
+                <a href="/" class="btn btn-secondary ms-2">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

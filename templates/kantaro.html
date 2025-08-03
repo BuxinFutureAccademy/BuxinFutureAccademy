@@ -1,140 +1,667 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container py-5" id="kantaro-landing-app">
-  <div class="row justify-content-center">
-    <div class="col-lg-7 mb-4">
-      <!-- Image Slider -->
-      <div id="kantaroImageCarousel" class="carousel slide shadow rounded mb-4" data-bs-ride="carousel">
-        <div class="carousel-inner">
-          <div class="carousel-item active">
-            <img src="{{ images[0] if images else url_for('static', filename='kantaro/kantaro1.jpg') }}" class="d-block w-100 rounded" alt="Kantaro" style="height: 400px; object-fit: cover;">
-          </div>
-          {% for img in images[1:] %}
-            <div class="carousel-item">
-              <img src="{{ img }}" class="d-block w-100 rounded" alt="Kantaro image" style="height: 400px; object-fit: cover;">
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .header {
+            padding: 60px 24px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .tagline {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .product-carousel {
+            position: relative;
+            margin: 20px 24px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .carousel-container {
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            height: 280px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            position: relative;
+        }
+
+        .carousel-slide:nth-child(2) {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+        }
+
+        .carousel-slide:nth-child(3) {
+            background: linear-gradient(45deg, #96ceb4, #feca57);
+        }
+
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .indicator.active {
+            background: white;
+            transform: scale(1.2);
+        }
+
+        .product-info {
+            padding: 0 24px;
+            color: white;
+        }
+
+        .product-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .badges {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .badge.special {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .badge.limited {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+        }
+
+        .price {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 24px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .info-card-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .info-card-body {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        .cta-section {
+            padding: 24px;
+            margin-top: 20px;
+        }
+
+        .buy-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 16px;
+            padding: 18px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .buy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        .buy-btn:active {
+            transform: translateY(0);
+        }
+
+        .buy-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .buy-btn:hover::before {
+            left: 100%;
+        }
+
+        .payment-form {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .payment-form.active {
+            max-height: 1000px;
+            margin-top: 20px;
+        }
+
+        .form-section {
+            margin-bottom: 24px;
+        }
+
+        .form-section h3 {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .payment-method {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-method:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .payment-method.selected {
+            border-color: #38ef7d;
+            background: rgba(56, 239, 125, 0.1);
+        }
+
+        .payment-method input[type="radio"] {
+            display: none;
+        }
+
+        .payment-method-title {
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .payment-method-details {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #38ef7d;
+            box-shadow: 0 0 0 3px rgba(56, 239, 125, 0.2);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-wrapper:hover {
+            border-color: #38ef7d;
+            background: rgba(56, 239, 125, 0.1);
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            border: none;
+            border-radius: 16px;
+            padding: 18px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(17, 153, 142, 0.4);
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(17, 153, 142, 0.6);
+        }
+
+        .alert {
+            background: rgba(56, 239, 125, 0.1);
+            border: 1px solid rgba(56, 239, 125, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .floating-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-circle:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-circle:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .floating-circle:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            top: 40%;
+            left: 80%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-container {
+                max-width: 100%;
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 40px 20px 16px;
+            }
+            
+            .product-carousel {
+                margin: 16px 20px;
+            }
+            
+            .carousel-slide {
+                height: 240px;
+            }
+            
+            .cta-section, .info-card {
+                margin: 16px 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+
+<div class="app-container">
+    <div class="floating-elements">
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+    </div>
+
+    <div class="header">
+        <div class="logo">Kantaro</div>
+        <div class="tagline">Revolutionary Innovation</div>
+    </div>
+
+    <div class="product-carousel">
+        <div class="carousel-container" id="carouselContainer">
+            <div class="carousel-slide">
+                <div>Product Image 1</div>
             </div>
-          {% endfor %}
+            <div class="carousel-slide">
+                <div>Product Image 2</div>
+            </div>
+            <div class="carousel-slide">
+                <div>Product Image 3</div>
+            </div>
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#kantaroImageCarousel" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#kantaroImageCarousel" data-bs-slide="next">
-          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
-      </div>
-      <!-- Product Info -->
-      <h1 class="fw-bold mb-2">Kantaro</h1>
-      <div class="mb-2">
-        <span class="badge bg-primary me-2">Special Product</span>
-        <span class="badge bg-success">Limited Edition</span>
-      </div>
-      <h2 class="text-success mb-3">$100 / D 5000</h2>
-      <p class="lead">Kantaro is a revolutionary product designed to make your life easier, smarter, and more connected. Experience the next generation of innovation with Kantaro.</p>
-      <div class="card mb-4">
-        <div class="card-header bg-light"><strong>About Kantaro</strong></div>
-        <div class="card-body">Kantaro combines cutting-edge technology with user-friendly design. Whether you're a tech enthusiast or just looking for something special, Kantaro is the perfect choice. <br><br><strong>Order now and be among the first to own Kantaro!</strong></div>
-      </div>
+        <div class="carousel-indicators">
+            <div class="indicator active" data-slide="0"></div>
+            <div class="indicator" data-slide="1"></div>
+            <div class="indicator" data-slide="2"></div>
+        </div>
     </div>
-    <div class="col-lg-5">
-      <div class="card shadow-lg">
-        <div class="card-body">
-          <div class="d-grid gap-2 mb-3">
-            <button id="kantaroBuyNowBtn" class="btn btn-lg btn-primary fw-bold" type="button">
-              <i class="fas fa-bolt me-2"></i>Buy Now
-            </button>
-          </div>
-          <div id="kantaroBuyNowFormWrapper" class="collapse">
-            <form id="kantaroBuyNowForm" method="POST" action="{{ url_for('process_product_payment') }}" enctype="multipart/form-data">
-              <h5 class="mb-3">Select a Payment Method</h5>
-              <div class="mb-3">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="radio" name="payment_method" id="bankTransfer" value="bank_transfer" required>
-                  <label class="form-check-label" for="bankTransfer">
-                    <strong>Direct Bank Transfer</strong><br>
-                    <span class="small">Bank: Ecobank Gambia<br>Name: Abdoukadir Jabbie<br>Account #: 6261010783<br>SWIFT Code: ECOCGMGMXXX</span>
-                  </label>
+
+    <div class="product-info">
+        <div class="product-title">Kantaro</div>
+        <div class="badges">
+            <span class="badge special">Special Product</span>
+            <span class="badge limited">Limited Edition</span>
+        </div>
+        <div class="price">D 5000</div>
+        <div class="description">
+            Kantaro is a revolutionary product designed to make your life easier, smarter, and more connected. Experience the next generation of innovation with Kantaro.
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-card-header">About Kantaro</div>
+        <div class="info-card-body">
+            Kantaro combines cutting-edge technology with user-friendly design. Whether you're a tech enthusiast or just looking for something special, Kantaro is the perfect choice.
+            <br><br>
+            <strong>Order now and be among the first to own Kantaro!</strong>
+        </div>
+    </div>
+
+    <div class="cta-section">
+        <button class="buy-btn" id="buyBtn">
+            ⚡ Buy Now
+        </button>
+
+        <div class="payment-form" id="paymentForm">
+            <form method="POST" action="{{ url_for('process_product_payment') }}" enctype="multipart/form-data">
+                <div class="form-section">
+                    <h3>Select Payment Method</h3>
+                    
+                    <div class="payment-method" onclick="selectPayment(this, 'bank_transfer')">
+                        <input type="radio" name="payment_method" value="bank_transfer" required>
+                        <div class="payment-method-title">Direct Bank Transfer</div>
+                        <div class="payment-method-details">
+                            Bank: Ecobank Gambia<br>
+                            Name: Abdoukadir Jabbie<br>
+                            Account #: 6261010783<br>
+                            SWIFT: ECOCGMGMXXX
+                        </div>
+                    </div>
+
+                    <div class="payment-method" onclick="selectPayment(this, 'wave')">
+                        <input type="radio" name="payment_method" value="wave">
+                        <div class="payment-method-title">WAVE</div>
+                        <div class="payment-method-details">
+                            Phone: +2205427090<br>
+                            Name: Foday Muhammed Jabbi
+                        </div>
+                    </div>
+
+                    <div class="payment-method" onclick="selectPayment(this, 'western_union')">
+                        <input type="radio" name="payment_method" value="western_union">
+                        <div class="payment-method-title">Western Union</div>
+                        <div class="payment-method-details">
+                            Receiver: Foday Muhammed Jabbi<br>
+                            Country: The Gambia<br>
+                            Phone: +2205427090
+                        </div>
+                    </div>
+
+                    <div class="payment-method" onclick="selectPayment(this, 'moneygram')">
+                        <input type="radio" name="payment_method" value="moneygram">
+                        <div class="payment-method-title">MoneyGram</div>
+                        <div class="payment-method-details">
+                            Receiver: Foday Muhammed Jabbi<br>
+                            Country: The Gambia<br>
+                            Phone: +2205427090
+                        </div>
+                    </div>
+
+                    <div class="payment-method" onclick="selectPayment(this, 'ria')">
+                        <input type="radio" name="payment_method" value="ria">
+                        <div class="payment-method-title">Ria Money Transfer</div>
+                        <div class="payment-method-details">
+                            Receiver: Foday Muhammed Jabbi<br>
+                            Country: The Gambia<br>
+                            Phone: +2205427090
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="radio" name="payment_method" id="wave" value="wave">
-                  <label class="form-check-label" for="wave">
-                    <strong>WAVE</strong><br>
-                    <span class="small">Phone: +2205427090<br>Name: Foday Muhammed Jabbi</span>
-                  </label>
+
+                <div class="form-section">
+                    <h3>Your Details</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" name="full_name" placeholder="Enter your full name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" class="form-input" name="phone" placeholder="Enter your phone number" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-input" name="email" placeholder="Enter your email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-input" name="address" placeholder="Enter your address" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Payment Proof</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" class="file-input" name="payment_proof" accept="image/*,application/pdf" required>
+                            <div class="file-input-text">📄 Upload screenshot or receipt of your $100 payment</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="radio" name="payment_method" id="westernUnion" value="western_union">
-                  <label class="form-check-label" for="westernUnion">
-                    <strong>Western Union</strong><br>
-                    <span class="small">Receiver Name: Foday Muhammed Jabbi<br>Country: The Gambia<br>Phone: +2205427090</span>
-                  </label>
+
+                <input type="hidden" name="product_name" value="Kantaro">
+
+                <div class="alert">
+                    <strong>Important:</strong> After submitting your payment, our team will verify your D 5000 payment. You will receive access to your product once payment is confirmed.
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="radio" name="payment_method" id="moneygram" value="moneygram">
-                  <label class="form-check-label" for="moneygram">
-                    <strong>MoneyGram</strong><br>
-                    <span class="small">Receiver Name: Foday Muhammed Jabbi<br>Country: The Gambia<br>Phone: +2205427090</span>
-                  </label>
-                </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="radio" name="payment_method" id="ria" value="ria">
-                  <label class="form-check-label" for="ria">
-                    <strong>Ria Money Transfer</strong><br>
-                    <span class="small">Receiver Name: Foday Muhammed Jabbi<br>Country: The Gambia<br>Phone: +2205427090</span>
-                  </label>
-                </div>
-              </div>
-              <hr>
-              <h5 class="mb-3">Submit Your Payment Details</h5>
-              <div class="mb-3">
-                <label for="fullName" class="form-label">Full Name</label>
-                <input type="text" class="form-control" id="fullName" name="full_name" required>
-              </div>
-              <div class="mb-3">
-                <label for="phone" class="form-label">Phone Number</label>
-                <input type="text" class="form-control" id="phone" name="phone" required>
-              </div>
-              <div class="mb-3">
-                <label for="email" class="form-label">Email Address</label>
-                <input type="email" class="form-control" id="email" name="email" required>
-              </div>
-              <div class="mb-3">
-                <label for="address" class="form-label">Address</label>
-                <input type="text" class="form-control" id="address" name="address" required>
-              </div>
-              <div class="mb-3">
-                <label for="paymentProof" class="form-label">Upload Payment Proof</label>
-                <input class="form-control" type="file" id="paymentProof" name="payment_proof" accept="image/*,application/pdf" required>
-                <div class="form-text">Upload screenshot or receipt of your $100 payment</div>
-              </div>
-              <input type="hidden" name="product_name" value="Kantaro">
-              <div class="alert alert-info small mt-3">
-                <strong>Important:</strong> After submitting your payment, our team will verify your D 5000 payment. You will receive access to your product once payment is confirmed.
-              </div>
-              <div class="d-grid gap-2 mt-3">
-                <button type="submit" class="btn btn-success btn-lg fw-bold">
-                  <i class="fas fa-check-circle me-2"></i>Submit Payment
+
+                <button type="submit" class="submit-btn">
+                    ✓ Submit Payment
                 </button>
-              </div>
             </form>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  var buyNowBtn = document.getElementById('kantaroBuyNowBtn');
-  var buyNowFormWrapper = document.getElementById('kantaroBuyNowFormWrapper');
-  if (buyNowBtn && buyNowFormWrapper) {
-    buyNowBtn.addEventListener('click', function() {
-      var collapse = new bootstrap.Collapse(buyNowFormWrapper, {toggle: true});
+    // Carousel functionality
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.carousel-slide');
+    const indicators = document.querySelectorAll('.indicator');
+    const carouselContainer = document.getElementById('carouselContainer');
+
+    function showSlide(index) {
+        currentSlide = index;
+        carouselContainer.style.transform = `translateX(-${index * 100}%)`;
+        
+        indicators.forEach((indicator, i) => {
+            indicator.classList.toggle('active', i === index);
+        });
+    }
+
+    indicators.forEach((indicator, index) => {
+        indicator.addEventListener('click', () => showSlide(index));
     });
-  }
-});
+
+    // Auto-play carousel
+    setInterval(() => {
+        currentSlide = (currentSlide + 1) % slides.length;
+        showSlide(currentSlide);
+    }, 4000);
+
+    // Buy button functionality
+    const buyBtn = document.getElementById('buyBtn');
+    const paymentForm = document.getElementById('paymentForm');
+
+    buyBtn.addEventListener('click', () => {
+        paymentForm.classList.toggle('active');
+        buyBtn.textContent = paymentForm.classList.contains('active') ? '← Back' : '⚡ Buy Now';
+    });
+
+    // Payment method selection
+    function selectPayment(element, value) {
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.classList.remove('selected');
+        });
+        element.classList.add('selected');
+        element.querySelector('input[type="radio"]').checked = true;
+    }
+
+    // File input enhancement
+    document.querySelector('.file-input').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        if (fileName) {
+            document.querySelector('.file-input-text').textContent = `📄 ${fileName}`;
+        }
+    });
 </script>
-{% endblock %} 
+{% endblock %}

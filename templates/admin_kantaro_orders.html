@@ -1,0 +1,54 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4"><i class="fas fa-box"></i> Kantaro Orders</h2>
+  {% if orders and orders|length > 0 %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Address</th>
+            <th>Payment Method</th>
+            <th>Payment Proof</th>
+            <th>Status</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td>{{ order.customer_name }}</td>
+            <td>{{ order.customer_phone }}</td>
+            <td>{{ order.customer_email }}</td>
+            <td>{{ order.customer_address }}</td>
+            <td>{{ order.payment_method.replace('_', ' ').title() }}</td>
+            <td>
+              {% if order.payment_proof %}
+                <a href="{{ order.payment_proof if order.payment_proof.startswith('http') else url_for('payment_proof', filename=order.payment_proof) }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+              {% else %}
+                <span class="text-muted">N/A</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if order.status == 'completed' %}
+                <span class="badge bg-success">Completed</span>
+              {% elif order.status == 'pending' %}
+                <span class="badge bg-warning text-dark">Pending</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ order.status.title() }}</span>
+              {% endif %}
+            </td>
+            <td>{{ order.ordered_at.strftime('%Y-%m-%d %H:%M') if order.ordered_at else '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">No Kantaro orders have been received yet.</div>
+  {% endif %}
+</div>
+{% endblock %} 

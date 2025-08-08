@@ -956,15 +956,128 @@
         outline-offset: 2px;
     }
 
-    /* Safe Area Handling for Modern Devices */
-    @supports (padding: max(0px)) {
-        .hero-section {
-            padding-top: max(env(safe-area-inset-top), 60px);
+    /* Mobile Bottom Navigation */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid var(--border);
+        padding: max(8px, env(safe-area-inset-bottom)) 0 max(8px, env(safe-area-inset-bottom));
+        z-index: 1000;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .bottom-nav-content {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 0 8px;
+    }
+
+    .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        text-decoration: none;
+        color: var(--gray);
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        min-width: 60px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .nav-item:active {
+        transform: scale(0.95);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .nav-item.active {
+        color: var(--primary-solid);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .nav-item.active::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 3px;
+        background: var(--primary-solid);
+        border-radius: 0 0 8px 8px;
+    }
+
+    .nav-icon {
+        font-size: 20px;
+        margin-bottom: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .nav-item:active .nav-icon {
+        transform: scale(1.1);
+    }
+
+    .nav-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .nav-badge {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: var(--danger);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 16px;
+        text-align: center;
+        line-height: 1.2;
+    }
+
+    /* Adjust main content for bottom nav */
+    .main-content {
+        padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
+    }
+
+    /* Hide FAB when bottom nav is present */
+    .fab {
+        display: none;
+    }
+
+    /* Dark mode support for bottom nav */
+    @media (prefers-color-scheme: dark) {
+        .bottom-nav {
+            background: rgba(30, 41, 59, 0.95);
+            border-top-color: rgba(148, 163, 184, 0.2);
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (min-width: 768px) {
+        .bottom-nav {
+            display: none; /* Hide on tablets/desktop */
+        }
+        
+        .main-content {
+            padding-bottom: 60px; /* Reset padding */
         }
         
         .fab {
-            bottom: max(env(safe-area-inset-bottom), 20px);
-            right: max(env(safe-area-inset-right), 16px);
+            display: flex; /* Show FAB on larger screens */
         }
     }
 
@@ -998,14 +1111,15 @@
 <div class="hero-section">
     <div class="hero-bg-pattern"></div>
     
-    <!-- Robot Arms Animation -->
-    <div class="robot-arms-container">
-        <div class="robot-arm left-arm">
-            <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Left">
-        </div>
-        <div class="robot-arm right-arm">
-            <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Right">
-        </div>
+    <!-- Robotic Arm Animation -->
+    <!-- Left Robot Arm -->
+    <div class="robot-arm left-arm">
+        <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Left">
+    </div>
+
+    <!-- Right Robot Arm -->
+    <div class="robot-arm right-arm">
+        <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753482527/Robotic_Claw_txevm9.gif" alt="Robot Arm Right">
     </div>
 
     <div class="hero-content">
@@ -2017,5 +2131,44 @@ document.head.appendChild(styleSheet);
     color: var(--gray);
 }
 </style>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="bottom-nav">
+    <div class="bottom-nav-content">
+        <a href="/" class="nav-item active">
+            <i class="fas fa-home nav-icon"></i>
+            <span class="nav-label">Home</span>
+        </a>
+        
+        <a href="https://www.techbuxin.com/classes" class="nav-item">
+            <i class="fas fa-video nav-icon"></i>
+            <span class="nav-label">Classes</span>
+            <div class="nav-badge">Live</div>
+        </a>
+        
+        <a href="https://www.techbuxin.com/store" class="nav-item">
+            <i class="fas fa-graduation-cap nav-icon"></i>
+            <span class="nav-label">Courses</span>
+        </a>
+        
+        <a href="https://www.techbuxin.com/products" class="nav-item">
+            <i class="fas fa-shopping-cart nav-icon"></i>
+            <span class="nav-label">Store</span>
+        </a>
+        
+        <button class="nav-item" onclick="openChatModal()">
+            <i class="fas fa-robot nav-icon"></i>
+            <span class="nav-label">AI Help</span>
+        </button>
+    </div>
+</nav>
+
+<!-- Safe Area Handling for Modern Devices -->
+<script>
+// Safe area handling for devices with notches
+if (CSS.supports('padding: max(0px)')) {
+    document.documentElement.style.setProperty('--safe-area-inset-bottom', 'env(safe-area-inset-bottom)');
+}
+</script>
 
 {% endblock %}

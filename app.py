@@ -6653,10 +6653,18 @@ def login():
         if user and user.check_password(password):
             login_user(user)
             flash('Login successful!', 'success')
+            
+            # Check if there's a 'next' parameter for specific redirects
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+            
+            # Admin users go to admin dashboard
             if user.is_admin:
                 return redirect(url_for('admin_dashboard'))
-            else:
-                return redirect(url_for('index'))
+            
+            # Regular users go to home page (index.html)
+            return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'danger')
     
@@ -12436,6 +12444,7 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 

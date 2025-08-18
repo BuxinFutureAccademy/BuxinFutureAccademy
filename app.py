@@ -1154,12 +1154,42 @@ def generate_whatsapp_links(recipients, message):
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-# Add this simple route to your app.py
+# Add this route to your app.py (make sure it's properly indented and placed correctly)
 
 @app.route('/portfolio')
 def portfolio():
     """Portfolio page with project slides"""
-    return render_template('portfolio.html')
+    try:
+        return render_template('portfolio.html')
+    except Exception as e:
+        # If template not found, return a simple message
+        return f"""
+        <h1>Portfolio Page</h1>
+        <p>Template Error: {str(e)}</p>
+        <p>Make sure 'portfolio.html' exists in your 'templates' folder.</p>
+        <p><a href="/">← Back to Home</a></p>
+        """
+
+# Also add this test route to check if the route is working
+@app.route('/portfolio-test')
+def portfolio_test():
+    """Test route to check if portfolio routing works"""
+    return """
+    <html>
+    <head><title>Portfolio Test</title></head>
+    <body style="font-family: Arial; padding: 20px; text-align: center;">
+        <h1>✅ Portfolio Route is Working!</h1>
+        <p>The route is accessible. Now you need to:</p>
+        <ol style="text-align: left; max-width: 500px; margin: 0 auto;">
+            <li>Create the 'templates' folder (if it doesn't exist)</li>
+            <li>Save the portfolio HTML as 'templates/portfolio.html'</li>
+            <li>Restart your Flask application</li>
+            <li>Visit <a href="/portfolio">/portfolio</a> again</li>
+        </ol>
+        <p><a href="/">← Back to Home</a></p>
+    </body>
+    </html>
+    """
 
 @app.route('/contact-support', methods=['POST'])
 def contact_support():
@@ -12446,6 +12476,7 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 

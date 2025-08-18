@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abdoukadir Jabbi - Portfolio</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .project-nav {
+            background: rgba(255,255,255,0.95);
+            padding: 15px 0;
+            position: fixed;
+            width: 100%;
+            top: 120px;
+            z-index: 999;
+            text-align: center;
+        }
+
+        .nav-btn {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn.active, .nav-btn:hover {
+            background: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            padding-top: 180px;
+        }
+
+        .slide {
+            display: none;
+            padding: 20px;
+            height: calc(100vh - 180px);
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .video-section, .images-section, .explanation-section, .code-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .image-gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .tech-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .tech-badge {
+            background: #3498db;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        .code-container {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            color: #f8f8f2;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            max-height: 300px;
+        }
+
+        .code-header {
+            color: #61dafb;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .slide-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .slide-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px;
+            margin: 0 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .slide-btn:hover {
+            background: #2980b9;
+        }
+
+        .project-1 { border-top: 4px solid #e74c3c; }
+        .project-2 { border-top: 4px solid #f39c12; }
+        .project-3 { border-top: 4px solid #27ae60; }
+        .project-4 { border-top: 4px solid #9b59b6; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fas fa-robot"></i> Abdoukadir Jabbi</h1>
+        <p>Computer Vision & Robotics Engineer</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="project-nav">
+        <button class="nav-btn active" onclick="showSlide(0)">Self-Driving Car</button>
+        <button class="nav-btn" onclick="showSlide(1)">AI Hospital Robot</button>
+        <button class="nav-btn" onclick="showSlide(2)">Multi-Tracking Robot</button>
+        <button class="nav-btn" onclick="showSlide(3)">Electric Vehicles</button>
+    </div>
+
+    <!-- Slider Container -->
+    <div class="slider-container">
+        <!-- Project 1: Self-Driving Car -->
+        <div class="slide active project-1">
+            <div class="container-fluid">
+                <div class="project-grid">
+                    <!-- Videos -->
+                    <div class="video-section">
+                        <h4 class="section-title"><i class="fas fa-play"></i> Project Videos</h4>
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Images -->
+                    <div class="images-section">
+                        <h4 class="section-title"><i class="fas fa-images"></i> Project Pictures</h4>
+                        <div class="image-gallery">
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1558618666-fbd062c6ee93?w=300&h=200&fit=crop" alt="Car Front">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1593941707882-a5bac6861d75?w=300&h=200&fit=crop" alt="Circuit">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop" alt="Testing">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?w=300&h=200&fit=crop" alt="Components">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Explanation -->
+                    <div class="explanation-section">
+                        <h4 class="section-title"><i class="fas fa-info-circle"></i> Project Explanation</h4>
+                        <p><strong>Self-Driving Car with Arduino + OpenCV</strong></p>
+                        <p>Autonomous vehicle with lane detection and obstacle avoidance. Achieved 40% fewer collisions.</p>
+                        
+                        <h5>Key Features:</h5>
+                        <ul>
+                            <li>Real-time lane detection</li>
+                            <li>Obstacle avoidance</li>
+                            <li>Bluetooth control</li>
+                            <li>GPS navigation</li>
+                        </ul>
+
+                        <div class="tech-badges">
+                            <span class="tech-badge">Arduino</span>
+                            <span class="tech-badge">OpenCV</span>
+                            <span class="tech-badge">Python</span>
+                            <span class="tech-badge">Bluetooth</span>
+                        </div>
+                    </div>
+
+                    <!-- Code -->
+                    <div class="code-section">
+                        <h4 class="section-title"><i class="fas fa-code"></i> Project Code</h4>
+                        <div class="code-container">
+                            <div class="code-header">Arduino Controller</div>
+                            <pre><code>#include &lt;SoftwareSerial.h&gt;
+
+const int motorL1 = 5, motorL2 = 6;
+const int motorR1 = 9, motorR2 = 10;
+const int trigPin = 7, echoPin = 8;
+
+SoftwareSerial bluetooth(2, 3);
+
+void setup() {
+  Serial.begin(9600);
+  bluetooth.begin(9600);
+  pinMode(motorL1, OUTPUT);
+  pinMode(motorL2, OUTPUT);
+  pinMode(motorR1, OUTPUT);
+  pinMode(motorR2, OUTPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  long distance = getDistance();
+  
+  if (bluetooth.available()) {
+    String cmd = bluetooth.readString();
+    processCommand(cmd);
+  }
+  
+  if (distance > 20) {
+    moveForward();
+  } else {
+    stopMotors();
+    avoidObstacle();
+  }
+  delay(50);
+}
+
+long getDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  long duration = pulseIn(echoPin, HIGH);
+  return duration * 0.034 / 2;
+}</code></pre>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <a href="https://github.com/buxin2" target="_blank" style="color: #3498db;">
+                                <i class="fab fa-github"></i> View Full Code
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project 2: AI Hospital Robot -->
+        <div class="slide project-2">
+            <div class="container-fluid">
+                <div class="project-grid">
+                    <div class="video-section">
+                        <h4 class="section-title"><i class="fas fa-play"></i> Project Videos</h4>
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <div class="images-section">
+                        <h4 class="section-title"><i class="fas fa-images"></i> Project Pictures</h4>
+                        <div class="image-gallery">
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop" alt="Robot">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=300&h=200&fit=crop" alt="Interface">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=300&h=200&fit=crop" alt="Hospital">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?w=300&h=200&fit=crop" alt="System">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="explanation-section">
+                        <h4 class="section-title"><i class="fas fa-info-circle"></i> Project Explanation</h4>
+                        <p><strong>AI Assistant Robot for Hospitals</strong></p>
+                        <p>Automated patient-doctor data transfer. 30% faster check-in process.</p>
+                        
+                        <h5>Key Features:</h5>
+                        <ul>
+                            <li>Voice recognition</li>
+                            <li>Patient identification</li>
+                            <li>Data integration</li>
+                            <li>Queue management</li>
+                        </ul>
+
+                        <div class="tech-badges">
+                            <span class="tech-badge">Python</span>
+                            <span class="tech-badge">TensorFlow</span>
+                            <span class="tech-badge">Raspberry Pi</span>
+                            <span class="tech-badge">Voice API</span>
+                        </div>
+                    </div>
+
+                    <div class="code-section">
+                        <h4 class="section-title"><i class="fas fa-code"></i> Project Code</h4>
+                        <div class="code-container">
+                            <div class="code-header">AI Assistant Main</div>
+                            <pre><code>import speech_recognition as sr
+import pyttsx3
+import requests
+
+class HospitalAssistant:
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+        self.tts = pyttsx3.init()
+        self.patient_data = {}
+    
+    def greet_patient(self):
+        greeting = "Hello! Please state your name."
+        self.speak(greeting)
+        return self.listen()
+    
+    def speak(self, text):
+        self.tts.say(text)
+        self.tts.runAndWait()
+    
+    def listen(self):
+        with sr.Microphone() as source:
+            audio = self.recognizer.listen(source)
+            try:
+                response = self.recognizer.recognize_google(audio)
+                return response
+            except:
+                return None
+    
+    def collect_info(self):
+        name = self.get_name()
+        symptoms = self.get_symptoms()
+        
+        self.patient_data = {
+            'name': name,
+            'symptoms': symptoms,
+            'time': datetime.now()
+        }
+        
+        return self.register_patient()
+    
+    def register_patient(self):
+        try:
+            response = requests.post(
+                "http://hospital-api/register",
+                json=self.patient_data
+            )
+            
+            if response.status_code == 200:
+                queue_num = response.json()['queue']
+                self.speak(f"Queue number: {queue_num}")
+                return True
+            return False
+        except:
+            return False
+
+assistant = HospitalAssistant()
+assistant.run()</code></pre>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <a href="https://github.com/buxin2" target="_blank" style="color: #3498db;">
+                                <i class="fab fa-github"></i> View Full Code
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project 3: Multi-Tracking Robot -->
+        <div class="slide project-3">
+            <div class="container-fluid">
+                <div class="project-grid">
+                    <div class="video-section">
+                        <h4 class="section-title"><i class="fas fa-play"></i> Project Videos</h4>
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <div class="images-section">
+                        <h4 class="section-title"><i class="fas fa-images"></i> Project Pictures</h4>
+                        <div class="image-gallery">
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1546776310-eef45dd6d63c?w=300&h=200&fit=crop" alt="Robot">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=200&fit=crop" alt="Tracking">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=300&h=200&fit=crop" alt="Mobile">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop" alt="ESP32">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="explanation-section">
+                        <h4 class="section-title"><i class="fas fa-info-circle"></i> Project Explanation</h4>
+                        <p><strong>Multi-Tracking Robot (ESP32 + OpenCV)</strong></p>
+                        <p>Real-time color, hand, and face tracking via smartphone camera.</p>
+                        
+                        <h5>Key Features:</h5>
+                        <ul>
+                            <li>Color tracking</li>
+                            <li>Hand detection</li>
+                            <li>Face tracking</li>
+                            <li>WiFi control</li>
+                        </ul>
+
+                        <div class="tech-badges">
+                            <span class="tech-badge">ESP32</span>
+                            <span class="tech-badge">OpenCV</span>
+                            <span class="tech-badge">Computer Vision</span>
+                            <span class="tech-badge">WiFi</span>
+                        </div>
+                    </div>
+
+                    <div class="code-section">
+                        <h4 class="section-title"><i class="fas fa-code"></i> Project Code</h4>
+                        <div class="code-container">
+                            <div class="code-header">ESP32 Robot Controller</div>
+                            <pre><code>#include &lt;WiFi.h&gt;
+#include &lt;WebSocketsServer.h&gt;
+
+const char* ssid = "YourWiFi";
+const char* password = "YourPass";
+
+WebSocketsServer webSocket = WebSocketsServer(81);
+
+const int motorL1 = 18, motorL2 = 19;
+const int motorR1 = 21, motorR2 = 22;
+
+struct RobotState {
+  float targetX = 0;
+  float targetY = 0;
+  bool isTracking = false;
+} state;
+
+void setup() {
+  Serial.begin(115200);
+  
+  pinMode(motorL1, OUTPUT);
+  pinMode(motorL2, OUTPUT);
+  pinMode(motorR1, OUTPUT);
+  pinMode(motorR2, OUTPUT);
+  
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+  }
+  
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+}
+
+void loop() {
+  webSocket.loop();
+  
+  if (state.isTracking) {
+    trackTarget();
+  }
+  
+  delay(50);
+}
+
+void trackTarget() {
+  float centerX = 160;
+  float centerY = 120;
+  
+  float errorX = state.targetX - centerX;
+  float errorY = state.targetY - centerY;
+  
+  if (abs(errorX) < 20 && abs(errorY) < 20) {
+    stopRobot();
+    return;
+  }
+  
+  int speed = 150;
+  int turn = map(abs(errorX), 0, 160, 0, 100);
+  
+  if (errorX > 20) {
+    moveRobot(speed + turn, speed - turn);
+  } else if (errorX < -20) {
+    moveRobot(speed - turn, speed + turn);
+  }
+}</code></pre>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <a href="https://github.com/buxin2" target="_blank" style="color: #3498db;">
+                                <i class="fab fa-github"></i> View Full Code
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project 4: Electric Vehicles -->
+        <div class="slide project-4">
+            <div class="container-fluid">
+                <div class="project-grid">
+                    <div class="video-section">
+                        <h4 class="section-title"><i class="fas fa-play"></i> Project Videos</h4>
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <div class="images-section">
+                        <h4 class="section-title"><i class="fas fa-images"></i> Project Pictures</h4>
+                        <div class="image-gallery">
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1593941707882-a5bac6861d75?w=300&h=200&fit=crop" alt="Electric Scooter">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1558618666-fbd062c6ee93?w=300&h=200&fit=crop" alt="Mini Tractor">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1509391366360-2e959784a276?w=300&h=200&fit=crop" alt="Solar Panel">
+                            </div>
+                            <div class="gallery-item">
+                                <img src="https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?w=300&h=200&fit=crop" alt="Battery System">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="explanation-section">
+                        <h4 class="section-title"><i class="fas fa-info-circle"></i> Project Explanation</h4>
+                        <p><strong>Electric Vehicles with Solar Boost</strong></p>
+                        <p>Sustainable electric scooter and mini tractor. 35% runtime extension with solar integration.</p>
+                        
+                        <h5>Key Features:</h5>
+                        <ul>
+                            <li>Solar charging</li>
+                            <li>Battery management</li>
+                            <li>Motor control</li>
+                            <li>Energy efficiency</li>
+                        </ul>
+
+                        <div class="tech-badges">
+                            <span class="tech-badge">Electric Systems</span>
+                            <span class="tech-badge">Solar Power</span>
+                            <span class="tech-badge">Battery Management</span>
+                            <span class="tech-badge">Motor Control</span>
+                        </div>
+                    </div>
+
+                    <div class="code-section">
+                        <h4 class="section-title"><i class="fas fa-code"></i> Project Code</h4>
+                        <div class="code-container">
+                            <div class="code-header">Battery Management System</div>
+                            <pre><code>#include &lt;Arduino.h&gt;
+
+const int solarPin = A0;
+const int batteryPin = A1;
+const int motorPin = 9;
+const int ledPin = 13;
+
+float batteryVoltage = 0;
+float solarVoltage = 0;
+bool solarCharging = false;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(motorPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+  readSensors();
+  managePower();
+  controlMotor();
+  
+  displayStatus();
+  delay(1000);
+}
+
+void readSensors() {
+  solarVoltage = analogRead(solarPin) * (5.0 / 1023.0);
+  batteryVoltage = analogRead(batteryPin) * (5.0 / 1023.0);
+}
+
+void managePower() {
+  if (solarVoltage > 4.0 && batteryVoltage < 4.0) {
+    solarCharging = true;
+    digitalWrite(ledPin, HIGH);
+  } else {
+    solarCharging = false;
+    digitalWrite(ledPin, LOW);
+  }
+}
+
+void controlMotor() {
+  if (batteryVoltage > 3.2) {
+    int motorSpeed = map(batteryVoltage * 100, 320, 420, 100, 255);
+    analogWrite(motorPin, motorSpeed);
+  } else {
+    analogWrite(motorPin, 0); // Low battery protection
+  }
+}
+
+void displayStatus() {
+  Serial.print("Battery: ");
+  Serial.print(batteryVoltage);
+  Serial.print("V, Solar: ");
+  Serial.print(solarVoltage);
+  Serial.print("V, Charging: ");
+  Serial.println(solarCharging ? "Yes" : "No");
+}</code></pre>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <a href="https://github.com/buxin2" target="_blank" style="color: #3498db;">
+                                <i class="fab fa-github"></i> View Full Code
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide Controls -->
+    <div class="slide-controls">
+        <button class="slide-btn" onclick="prevSlide()"><i class="fas fa-chevron-left"></i></button>
+        <button class="slide-btn" onclick="nextSlide()"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const navBtns = document.querySelectorAll('.nav-btn');
+
+        function showSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            navBtns[currentSlide].classList.remove('active');
+            
+            currentSlide = index;
+            
+            slides[currentSlide].classList.add('active');
+            navBtns[currentSlide].classList.add('active');
+        }
+
+        function nextSlide() {
+            const next = (currentSlide + 1) % slides.length;
+            showSlide(next);
+        }
+
+        function prevSlide() {
+            const prev = (currentSlide - 1 + slides.length) % slides.length;
+            showSlide(prev);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+    </script>
+</body>
+</html>

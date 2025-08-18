@@ -1153,6 +1153,14 @@ def generate_whatsapp_links(recipients, message):
 
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+# Add this simple route to your app.py
+
+@app.route('/portfolio')
+def portfolio():
+    """Portfolio page with project slides"""
+    return render_template('portfolio.html')
+
 @app.route('/contact-support', methods=['POST'])
 def contact_support():
     """Handle chat popup support messages and send to admin email."""
@@ -12438,6 +12446,7 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 

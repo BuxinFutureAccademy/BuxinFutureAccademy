@@ -6687,6 +6687,32 @@ def about_us():
     }
     return render_template('about_us.html', **context)
                            
+# Public portfolio page (register on active app instance)
+@app.route('/portfolio')
+def portfolio_page():
+    try:
+        return render_template('portfolio.html')
+    except Exception as e:
+        return f"""
+        <h1>Portfolio Page</h1>
+        <p>Template Error: {str(e)}</p>
+        <p>Make sure 'portfolio.html' exists in your 'templates' folder.</p>
+        <p><a href="/">← Back to Home</a></p>
+        """
+
+# Redirect common misspelling
+@app.route('/profolio')
+def profolio_redirect_v2():
+    return redirect(url_for('portfolio_page'), code=301)
+
+# Favicon handler on active app instance to avoid 404s
+@app.route('/favicon.ico')
+def favicon_asset():
+    favicon_path = os.path.join(app.static_folder, 'favicon.ico')
+    if os.path.exists(favicon_path):
+        return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return ("", 204)
+
 @app.route('/')                           
 def index():
     if current_user.is_authenticated:
@@ -7141,6 +7167,27 @@ def safe_migrate():
         
     except Exception as e:
         return f"❌ Migration failed: {str(e)}"
+
+
+def ensure_featured_column_exists():
+    """Programmatically ensure the 'featured' column exists on 'course' table.
+    Safe for repeated calls; no-op if column already exists."""
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('course')]
+        if 'featured' in columns:
+            return
+        with db.engine.connect() as conn:
+            if 'sqlite' in str(db.engine.url):
+                conn.execute(db.text('ALTER TABLE course ADD COLUMN featured BOOLEAN DEFAULT 0'))
+            else:
+                conn.execute(db.text('ALTER TABLE course ADD COLUMN featured BOOLEAN DEFAULT FALSE'))
+            conn.commit()
+    except Exception as e:
+        # Log and re-raise to allow caller to decide how to proceed
+        print(f"ensure_featured_column_exists error: {e}")
+        raise
 
 
 # Add this route to your Flask application (app.py)
@@ -12383,6 +12430,12 @@ def init_database():
         print("Creating database tables...")
         db.create_all()
         print("Database tables created successfully")
+        
+        # Ensure new columns exist before any queries that reference them
+        try:
+            ensure_featured_column_exists()
+        except Exception as migrate_err:
+            print(f"Warning: could not verify/add 'featured' column: {migrate_err}")
         
         print("Creating sample data...")
         create_sample_data()

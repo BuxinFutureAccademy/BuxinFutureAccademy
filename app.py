@@ -1170,6 +1170,19 @@ def portfolio():
         <p><a href="/">← Back to Home</a></p>
         """
 
+# Handle common misspelling and redirect to the correct portfolio page
+@app.route('/profolio')
+def profolio_redirect():
+    return redirect(url_for('portfolio'), code=301)
+
+# Serve favicon if present; otherwise avoid 404 noise
+@app.route('/favicon.ico')
+def favicon():
+    favicon_path = os.path.join(app.static_folder, 'favicon.ico')
+    if os.path.exists(favicon_path):
+        return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return ("", 204)
+
 # Also add this test route to check if the route is working
 @app.route('/portfolio-test')
 def portfolio_test():

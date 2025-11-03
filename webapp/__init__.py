@@ -91,4 +91,24 @@ def create_app():
     app.register_blueprint(materials_bp)
     app.register_blueprint(student_projects_bp)
 
+    # Alias common endpoints without blueprint prefix to match existing templates
+    try:
+        app.add_url_rule('/store', endpoint='store', view_func=store_bp.view_functions['store'])
+        app.add_url_rule('/course/<int:course_id>', endpoint='course_detail', view_func=store_bp.view_functions['course_detail'])
+    except Exception:
+        pass
+    try:
+        app.add_url_rule('/student-projects', endpoint='student_projects', view_func=student_projects_bp.view_functions['student_projects'])
+        app.add_url_rule('/student-projects/<int:project_id>', endpoint='view_project', view_func=student_projects_bp.view_functions['view_project'])
+        app.add_url_rule('/my-projects', endpoint='my_projects', view_func=student_projects_bp.view_functions['my_projects'])
+        app.add_url_rule('/admin/projects', endpoint='admin_projects', view_func=student_projects_bp.view_functions['admin_projects'])
+    except Exception:
+        pass
+    try:
+        app.add_url_rule('/login', endpoint='login', view_func=auth_bp.view_functions['login'])
+        app.add_url_rule('/forgot-password', endpoint='forgot_password', view_func=auth_bp.view_functions['forgot_password'])
+        app.add_url_rule('/logout', endpoint='logout', view_func=auth_bp.view_functions['logout'])
+    except Exception:
+        pass
+
     return app

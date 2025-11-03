@@ -36,6 +36,21 @@ class StudentProject(db.Model):
         like = self.likes.filter_by(user_id=user_id).first()
         return like.is_like if like else None
 
+    def get_youtube_embed_url(self):
+        try:
+            if not self.youtube_url:
+                return None
+            url = self.youtube_url
+            if 'youtu.be/' in url:
+                video_id = url.split('youtu.be/')[-1].split('?')[0]
+            elif 'watch?v=' in url:
+                video_id = url.split('watch?v=')[-1].split('&')[0]
+            else:
+                return None
+            return f"https://www.youtube.com/embed/{video_id}"
+        except Exception:
+            return None
+
 
 class ProjectLike(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -52,3 +67,4 @@ class ProjectComment(db.Model):
     comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user = db.relationship('User', backref='project_comments', lazy='joined')

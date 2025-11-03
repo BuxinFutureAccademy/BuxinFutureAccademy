@@ -7,7 +7,7 @@ from ..models import StudentProject, ProjectLike, ProjectComment, User
 bp = Blueprint('student_projects', __name__)
 
 
-@bp.route('/student-projects')
+@bp.route('/student-projects', endpoint='student_projects')
 def student_projects():
     search = request.args.get('search', '').strip()
     sort_by = request.args.get('sort', 'newest')
@@ -63,7 +63,7 @@ def student_projects():
     )
 
 
-@bp.route('/student-projects/<int:project_id>')
+@bp.route('/student-projects/<int:project_id>', endpoint='view_project')
 def view_project(project_id):
     project = StudentProject.query.get_or_404(project_id)
     if not project.is_active:
@@ -77,7 +77,7 @@ def view_project(project_id):
     return render_template('view_project.html', project=project, comments=comments, user_reaction=user_reaction)
 
 
-@bp.route('/my-projects')
+@bp.route('/my-projects', endpoint='my_projects')
 @login_required
 def my_projects():
     projects = (
@@ -88,7 +88,7 @@ def my_projects():
     return render_template('my_projects.html', projects=projects, total_likes=total_likes, total_comments=total_comments)
 
 
-@bp.route('/admin/projects')
+@bp.route('/admin/projects', endpoint='admin_projects')
 @login_required
 def admin_projects():
     if not getattr(current_user, 'is_admin', False):

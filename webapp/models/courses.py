@@ -17,6 +17,34 @@ class Course(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Relationships
+    videos = db.relationship(
+        'CourseVideo', backref='course', lazy='dynamic', cascade='all, delete-orphan'
+    )
+    materials = db.relationship(
+        'CourseMaterial', backref='course', lazy='select', cascade='all, delete-orphan'
+    )
+    purchases = db.relationship(
+        'Purchase', backref='course', lazy='dynamic', cascade='all, delete-orphan'
+    )
+
+    # Helper methods used by templates
+    def get_video_count(self) -> int:
+        try:
+            return self.videos.count()
+        except Exception:
+            return 0
+
+    def get_total_duration(self):
+        # Optional: compute total duration if durations are numeric; otherwise return None so template hides it
+        return None
+
+    def get_enrolled_count(self) -> int:
+        try:
+            return self.purchases.filter_by(status='completed').count()
+        except Exception:
+            return 0
+
 
 class CourseVideo(db.Model):
     id = db.Column(db.Integer, primary_key=True)

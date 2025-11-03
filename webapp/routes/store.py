@@ -17,7 +17,7 @@ from ..models import (
 bp = Blueprint('store', __name__)
 
 
-@bp.route('/store')
+@bp.route('/store', endpoint='store')
 def store():
     category = request.args.get('category', '')
     level = request.args.get('level', '')
@@ -66,7 +66,7 @@ def store():
     )
 
 
-@bp.route('/course/<int:course_id>')
+@bp.route('/course/<int:course_id>', endpoint='course_detail')
 def course_detail(course_id):
     course = Course.query.get_or_404(course_id)
     is_purchased = False

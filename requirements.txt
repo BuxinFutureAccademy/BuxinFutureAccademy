@@ -17,8 +17,12 @@ cloudinary==1.36.0
 # HTTP requests
 requests==2.31.0
 
-# Vercel runtime
+# Vercel and WSGI
 vercel>=0.0.1
+gunicorn==21.2.0
+
+# Required for Vercel Python runtime
+wsgi-request-logger>=0.4.6
 
 # System monitoring
 psutil==5.9.6

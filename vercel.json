@@ -3,11 +3,15 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "requirements.txt",
-      "use": "@vercel/python"
+      "use": "@vercel/python@2.10.0",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.12",
+        "includeFiles": [
+          "webapp/**/*",
+          "*.py"
+        ]
+      }
     },
     {
       "src": "webapp/static/**/*",

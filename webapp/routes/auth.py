@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import current_user, login_required
+from flask_login import current_user, login_required, login_user, logout_user
 
 from ..extensions import db
 from ..models import User, PasswordResetToken
@@ -69,11 +69,11 @@ def send_password_reset_email(user: User, reset_token: str) -> bool:
         return False
 
 
-@bp.route('/forgot-password', methods=['GET', 'POST'])
+@bp.route('/forgot-password', methods=['GET', 'POST'], endpoint='forgot_password')
 def forgot_password():
     if current_user.is_authenticated:
         flash('You are already logged in.', 'info')
-        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+        return redirect(url_for('main.health'))
 
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
@@ -104,12 +104,12 @@ def forgot_password():
             if reset_token and send_password_reset_email(user, reset_token):
                 flash('Password reset instructions have been sent to your email address.', 'success')
                 record_password_reset_attempt(email)
-                return redirect(url_for('login'))
+                return redirect(url_for('auth.login'))
             flash('Failed to process password reset. Please try again later.', 'danger')
         else:
             flash('If an account with that email exists, password reset instructions have been sent.', 'success')
             record_password_reset_attempt(email)
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
 
     return render_template('forgot_password.html')
 
@@ -118,7 +118,7 @@ def forgot_password():
 def reset_password(token):
     if current_user.is_authenticated:
         flash('You are already logged in.', 'info')
-        return redirect(url_for('student_dashboard' if current_user.is_student else 'admin_dashboard'))
+        return redirect(url_for('main.health'))
 
     user = verify_reset_token(token)
     if not user:
@@ -157,16 +157,42 @@ def reset_password(token):
                         self.first_name = first_name
                 temp_user = TempUser(user.email, user.first_name)
                 send_bulk_email([temp_user], subject, message)
-            except Exception as e:
-                print(f"Failed to send confirmation email: {e}")
+            except Exception:
+                pass
             flash('Your password has been successfully reset! You can now log in.', 'success')
-            return redirect(url_for('login'))
-        except Exception as e:
+            return redirect(url_for('auth.login'))
+        except Exception:
             db.session.rollback()
-            print(f"Error resetting password: {e}")
             flash('An error occurred while resetting your password. Please try again.', 'danger')
 
     return render_template('reset_password.html', token=token, user=user)
+
+
+@bp.route('/login', methods=['GET', 'POST'], endpoint='login')
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.health'))
+    if request.method == 'POST':
+        identifier = request.form.get('email', '').strip().lower() or request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        user = User.query.filter((User.email == identifier) | (User.username == identifier)).first() if identifier else None
+        if user and user.check_password(password):
+            login_user(user)
+            next_url = request.args.get('next') or url_for('main.health')
+            return redirect(next_url)
+        flash('Invalid credentials.', 'danger')
+    return render_template('login.html')
+
+
+@bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out successfully.', 'success')
+    return redirect(url_for('auth.login'))
+
+
+ 
 
 
 @bp.route('/admin/password-reset-tokens')

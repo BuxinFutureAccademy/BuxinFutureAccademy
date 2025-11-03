@@ -124,3 +124,40 @@ def fix_password_hash_length():
         )
     except Exception as e:
         return f"Error: {e}", 500
+
+
+@bp.route('/admin/initialize-db')
+@login_required
+def initialize_db():
+    if not current_user.is_admin:
+        return "Access denied: Admin privileges required", 403
+    try:
+        db.create_all()
+        return "Database initialized (db.create_all executed)."
+    except Exception as e:
+        return f"Initialization failed: {e}", 500
+
+
+@bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_edit_user(user_id):
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.health'))
+    user = User.query.get_or_404(user_id)
+    from flask import request, render_template
+    if request.method == 'POST':
+        try:
+            user.first_name = request.form.get('first_name', user.first_name)
+            user.last_name = request.form.get('last_name', user.last_name)
+            user.email = request.form.get('email', user.email)
+            user.username = request.form.get('username', user.username)
+            user.is_admin = request.form.get('is_admin') == 'on'
+            user.is_student = request.form.get('is_student') != 'off' if request.form.get('is_student') else user.is_student
+            db.session.commit()
+            flash('User updated successfully.', 'success')
+            return redirect(url_for('admin_edit_user', user_id=user.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Failed to update user: {e}', 'danger')
+    return render_template('admin_user_edit.html', user=user)

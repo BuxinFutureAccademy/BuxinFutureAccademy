@@ -23,20 +23,37 @@ def store():
     level = request.args.get('level', '')
     search = request.args.get('search', '')
 
-    query = Course.query.filter_by(is_active=True)
-    if category:
-        query = query.filter_by(category=category)
-    if level:
-        query = query.filter_by(level=level)
-    if search:
-        query = query.filter(Course.title.contains(search) | Course.description.contains(search))
+    try:
+        query = Course.query.filter_by(is_active=True)
+        if category:
+            query = query.filter_by(category=category)
+        if level:
+            query = query.filter_by(level=level)
+        if search:
+            query = query.filter(Course.title.contains(search) | Course.description.contains(search))
 
-    courses = query.order_by(Course.created_at.desc()).all()
-    categories = [c[0] for c in db.session.query(Course.category).distinct().all()]
+        try:
+            courses = query.order_by(Course.created_at.desc()).all()
+        except Exception:
+            # Fallback if created_at column is missing in DB
+            courses = query.order_by(Course.id.desc()).all()
+
+        try:
+            categories = [c[0] for c in db.session.query(Course.category).distinct().all()]
+        except Exception:
+            categories = []
+    except Exception as e:
+        current_app.logger.error(f"/store query failed: {e}")
+        flash('Store is temporarily unavailable. Please try again later.', 'danger')
+        courses = []
+        categories = []
 
     cart_count = 0
     if current_user.is_authenticated:
-        cart_count = CartItem.query.filter_by(user_id=current_user.id).count()
+        try:
+            cart_count = CartItem.query.filter_by(user_id=current_user.id).count()
+        except Exception:
+            cart_count = 0
 
     return render_template(
         'store.html',
@@ -397,6 +414,38 @@ def course_status_stats():
         }
     except Exception as e:
         return {'error': str(e)}, 500
+
+
+@bp.route('/admin/courses')
+@login_required
+def admin_courses():
+    if not getattr(current_user, 'is_admin', False):
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.health'))
+
+    category = request.args.get('category', '')
+    level = request.args.get('level', '')
+    search = request.args.get('search', '')
+
+    query = Course.query
+    if category:
+        query = query.filter_by(category=category)
+    if level:
+        query = query.filter_by(level=level)
+    if search:
+        query = query.filter(Course.title.contains(search) | Course.description.contains(search))
+
+    courses = query.order_by(Course.created_at.desc()).all()
+    categories = [c[0] for c in db.session.query(Course.category).distinct().all()]
+
+    return render_template(
+        'admin_courses.html',
+        courses=courses,
+        categories=categories,
+        selected_category=category,
+        selected_level=level,
+        search_term=search,
+    )
 
 
 # Digital products views

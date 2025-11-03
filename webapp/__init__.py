@@ -4,11 +4,15 @@ from .extensions import db, login_manager
 
 
 def create_app():
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    templates_path = os.path.join(base_dir, 'templates')
+    static_path = os.path.join(base_dir, 'static')
+
     app = Flask(
         __name__,
         instance_relative_config=True,
-        template_folder=os.path.join('..', 'templates'),
-        static_folder=os.path.join('..', 'static'),
+        template_folder=templates_path,
+        static_folder=static_path,
     )
 
     secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
@@ -59,6 +63,13 @@ def create_app():
         except Exception:
             return None
 
+    # Optional: validate Cloudinary config for serverless readiness
+    try:
+        from .services.cloudinary_service import validate_cloudinary_config
+        validate_cloudinary_config()
+    except Exception:
+        pass
+
     from .routes import (
         main as main_bp,
         auth as auth_bp,
@@ -66,6 +77,9 @@ def create_app():
         store as store_bp,
         uploads as uploads_bp,
         integrations as integrations_bp,
+        admin as admin_bp,
+        materials as materials_bp,
+        student_projects as student_projects_bp,
     )
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -73,5 +87,8 @@ def create_app():
     app.register_blueprint(store_bp)
     app.register_blueprint(uploads_bp)
     app.register_blueprint(integrations_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(materials_bp)
+    app.register_blueprint(student_projects_bp)
 
     return app

@@ -6,3 +6,4 @@ from .admin import bp as admin
 from .store import bp as store
 from .uploads import bp as uploads
 from .integrations import bp as integrations
+from .student_projects import bp as student_projects

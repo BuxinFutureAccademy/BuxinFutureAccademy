@@ -1,41 +1,28 @@
-# Core Flask Dependencies
+# Core Dependencies
 Flask==3.0.0
-Flask-SQLAlchemy==3.1.1
-Flask-Login==0.6.3
+Werkzeug==3.0.1
 
 # Database
-psycopg2-binary==2.9.9
+Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.23
-
-# File handling and security
-Werkzeug==3.0.1
-cryptography==41.0.7
-
-# Cloud storage and uploads
-cloudinary==1.36.0
-
-# HTTP requests
-requests==2.31.0
-
-# Vercel and WSGI
-vercel>=0.0.1
-gunicorn==21.2.0
-
-# Required for Vercel Python runtime
-wsgi-request-logger>=0.4.6
-
-# System monitoring
-psutil==5.9.6
-
-# WSGI server with optimizations
-gunicorn==21.2.0
-
-# Email support
-email-validator==2.1.0
-
-# Database migrations
+psycopg2-binary==2.9.9
 Flask-Migrate==4.0.5
 
-# Additional utilities
+# Authentication
+Flask-Login==0.6.3
+cryptography==41.0.7
+
+# Cloud Services
+cloudinary==1.36.0
+requests==2.31.0
+
+# Vercel Deployment
+vercel>=0.0.1
+gunicorn==21.2.0
+wsgi-request-logger>=0.4.6
+
+# Utilities
 python-dotenv==1.0.0
-twilio
+psutil==5.9.6
+email-validator==2.1.0
+twilio==8.12.0

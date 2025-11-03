@@ -9,7 +9,8 @@
         "runtime": "python3.12",
         "includeFiles": [
           "webapp/**/*",
-          "*.py"
+          "*.py",
+          "requirements.txt"
         ]
       }
     },
@@ -24,8 +25,19 @@
       "dest": "/webapp/static/$1"
     },
     {
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.py"
     }
-  ]
+  ],
+  "env": {
+    "FLASK_APP": "webapp",
+    "FLASK_ENV": "production",
+    "PYTHONPATH": "/var/task:/var/task/webapp"
+  },
+  "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": "."
 }

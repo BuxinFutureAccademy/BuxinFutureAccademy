@@ -1,5 +1,6 @@
 import os
-from flask import Flask
+import cloudinary
+from flask import Flask, jsonify
 from .extensions import db, login_manager
 
 
@@ -15,18 +16,29 @@ def create_app():
         static_folder=static_path,
     )
 
-    secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
-    app.config['SECRET_KEY'] = secret_key
-
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url and database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///learning_management.db'
+    # Basic configuration
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Fix database URL
+    db_url = os.environ.get('DATABASE_URL', '')
+    if db_url.startswith('psql '):
+        db_url = db_url[5:]  # Remove 'psql ' prefix
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///learning_management.db'
 
-    upload_folder = os.path.join(app.root_path, '..', 'static', 'uploads')
-    app.config['UPLOAD_FOLDER'] = os.path.abspath(upload_folder)
-    app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+    # Cloudinary configuration
+    cloudinary.config(
+        cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.environ.get('CLOUDINARY_API_KEY'),
+        api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+        secure=True
+    )
+    
+    # File upload configuration
+    app.config['UPLOAD_FOLDER'] = 'uploads'  # Virtual path for Cloudinary
+    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload (Cloudinary free tier limit)
 
     app.config['DEEPINFRA_API_KEY'] = os.environ.get('DEEPINFRA_API_KEY')
     app.config['DEEPINFRA_API_URL'] = os.environ.get('DEEPINFRA_API_URL', 'https://api.deepinfra.com/v1/openai/chat/completions')
@@ -43,12 +55,15 @@ def create_app():
     app.config['WHATSAPP_PHONE_NUMBER_ID'] = os.environ.get('WHATSAPP_PHONE_NUMBER_ID')
     app.config['RESET_TOKEN_SALT'] = os.environ.get('RESET_TOKEN_SALT', 'password-reset-salt-change-in-production')
 
-    try:
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos'), exist_ok=True)
-        os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'materials'), exist_ok=True)
-    except Exception as e:
-        print(f"Warning: Could not create upload directories: {e}")
+    # No need to create upload directories in production (using Cloudinary)
+    if os.environ.get('FLASK_ENV') != 'production':
+        try:
+            local_upload_path = os.path.join(static_path, 'uploads')
+            os.makedirs(local_upload_path, exist_ok=True)
+            os.makedirs(os.path.join(local_upload_path, 'videos'), exist_ok=True)
+            os.makedirs(os.path.join(local_upload_path, 'materials'), exist_ok=True)
+        except Exception as e:
+            app.logger.warning(f"Could not create local upload directories: {e}")
 
     # Initialize extensions
     db.init_app(app)
@@ -72,12 +87,13 @@ def create_app():
         except Exception:
             return None
 
-    # Optional: validate Cloudinary config for serverless readiness
+    # Initialize Cloudinary service
     try:
-        from .services.cloudinary_service import validate_cloudinary_config
-        validate_cloudinary_config()
-    except Exception:
-        pass
+        from .services import cloudinary_service
+        app.cloudinary = cloudinary_service
+    except Exception as e:
+        app.logger.error(f"Failed to initialize Cloudinary service: {e}")
+        app.cloudinary = None
 
     from .routes import (
         main as main_bp,
@@ -89,7 +105,9 @@ def create_app():
         admin as admin_bp,
         materials as materials_bp,
         student_projects as student_projects_bp,
+        file_uploads as file_uploads_bp
     )
+    # Register blueprints
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(projects_bp)
@@ -99,6 +117,7 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(materials_bp)
     app.register_blueprint(student_projects_bp)
+    app.register_blueprint(file_uploads_bp, url_prefix='/api')
 
     # Alias common endpoints without blueprint prefix to match existing templates
     try:

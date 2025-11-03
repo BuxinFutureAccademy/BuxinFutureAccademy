@@ -17,6 +17,9 @@ cloudinary==1.36.0
 # HTTP requests
 requests==2.31.0
 
+# Vercel runtime
+vercel>=0.0.1
+
 # System monitoring
 psutil==5.9.6
 

@@ -1414,6 +1414,115 @@
     </div>
 </div>
 
+<!-- Success Stories & Testimonials -->
+<section class="section-padding">
+    <div class="container">
+        <h2 class="section-title">Success Stories & Testimonials</h2>
+        <p class="section-subtitle">Hear from our students and their achievements</p>
+        
+        <div class="testimonials-grid">
+            <!-- Testimonial 1 -->
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <div class="testimonial-avatar">
+                        <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1600x1600/avatar1.jpg" alt="Student 1">
+                    </div>
+                    <div class="testimonial-text">
+                        <p>"The robotics program transformed my child's understanding of technology. He built his first robot in just 2 months!"</p>
+                        <div class="testimonial-author">- Sarah M., Parent</div>
+                    </div>
+                </div>
+                <div class="testimonial-stats">
+                    <span><i class="fas fa-trophy"></i> 1st Place - Regional Robotics</span>
+                    <span><i class="fas fa-chart-line"></i> 6 months progress</span>
+                </div>
+            </div>
+
+            <!-- Testimonial 2 -->
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <div class="testimonial-avatar">
+                        <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1600x1600/avatar2.jpg" alt="Student 2">
+                    </div>
+                    <div class="testimonial-text">
+                        <p>"I never thought I could code, but the projects made it so easy to learn. Now I've built my own app!"</p>
+                        <div class="testimonial-author">- James L., Student</div>
+                    </div>
+                </div>
+                <div class="testimonial-stats">
+                    <span><i class="fas fa-code"></i> Built 3 apps</span>
+                    <span><i class="fas fa-star"></i> 5/5 Rating</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Student Achievements -->
+<section class="section-padding bg-light">
+    <div class="container">
+        <h2 class="section-title">Student Achievements</h2>
+        <p class="section-subtitle">Celebrating our students' success</p>
+        
+        <div class="achievements-grid">
+            <div class="achievement-card">
+                <i class="fas fa-users"></i>
+                <h3>500+</h3>
+                <p>Students Enrolled</p>
+            </div>
+            <div class="achievement-card">
+                <i class="fas fa-trophy"></i>
+                <h3>25+</h3>
+                <p>Competitions Won</p>
+            </div>
+            <div class="achievement-card">
+                <i class="fas fa-laptop-code"></i>
+                <h3>100+</h3>
+                <p>Projects Completed</p>
+            </div>
+            <div class="achievement-card">
+                <i class="fas fa-star"></i>
+                <h3>4.9/5</h3>
+                <p>Average Rating</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured YouTube Videos -->
+<section class="section-padding">
+    <div class="container">
+        <h2 class="section-title">Featured Projects</h2>
+        <p class="section-subtitle">See what our students have built</p>
+        
+        <div class="videos-grid">
+            <div class="video-card">
+                <div class="video-wrapper">
+                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Student Project 1" frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen></iframe>
+                </div>
+                <h3>Autonomous Robot</h3>
+                <p>Built by Alex, Age 14</p>
+            </div>
+            
+            <div class="video-card">
+                <div class="video-wrapper">
+                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Student Project 2" frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen></iframe>
+                </div>
+                <h3>Smart Home System</h3>
+                <p>Built by Jamie, Age 16</p>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="/student-projects" class="btn btn-primary">View All Projects</a>
+        </div>
+    </div>
+</section>
+
 <!-- Floating Action Button -->
 <button class="fab" onclick="openChatModal()" aria-label="Open AI Assistant">
     <i class="fas fa-robot"></i>
@@ -1856,12 +1965,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Add loading state for visual feedback
-            const originalText = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-            this.classList.add('loading');
-            this.style.pointerEvents = 'none';
-            
+            /* New Sections Styles */
+    .section-padding {
+        padding: 4rem 0;
             // Haptic feedback
             if (navigator.vibrate) {
                 navigator.vibrate(10);

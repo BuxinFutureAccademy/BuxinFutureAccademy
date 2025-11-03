@@ -50,8 +50,17 @@ def create_app():
     except Exception as e:
         print(f"Warning: Could not create upload directories: {e}")
 
+    # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
+    
+    # Create database tables if they don't exist
+    with app.app_context():
+        try:
+            db.create_all()
+        except Exception as e:
+            print(f"Error creating database tables: {e}")
+            # This is fine in production where tables are created via migrations
     login_manager.login_view = 'auth.login'
 
     from .models.users import User

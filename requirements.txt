@@ -26,6 +26,9 @@ gunicorn==21.2.0
 # Email support
 email-validator==2.1.0
 
+# Database migrations
+Flask-Migrate==4.0.5
+
 # Additional utilities
 python-dotenv==1.0.0
 twilio

@@ -1,6 +1,9 @@
 import os
+import logging
+import traceback
+from logging.handlers import RotatingFileHandler
 import cloudinary
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from .extensions import db, login_manager
 
 
@@ -87,10 +90,22 @@ def create_app():
         except Exception:
             return None
 
+    # Configure logging
+    if not app.debug:
+        file_handler = RotatingFileHandler('app.log', maxBytes=10240, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('App startup')
+
     # Initialize Cloudinary service
     try:
         from .services import cloudinary_service
         app.cloudinary = cloudinary_service
+        app.logger.info('Cloudinary service initialized')
     except Exception as e:
         app.logger.error(f"Failed to initialize Cloudinary service: {e}")
         app.cloudinary = None
@@ -105,7 +120,8 @@ def create_app():
         admin as admin_bp,
         materials as materials_bp,
         student_projects as student_projects_bp,
-        file_uploads as file_uploads_bp
+        file_uploads as file_uploads_bp,
+        health as health_bp
     )
     # Register blueprints
     app.register_blueprint(main_bp)
@@ -118,6 +134,7 @@ def create_app():
     app.register_blueprint(materials_bp)
     app.register_blueprint(student_projects_bp)
     app.register_blueprint(file_uploads_bp, url_prefix='/api')
+    app.register_blueprint(health_bp)
 
     # Alias common endpoints without blueprint prefix to match existing templates
     try:
@@ -138,5 +155,22 @@ def create_app():
         app.add_url_rule('/logout', endpoint='logout', view_func=auth_bp.view_functions['logout'])
     except Exception:
         pass
+
+    # Error handlers
+    @app.errorhandler(500)
+    def internal_error(error):
+        app.logger.error(f"500 Error: {str(error)}")
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": "Internal server error", "details": str(error)}), 500
+
+    @app.before_request
+    def log_request_info():
+        app.logger.debug('Headers: %s', request.headers)
+        app.logger.debug('Body: %s', request.get_data())
+
+    @app.after_request
+    def log_response(response):
+        app.logger.debug('Response status: %s', response.status)
+        return response
 
     return app

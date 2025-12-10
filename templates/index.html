@@ -1357,11 +1357,11 @@
             <h3 class="cta-title">Start Your Journey Today</h3>
             <p class="cta-subtitle">Join thousands of students building the future with robotics</p>
             <div class="cta-buttons">
-                <a href="{{ url_for('register') }}" class="cta-button primary">
+                <a href="{{ '#' }}" class="cta-button primary">
                     <i class="fas fa-rocket"></i>
                     Start Free Trial
                 </a>
-                <a href="{{ url_for('login') }}" class="cta-button secondary">
+                <a href="{{ url_for('auth.login') }}" class="cta-button secondary">
                     <i class="fas fa-sign-in-alt"></i>
                     Sign In
                 </a>
@@ -1383,7 +1383,7 @@
                 </div>
             </div>
             <h4 class="feature-title">
-                <a href="{{ url_for('robotics_projects') }}" style="text-decoration: none; color: inherit;">Projects Gallery</a>
+                <a href="{{ url_for('projects.robotics_projects') }}" style="text-decoration: none; color: inherit;">Projects Gallery</a>
             </h4>
             <p class="feature-description">Explore amazing robotics projects from our community</p>
         </div>

@@ -138,6 +138,10 @@ def create_app():
 
     # Alias common endpoints without blueprint prefix to match existing templates
     try:
+        app.add_url_rule('/', endpoint='index', view_func=main_bp.view_functions['index'])
+    except Exception:
+        pass
+    try:
         app.add_url_rule('/store', endpoint='store', view_func=store_bp.view_functions['store'])
         app.add_url_rule('/course/<int:course_id>', endpoint='course_detail', view_func=store_bp.view_functions['course_detail'])
     except Exception:

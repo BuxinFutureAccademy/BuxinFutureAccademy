@@ -78,8 +78,10 @@
     {% else %}
         <div class="alert alert-info">
             <i class="fas fa-info-circle"></i> You haven't placed any course orders yet. 
-            <a href="{{ url_for('store') }}">Browse our course catalog</a> to get started!
+            <a href="{{ url_for('store.store') }}">Browse our course catalog</a> to get started!
         </div>
     {% endif %}
 </div>
 {% endblock %}
+
+

@@ -259,11 +259,11 @@
                             <a class="nav-link" href="{{ url_for('my_projects') }}">My Projects</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -397,7 +397,7 @@
                                 </div>
                                 <div class="text-center">
                                     <small class="text-muted">
-                                        <a href="{{ url_for('login') }}">Login</a> to like and comment
+                                        <a href="{{ url_for('auth.login') }}">Login</a> to like and comment
                                     </small>
                                 </div>
                             {% endif %}
@@ -455,10 +455,10 @@
             {% else %}
                 <div class="comment-form text-center">
                     <p class="mb-3">Want to comment on this project?</p>
-                    <a href="{{ url_for('login') }}" class="btn btn-custom me-2">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-custom me-2">
                         <i class="fas fa-sign-in-alt me-1"></i>Login
                     </a>
-                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary">
+                    <a href="{{ '#' }}" class="btn btn-outline-primary">
                         <i class="fas fa-user-plus me-1"></i>Register
                     </a>
                 </div>
@@ -620,7 +620,7 @@
                     </a>
                 </div>
                 <div class="col">
-                    <a class="nav-link" href="{{ url_for('store') }}">
+                    <a class="nav-link" href="{{ url_for('store.store') }}">
                         <i class="fas fa-graduation-cap"></i>
                         <div>Courses</div>
                     </a>
@@ -632,7 +632,7 @@
                     </a>
                 </div>
                 <div class="col">
-                    <a class="nav-link" href="{{ url_for('login') }}">
+                    <a class="nav-link" href="{{ url_for('auth.login') }}">
                         <i class="fas fa-sign-in-alt"></i>
                         <div>Login</div>
                     </a>
@@ -793,3 +793,5 @@
     </script>
 </body>
 </html>
+
+

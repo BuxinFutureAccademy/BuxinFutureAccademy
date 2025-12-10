@@ -432,7 +432,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('store') }}">
+                        <a class="nav-link" href="{{ url_for('store.store') }}">
                             <i class="fas fa-graduation-cap me-1"></i>Courses
                         </a>
                     </li>
@@ -458,14 +458,14 @@
                             <a class="nav-link" href="{{ url_for('student_dashboard') }}">Dashboard</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                            <a class="nav-link" href="{{ '#' }}">Register</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -691,7 +691,7 @@
                             {% else %}
                                 <div class="text-center py-2">
                                     <small class="text-muted">
-                                        <a href="{{ url_for('login') }}">Login</a> to like and comment
+                                        <a href="{{ url_for('auth.login') }}">Login</a> to like and comment
                                     </small>
                                 </div>
                             {% endif %}
@@ -734,7 +734,7 @@
                             <i class="fas fa-plus me-2"></i>Create Your First Project
                         </a>
                     {% else %}
-                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg mt-3">
+                        <a href="{{ '#' }}" class="btn btn-primary btn-lg mt-3">
                             <i class="fas fa-user-plus me-2"></i>Join & Create Projects
                         </a>
                     {% endif %}
@@ -802,7 +802,7 @@
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link" href="{{ url_for('store') }}">
+                        <a class="nav-link" href="{{ url_for('store.store') }}">
                             <i class="fas fa-graduation-cap"></i>
                             <div>Courses</div>
                         </a>
@@ -814,7 +814,7 @@
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link" href="{{ url_for('login') }}">
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">
                             <i class="fas fa-sign-in-alt"></i>
                             <div>Login</div>
                         </a>
@@ -1150,3 +1150,5 @@
     </script>
 </body>
 </html>
+
+

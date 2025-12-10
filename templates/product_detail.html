@@ -112,7 +112,7 @@
                     {% else %}
                         <div class="alert alert-warning">
                             <i class="fas fa-sign-in-alt me-2"></i>
-                            Please <a href="{{ url_for('login') }}">login</a> to purchase this product.
+                            Please <a href="{{ url_for('auth.login') }}">login</a> to purchase this product.
                         </div>
                     {% endif %}
                     
@@ -139,3 +139,5 @@
     </div>
 </div>
 {% endblock %}
+
+

@@ -16,7 +16,7 @@
 
                 <!-- Login Form -->
                 <div class="login-form-card">
-                    <form method="POST" class="login-form" action="{{ url_for('login') }}">
+                    <form method="POST" class="login-form" action="{{ url_for('auth.login') }}">
                         {{ csrf_token() if csrf_token }}
                         
                         <!-- Username -->
@@ -54,7 +54,7 @@
                                     Remember me
                                 </label>
                             </div>
-                            <a href="{{ url_for('forgot_password') }}" class="text-link forgot-link">
+                            <a href="{{ url_for('auth.forgot_password') }}" class="text-link forgot-link">
                                 <i class="fas fa-key me-1"></i>Forgot password?
                             </a>
                         </div>
@@ -75,7 +75,7 @@
                         <div class="text-center">
                             <p class="register-text">
                                 New to BuXin Academy? 
-                                <a href="{{ url_for('register') }}" class="text-link">Create an account</a>
+                                <a href="{{ '#' }}" class="text-link">Create an account</a>
                             </p>
                         </div>
                     </form>
@@ -763,3 +763,5 @@ url(r'^$', views.index_view, name='index'),  # Root URL points to index.html
 -->
 
 {% endblock %}
+
+

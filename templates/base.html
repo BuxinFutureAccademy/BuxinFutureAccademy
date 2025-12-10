@@ -167,14 +167,14 @@
                                 <i class="fas fa-graduation-cap me-1"></i>Learning
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('store') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('store.store') }}">
                                     <i class="fas fa-store me-2"></i>Course Store
                                 </a></li>
                                 {% if not current_user.is_admin %}
-                                    <li><a class="dropdown-item" href="{{ url_for('my_courses') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.my_courses') }}">
                                         <i class="fas fa-book-open me-2"></i>My Courses
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('my_course_orders') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.my_course_orders') }}">
                                         <i class="fas fa-receipt me-2"></i>Course Orders
                                     </a></li>
                                 {% endif %}
@@ -187,20 +187,20 @@
                                 <i class="fas fa-project-diagram me-1"></i>Projects
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('student_projects') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('student_projects.student_projects') }}">
                                     <i class="fas fa-eye me-2"></i>View All Projects
                                 </a></li>
                                 {% if not current_user.is_admin %}
-                                    <li><a class="dropdown-item" href="{{ url_for('create_project') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('student_projects.create_project') }}">
                                         <i class="fas fa-plus me-2"></i>Create Project
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('my_projects') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('student_projects.my_projects') }}">
                                         <i class="fas fa-user me-2"></i>My Projects
                                     </a></li>
                                 {% endif %}
                                 {% if current_user.is_admin %}
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_projects') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('student_projects.admin_projects') }}">
                                         <i class="fas fa-cogs me-2"></i>Manage Projects
                                     </a></li>
                                 {% endif %}
@@ -219,18 +219,18 @@
                                 {% endif %}
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('products') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('integrations.products') }}">
                                     <i class="fas fa-box me-2"></i>Products
                                 </a></li>
                                 {% if not current_user.is_admin %}
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('cart') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.cart') }}">
                                         <i class="fas fa-shopping-cart me-2"></i>Course Cart
                                         {% if cart_count > 0 %}
                                             <span class="badge bg-primary ms-2">{{ cart_count }}</span>
                                         {% endif %}
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('product_cart') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('integrations.product_cart') }}">
                                         <i class="fas fa-shopping-bag me-2"></i>Product Cart
                                     </a></li>
                                 {% endif %}
@@ -244,13 +244,13 @@
                                     <i class="fas fa-truck me-1"></i>Orders
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{{ url_for('my_orders') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('integrations.my_orders') }}">
                                         <i class="fas fa-truck me-2"></i>My Orders
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('payments') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('integrations.payments') }}">
                                         <i class="fas fa-credit-card me-2"></i>Payments
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('my_digital_products') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.my_digital_products') }}">
                                         <i class="fas fa-download me-2"></i>Digital Products
                                     </a></li>
                                 </ul>
@@ -263,17 +263,17 @@
                                 <i class="fas fa-tools me-1"></i>Tools
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('ai_assistant') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('integrations.ai_assistant') }}">
                                     <i class="fas fa-brain me-2"></i>AI Assistant
                                 </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('robotics_projects') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('projects.robotics_projects') }}">
                                     <i class="fas fa-robot me-2"></i>Submit Project Idea
                                 </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('available_classes') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('integrations.available_classes') }}">
                                     <i class="fas fa-chalkboard-teacher me-2"></i>Available Classes
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('about_us') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('integrations.about_us') }}">
                                     <i class="fas fa-info-circle me-2"></i>About Us
                                 </a></li>
                             </ul>
@@ -288,44 +288,44 @@
                                 <ul class="dropdown-menu">
                                     <!-- Admin Dashboard at the very top -->
                                     <li>
-                                        <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                        <a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}">
                                             <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><h6 class="dropdown-header">Content Management</h6></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_courses') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.admin_courses') }}">
                                         <i class="fas fa-graduation-cap me-2"></i>Manage Courses
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_products') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('integrations.admin_products') }}">
                                         <i class="fas fa-box me-2"></i>Manage Products
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_projects') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('student_projects.admin_projects') }}">
                                         <i class="fas fa-project-diagram me-2"></i>Student Projects
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_robotics_submissions') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('projects.admin_robotics_submissions') }}">
                                         <i class="fas fa-robot me-2"></i>Robotics Submissions
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><h6 class="dropdown-header">Orders & Users</h6></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_course_orders') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.admin_course_orders') }}">
                                         <i class="fas fa-receipt me-2"></i>Course Orders
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_product_orders') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.admin_product_orders') }}">
                                         <i class="fas fa-truck me-2"></i>Product Orders
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_enrollments') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('integrations.admin_enrollments') }}">
                                         <i class="fas fa-user-graduate me-2"></i>Class Enrollments
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_users') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_users') }}">
                                         <i class="fas fa-users me-2"></i>Manage Users
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><h6 class="dropdown-header">Communication</h6></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('bulk_message') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.bulk_message') }}">
                                         <i class="fas fa-envelope me-2"></i>Bulk Messages
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('payments') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('integrations.payments') }}">
                                         <i class="fas fa-credit-card me-2"></i>All Payments
                                     </a></li>
                                 </ul>
@@ -333,7 +333,7 @@
                         {% else %}
                             <!-- Student Dashboard -->
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('student_dashboard') }}">
+                                <a class="nav-link" href="{{ url_for('integrations.student_dashboard') }}">
                                     <i class="fas fa-home me-1"></i>Dashboard
                                 </a>
                             </li>
@@ -341,46 +341,46 @@
 
                         <!-- User Account: Show Sign Out -->
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
                                 <i class="fas fa-sign-out-alt me-1"></i>Sign Out
                             </a>
                         </li>
                     {% else %}
                         <!-- Guest Navigation -->
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('store') }}">
+                            <a class="nav-link" href="{{ url_for('store.store') }}">
                                 <i class="fas fa-store me-1"></i>Courses
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('products') }}">
+                            <a class="nav-link" href="{{ url_for('integrations.products') }}">
                                 <i class="fas fa-box me-1"></i>Products
                             </a>
                         </li>
                         <!-- Student Projects for Guests (NEW) -->
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('student_projects') }}">
+                            <a class="nav-link" href="{{ url_for('student_projects.student_projects') }}">
                                 <i class="fas fa-project-diagram me-1"></i>Projects
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('robotics_projects') }}">
+                            <a class="nav-link" href="{{ url_for('projects.robotics_projects') }}">
                                 <i class="fas fa-robot me-1"></i>Submit Project
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('ai_assistant') }}">
+                            <a class="nav-link" href="{{ url_for('integrations.ai_assistant') }}">
                                 <i class="fas fa-brain me-1"></i>AI Assistant
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('about_us') }}">
+                            <a class="nav-link" href="{{ url_for('integrations.about_us') }}">
                                 <i class="fas fa-info-circle me-1"></i>About
                             </a>
                         </li>
 
                          <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
                                 <i class="fas fa-sign-in-alt me-2"></i>Login
                             </a>
                         </li>
@@ -419,33 +419,33 @@
             <div class="row text-center">
                 {% if current_user.is_authenticated %}
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store') }}">
+                        <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store.store') }}">
                             <i class="fas fa-graduation-cap"></i>
                             <div>Courses</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint in ['student_projects', 'view_project', 'create_project', 'my_projects'] %}active{% endif %}" href="{{ url_for('student_projects') }}">
+                        <a class="nav-link {% if request.endpoint in ['student_projects', 'view_project', 'create_project', 'my_projects'] %}active{% endif %}" href="{{ url_for('student_projects.student_projects') }}">
                             <i class="fas fa-project-diagram"></i>
                             <div>Projects</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
+                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('integrations.products') }}">
                             <i class="fas fa-box"></i>
                             <div>Products</div>
                         </a>
                     </div>
                     {% if current_user.is_admin %}
                         <div class="col">
-                            <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">
+                            <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin.admin_dashboard') }}">
                                 <i class="fas fa-cog"></i>
                                 <div>Admin</div>
                             </a>
                         </div>
                     {% else %}
                         <div class="col">
-                            <a class="nav-link {% if request.endpoint == 'student_dashboard' %}active{% endif %}" href="{{ url_for('student_dashboard') }}">
+                            <a class="nav-link {% if request.endpoint == 'student_dashboard' %}active{% endif %}" href="{{ url_for('integrations.student_dashboard') }}">
                                 <i class="fas fa-tachometer-alt"></i>
                                 <div>Dashboard</div>
                             </a>
@@ -454,25 +454,25 @@
                 {% else %}
                     <!-- Guest Navigation -->
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store') }}">
+                        <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store.store') }}">
                             <i class="fas fa-graduation-cap"></i>
                             <div>Courses</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint in ['student_projects', 'view_project'] %}active{% endif %}" href="{{ url_for('student_projects') }}">
+                        <a class="nav-link {% if request.endpoint in ['student_projects', 'view_project'] %}active{% endif %}" href="{{ url_for('student_projects.student_projects') }}">
                             <i class="fas fa-project-diagram"></i>
                             <div>Projects</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
+                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('integrations.products') }}">
                             <i class="fas fa-box"></i>
                             <div>Products</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">
+                        <a class="nav-link {% if request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('auth.login') }}">
                             <i class="fas fa-sign-in-alt"></i>
                             <div>Login</div>
                         </a>

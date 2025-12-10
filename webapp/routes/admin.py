@@ -130,6 +130,58 @@ def initialize_db():
         return f"Initialization failed: {e}", 500
 
 
+@bp.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get stats
+    stats = {
+        'total_users': User.query.count(),
+        'total_students': User.query.filter_by(is_student=True).count(),
+        'total_purchases': Purchase.query.filter_by(status='completed').count(),
+        'pending_purchases': Purchase.query.filter_by(status='pending').count(),
+        'total_projects': StudentProject.query.count(),
+        'total_submissions': RoboticsProjectSubmission.query.count(),
+    }
+    return render_template('admin_dashboard.html', stats=stats)
+
+
+@bp.route('/admin/users')
+@login_required
+def admin_users():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    from flask import request
+    search = request.args.get('search', '')
+    query = User.query
+    if search:
+        query = query.filter(
+            User.email.contains(search) | 
+            User.first_name.contains(search) | 
+            User.last_name.contains(search)
+        )
+    users = query.order_by(User.id.desc()).all()
+    return render_template('admin_users.html', users=users, search_term=search)
+
+
+@bp.route('/student/dashboard')
+@login_required
+def student_dashboard():
+    purchases = Purchase.query.filter_by(user_id=current_user.id, status='completed').all()
+    projects = StudentProject.query.filter_by(student_id=current_user.id).all()
+    enrollments = ClassEnrollment.query.filter_by(user_id=current_user.id).all()
+    
+    return render_template('student_dashboard.html', 
+                          purchases=purchases, 
+                          projects=projects,
+                          enrollments=enrollments)
+
+
 @bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_edit_user(user_id):

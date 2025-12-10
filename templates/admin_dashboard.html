@@ -1,1074 +1,127 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - BuXin Future Academy{% endblock %}
 
 {% block content %}
-<style>
-:root {
-    --primary-color: #007bff;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --info-color: #17a2b8;
-    --dark-color: #343a40;
-    --light-color: #f8f9fa;
-}
-
-body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    font-family: 'Inter', sans-serif;
-}
-
-.admin-container {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    margin: 2rem;
-    padding: 2rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.page-header {
-    background: linear-gradient(135deg, var(--primary-color), #6f42c1);
-    color: white;
-    padding: 2rem;
-    border-radius: 15px;
-    margin-bottom: 2rem;
-    text-align: center;
-}
-
-.page-header h1 {
-    margin: 0;
-    font-weight: 700;
-}
-
-.nav-tabs {
-    border: none;
-    margin-bottom: 2rem;
-}
-
-.nav-tabs .nav-link {
-    border: none;
-    background: transparent;
-    color: var(--dark-color);
-    font-weight: 600;
-    padding: 1rem 2rem;
-    border-radius: 10px;
-    margin-right: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.nav-tabs .nav-link.active {
-    background: var(--primary-color);
-    color: white;
-}
-
-.nav-tabs .nav-link:hover {
-    background: rgba(0, 123, 255, 0.1);
-}
-
-.card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1.5rem;
-}
-
-.card-header {
-    background: linear-gradient(135deg, var(--success-color), #20c997);
-    color: white;
-    border-radius: 15px 15px 0 0;
-    padding: 1.5rem;
-    border: none;
-}
-
-.card-header h5 {
-    margin: 0;
-    font-weight: 600;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-label {
-    font-weight: 600;
-    color: var(--dark-color);
-    margin-bottom: 0.5rem;
-}
-
-.form-control, .form-select {
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.btn {
-    border-radius: 10px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), #6f42c1);
-    border: none;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
-}
-
-.material-item {
-    background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    border-left: 4px solid var(--primary-color);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-}
-
-.material-item:hover {
-    transform: translateX(5px);
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-}
-
-.material-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.material-title {
-    font-weight: 600;
-    color: var(--dark-color);
-}
-
-.material-content {
-    color: #6c757d;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-    word-wrap: break-word;
-}
-
-.material-content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
-    margin: 0.5rem 0;
-}
-
-.material-content a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.material-content a:hover {
-    text-decoration: underline;
-}
-
-.badge {
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.75rem;
-}
-
-.badge.individual {
-    background: linear-gradient(135deg, var(--primary-color), #6f42c1);
-}
-
-.badge.group {
-    background: linear-gradient(135deg, var(--warning-color), #fd7e14);
-}
-
-.stats-row {
-    margin-top: 2rem;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-}
-
-.stat-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.stat-label {
-    color: #6c757d;
-    font-weight: 500;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: #6c757d;
-}
-
-.empty-state i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-.quick-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.quick-link {
-    background: white;
-    border-radius: 10px;
-    padding: 1rem;
-    text-decoration: none;
-    color: var(--dark-color);
-    transition: all 0.3s ease;
-    flex: 1;
-    min-width: 200px;
-    text-align: center;
-}
-
-.quick-link:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    color: var(--primary-color);
-}
-
-.table {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.table th {
-    background: var(--light-color);
-    border: none;
-    font-weight: 600;
-    padding: 1rem;
-    color: var(--dark-color);
-}
-
-.table td {
-    border: none;
-    padding: 1rem;
-    vertical-align: middle;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.05);
-}
-
-.table-responsive {
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-    .admin-container {
-        margin: 1rem;
-        padding: 1rem;
-    }
+<div class="container py-4">
+    <h1 class="mb-4"><i class="fas fa-tachometer-alt me-2" style="color: #667eea;"></i>Admin Dashboard</h1>
     
-    .nav-tabs .nav-link {
-        padding: 0.75rem 1rem;
-        font-size: 0.9rem;
-    }
-    
-    .quick-links {
-        flex-direction: column;
-    }
-}
-</style>
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x mb-2" style="color: #667eea;"></i>
+                    <h3 class="mb-0">{{ stats.total_users }}</h3>
+                    <small class="text-muted">Total Users</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-graduate fa-2x mb-2" style="color: #28a745;"></i>
+                    <h3 class="mb-0">{{ stats.total_students }}</h3>
+                    <small class="text-muted">Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body text-center">
+                    <i class="fas fa-shopping-cart fa-2x mb-2" style="color: #17a2b8;"></i>
+                    <h3 class="mb-0">{{ stats.total_purchases }}</h3>
+                    <small class="text-muted">Purchases</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x mb-2" style="color: #ffc107;"></i>
+                    <h3 class="mb-0">{{ stats.pending_purchases }}</h3>
+                    <small class="text-muted">Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body text-center">
+                    <i class="fas fa-project-diagram fa-2x mb-2" style="color: #6f42c1;"></i>
+                    <h3 class="mb-0">{{ stats.total_projects }}</h3>
+                    <small class="text-muted">Projects</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body text-center">
+                    <i class="fas fa-robot fa-2x mb-2" style="color: #dc3545;"></i>
+                    <h3 class="mb-0">{{ stats.total_submissions }}</h3>
+                    <small class="text-muted">Submissions</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Place this at the top of your admin_dashboard.html, above the main content if you want a visible admin dropdown -->
-<div class="dropdown mb-4" style="text-align:right;">
-    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="adminMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="fas fa-cog me-1"></i> Admin
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminMenuButton">
-        <!-- Dashboard at the very top -->
-        <li>
-            <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
-                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+    <!-- Quick Actions -->
+    <h4 class="mb-3">Quick Actions</h4>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a href="{{ url_for('admin.admin_users') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-users fa-2x me-3" style="color: #667eea;"></i>
+                    <div>
+                        <h5 class="mb-0 text-dark">Manage Users</h5>
+                        <small class="text-muted">View and edit users</small>
+                    </div>
+            </div>
             </a>
-        </li>
-        <li><hr class="dropdown-divider"></li>
-        <li><h6 class="dropdown-header">Content Management</h6></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_courses') }}">
-            <i class="fas fa-graduation-cap me-2"></i>Manage Courses
-        </a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_products') }}">
-            <i class="fas fa-box me-2"></i>Manage Products
-        </a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_projects') }}">
-            <i class="fas fa-project-diagram me-2"></i>Student Projects
-        </a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_robotics_submissions') }}">
-            <i class="fas fa-robot me-2"></i>Robotics Submissions
-        </a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><h6 class="dropdown-header">Orders & Users</h6></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_course_orders') }}">
-            <i class="fas fa-receipt me-2"></i>Course Orders
-        </a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_product_orders') }}">
-            <i class="fas fa-truck me-2"></i>Product Orders
-        </a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_enrollments') }}">
-            <i class="fas fa-user-graduate me-2"></i>Class Enrollments
-        </a></li>
-        <li><a class="dropdown-item" href="{{ url_for('admin_users') }}">
-            <i class="fas fa-users me-2"></i>Manage Users
-        </a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><h6 class="dropdown-header">Communication</h6></li>
-        <li><a class="dropdown-item" href="{{ url_for('bulk_message') }}">
-            <i class="fas fa-envelope me-2"></i>Bulk Messages
-        </a></li>
-        <li><a class="dropdown-item" href="{{ url_for('payments') }}">
-            <i class="fas fa-credit-card me-2"></i>All Payments
-        </a></li>
-    </ul>
-</div>
-
-<div class="admin-container">
-    <!-- Page Header -->
-    <div class="page-header">
-        <h1><i class="fas fa-user-cog me-2"></i>Admin Dashboard</h1>
-        <p class="mb-0">Manage your learning platform efficiently</p>
-    </div>
-
-    <!-- Navigation Tabs -->
-    <ul class="nav nav-tabs" id="adminTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="share-tab" data-bs-toggle="tab" data-bs-target="#share" type="button">
-                <i class="fas fa-share me-2"></i>Share Material
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button">
-                <i class="fas fa-history me-2"></i>Recent Materials
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="classes-tab" data-bs-toggle="tab" data-bs-target="#classes" type="button">
-                <i class="fas fa-chalkboard-teacher me-2"></i>Classes
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="course-orders-tab" data-bs-toggle="tab" data-bs-target="#course-orders" type="button">
-                <i class="fas fa-graduation-cap me-2"></i>Course Orders
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="product-orders-tab" data-bs-toggle="tab" data-bs-target="#product-orders" type="button">
-                <i class="fas fa-shopping-cart me-2"></i>Product Orders
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="enrollments-tab" data-bs-toggle="tab" data-bs-target="#enrollments" type="button">
-                <i class="fas fa-clipboard-list me-2"></i>Enrollments
-            </button>
-        </li>
-    </ul>
-
-    <!-- Tab Content -->
-    <div class="tab-content" id="adminTabContent">
-        <!-- Share Material Tab -->
-        <div class="tab-pane fade show active" id="share" role="tabpanel">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-share me-2"></i>Share Learning Material</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST">
-                        <div class="form-group">
-                            <label for="class_id" class="form-label">
-                                <i class="fas fa-users me-2"></i>Select Recipients
-                            </label>
-                            <select class="form-select" id="class_id" name="class_id" required>
-                                <option value="">Choose who to share with...</option>
-                                
-                                <!-- Individual Students -->
-                                <optgroup label="📚 Individual Students">
-                                    {% for student in individual_students %}
-                                        <option value="individual_student_{{ student.id }}">
-                                            👤 {{ student.first_name }} {{ student.last_name }} ({{ student.username }})
-                                        </option>
-                                    {% endfor %}
-                                </optgroup>
-                                
-                                <!-- Individual Classes -->
-                                {% if individual_classes %}
-                                <optgroup label="👨‍🎓 Individual Classes">
-                                    {% for class in individual_classes %}
-                                        <option value="individual_{{ class.id }}">
-                                            📖 {{ class.name }} ({{ class.students|length }} student{{ 's' if class.students|length != 1 else '' }})
-                                        </option>
-                                    {% endfor %}
-                                </optgroup>
-                                {% endif %}
-                                
-                                <!-- Group Classes -->
-                                {% if group_classes %}
-                                <optgroup label="👥 Group Classes">
-                                    {% for class in group_classes %}
-                                        <option value="group_{{ class.id }}">
-                                            🎓 {{ class.name }} ({{ class.students|length }}/{{ class.max_students }} students)
-                                        </option>
-                                    {% endfor %}
-                                </optgroup>
-                                {% endif %}
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="message" class="form-label">
-                                <i class="fas fa-edit me-2"></i>Learning Content
-                            </label>
-                            <textarea class="form-control" id="message" name="message" rows="8" 
-                                      placeholder="Enter your learning material here...
-
-📝 Text content, instructions, or assignments
-🔗 Links: https://example.com/resource
-📷 Image links: https://example.com/image.jpg
-📄 PDF links: https://example.com/document.pdf
-🎥 Video links: https://example.com/video.mp4
-
-Links will be automatically formatted and clickable for students." required></textarea>
-                        </div>
-                        
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Tip:</strong> Add links to photos, PDFs, or documents. They will appear as clickable links for students.
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-2"></i>Share Material
-                        </button>
-                    </form>
-                </div>
-            </div>
         </div>
-
-        <!-- Recent Materials Tab -->
-        <div class="tab-pane fade" id="materials" role="tabpanel">
-            <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, var(--info-color), #20c997);">
-                    <h5><i class="fas fa-history me-2"></i>Recent Learning Materials</h5>
-                </div>
-                <div class="card-body">
-                    {% if materials %}
-                        {% for material in materials %}
-                            <div class="material-item">
-                                <div class="material-header">
-                                    <h6 class="material-title">{{ material.class_name }}</h6>
-                                    <span class="badge {{ material.class_type }}">
-                                        {{ material.class_type.title() }}
-                                    </span>
-                                </div>
-                                <div class="material-content">
-                                    {{ material.content|safe|urlize }}
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-clock me-1"></i>
-                                    {{ material.created_at.strftime('%B %d, %Y at %I:%M %p') }}
-                                </small>
-                                <!-- Delete button for material -->
-                                <form method="POST" action="{{ url_for('delete_material', material_id=material.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this material?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger mt-2">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </form>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-inbox"></i>
-                            <h5>No materials shared yet</h5>
-                            <p>Start sharing educational content with your students!</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Classes Tab -->
-        <div class="tab-pane fade" id="classes" role="tabpanel">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if individual_classes %}
-                                {% for class in individual_classes %}
-                                    <div class="material-item">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6>{{ class.name }}</h6>
-                                                <p class="text-muted mb-1">{{ class.description or 'No description' }}</p>
-                                                <small class="text-success">{{ class.students|length }} student(s)</small>
-                                            </div>
-                                            <div class="btn-group-vertical">
-                                                <a href="{{ url_for('edit_class', class_type='individual', class_id=class.id) }}" 
-                                                   class="btn btn-sm btn-outline-primary mb-1">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#deleteModal{{ class.id }}individual">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Delete Modal for Individual Class -->
-                                        <div class="modal fade" id="deleteModal{{ class.id }}individual" tabindex="-1">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header bg-danger text-white">
-                                                        <h5 class="modal-title">
-                                                            <i class="fas fa-exclamation-triangle me-2"></i>Delete Individual Class
-                                                        </h5>
-                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <div class="text-center mb-3">
-                                                            <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
-                                                            <h6>Are you sure you want to delete this class?</h6>
-                                                        </div>
-                                                        
-                                                        <div class="alert alert-info">
-                                                            <strong>Class:</strong> {{ class.name }}<br>
-                                                            <strong>Students:</strong> {{ class.students|length }}<br>
-                                                            <strong>Description:</strong> {{ class.description or 'No description' }}
-                                                        </div>
-                                                        
-                                                        <div class="alert alert-warning">
-                                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                                            <strong>Warning:</strong> This action will:
-                                                            <ul class="mb-0 mt-2">
-                                                                <li>Delete the class permanently</li>
-                                                                <li>Remove all student enrollments</li>
-                                                                <li>Delete all shared learning materials</li>
-                                                                <li>Remove related enrollment records</li>
-                                                            </ul>
-                                                        </div>
-                                                        
-                                                        <div class="alert alert-danger">
-                                                            <strong>This action cannot be undone!</strong>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                            <i class="fas fa-times me-2"></i>Cancel
-                                                        </button>
-                                                        <form method="POST" action="{{ url_for('delete_class', class_type='individual', class_id=class.id) }}" style="display: inline;">
-                                                            <button type="submit" class="btn btn-danger">
-                                                                <i class="fas fa-trash me-2"></i>Delete Permanently
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="empty-state">
-                                    <i class="fas fa-user-plus"></i>
-                                    <h6>No individual classes</h6>
-                                    <p>Create your first individual class</p>
-                                    <a href="{{ url_for('create_class') }}" class="btn btn-primary">
-                                        <i class="fas fa-plus me-2"></i>Create Individual Class
-                                    </a>
-                                </div>
-                            {% endif %}
-                        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('store.admin_courses') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-graduation-cap fa-2x me-3" style="color: #28a745;"></i>
+                    <div>
+                        <h5 class="mb-0 text-dark">Manage Courses</h5>
+                        <small class="text-muted">Edit course catalog</small>
                     </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header" style="background: linear-gradient(135deg, var(--warning-color), #fd7e14);">
-                            <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if group_classes %}
-                                {% for class in group_classes %}
-                                    <div class="material-item">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6>{{ class.name }}</h6>
-                                                <p class="text-muted mb-1">{{ class.description or 'No description' }}</p>
-                                                <small class="text-info">{{ class.students|length }}/{{ class.max_students }} students</small>
-                                                {% if class.students|length >= class.max_students %}
-                                                    <span class="badge bg-danger ms-2">Full</span>
-                                                {% endif %}
-                                            </div>
-                                            <div class="btn-group-vertical">
-                                                <a href="{{ url_for('edit_class', class_type='group', class_id=class.id) }}" 
-                                                   class="btn btn-sm btn-outline-primary mb-1">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#deleteModal{{ class.id }}group">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Delete Modal for Group Class -->
-                                        <div class="modal fade" id="deleteModal{{ class.id }}group" tabindex="-1">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header bg-danger text-white">
-                                                        <h5 class="modal-title">
-                                                            <i class="fas fa-exclamation-triangle me-2"></i>Delete Group Class
-                                                        </h5>
-                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <div class="text-center mb-3">
-                                                            <i class="fas fa-users-slash fa-3x text-danger mb-3"></i>
-                                                            <h6>Are you sure you want to delete this group class?</h6>
-                                                        </div>
-                                                        
-                                                        <div class="alert alert-info">
-                                                            <strong>Class:</strong> {{ class.name }}<br>
-                                                            <strong>Students:</strong> {{ class.students|length }}/{{ class.max_students }}<br>
-                                                            <strong>Description:</strong> {{ class.description or 'No description' }}
-                                                        </div>
-                                                        
-                                                        <div class="alert alert-warning">
-                                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                                            <strong>Warning:</strong> This action will:
-                                                            <ul class="mb-0 mt-2">
-                                                                <li>Delete the group class permanently</li>
-                                                                <li>Remove all {{ class.students|length }} student enrollments</li>
-                                                                <li>Delete all shared learning materials</li>
-                                                                <li>Remove related enrollment records</li>
-                                                            </ul>
-                                                        </div>
-                                                        
-                                                        <div class="alert alert-danger">
-                                                            <strong>This action cannot be undone!</strong>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                            <i class="fas fa-times me-2"></i>Cancel
-                                                        </button>
-                                                        <form method="POST" action="{{ url_for('delete_class', class_type='group', class_id=class.id) }}" style="display: inline;">
-                                                            <button type="submit" class="btn btn-danger">
-                                                                <i class="fas fa-trash me-2"></i>Delete Permanently
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="empty-state">
-                                    <i class="fas fa-users"></i>
-                                    <h6>No group classes</h6>
-                                    <p>Create your first group class</p>
-                                    <a href="{{ url_for('create_class') }}" class="btn btn-warning">
-                                        <i class="fas fa-plus me-2"></i>Create Group Class
-                                    </a>
-                                </div>
-                            {% endif %}
-                        </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('store.admin_course_orders') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-receipt fa-2x me-3" style="color: #17a2b8;"></i>
+                    <div>
+                        <h5 class="mb-0 text-dark">Course Orders</h5>
+                        <small class="text-muted">View all orders</small>
                     </div>
-                </div>
             </div>
-            
-            <!-- Class Management Actions -->
-            <div class="card mt-4">
-                <div class="card-header" style="background: linear-gradient(135deg, var(--info-color), #6f42c1);">
-                    <h5><i class="fas fa-cogs me-2"></i>Class Management</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="fas fa-plus-circle fa-3x text-primary mb-3"></i>
-                                <h6>Create New Class</h6>
-                                <p class="text-muted">Start a new individual or group class</p>
-                                <a href="{{ url_for('create_class') }}" class="btn btn-primary">
-                                    <i class="fas fa-plus me-2"></i>Create Class
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="fas fa-users-cog fa-3x text-success mb-3"></i>
-                                <h6>Manage Students</h6>
-                                <p class="text-muted">Add or remove students from classes</p>
-                                <a href="{{ url_for('admin_users') }}" class="btn btn-success">
-                                    <i class="fas fa-users me-2"></i>Manage Users
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="fas fa-clipboard-list fa-3x text-warning mb-3"></i>
-                                <h6>View Enrollments</h6>
-                                <p class="text-muted">Review and approve class enrollments</p>
-                                <a href="{{ url_for('admin_enrollments') }}" class="btn btn-warning">
-                                    <i class="fas fa-clipboard-list me-2"></i>View Enrollments
-                                </a>
-                            </div>
-                        </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('student_projects.admin_projects') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-project-diagram fa-2x me-3" style="color: #6f42c1;"></i>
+                    <div>
+                        <h5 class="mb-0 text-dark">Student Projects</h5>
+                        <small class="text-muted">Moderate projects</small>
                     </div>
-                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('projects.admin_robotics_submissions') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-robot fa-2x me-3" style="color: #dc3545;"></i>
+                    <div>
+                        <h5 class="mb-0 text-dark">Robotics Submissions</h5>
+                        <small class="text-muted">Review submissions</small>
             </div>
         </div>
-
-        <!-- Course Orders Tab -->
-        <div class="tab-pane fade" id="course-orders" role="tabpanel">
-            <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #6f42c1, #007bff);">
-                    <h5><i class="fas fa-graduation-cap me-2"></i>Course Orders</h5>
-                </div>
-                <div class="card-body">
-                    {% if course_orders %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Order #</th>
-                                        <th>Student</th>
-                                        <th>Course</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for order in course_orders %}
-                                    <tr>
-                                        <td><strong>#{{ order.id }}</strong></td>
-                                        <td>
-                                            {{ order.customer_name or order.user.first_name + ' ' + order.user.last_name }}
-                                            <br><small class="text-muted">{{ order.customer_email or order.user.email }}</small>
-                                        </td>
-                                        <td>
-                                            <strong>{{ order.course.title }}</strong>
-                                            <br><small class="text-muted">${{ order.course.price }}</small>
-                                        </td>
-                                        <td><strong>${{ order.amount }}</strong></td>
-                                        <td>
-                                            {% if order.status == 'completed' %}
-                                                <span class="badge bg-success">Completed</span>
-                                            {% elif order.status == 'pending' %}
-                                                <span class="badge bg-warning">Pending</span>
-                                            {% else %}
-                                                <span class="badge bg-danger">{{ order.status.title() }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ order.purchased_at.strftime('%Y-%m-%d') }}</td>
-                                        <td>
-                                            <a href="{{ url_for('view_course_order', order_id=order.id) }}" 
-                                               class="btn btn-sm btn-outline-primary">View</a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-shopping-cart"></i>
-                            <h5>No course orders yet</h5>
-                            <p>Course purchases will appear here</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
+            </a>
         </div>
-
-        <!-- Product Orders Tab -->
-        <div class="tab-pane fade" id="product-orders" role="tabpanel">
-            <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                    <h5><i class="fas fa-shopping-cart me-2"></i>Product Orders</h5>
-                </div>
-                <div class="card-body">
-                    {% if product_orders %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Order #</th>
-                                        <th>Customer</th>
-                                        <th>Product</th>
-                                        <th>Quantity</th>
-                                        <th>Total</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for order in product_orders %}
-                                    <tr>
-                                        <td><strong>#{{ order.id }}</strong></td>
-                                        <td>
-                                            {{ order.customer_name or order.user.first_name + ' ' + order.user.last_name }}
-                                            <br><small class="text-muted">{{ order.customer_email or order.user.email }}</small>
-                                        </td>
-                                        <td>
-                                            <strong>{{ order.product.name }}</strong>
-                                            <br><small class="text-muted">{{ order.product.category }}</small>
-                                        </td>
-                                        <td>{{ order.quantity }}</td>
-                                        <td><strong>${{ order.total_amount }}</strong></td>
-                                        <td>
-                                            {% if order.status == 'completed' %}
-                                                <span class="badge bg-success">Completed</span>
-                                            {% elif order.status == 'pending' %}
-                                                <span class="badge bg-warning">Pending</span>
-                                            {% elif order.status == 'shipped' %}
-                                                <span class="badge bg-info">Shipped</span>
-                                            {% elif order.status == 'delivered' %}
-                                                <span class="badge bg-success">Delivered</span>
-                                            {% else %}
-                                                <span class="badge bg-danger">{{ order.status.title() }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ order.ordered_at.strftime('%Y-%m-%d') }}</td>
-                                        <td>
-                                            <a href="{{ url_for('view_order', order_id=order.id) }}" 
-                                               class="btn btn-sm btn-outline-primary">View</a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-box"></i>
-                            <h5>No product orders yet</h5>
-                            <p>Product purchases will appear here</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Enrollments Tab -->
-        <div class="tab-pane fade" id="enrollments" role="tabpanel">
-            <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #dc3545, #fd7e14);">
-                    <h5><i class="fas fa-clipboard-list me-2"></i>Class Enrollments</h5>
-                </div>
-                <div class="card-body">
-                    {% if enrollments %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Enrollment #</th>
-                                        <th>Student</th>
-                                        <th>Class</th>
-                                        <th>Type</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for enrollment in enrollments %}
-                                    <tr>
-                                        <td><strong>#{{ enrollment.id }}</strong></td>
-                                        <td>
-                                            {{ enrollment.customer_name or enrollment.user.first_name + ' ' + enrollment.user.last_name }}
-                                            <br><small class="text-muted">{{ enrollment.customer_email or enrollment.user.email }}</small>
-                                        </td>
-                                        <td>
-                                            {% if enrollment.class_type == 'individual' %}
-                                                {% set class_obj = IndividualClass.query.get(enrollment.class_id) %}
-                                            {% else %}
-                                                {% set class_obj = GroupClass.query.get(enrollment.class_id) %}
-                                            {% endif %}
-                                            <strong>{{ class_obj.name if class_obj else 'Unknown Class' }}</strong>
-                                        </td>
-                                        <td>
-                                            <span class="badge {{ 'individual' if enrollment.class_type == 'individual' else 'group' }}">
-                                                {{ enrollment.class_type.title() }}
-                                            </span>
-                                        </td>
-                                        <td><strong>${{ enrollment.amount }}</strong></td>
-                                        <td>
-                                            {% if enrollment.status == 'completed' %}
-                                                <span class="badge bg-success">Completed</span>
-                                            {% elif enrollment.status == 'pending' %}
-                                                <span class="badge bg-warning">Pending</span>
-                                            {% else %}
-                                                <span class="badge bg-danger">{{ enrollment.status.title() }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ enrollment.enrolled_at.strftime('%Y-%m-%d') }}</td>
-                                        <td>
-                                            <a href="{{ url_for('view_enrollment', enrollment_id=enrollment.id) }}" 
-                                               class="btn btn-sm btn-outline-primary">View</a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-user-plus"></i>
-                            <h5>No enrollments yet</h5>
-                            <p>Class enrollments will appear here</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="row stats-row">
-        <div class="col-md-2">
-            <div class="stat-card">
-                <i class="fas fa-users stat-icon text-primary"></i>
-                <div class="stat-number">{{ students|length }}</div>
-                <div class="stat-label">Total Students</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card">
-                <i class="fas fa-graduation-cap stat-icon text-success"></i>
-                <div class="stat-number">{{ course_orders|length }}</div>
-                <div class="stat-label">Course Orders</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card">
-                <i class="fas fa-shopping-cart stat-icon text-info"></i>
-                <div class="stat-number">{{ product_orders|length }}</div>
-                <div class="stat-label">Product Orders</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card">
-                <i class="fas fa-clipboard-list stat-icon text-warning"></i>
-                <div class="stat-number">{{ enrollments|length }}</div>
-                <div class="stat-label">Enrollments</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card">
-                <i class="fas fa-chalkboard-teacher stat-icon text-danger"></i>
-                <div class="stat-number">{{ (individual_classes|length) + (group_classes|length) }}</div>
-                <div class="stat-label">Total Classes</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card">
-                <i class="fas fa-book stat-icon text-dark"></i>
-                <div class="stat-number">{{ materials|length }}</div>
-                <div class="stat-label">Materials Shared</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Links -->
-    <div class="quick-links">
-        <a href="{{ url_for('create_class') }}" class="quick-link">
-            <i class="fas fa-plus-circle fa-2x mb-2 text-primary"></i>
-            <div>Create Class</div>
-        </a>
-        <a href="{{ url_for('admin_courses') }}" class="quick-link">
-            <i class="fas fa-graduation-cap fa-2x mb-2 text-success"></i>
-            <div>Manage Courses</div>
-        </a>
-        <a href="{{ url_for('admin_products') }}" class="quick-link">
-            <i class="fas fa-box fa-2x mb-2 text-warning"></i>
-            <div>Manage Products</div>
-        </a>
-        <a href="{{ url_for('admin_users') }}" class="quick-link">
-            <i class="fas fa-users-cog fa-2x mb-2 text-info"></i>
-            <div>Manage Users</div>
-        </a>
-<a href="{{ url_for('admin_robotics_submissions') }}" class="quick-link">
-    <i class="fas fa-robot fa-2x mb-2 
-       {% if request.endpoint == 'admin_robotics_submissions' %}text-primary{% else %}text-info{% endif %}"></i>
-    <div>🤖 Robotics Submissions</div>
-</a>
-
-<a href="{{ url_for('admin_enrollments') }}" class="quick-link">
-    <i class="fas fa-robot fa-2x mb-2 
-       {% if request.endpoint == 'admin_robotics_submissions' %}text-primary{% else %}text-info{% endif %}"></i>
-    <div>🤖 Robotics Submissions</div>
-</a>
-
-        <a href="{{ url_for('admin_projects') }}" class="quick-link">
-    <i class="fas fa-project-diagram fa-2x mb-2 
-       {% if request.endpoint == 'admin_projects' %}text-primary{% else %}text-info{% endif %}"></i>
-    <div>📁 Student Projects</div>
-</a>
-
-
-
-
-
     </div>
 </div>
-
-<script>
-// Simple tab functionality
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-resize textarea
-    const textarea = document.getElementById('message');
-    if (textarea) {
-        textarea.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = this.scrollHeight + 'px';
-        });
-    }
-});
-</script>
-
 {% endblock %}
-
-

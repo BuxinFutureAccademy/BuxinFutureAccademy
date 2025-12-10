@@ -233,11 +233,11 @@
                                 <li><a class="dropdown-item" href="{{ url_for('projects.robotics_projects') }}">
                                     <i class="fas fa-robot me-2"></i>Submit Project Idea
                                 </a></li>
-                                <li><a class="dropdown-item" href="{{ '#' }}">
+                                <li><a class="dropdown-item" href="{{ url_for('store.store') }}">
                                     <i class="fas fa-chalkboard-teacher me-2"></i>Available Classes
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ '#' }}">
+                                <li><a class="dropdown-item" href="{{ url_for('main.about') }}">
                                     <i class="fas fa-info-circle me-2"></i>About Us
                                 </a></li>
                             </ul>
@@ -252,7 +252,7 @@
                                 <ul class="dropdown-menu">
                                     <!-- Admin Dashboard at the very top -->
                                     <li>
-                                        <a class="dropdown-item" href="{{ '#' }}">
+                                        <a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}">
                                             <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                                         </a>
                                     </li>
@@ -272,18 +272,18 @@
                                     <li><a class="dropdown-item" href="{{ url_for('store.admin_course_orders') }}">
                                         <i class="fas fa-receipt me-2"></i>Course Orders
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.admin_course_orders') }}">
                                         <i class="fas fa-user-graduate me-2"></i>Class Enrollments
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_users') }}">
                                         <i class="fas fa-users me-2"></i>Manage Users
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><h6 class="dropdown-header">Communication</h6></li>
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_users') }}">
                                         <i class="fas fa-envelope me-2"></i>Bulk Messages
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('store.admin_course_orders') }}">
                                         <i class="fas fa-credit-card me-2"></i>All Payments
                                     </a></li>
                                 </ul>
@@ -291,7 +291,7 @@
                         {% else %}
                             <!-- Student Dashboard -->
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ '#' }}">
+                                <a class="nav-link" href="{{ url_for('admin.student_dashboard') }}">
                                     <i class="fas fa-home me-1"></i>Dashboard
                                 </a>
                             </li>
@@ -327,7 +327,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ '#' }}">
+                            <a class="nav-link" href="{{ url_for('main.about') }}">
                                 <i class="fas fa-info-circle me-1"></i>About
                             </a>
                         </li>
@@ -385,14 +385,14 @@
                     </div>
                     {% if current_user.is_admin %}
                         <div class="col">
-                            <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ '#' }}">
+                            <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin.admin_dashboard') }}">
                                 <i class="fas fa-cog"></i>
                                 <div>Admin</div>
                             </a>
                         </div>
                     {% else %}
                         <div class="col">
-                            <a class="nav-link {% if request.endpoint == 'student_dashboard' %}active{% endif %}" href="{{ '#' }}">
+                            <a class="nav-link {% if request.endpoint == 'student_dashboard' %}active{% endif %}" href="{{ url_for('admin.student_dashboard') }}">
                                 <i class="fas fa-tachometer-alt"></i>
                                 <div>Dashboard</div>
                             </a>

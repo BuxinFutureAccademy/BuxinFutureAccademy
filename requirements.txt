@@ -18,8 +18,7 @@ cloudinary==1.38.0
 requests==2.31.0
 python-dotenv==1.0.0
 
-# Vercel Deployment
-vercel==0.4.1
+# Server
 gunicorn==21.2.0
 wsgi-request-logger==0.4.6
 

@@ -4,6 +4,10 @@ from ..services.mailer import send_bulk_email
 
 bp = Blueprint('main', __name__)
 
+@bp.route('/')
+def index():
+    return render_template('index.html')
+
 @bp.get('/health')
 def health():
     return {'status': 'ok'}

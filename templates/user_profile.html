@@ -384,7 +384,7 @@
             // Redirect to bulk message page with this user pre-selected
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '{{ url_for("bulk_message") }}';
+            form.action = '{{ '#' }}';
             
             const recipientType = document.createElement('input');
             recipientType.type = 'hidden';
@@ -401,7 +401,7 @@
             document.body.appendChild(form);
             
             // Actually, let's just redirect to bulk message page
-            window.location.href = '{{ url_for("bulk_message") }}?user={{ user.id }}';
+            window.location.href = '{{ '#' }}?user={{ user.id }}';
         }
 
         function openWhatsApp() {

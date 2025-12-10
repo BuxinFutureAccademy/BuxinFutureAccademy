@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => {
                 if (response.ok) {
                     // Success - redirect to index.html (home page)
-                    window.location.href = '{{ url_for("index") }}';
+                    window.location.href = '{{ url_for("main.index") }}';
                 } else {
                     // Handle login error
                     return response.text().then(text => {

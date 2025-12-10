@@ -889,7 +889,7 @@
                 });
             {% else %}
                 alert('Please login to like projects');
-                window.location.href = '{{ url_for("login") }}';
+                window.location.href = '{{ url_for("auth.login") }}';
             {% endif %}
         }
 
@@ -961,7 +961,7 @@
                 });
             {% else %}
                 alert('Please login to comment');
-                window.location.href = '{{ url_for("login") }}';
+                window.location.href = '{{ url_for("auth.login") }}';
             {% endif %}
         }
 

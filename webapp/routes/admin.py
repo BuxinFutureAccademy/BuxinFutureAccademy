@@ -6,7 +6,6 @@ from ..extensions import db
 from ..models import (
     User,
     Purchase,
-    ProductOrder,
     ClassEnrollment,
     StudentProject,
     RoboticsProjectSubmission,
@@ -34,12 +33,6 @@ def anonymize_user_data(user_id: int) -> bool:
             purchase.customer_email = f"deleted_{user_id}@techbuxin.com"
             purchase.customer_phone = None
             purchase.customer_address = None
-        for order in ProductOrder.query.filter_by(user_id=user_id).all():
-            order.customer_name = "Deleted User"
-            order.customer_email = f"deleted_{user_id}@techbuxin.com"
-            order.customer_phone = None
-            order.customer_address = None
-            order.shipping_address = None
         for enrollment in ClassEnrollment.query.filter_by(user_id=user_id).all():
             enrollment.customer_name = "Deleted User"
             enrollment.customer_email = f"deleted_{user_id}@techbuxin.com"
@@ -81,7 +74,6 @@ def delete_account():
 
     user_data = {
         'courses_purchased': Purchase.query.filter_by(user_id=current_user.id, status='completed').count(),
-        'products_ordered': ProductOrder.query.filter_by(user_id=current_user.id, status='completed').count(),
         'class_enrollments': ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').count(),
         'projects_posted': StudentProject.query.filter_by(student_id=current_user.id).count(),
         'robotics_submissions': RoboticsProjectSubmission.query.filter_by(user_id=current_user.id).count() if hasattr(RoboticsProjectSubmission, 'user_id') else 0,

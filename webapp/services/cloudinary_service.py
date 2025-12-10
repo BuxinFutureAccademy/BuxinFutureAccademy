@@ -111,4 +111,3 @@ def validate_cloudinary_config() -> None:
             "Cloudinary not properly configured. "
             "Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables."
         )
-            pass

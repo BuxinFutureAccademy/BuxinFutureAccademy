@@ -7,3 +7,5 @@ from .store import bp as store
 from .uploads import bp as uploads
 from .integrations import bp as integrations
 from .student_projects import bp as student_projects
+from .file_uploads import bp as file_uploads
+from .health import bp as health

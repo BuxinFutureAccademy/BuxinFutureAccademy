@@ -4,7 +4,7 @@ import traceback
 from logging.handlers import RotatingFileHandler
 import cloudinary
 from flask import Flask, jsonify, request
-from .extensions import db, login_manager
+from .extensions import db, login_manager, migrate
 
 
 def create_app():
@@ -23,10 +23,11 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Fix database URL
+    # Fix database URL - handle various formats from Neon/Render
     db_url = os.environ.get('DATABASE_URL', '')
     if db_url.startswith('psql '):
         db_url = db_url[5:]  # Remove 'psql ' prefix
+    db_url = db_url.strip("'\"")  # Remove surrounding quotes
     if db_url.startswith('postgres://'):
         db_url = db_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///learning_management.db'
@@ -70,15 +71,11 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     
-    # Create database tables if they don't exist
-    with app.app_context():
-        try:
-            db.create_all()
-        except Exception as e:
-            print(f"Error creating database tables: {e}")
-            # This is fine in production where tables are created via migrations
+    # In production, tables are created via migrations (flask db upgrade)
+    # db.create_all() is not used when using Flask-Migrate
     login_manager.login_view = 'auth.login'
 
     from .models.users import User

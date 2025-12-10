@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory
 from flask_login import login_required, current_user
 
@@ -10,8 +9,6 @@ from ..models import (
     CourseMaterial,
     Purchase,
     CartItem,
-    Product,
-    ProductOrder,
 )
 
 bp = Blueprint('store', __name__)
@@ -448,44 +445,6 @@ def admin_courses():
     )
 
 
-# Digital products views
-@bp.route('/my_digital_products')
-@login_required
-def my_digital_products():
-    digital_orders = (
-        ProductOrder.query.filter_by(user_id=current_user.id, status='completed')
-        .join(Product)
-        .filter(Product.product_type == 'Digital')
-        .order_by(ProductOrder.ordered_at.desc())
-        .all()
-    )
-    return render_template('my_digital_products.html', orders=digital_orders)
-
-
-@bp.route('/view_digital_product/<int:order_id>')
-@login_required
-def view_digital_product(order_id):
-    order = (
-        ProductOrder.query.filter_by(id=order_id, user_id=current_user.id, status='completed')
-        .join(Product)
-        .filter(Product.product_type == 'Digital')
-        .first_or_404()
-    )
-    return render_template('view_digital_product.html', order=order)
-
-
-# Order management (admin)
-@bp.route('/admin/product_orders')
-@login_required
-def admin_product_orders():
-    if not getattr(current_user, 'is_admin', False):
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.health'))
-    orders = ProductOrder.query.order_by(ProductOrder.ordered_at.desc()).all()
-    total_revenue = (
-        db.session.query(db.func.sum(ProductOrder.total_amount)).filter_by(status='completed').scalar() or 0
-    )
-    return render_template('admin_product_orders.html', orders=orders, total_revenue=total_revenue)
 
 
 @bp.route('/admin/course_orders')
@@ -504,14 +463,6 @@ def admin_course_orders():
     )
 
 
-@bp.route('/admin/view_order/<int:order_id>')
-@login_required
-def view_order(order_id):
-    if not getattr(current_user, 'is_admin', False):
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.health'))
-    order = ProductOrder.query.get_or_404(order_id)
-    return render_template('view_order.html', order=order)
 
 
 @bp.route('/admin/view_course_order/<int:order_id>')
@@ -524,24 +475,3 @@ def view_course_order(order_id):
     return render_template('view_course_order.html', order=order)
 
 
-@bp.route('/admin/update_order_status/<int:order_id>', methods=['POST'])
-@login_required
-def update_order_status(order_id):
-    if not getattr(current_user, 'is_admin', False):
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.health'))
-    from flask import request
-    order = ProductOrder.query.get_or_404(order_id)
-    new_status = request.form.get('status')
-    if new_status in ['pending', 'completed', 'shipped', 'delivered', 'cancelled']:
-        order.status = new_status
-        if new_status == 'shipped':
-            order.shipped_at = datetime.utcnow()
-            order.tracking_number = request.form.get('tracking_number', '')
-        elif new_status == 'delivered':
-            order.delivered_at = datetime.utcnow()
-        db.session.commit()
-        flash(f'Order status updated to {new_status}!', 'success')
-    else:
-        flash('Invalid status!', 'danger')
-    return redirect(url_for('store.view_order', order_id=order_id))

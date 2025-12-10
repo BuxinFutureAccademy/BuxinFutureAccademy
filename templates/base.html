@@ -207,55 +207,19 @@
                             </ul>
                         </li>
 
-                        <!-- Shopping Dropdown -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle position-relative" href="#" data-bs-toggle="dropdown">
-                                <i class="fas fa-shopping-cart me-1"></i>Shopping
-                                {% if not current_user.is_admin %}
-                                    {% set cart_count = current_user.cart_items|length if current_user.cart_items else 0 %}
+                        <!-- Cart -->
+                        {% if not current_user.is_admin %}
+                            {% set cart_count = current_user.cart_items|length if current_user.cart_items else 0 %}
+                            <li class="nav-item">
+                                <a class="nav-link position-relative" href="{{ url_for('store.cart') }}">
+                                    <i class="fas fa-shopping-cart me-1"></i>Cart
                                     {% if cart_count > 0 %}
                                         <span class="cart-badge">{{ cart_count }}</span>
                                     {% endif %}
-                                {% endif %}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ '#' }}">
-                                    <i class="fas fa-box me-2"></i>Products
-                                </a></li>
-                                {% if not current_user.is_admin %}
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('store.cart') }}">
-                                        <i class="fas fa-shopping-cart me-2"></i>Course Cart
-                                        {% if cart_count > 0 %}
-                                            <span class="badge bg-primary ms-2">{{ cart_count }}</span>
-                                        {% endif %}
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
-                                        <i class="fas fa-shopping-bag me-2"></i>Product Cart
-                                    </a></li>
-                                {% endif %}
-                            </ul>
-                        </li>
-
-                        {% if not current_user.is_admin %}
-                            <!-- My Orders Dropdown -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                    <i class="fas fa-truck me-1"></i>Orders
                                 </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
-                                        <i class="fas fa-truck me-2"></i>My Orders
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
-                                        <i class="fas fa-credit-card me-2"></i>Payments
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('store.my_digital_products') }}">
-                                        <i class="fas fa-download me-2"></i>Digital Products
-                                    </a></li>
-                                </ul>
                             </li>
                         {% endif %}
+
 
                         <!-- Tools & Support Dropdown -->
                         <li class="nav-item dropdown">
@@ -297,9 +261,6 @@
                                     <li><a class="dropdown-item" href="{{ url_for('store.admin_courses') }}">
                                         <i class="fas fa-graduation-cap me-2"></i>Manage Courses
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
-                                        <i class="fas fa-box me-2"></i>Manage Products
-                                    </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('student_projects.admin_projects') }}">
                                         <i class="fas fa-project-diagram me-2"></i>Student Projects
                                     </a></li>
@@ -310,9 +271,6 @@
                                     <li><h6 class="dropdown-header">Orders & Users</h6></li>
                                     <li><a class="dropdown-item" href="{{ url_for('store.admin_course_orders') }}">
                                         <i class="fas fa-receipt me-2"></i>Course Orders
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('store.admin_product_orders') }}">
-                                        <i class="fas fa-truck me-2"></i>Product Orders
                                     </a></li>
                                     <li><a class="dropdown-item" href="{{ '#' }}">
                                         <i class="fas fa-user-graduate me-2"></i>Class Enrollments
@@ -352,12 +310,7 @@
                                 <i class="fas fa-store me-1"></i>Courses
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ '#' }}">
-                                <i class="fas fa-box me-1"></i>Products
-                            </a>
-                        </li>
-                        <!-- Student Projects for Guests (NEW) -->
+                        <!-- Student Projects for Guests -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('student_projects.student_projects') }}">
                                 <i class="fas fa-project-diagram me-1"></i>Projects
@@ -430,12 +383,6 @@
                             <div>Projects</div>
                         </a>
                     </div>
-                    <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ '#' }}">
-                            <i class="fas fa-box"></i>
-                            <div>Products</div>
-                        </a>
-                    </div>
                     {% if current_user.is_admin %}
                         <div class="col">
                             <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ '#' }}">
@@ -463,12 +410,6 @@
                         <a class="nav-link {% if request.endpoint in ['student_projects', 'view_project'] %}active{% endif %}" href="{{ url_for('student_projects.student_projects') }}">
                             <i class="fas fa-project-diagram"></i>
                             <div>Projects</div>
-                        </a>
-                    </div>
-                    <div class="col">
-                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ '#' }}">
-                            <i class="fas fa-box"></i>
-                            <div>Products</div>
                         </a>
                     </div>
                     <div class="col">

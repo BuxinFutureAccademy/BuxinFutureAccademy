@@ -160,7 +160,7 @@ We have received your submission and will review it.\n\nSubmission ID: #{submiss
 def admin_robotics_submissions():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     status_filter = request.args.get('status', '')
     education_filter = request.args.get('education', '')
@@ -220,7 +220,7 @@ def admin_robotics_submissions():
 def view_robotics_submission(submission_id):
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     submission = RoboticsProjectSubmission.query.get_or_404(submission_id)
     return render_template('view_robotics_submission.html', submission=submission)
 
@@ -230,7 +230,7 @@ def view_robotics_submission(submission_id):
 def update_robotics_submission(submission_id):
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     submission = RoboticsProjectSubmission.query.get_or_404(submission_id)
     try:
@@ -272,7 +272,7 @@ def update_robotics_submission(submission_id):
 def export_robotics_submissions():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     try:
         import csv
         from io import StringIO

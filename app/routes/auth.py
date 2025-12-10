@@ -193,7 +193,7 @@ def reset_password(token):
 def admin_password_reset_tokens():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     tokens = PasswordResetToken.query.filter(
         PasswordResetToken.created_at >= seven_days_ago

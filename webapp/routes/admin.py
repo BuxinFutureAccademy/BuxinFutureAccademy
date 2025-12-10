@@ -96,7 +96,7 @@ def delete_account():
 def admin_account_deletion_requests():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     return render_template('admin_deletion_requests.html')
 
 

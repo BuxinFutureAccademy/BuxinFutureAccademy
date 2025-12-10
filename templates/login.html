@@ -738,7 +738,7 @@ def login():
                 return redirect(next_page)
             else:
                 # Default redirect to index.html (home page)
-                return redirect(url_for('index'))
+                return redirect(url_for('main.index'))
         else:
             # Login failed
             return render_template('login.html', error='Invalid credentials'), 401

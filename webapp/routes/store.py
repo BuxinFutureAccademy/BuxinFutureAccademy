@@ -92,9 +92,11 @@ def enroll_class(class_type, class_id):
     if class_type == 'individual':
         class_obj = IndividualClass.query.get_or_404(class_id)
         fee_display = "$100 USD"
+        amount = 100.0
     else:
         class_obj = GroupClass.query.get_or_404(class_id)
         fee_display = "D1000 GMD"
+        amount = 1000.0
     
     # Payment methods
     payment_methods = [
@@ -120,6 +122,7 @@ def enroll_class(class_type, class_id):
         full_name = request.form.get('full_name', '')
         phone = request.form.get('phone', '')
         email = request.form.get('email', '')
+        address = request.form.get('address', '')
         payment_method = request.form.get('payment_method', '')
         
         try:
@@ -129,9 +132,11 @@ def enroll_class(class_type, class_id):
                 user_id=current_user.id,
                 class_type=class_type,
                 class_id=class_id,
+                amount=amount,
                 customer_name=full_name,
                 customer_email=email,
                 customer_phone=phone,
+                customer_address=address,
                 payment_method=payment_method,
                 status='pending'
             )

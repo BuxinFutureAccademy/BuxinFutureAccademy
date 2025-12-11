@@ -760,6 +760,14 @@ Links will be automatically formatted and clickable for students." required></te
 
     <!-- Quick Links -->
     <div class="quick-links">
+        <a href="{{ url_for('admin.admin_enrollments') }}" class="quick-link" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <i class="fas fa-user-graduate fa-2x mb-2"></i>
+            <div>📋 Class Enrollments</div>
+        </a>
+        <a href="{{ url_for('admin.admin_classes') }}" class="quick-link">
+            <i class="fas fa-chalkboard-teacher fa-2x mb-2 text-primary"></i>
+            <div>🎓 Manage Classes</div>
+        </a>
         <a href="{{ url_for('store.admin_courses') }}" class="quick-link">
             <i class="fas fa-graduation-cap fa-2x mb-2 text-success"></i>
             <div>Manage Courses</div>

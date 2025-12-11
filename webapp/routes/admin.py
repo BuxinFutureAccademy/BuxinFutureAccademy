@@ -9,6 +9,8 @@ from ..models import (
     ClassEnrollment,
     StudentProject,
     RoboticsProjectSubmission,
+    IndividualClass,
+    GroupClass,
 )
 
 bp = Blueprint('admin', __name__)
@@ -192,6 +194,64 @@ def admin_users():
         )
     users = query.order_by(User.id.desc()).all()
     return render_template('admin_users.html', users=users, search_term=search)
+
+
+@bp.route('/admin/create-class', methods=['GET', 'POST'])
+@login_required
+def create_class():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    from flask import request
+    
+    if request.method == 'POST':
+        class_type = request.form.get('class_type', 'individual')
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        price = request.form.get('price', 100)
+        max_students = request.form.get('max_students', 10)
+        
+        if not name:
+            flash('Class name is required.', 'danger')
+            return render_template('create_class.html')
+        
+        try:
+            price = float(price)
+        except:
+            price = 100.0
+        
+        try:
+            if class_type == 'individual':
+                new_class = IndividualClass(
+                    name=name,
+                    description=description,
+                    teacher_id=current_user.id,
+                    price=price
+                )
+            else:
+                try:
+                    max_students = int(max_students)
+                except:
+                    max_students = 10
+                new_class = GroupClass(
+                    name=name,
+                    description=description,
+                    teacher_id=current_user.id,
+                    price=price,
+                    max_students=max_students
+                )
+            
+            db.session.add(new_class)
+            db.session.commit()
+            flash(f'{class_type.title()} class "{name}" created successfully!', 'success')
+            return redirect(url_for('admin.admin_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating class: {str(e)}', 'danger')
+            return render_template('create_class.html')
+    
+    return render_template('create_class.html')
 
 
 @bp.route('/student/dashboard')

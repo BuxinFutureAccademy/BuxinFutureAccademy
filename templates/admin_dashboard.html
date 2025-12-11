@@ -532,7 +532,17 @@ Links will be automatically formatted and clickable for students." required></te
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-plus-circle fa-3x text-info mb-3"></i>
+                                <h6>Create Class</h6>
+                                <p class="text-muted">Start a new individual or group class</p>
+                                <a href="{{ url_for('admin.create_class') }}" class="btn btn-info">
+                                    <i class="fas fa-plus me-2"></i>Create Class
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="text-center">
                                 <i class="fas fa-users-cog fa-3x text-success mb-3"></i>
                                 <h6>Manage Students</h6>
@@ -542,7 +552,7 @@ Links will be automatically formatted and clickable for students." required></te
                                 </a>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="text-center">
                                 <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
                                 <h6>Manage Courses</h6>
@@ -552,7 +562,7 @@ Links will be automatically formatted and clickable for students." required></te
                                 </a>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="text-center">
                                 <i class="fas fa-clipboard-list fa-3x text-warning mb-3"></i>
                                 <h6>View Orders</h6>

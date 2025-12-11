@@ -209,7 +209,6 @@ def create_class():
         class_type = request.form.get('class_type', 'individual')
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
-        price = request.form.get('price', 100)
         max_students = request.form.get('max_students', 10)
         
         if not name:
@@ -217,17 +216,11 @@ def create_class():
             return render_template('create_class.html')
         
         try:
-            price = float(price)
-        except:
-            price = 100.0
-        
-        try:
             if class_type == 'individual':
                 new_class = IndividualClass(
                     name=name,
                     description=description,
-                    teacher_id=current_user.id,
-                    price=price
+                    teacher_id=current_user.id
                 )
             else:
                 try:
@@ -238,7 +231,6 @@ def create_class():
                     name=name,
                     description=description,
                     teacher_id=current_user.id,
-                    price=price,
                     max_students=max_students
                 )
             

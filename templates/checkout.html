@@ -14,7 +14,7 @@
                     <h5><i class="fas fa-credit-card"></i> Payment & Shipping Information</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('process_payment') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('store.checkout') }}" enctype="multipart/form-data">
                         <!-- Payment Method Selection -->
                         <div class="mb-4">
                             <label class="form-label"><strong>Select a Payment Method</strong></label>

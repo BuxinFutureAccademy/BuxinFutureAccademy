@@ -59,7 +59,7 @@
                                 <i class="fas fa-check-circle me-2"></i>
                                 You have purchased this course!
                             </div>
-                            <a href="{{ url_for('my_courses') }}" class="btn btn-success w-100">
+                            <a href="{{ url_for('store.my_courses') }}" class="btn btn-success w-100">
                                 <i class="fas fa-play me-2"></i>Go to My Courses
                             </a>
                         {% elif in_cart %}
@@ -67,7 +67,7 @@
                                 <i class="fas fa-shopping-cart me-2"></i>
                                 This course is in your cart
                             </div>
-                            <a href="{{ url_for('cart') }}" class="btn btn-info w-100">
+                            <a href="{{ url_for('store.cart') }}" class="btn btn-info w-100">
                                 <i class="fas fa-shopping-cart me-2"></i>View Cart
                             </a>
                         {% else %}

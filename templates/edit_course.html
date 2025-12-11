@@ -84,7 +84,7 @@
                         
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-warning">💾 Update Course</button>
-                            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">← Back</a>
+                            <a href="{{ url_for('store.admin_courses') }}" class="btn btn-secondary">← Back</a>
                             <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-outline-primary" target="_blank">👁️ Preview</a>
                         </div>
                     </form>

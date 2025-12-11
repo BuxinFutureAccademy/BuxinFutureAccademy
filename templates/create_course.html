@@ -202,7 +202,7 @@
                             <button type="submit" name="action" value="save_and_new" class="btn btn-outline-primary btn-lg">
                                 <i class="fas fa-plus me-2"></i>💾 Save & Create Another
                             </button>
-                            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary btn-lg">
+                            <a href="{{ url_for('store.admin_courses') }}" class="btn btn-secondary btn-lg">
                                 <i class="fas fa-arrow-left me-2"></i>⬅️ Back to Courses
                             </a>
                         </div>
@@ -595,7 +595,7 @@ function uploadWithProgress(formData) {
             progressBar.className = 'progress-bar bg-success';
             statusDiv.innerHTML = '<i class="fas fa-check-circle text-success me-2"></i>✅ Course created successfully!';
             setTimeout(() => {
-                window.location.href = "{{ url_for('admin_courses') }}";
+                window.location.href = "{{ url_for('store.admin_courses') }}";
             }, 2000);
         } else {
             progressBar.className = 'progress-bar bg-danger';

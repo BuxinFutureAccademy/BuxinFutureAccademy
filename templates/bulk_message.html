@@ -58,10 +58,10 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h2><i class="fas fa-chart-line me-2"></i>Bulk Message Campaign Results</h2>
                     <div>
-                        <a href="{{ url_for('bulk_message') }}" class="btn btn-primary">
+                        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>Send New Campaign
                         </a>
-                        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                        <a href="{{ url_for('admin.admin_users') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-1"></i>Back to Users
                         </a>
                     </div>
@@ -263,7 +263,7 @@
                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">No WhatsApp results to display</h5>
                 <p class="text-muted">No WhatsApp messages were processed in this campaign.</p>
-                <a href="{{ url_for('bulk_message') }}" class="btn btn-primary">
+                <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i>Start New Campaign
                 </a>
             </div>

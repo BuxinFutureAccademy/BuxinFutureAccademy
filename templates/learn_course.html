@@ -22,7 +22,7 @@
                             </div>
                         </div>
                         <div class="col-md-4 text-end">
-                            <a href="{{ url_for('my_courses') }}" class="btn btn-light">
+                            <a href="{{ url_for('store.my_courses') }}" class="btn btn-light">
                                 <i class="fas fa-arrow-left me-2"></i>Back to My Courses
                             </a>
                             {% if current_user.is_admin and debug_route_exists %}
@@ -299,7 +299,7 @@
                         <i class="fas fa-bug me-1"></i>Detailed Debug
                     </a>
                 {% endif %}
-                <a href="{{ url_for('migrate_existing_videos') }}" class="btn btn-sm btn-info">
+                <a href="{{ url_for('store.my_courses') }}" class="btn btn-sm btn-info">
                     <i class="fas fa-cloud-upload-alt me-1"></i>Check Migration
                 </a>
             </div>

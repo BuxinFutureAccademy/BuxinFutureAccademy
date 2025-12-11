@@ -241,7 +241,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('student_projects') }}">
+                        <a class="nav-link" href="{{ url_for('student_projects.student_projects') }}">
                             <i class="fas fa-arrow-left me-1"></i>Back to Projects
                         </a>
                     </li>
@@ -256,7 +256,7 @@
                             </li>
                         {% endif %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('my_projects') }}">My Projects</a>
+                            <a class="nav-link" href="{{ url_for('student_projects.my_projects') }}">My Projects</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
@@ -574,13 +574,13 @@
         <div class="row text-center">
             {% if current_user.is_authenticated %}
                 <div class="col">
-                    <a class="nav-link" href="{{ url_for('student_projects') }}">
+                    <a class="nav-link" href="{{ url_for('student_projects.student_projects') }}">
                         <i class="fas fa-project-diagram"></i>
                         <div>Projects</div>
                     </a>
                 </div>
                 <div class="col">
-                    <a class="nav-link" href="{{ url_for('create_project') }}">
+                    <a class="nav-link" href="{{ url_for('student_projects.create_project') }}">
                         <i class="fas fa-plus"></i>
                         <div>Create</div>
                     </a>
@@ -593,20 +593,20 @@
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link" href="{{ url_for('my_projects') }}">
+                        <a class="nav-link" href="{{ url_for('student_projects.my_projects') }}">
                             <i class="fas fa-user"></i>
                             <div>My Projects</div>
                         </a>
                     </div>
                 {% else %}
                     <div class="col">
-                        <a class="nav-link" href="{{ url_for('my_projects') }}">
+                        <a class="nav-link" href="{{ url_for('student_projects.my_projects') }}">
                             <i class="fas fa-user"></i>
                             <div>My Projects</div>
                         </a>
                     </div>
                     <div class="col">
-                        <a class="nav-link" href="{{ url_for('student_dashboard') }}">
+                        <a class="nav-link" href="{{ url_for('admin.student_dashboard') }}">
                             <i class="fas fa-tachometer-alt"></i>
                             <div>Dashboard</div>
                         </a>
@@ -614,7 +614,7 @@
                 {% endif %}
             {% else %}
                 <div class="col">
-                    <a class="nav-link" href="{{ url_for('student_projects') }}">
+                    <a class="nav-link" href="{{ url_for('student_projects.student_projects') }}">
                         <i class="fas fa-project-diagram"></i>
                         <div>Projects</div>
                     </a>
@@ -626,7 +626,7 @@
                     </a>
                 </div>
                 <div class="col">
-                    <a class="nav-link" href="{{ url_for('products') }}">
+                    <a class="nav-link" href="{{ url_for('store.store') }}">
                         <i class="fas fa-box"></i>
                         <div>Products</div>
                     </a>

@@ -193,7 +193,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3">🤖 Robotics Project Submissions</h1>
         <div class="export-section">
-            <a href="{{ url_for('export_robotics_submissions') }}" class="export-btn">
+            <a href="{{ url_for('projects.export_robotics_submissions') }}" class="export-btn">
                 📊 Export CSV
             </a>
         </div>
@@ -263,7 +263,7 @@
             </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-primary">🔍 Apply Filters</button>
-                <a href="{{ url_for('admin_robotics_submissions') }}" class="btn btn-outline-secondary ms-2">🔄 Clear</a>
+                <a href="{{ url_for('projects.admin_robotics_submissions') }}" class="btn btn-outline-secondary ms-2">🔄 Clear</a>
             </div>
         </form>
     </div>
@@ -351,7 +351,7 @@
                 {% endif %}
             </p>
             {% if not (status_filter or education_filter or search_term) %}
-            <a href="{{ url_for('robotics_projects') }}" class="btn btn-primary mt-3">
+            <a href="{{ url_for('projects.robotics_projects') }}" class="btn btn-primary mt-3">
                 🚀 View Submission Form
             </a>
             {% endif %}

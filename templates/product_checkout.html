@@ -15,7 +15,7 @@
                     <h5>Payment & Shipping Information</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('process_product_payment') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('store.checkout') }}" enctype="multipart/form-data">
                         <div class="mb-4">
                             <label class="form-label fw-bold">Select a Payment Method</label>
                             

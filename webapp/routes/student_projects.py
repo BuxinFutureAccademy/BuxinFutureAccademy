@@ -88,6 +88,45 @@ def my_projects():
     return render_template('my_projects.html', projects=projects, total_likes=total_likes, total_comments=total_comments)
 
 
+@bp.route('/create-project', methods=['GET', 'POST'], endpoint='create_project')
+@login_required
+def create_project():
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        project_url = request.form.get('project_url', '').strip()
+        github_url = request.form.get('github_url', '').strip()
+        image_url = request.form.get('image_url', '').strip()
+        tags = request.form.get('tags', '').strip()
+        
+        if not title or not description:
+            flash('Title and description are required.', 'danger')
+            return render_template('create_project.html')
+        
+        try:
+            project = StudentProject(
+                title=title,
+                description=description,
+                project_url=project_url or None,
+                github_url=github_url or None,
+                image_url=image_url or None,
+                tags=tags or None,
+                student_id=current_user.id,
+                is_active=True,
+                featured=False
+            )
+            db.session.add(project)
+            db.session.commit()
+            flash('Project created successfully!', 'success')
+            return redirect(url_for('student_projects.my_projects'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Failed to create project: {str(e)}', 'danger')
+            return render_template('create_project.html')
+    
+    return render_template('create_project.html')
+
+
 @bp.route('/admin/projects', endpoint='admin_projects')
 @login_required
 def admin_projects():

@@ -191,9 +191,9 @@
                                     <i class="fas fa-eye me-2"></i>View All Projects
                                 </a></li>
                                 {% if not current_user.is_admin %}
-                                    <li><a class="dropdown-item" href="{{ '#' }}">
-                                        <i class="fas fa-plus me-2"></i>Create Project
-                                    </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('student_projects.create_project') }}">
+                                    <i class="fas fa-plus me-2"></i>Create Project
+                                </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('student_projects.my_projects') }}">
                                         <i class="fas fa-user me-2"></i>My Projects
                                     </a></li>

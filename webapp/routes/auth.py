@@ -171,14 +171,14 @@ def reset_password(token):
 @bp.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.health'))
+        return redirect(url_for('main.index'))
     if request.method == 'POST':
         identifier = request.form.get('email', '').strip().lower() or request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter((User.email == identifier) | (User.username == identifier)).first() if identifier else None
         if user and user.check_password(password):
             login_user(user)
-            next_url = request.args.get('next') or url_for('main.health')
+            next_url = request.args.get('next') or url_for('main.index')
             return redirect(next_url)
         flash('Invalid credentials.', 'danger')
     return render_template('login.html')
@@ -192,7 +192,67 @@ def logout():
     return redirect(url_for('auth.login'))
 
 
- 
+@bp.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        whatsapp_number = request.form.get('whatsapp_number', '').strip()
+        
+        # Validation
+        if not all([username, email, password, first_name, last_name]):
+            flash('All required fields must be filled.', 'danger')
+            return render_template('register.html')
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'danger')
+            return render_template('register.html')
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return render_template('register.html')
+        
+        # Check existing user
+        if User.query.filter_by(username=username).first():
+            flash('Username already taken.', 'danger')
+            return render_template('register.html')
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered.', 'danger')
+            return render_template('register.html')
+        
+        try:
+            user = User(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                whatsapp_number=whatsapp_number,
+                is_student=True,
+                is_admin=False
+            )
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Registration failed: {str(e)}', 'danger')
+            return render_template('register.html')
+    
+    return render_template('register.html')
+
+
+
 
 
 @bp.route('/admin/password-reset-tokens')

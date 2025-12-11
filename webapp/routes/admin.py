@@ -130,23 +130,48 @@ def initialize_db():
         return f"Initialization failed: {e}", 500
 
 
-@bp.route('/admin/dashboard')
+@bp.route('/admin/dashboard', methods=['GET', 'POST'])
 @login_required
 def admin_dashboard():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
     
-    # Get stats
-    stats = {
-        'total_users': User.query.count(),
-        'total_students': User.query.filter_by(is_student=True).count(),
-        'total_purchases': Purchase.query.filter_by(status='completed').count(),
-        'pending_purchases': Purchase.query.filter_by(status='pending').count(),
-        'total_projects': StudentProject.query.count(),
-        'total_submissions': RoboticsProjectSubmission.query.count(),
-    }
-    return render_template('admin_dashboard.html', stats=stats)
+    from flask import request
+    
+    # Handle POST for sharing materials (placeholder - implement based on your Material model)
+    if request.method == 'POST':
+        # TODO: Implement material sharing logic based on your Material model
+        flash('Material sharing feature - implement based on your data model', 'info')
+    
+    # Get all data for the dashboard
+    students = User.query.filter_by(is_student=True).all()
+    individual_students = students  # Same as students for selection
+    
+    # Get course orders
+    course_orders = Purchase.query.order_by(Purchase.purchased_at.desc()).limit(50).all()
+    
+    # Get enrollments
+    enrollments = ClassEnrollment.query.order_by(ClassEnrollment.enrolled_at.desc()).limit(50).all()
+    
+    # Get robotics count
+    robotics_count = RoboticsProjectSubmission.query.count()
+    
+    # Placeholder empty lists for classes and materials (implement based on your models)
+    individual_classes = []
+    group_classes = []
+    materials = []
+    
+    return render_template('admin_dashboard.html',
+        students=students,
+        individual_students=individual_students,
+        individual_classes=individual_classes,
+        group_classes=group_classes,
+        materials=materials,
+        course_orders=course_orders,
+        enrollments=enrollments,
+        robotics_count=robotics_count
+    )
 
 
 @bp.route('/admin/users')

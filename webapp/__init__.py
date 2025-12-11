@@ -29,7 +29,9 @@ def create_app():
         db_url = db_url[5:]  # Remove 'psql ' prefix
     db_url = db_url.strip("'\"")  # Remove surrounding quotes
     if db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+        db_url = db_url.replace('postgres://', 'postgresql+psycopg://', 1)
+    elif db_url.startswith('postgresql://'):
+        db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///learning_management.db'
 
     # Cloudinary configuration

@@ -1181,7 +1181,7 @@
 <div class="main-content">
     <!-- Main Categories -->
     <div class="main-categories">
-        <a href="https://www.techbuxin.com/classes" class="category-card">
+        <a href="{{ url_for('store.store') }}" class="category-card">
             <div class="category-icon">
                 <i class="fas fa-users"></i>
             </div>
@@ -1190,7 +1190,7 @@
             <div class="category-count">12 Live Now</div>
         </a>
         
-        <a href="https://www.techbuxin.com/student-projects" class="category-card" target="_blank" rel="noopener">
+        <a href="{{ url_for('student_projects.student_projects') }}" class="category-card">
             <div class="category-icon">
                 <i class="fas fa-lightbulb"></i>
             </div>
@@ -1199,7 +1199,7 @@
             <div class="category-count">50+ Projects</div>
         </a>
         
-        <a href="https://www.techbuxin.com/products" class="category-card" target="_blank" rel="noopener">
+        <a href="{{ url_for('store.store') }}" class="category-card">
             <div class="category-icon">
                 <i class="fas fa-shopping-cart"></i>
             </div>
@@ -1208,7 +1208,7 @@
             <div class="category-count">200+ Items</div>
         </a>
         
-        <a href="https://www.techbuxin.com/ai_assistant" class="category-card" target="_blank" rel="noopener">
+        <a href="{{ url_for('integrations.ai_assistant') }}" class="category-card">
             <div class="category-icon">
                 <i class="fas fa-robot"></i>
             </div>
@@ -1217,7 +1217,7 @@
             <div class="category-count">24/7</div>
         </a>
 
-        <a href="https://www.techbuxin.com/store" class="category-card" target="_blank" rel="noopener">
+        <a href="{{ url_for('store.store') }}" class="category-card">
             <div class="category-icon">
                 <i class="fas fa-box-open"></i>
             </div>
@@ -1226,7 +1226,7 @@
             <div class="category-count">150+ Courses</div>
         </a>
 
-        <a href="https://www.techbuxin.com/robotics-projects" class="category-card" target="_blank" rel="noopener">
+        <a href="{{ url_for('projects.robotics_projects') }}" class="category-card">
             <div class="category-icon">
                 <i class="fas fa-microchip"></i>
             </div>
@@ -1312,7 +1312,7 @@
     <!-- What's New Section -->
     <div class="section-header">
         <h2 class="section-title">What's New</h2>
-        <a href="#" class="see-all">See Updates</a>
+        <a href="{{ url_for('store.store') }}" class="see-all">See Updates</a>
     </div>
     
     <div class="features-grid">
@@ -1395,7 +1395,7 @@
                 </div>
             </div>
             <h4 class="feature-title">
-                <a href="/community" style="text-decoration: none; color: inherit;">Community Forum</a>
+                <a href="{{ url_for('student_projects.student_projects') }}" style="text-decoration: none; color: inherit;">Community Forum</a>
             </h4>
             <p class="feature-description">Connect, share ideas, and collaborate with fellow makers</p>
         </div>
@@ -1407,7 +1407,7 @@
                 </div>
             </div>
             <h4 class="feature-title">
-                <a href="/support" style="text-decoration: none; color: inherit;">24/7 Support</a>
+                <a href="{{ url_for('main.about') }}" style="text-decoration: none; color: inherit;">24/7 Support</a>
             </h4>
             <p class="feature-description">Get help whenever you need it from our expert team</p>
         </div>
@@ -1518,7 +1518,7 @@
         </div>
         
         <div class="text-center mt-4">
-            <a href="/student-projects" class="btn btn-primary">View All Projects</a>
+            <a href="{{ url_for('student_projects.student_projects') }}" class="btn btn-primary">View All Projects</a>
         </div>
     </div>
 </section>
@@ -2241,31 +2241,31 @@ document.head.appendChild(styleSheet);
 <!-- Mobile Bottom Navigation -->
 <nav class="bottom-nav">
     <div class="bottom-nav-content">
-        <a href="/" class="nav-item active">
+        <a href="{{ url_for('main.index') }}" class="nav-item active">
             <i class="fas fa-home nav-icon"></i>
             <span class="nav-label">Home</span>
         </a>
         
-        <a href="https://www.techbuxin.com/classes" class="nav-item">
+        <a href="{{ url_for('store.store') }}" class="nav-item">
             <i class="fas fa-video nav-icon"></i>
             <span class="nav-label">Classes</span>
             <div class="nav-badge">Live</div>
         </a>
         
-        <a href="https://www.techbuxin.com/store" class="nav-item">
+        <a href="{{ url_for('store.store') }}" class="nav-item">
             <i class="fas fa-graduation-cap nav-icon"></i>
             <span class="nav-label">Courses</span>
         </a>
         
-        <a href="https://www.techbuxin.com/products" class="nav-item">
+        <a href="{{ url_for('student_projects.student_projects') }}" class="nav-item">
             <i class="fas fa-shopping-cart nav-icon"></i>
-            <span class="nav-label">Store</span>
+            <span class="nav-label">Projects</span>
         </a>
         
-        <button class="nav-item" onclick="openChatModal()">
+        <a href="{{ url_for('integrations.ai_assistant') }}" class="nav-item">
             <i class="fas fa-robot nav-icon"></i>
             <span class="nav-label">AI Help</span>
-        </button>
+        </a>
     </div>
 </nav>
 

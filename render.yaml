@@ -21,6 +21,12 @@ services:
         value: mfrp osrt pwki lmmx
       - key: MAIL_DEFAULT_SENDER
         value: worldvlog13@gmail.com
+      - key: CLOUDINARY_CLOUD_NAME
+        value: YOUR_CLOUD_NAME_HERE
+      - key: CLOUDINARY_API_KEY
+        value: "162763126833456"
+      - key: CLOUDINARY_API_SECRET
+        value: ut7XCubjCtYdU1rjcRQ8BGk5u7g
     
 databases:
   - name: learning-management-db

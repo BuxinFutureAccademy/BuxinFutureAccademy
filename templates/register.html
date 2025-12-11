@@ -68,6 +68,19 @@
                             <small class="form-text">At least 6 characters long</small>
                         </div>
 
+                        <!-- Confirm Password -->
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password</label>
+                            <div class="password-input">
+                                <input type="password" class="form-control" name="confirm_password" required 
+                                       placeholder="Re-enter your password" autocomplete="new-password" id="confirm_password">
+                                <button type="button" class="password-toggle" onclick="toggleConfirmPassword()">
+                                    <i class="fas fa-eye" id="confirm-password-icon"></i>
+                                </button>
+                            </div>
+                            <small class="form-text">Must match the password above</small>
+                        </div>
+
                         <!-- Terms and Conditions -->
                         <div class="mb-4">
                             <div class="form-check">
@@ -434,6 +447,21 @@ function togglePassword() {
         passwordInput.type = 'password';
         passwordIcon.classList.remove('fa-eye-slash');
         passwordIcon.classList.add('fa-eye');
+    }
+}
+
+function toggleConfirmPassword() {
+    const confirmInput = document.getElementById('confirm_password');
+    const confirmIcon = document.getElementById('confirm-password-icon');
+    
+    if (confirmInput.type === 'password') {
+        confirmInput.type = 'text';
+        confirmIcon.classList.remove('fa-eye');
+        confirmIcon.classList.add('fa-eye-slash');
+    } else {
+        confirmInput.type = 'password';
+        confirmIcon.classList.remove('fa-eye-slash');
+        confirmIcon.classList.add('fa-eye');
     }
 }
 

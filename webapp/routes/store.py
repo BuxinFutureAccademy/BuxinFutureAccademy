@@ -9,6 +9,8 @@ from ..models import (
     CourseMaterial,
     Purchase,
     CartItem,
+    IndividualClass,
+    GroupClass,
 )
 
 bp = Blueprint('store', __name__)
@@ -60,6 +62,42 @@ def store():
         selected_category=category,
         selected_level=level,
         search_term=search,
+    )
+
+
+@bp.route('/available-classes', endpoint='available_classes')
+def available_classes():
+    """Browse and enroll in available classes"""
+    try:
+        individual_classes = IndividualClass.query.all()
+    except Exception:
+        individual_classes = []
+    
+    try:
+        group_classes = GroupClass.query.all()
+    except Exception:
+        group_classes = []
+    
+    return render_template(
+        'available_classes.html',
+        individual_classes=individual_classes,
+        group_classes=group_classes
+    )
+
+
+@bp.route('/enroll/<class_type>/<int:class_id>', endpoint='enroll_class')
+@login_required
+def enroll_class(class_type, class_id):
+    """Enroll in a class"""
+    if class_type == 'individual':
+        class_obj = IndividualClass.query.get_or_404(class_id)
+    else:
+        class_obj = GroupClass.query.get_or_404(class_id)
+    
+    return render_template(
+        'enroll_class.html',
+        class_obj=class_obj,
+        class_type=class_type
     )
 
 

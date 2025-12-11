@@ -21,7 +21,7 @@
                                     <p class="card-text">{{ class.description or 'No description available' }}</p>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">Teacher: {{ class.teacher.first_name }} {{ class.teacher.last_name }}</small>
-                                        <a href="{{ url_for('enroll_class', class_type='individual', class_id=class.id) }}" class="btn btn-sm btn-success">
+                                        <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}" class="btn btn-sm btn-success">
                                             Enroll Now ($100)
                                         </a>
                                     </div>
@@ -57,7 +57,7 @@
                                             <small class="text-muted">{{ class.students|length }}/{{ class.max_students }} students enrolled</small>
                                         </div>
                                         {% if class.students|length < class.max_students %}
-                                            <a href="{{ url_for('enroll_class', class_type='group', class_id=class.id) }}" class="btn btn-sm btn-success">
+                                            <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}" class="btn btn-sm btn-success">
                                                 Enroll Now (D1000)
                                             </a>
                                         {% else %}

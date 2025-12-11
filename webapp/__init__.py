@@ -1,6 +1,7 @@
 import os
 import logging
 import traceback
+import click
 from logging.handlers import RotatingFileHandler
 import cloudinary
 from flask import Flask, jsonify, request
@@ -175,5 +176,52 @@ def create_app():
     def log_response(response):
         app.logger.debug('Response status: %s', response.status)
         return response
+
+    # CLI command to create admin user
+    @app.cli.command('create-admin')
+    def create_admin():
+        """Create the default admin user."""
+        from .models.users import User
+        
+        admin = User.query.filter_by(username='buxin').first()
+        if admin:
+            click.echo('Admin user "buxin" already exists.')
+            return
+        
+        admin = User(
+            username='buxin',
+            email='admin@buxin.com',
+            first_name='Admin',
+            last_name='Buxin',
+            is_admin=True,
+            is_student=False
+        )
+        admin.set_password('buxin')
+        db.session.add(admin)
+        db.session.commit()
+        click.echo('Admin user "buxin" created successfully!')
+
+    # Auto-create admin user on first request if doesn't exist
+    @app.before_request
+    def ensure_admin_exists():
+        app.before_request_funcs[None].remove(ensure_admin_exists)
+        try:
+            from .models.users import User
+            admin = User.query.filter_by(username='buxin').first()
+            if not admin:
+                admin = User(
+                    username='buxin',
+                    email='admin@buxin.com',
+                    first_name='Admin',
+                    last_name='Buxin',
+                    is_admin=True,
+                    is_student=False
+                )
+                admin.set_password('buxin')
+                db.session.add(admin)
+                db.session.commit()
+                app.logger.info('Admin user "buxin" created automatically.')
+        except Exception as e:
+            app.logger.warning(f'Could not auto-create admin: {e}')
 
     return app

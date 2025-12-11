@@ -1,266 +1,66 @@
-<!-- templates/edit_class.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit {{ class_type.title() }} Class - Learning Management System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('admin.admin_dashboard') }}">
-                <i class="fas fa-graduation-cap"></i> Admin Panel
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-                <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-8 mx-auto">
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-edit"></i> Edit {{ class_type.title() }} Class</h3>
-                    </div>
-                    <div class="card-body">
-                        <!-- Flash messages -->
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-                            {% if messages %}
-                                {% for category, message in messages %}
-                                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                        {{ message }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
-                        {% endwith %}
-
-                        <form method="POST">
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Class Name</label>
-                                <input type="text" class="form-control" id="name" name="name" 
-                                       value="{{ class_obj.name }}" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="description" class="form-label">Description</label>
-                                <textarea class="form-control" id="description" name="description" 
-                                          rows="3">{{ class_obj.description or '' }}</textarea>
-                            </div>
-
-                            <!-- NEW: Price Field -->
-                            <div class="mb-3">
-                                <label for="price" class="form-label">
-                                    <i class="fas fa-dollar-sign me-1"></i>Class Price
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text" id="currency-symbol">
-                                        {% if class_type == 'individual' %}${% else %}D{% endif %}
-                                    </span>
-                                    <input type="number" class="form-control" id="price" name="price" 
-                                           value="{{ class_obj.price if class_obj.price else (100 if class_type == 'individual' else 1000) }}" 
-                                           min="0" step="0.01" required>
-                                </div>
-                                <div class="form-text">
-                                    <small>
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        {% if class_type == 'individual' %}
-                                            Individual class price in USD ($)
-                                        {% else %}
-                                            Group class price in Gambian Dalasi (D)
-                                        {% endif %}
-                                    </small>
-                                </div>
-                            </div>
-
-                            {% if class_type == 'group' %}
-                            <div class="mb-3">
-                                <label for="max_students" class="form-label">Maximum Students</label>
-                                <input type="number" class="form-control" id="max_students" name="max_students" 
-                                       value="{{ class_obj.max_students }}" min="1" max="50" required>
-                                <div class="form-text">
-                                    Current enrollment: {{ class_obj.students|length }} students
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <div class="mb-3">
-                                <label class="form-label">Select Students</label>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="select_all">
-                                            <label class="form-check-label fw-bold" for="select_all">
-                                                Select All
-                                            </label>
-                                        </div>
-                                        <hr>
-                                        {% for student in students %}
-                                        <div class="form-check">
-                                            <input class="form-check-input student-checkbox" type="checkbox" 
-                                                   name="students" value="{{ student.id }}" id="student_{{ student.id }}"
-                                                   {% if student in class_obj.students %}checked{% endif %}>
-                                            <label class="form-check-label" for="student_{{ student.id }}">
-                                                {{ student.first_name }} {{ student.last_name }}
-                                                <small class="text-muted">({{ student.username }})</small>
-                                            </label>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="card bg-light">
-                                            <div class="card-body">
-                                                <h6 class="card-title">
-                                                    <i class="fas fa-users me-1"></i>Current Enrollment
-                                                </h6>
-                                                <p class="card-text">
-                                                    <strong>{{ class_obj.students|length }}</strong> 
-                                                    {% if class_type == 'group' %}
-                                                        of {{ class_obj.max_students }} students
-                                                    {% else %}
-                                                        students enrolled
-                                                    {% endif %}
-                                                </p>
-                                                
-                                                <!-- NEW: Current Price Display -->
-                                                <div class="mt-2 p-2 bg-white rounded">
-                                                    <small class="text-muted">Current Price:</small>
-                                                    <div class="h5 text-success mb-0">
-                                                        {% if class_type == 'individual' %}
-                                                            ${{ class_obj.price if class_obj.price else 100 }}
-                                                        {% else %}
-                                                            D{{ class_obj.price if class_obj.price else 1000 }}
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="mt-2">
-                                                    <small class="text-muted">Currently enrolled:</small>
-                                                    <ul class="list-unstyled mt-1">
-                                                        {% for student in class_obj.students %}
-                                                        <li class="small">
-                                                            <i class="fas fa-user"></i> 
-                                                            {{ student.first_name }} {{ student.last_name }}
-                                                        </li>
-                                                        {% endfor %}
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save"></i> Update Class
-                                    </button>
-                                    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </a>
-                                </div>
-                                <div>
-                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                        <i class="fas fa-trash"></i> Delete Class
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header {% if class_type == 'group' %}bg-success{% else %}bg-primary{% endif %} text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Edit {{ class_type|title }} Class
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-bold">Class Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ class_obj.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ class_obj.description or '' }}</textarea>
+                        </div>
+                        
+                        {% if class_type == 'group' %}
+                        <div class="mb-4">
+                            <label for="max_students" class="form-label fw-bold">Maximum Students</label>
+                            <input type="number" class="form-control" id="max_students" name="max_students" 
+                                   value="{{ class_obj.max_students }}" min="2" max="50">
+                            <small class="text-muted">Current enrollment: {{ class_obj.students|length if class_obj.students else 0 }} students</small>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn {% if class_type == 'group' %}btn-success{% else %}btn-primary{% endif %}">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                            <a href="{{ url_for('admin.admin_classes') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Classes
+                            </a>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            
+            <!-- Danger Zone -->
+            <div class="card mt-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone</h5>
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete the class <strong>"{{ class_obj.name }}"</strong>?</p>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Warning:</strong> This action cannot be undone. This will also delete:
-                        <ul class="mt-2 mb-0">
-                            <li>All learning materials associated with this class</li>
-                            <li>All student enrollment records</li>
-                            <li>All class-related data</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form method="POST" action="{{ url_for('delete_class', class_type=class_type, class_id=class_obj.id) }}" style="display: inline;">
+                <div class="card-body">
+                    <p class="text-muted">Deleting this class will remove it permanently. This action cannot be undone.</p>
+                    <form action="{{ url_for('admin.delete_class', class_type=class_type, class_id=class_obj.id) }}" 
+                          method="POST" 
+                          onsubmit="return confirm('Are you sure you want to delete this class? This action cannot be undone!');">
                         <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-trash"></i> Delete Class
+                            <i class="fas fa-trash me-2"></i>Delete Class
                         </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Select all checkbox functionality
-        document.getElementById('select_all').addEventListener('change', function() {
-            const checkboxes = document.querySelectorAll('.student-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-        });
-
-        // Update select all when individual checkboxes change
-        document.querySelectorAll('.student-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const allCheckboxes = document.querySelectorAll('.student-checkbox');
-                const checkedCheckboxes = document.querySelectorAll('.student-checkbox:checked');
-                const selectAllCheckbox = document.getElementById('select_all');
-                
-                if (checkedCheckboxes.length === allCheckboxes.length) {
-                    selectAllCheckbox.checked = true;
-                    selectAllCheckbox.indeterminate = false;
-                } else if (checkedCheckboxes.length === 0) {
-                    selectAllCheckbox.checked = false;
-                    selectAllCheckbox.indeterminate = false;
-                } else {
-                    selectAllCheckbox.checked = false;
-                    selectAllCheckbox.indeterminate = true;
-                }
-            });
-        });
-
-        // Initialize select all state
-        document.addEventListener('DOMContentLoaded', function() {
-            const allCheckboxes = document.querySelectorAll('.student-checkbox');
-            const checkedCheckboxes = document.querySelectorAll('.student-checkbox:checked');
-            const selectAllCheckbox = document.getElementById('select_all');
-            
-            if (checkedCheckboxes.length === allCheckboxes.length && allCheckboxes.length > 0) {
-                selectAllCheckbox.checked = true;
-            } else if (checkedCheckboxes.length === 0) {
-                selectAllCheckbox.checked = false;
-            } else {
-                selectAllCheckbox.indeterminate = true;
-            }
-        });
-    </script>
-</body>
-</html>
-
-
+</div>
+{% endblock %}

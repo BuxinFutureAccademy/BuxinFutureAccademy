@@ -1,83 +1,157 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .class-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    .class-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .class-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+    }
+    .class-header.group {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .enroll-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.5rem 1.5rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .enroll-btn:hover {
+        transform: scale(1.05);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .enroll-btn.group {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .enroll-btn.group:hover {
+        box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        opacity: 0.5;
+        margin-bottom: 1rem;
+    }
+</style>
+
 <div class="container mt-4">
-    <h2><i class="fas fa-chalkboard-teacher me-2"></i>Available Classes</h2>
-    <p class="text-muted">Browse and enroll in available classes</p>
+    <div class="text-center mb-4">
+        <h2><i class="fas fa-chalkboard-teacher me-2" style="color: #667eea;"></i>Available Classes</h2>
+        <p class="text-muted">Browse and enroll in available classes to start your learning journey</p>
+    </div>
     
-    <div class="row">
+    <div class="row g-4">
         <!-- Individual Classes -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
-                </div>
-                <div class="card-body">
-                    {% if individual_classes %}
-                        {% for class in individual_classes %}
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ class.name }}</h5>
-                                    <p class="card-text">{{ class.description or 'No description available' }}</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">Teacher: {{ class.teacher.first_name }} {{ class.teacher.last_name }}</small>
-                                        <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}" class="btn btn-sm btn-success">
-                                            Enroll Now ($100)
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center text-muted">
-                            <i class="fas fa-chalkboard fa-3x mb-3"></i>
-                            <p>No individual classes available at this time.</p>
+        <div class="col-lg-6">
+            <h4 class="mb-3"><i class="fas fa-user me-2 text-primary"></i>Individual Classes (1-on-1)</h4>
+            {% if individual_classes %}
+                {% for class in individual_classes %}
+                    <div class="class-card card mb-3">
+                        <div class="class-header">
+                            <h5 class="mb-0">{{ class.name }}</h5>
                         </div>
-                    {% endif %}
+                        <div class="card-body">
+                            <p class="card-text">{{ class.description or 'Personalized one-on-one learning experience' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-primary">Individual</span>
+                                </div>
+                                {% if current_user.is_authenticated %}
+                                    <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}" class="enroll-btn btn">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Enroll Now
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn btn">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Login to Enroll
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="class-card card">
+                    <div class="card-body empty-state">
+                        <i class="fas fa-chalkboard"></i>
+                        <h5>No Individual Classes Available</h5>
+                        <p>Check back soon for new classes!</p>
+                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
         
         <!-- Group Classes -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
-                </div>
-                <div class="card-body">
-                    {% if group_classes %}
-                        {% for class in group_classes %}
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ class.name }}</h5>
-                                    <p class="card-text">{{ class.description or 'No description available' }}</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <small class="text-muted">Teacher: {{ class.teacher.first_name }} {{ class.teacher.last_name }}</small><br>
-                                            <small class="text-muted">{{ class.students|length }}/{{ class.max_students }} students enrolled</small>
-                                        </div>
-                                        {% if class.students|length < class.max_students %}
-                                            <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}" class="btn btn-sm btn-success">
-                                                Enroll Now (D1000)
-                                            </a>
-                                        {% else %}
-                                            <span class="badge bg-danger">Class Full</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center text-muted">
-                            <i class="fas fa-users fa-3x mb-3"></i>
-                            <p>No group classes available at this time.</p>
+        <div class="col-lg-6">
+            <h4 class="mb-3"><i class="fas fa-users me-2 text-success"></i>Group Classes</h4>
+            {% if group_classes %}
+                {% for class in group_classes %}
+                    <div class="class-card card mb-3">
+                        <div class="class-header group">
+                            <h5 class="mb-0">{{ class.name }}</h5>
+                            <small>{{ class.students|length if class.students else 0 }}/{{ class.max_students }} students</small>
                         </div>
-                    {% endif %}
+                        <div class="card-body">
+                            <p class="card-text">{{ class.description or 'Learn together with other students' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-success">Group Class</span>
+                                    {% if class.students and class.students|length >= class.max_students %}
+                                        <span class="badge bg-danger ms-1">Full</span>
+                                    {% else %}
+                                        <span class="badge bg-info ms-1">Spots Available</span>
+                                    {% endif %}
+                                </div>
+                                {% if class.students and class.students|length >= class.max_students %}
+                                    <button class="btn btn-secondary" disabled>Class Full</button>
+                                {% elif current_user.is_authenticated %}
+                                    <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}" class="enroll-btn group btn">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Enroll Now
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn group btn">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Login to Enroll
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="class-card card">
+                    <div class="card-body empty-state">
+                        <i class="fas fa-users"></i>
+                        <h5>No Group Classes Available</h5>
+                        <p>Check back soon for new group sessions!</p>
+                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
+    </div>
+    
+    <!-- Back to Dashboard -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('store.store') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Browse Courses
+        </a>
     </div>
 </div>
 {% endblock %}
-
-

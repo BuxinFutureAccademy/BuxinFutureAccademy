@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .class-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    .class-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .class-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 15px 15px 0 0;
+    }
+    .class-header.group {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .action-btn {
+        border-radius: 20px;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-chalkboard-teacher me-2" style="color: #667eea;"></i>Manage Classes</h2>
+            <p class="text-muted mb-0">Create, edit, and delete classes</p>
+        </div>
+        <a href="{{ url_for('admin.create_class') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create New Class
+        </a>
+    </div>
+    
+    <div class="row">
+        <!-- Individual Classes -->
+        <div class="col-lg-6">
+            <h4 class="mb-3"><i class="fas fa-user me-2 text-primary"></i>Individual Classes</h4>
+            {% if individual_classes %}
+                {% for class in individual_classes %}
+                    <div class="class-card card">
+                        <div class="class-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">{{ class.name }}</h5>
+                                <span class="badge bg-light text-dark">ID: {{ class.id }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">{{ class.description or 'No description' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Created: {{ class.created_at.strftime('%Y-%m-%d') if class.created_at else 'N/A' }}
+                                </small>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin.edit_class', class_type='individual', class_id=class.id) }}" 
+                                       class="btn btn-sm btn-outline-primary action-btn">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </a>
+                                    <form action="{{ url_for('admin.delete_class', class_type='individual', class_id=class.id) }}" 
+                                          method="POST" style="display: inline;" 
+                                          onsubmit="return confirm('Are you sure you want to delete this class?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
+                                            <i class="fas fa-trash me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center text-muted py-4">
+                        <i class="fas fa-chalkboard fa-3x mb-3" style="opacity: 0.5;"></i>
+                        <p>No individual classes created yet</p>
+                        <a href="{{ url_for('admin.create_class') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>Create One
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Group Classes -->
+        <div class="col-lg-6">
+            <h4 class="mb-3"><i class="fas fa-users me-2 text-success"></i>Group Classes</h4>
+            {% if group_classes %}
+                {% for class in group_classes %}
+                    <div class="class-card card">
+                        <div class="class-header group">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">{{ class.name }}</h5>
+                                <span class="badge bg-light text-dark">
+                                    {{ class.students|length if class.students else 0 }}/{{ class.max_students }} students
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">{{ class.description or 'No description' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Created: {{ class.created_at.strftime('%Y-%m-%d') if class.created_at else 'N/A' }}
+                                </small>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin.edit_class', class_type='group', class_id=class.id) }}" 
+                                       class="btn btn-sm btn-outline-primary action-btn">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </a>
+                                    <form action="{{ url_for('admin.delete_class', class_type='group', class_id=class.id) }}" 
+                                          method="POST" style="display: inline;"
+                                          onsubmit="return confirm('Are you sure you want to delete this class?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
+                                            <i class="fas fa-trash me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center text-muted py-4">
+                        <i class="fas fa-users fa-3x mb-3" style="opacity: 0.5;"></i>
+                        <p>No group classes created yet</p>
+                        <a href="{{ url_for('admin.create_class') }}" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus me-1"></i>Create One
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Back to Dashboard -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+

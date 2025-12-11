@@ -85,19 +85,70 @@ def available_classes():
     )
 
 
-@bp.route('/enroll/<class_type>/<int:class_id>', endpoint='enroll_class')
+@bp.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])
 @login_required
 def enroll_class(class_type, class_id):
     """Enroll in a class"""
     if class_type == 'individual':
         class_obj = IndividualClass.query.get_or_404(class_id)
+        fee_display = "$100 USD"
     else:
         class_obj = GroupClass.query.get_or_404(class_id)
+        fee_display = "D1000 GMD"
+    
+    # Payment methods
+    payment_methods = [
+        {
+            'id': 'wave',
+            'name': 'Wave Money',
+            'details': '<strong>Wave Number:</strong> +220 XXX XXXX<br>Send payment and screenshot receipt'
+        },
+        {
+            'id': 'bank',
+            'name': 'Bank Transfer',
+            'details': '<strong>Bank:</strong> Trust Bank<br><strong>Account:</strong> XXXXXXXXXX<br><strong>Name:</strong> BuXin Academy'
+        },
+        {
+            'id': 'cash',
+            'name': 'Cash Payment',
+            'details': 'Visit our office to pay in cash'
+        }
+    ]
+    
+    if request.method == 'POST':
+        # Handle enrollment submission
+        full_name = request.form.get('full_name', '')
+        phone = request.form.get('phone', '')
+        email = request.form.get('email', '')
+        payment_method = request.form.get('payment_method', '')
+        
+        try:
+            # Create enrollment record
+            from ..models import ClassEnrollment
+            enrollment = ClassEnrollment(
+                user_id=current_user.id,
+                class_type=class_type,
+                class_id=class_id,
+                customer_name=full_name,
+                customer_email=email,
+                customer_phone=phone,
+                payment_method=payment_method,
+                status='pending'
+            )
+            db.session.add(enrollment)
+            db.session.commit()
+            flash(f'Enrollment submitted! We will verify your payment and grant access soon.', 'success')
+            return redirect(url_for('admin.student_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Enrollment failed: {str(e)}', 'danger')
     
     return render_template(
         'enroll_class.html',
         class_obj=class_obj,
-        class_type=class_type
+        class_type=class_type,
+        fee_display=fee_display,
+        payment_methods=payment_methods
     )
 
 

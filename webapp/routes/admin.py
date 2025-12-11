@@ -246,6 +246,85 @@ def create_class():
     return render_template('create_class.html')
 
 
+@bp.route('/admin/classes')
+@login_required
+def admin_classes():
+    """View all classes"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    individual_classes = IndividualClass.query.all()
+    group_classes = GroupClass.query.all()
+    
+    return render_template('admin_classes.html',
+        individual_classes=individual_classes,
+        group_classes=group_classes
+    )
+
+
+@bp.route('/admin/edit-class/<class_type>/<int:class_id>', methods=['GET', 'POST'])
+@login_required
+def edit_class(class_type, class_id):
+    """Edit a class"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    from flask import request
+    
+    if class_type == 'individual':
+        class_obj = IndividualClass.query.get_or_404(class_id)
+    else:
+        class_obj = GroupClass.query.get_or_404(class_id)
+    
+    if request.method == 'POST':
+        class_obj.name = request.form.get('name', class_obj.name).strip()
+        class_obj.description = request.form.get('description', class_obj.description).strip()
+        
+        if class_type == 'group':
+            try:
+                class_obj.max_students = int(request.form.get('max_students', 10))
+            except:
+                class_obj.max_students = 10
+        
+        try:
+            db.session.commit()
+            flash(f'Class "{class_obj.name}" updated successfully!', 'success')
+            return redirect(url_for('admin.admin_classes'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating class: {str(e)}', 'danger')
+    
+    return render_template('edit_class.html', class_obj=class_obj, class_type=class_type)
+
+
+@bp.route('/admin/delete-class/<class_type>/<int:class_id>', methods=['POST'])
+@login_required
+def delete_class(class_type, class_id):
+    """Delete a class"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    if class_type == 'individual':
+        class_obj = IndividualClass.query.get_or_404(class_id)
+    else:
+        class_obj = GroupClass.query.get_or_404(class_id)
+    
+    class_name = class_obj.name
+    
+    try:
+        db.session.delete(class_obj)
+        db.session.commit()
+        flash(f'Class "{class_name}" deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting class: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_classes'))
+
+
 @bp.route('/student/dashboard')
 @login_required
 def student_dashboard():

@@ -197,14 +197,29 @@ def admin_users():
 @bp.route('/student/dashboard')
 @login_required
 def student_dashboard():
+    from datetime import datetime
+    
     purchases = Purchase.query.filter_by(user_id=current_user.id, status='completed').all()
     projects = StudentProject.query.filter_by(student_id=current_user.id).all()
     enrollments = ClassEnrollment.query.filter_by(user_id=current_user.id).all()
     
+    # Get classes the student is enrolled in
+    individual_classes = []
+    group_classes = []
+    materials = []
+    
+    # Helper function for time-based greeting
+    def now():
+        return datetime.now()
+    
     return render_template('student_dashboard.html', 
                           purchases=purchases, 
                           projects=projects,
-                          enrollments=enrollments)
+                          enrollments=enrollments,
+                          individual_classes=individual_classes,
+                          group_classes=group_classes,
+                          materials=materials,
+                          now=now)
 
 
 @bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])

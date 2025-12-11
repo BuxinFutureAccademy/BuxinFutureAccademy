@@ -1,109 +1,1046 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}My Dashboard - BuXin Future Academy{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <h1 class="mb-4"><i class="fas fa-tachometer-alt me-2" style="color: #667eea;"></i>My Dashboard</h1>
-    
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm" style="border-radius: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="card-body text-white p-4">
-                    <h4>Welcome back, {{ current_user.first_name }}!</h4>
-                    <p class="mb-0">Here's an overview of your learning journey.</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Stats -->
-    <div class="row g-4 mb-5">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
-                <div class="card-body text-center">
-                    <i class="fas fa-book-open fa-2x mb-2" style="color: #667eea;"></i>
-                    <h3 class="mb-0">{{ purchases|length }}</h3>
-                    <small class="text-muted">Courses Purchased</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
-                <div class="card-body text-center">
-                    <i class="fas fa-project-diagram fa-2x mb-2" style="color: #28a745;"></i>
-                    <h3 class="mb-0">{{ projects|length }}</h3>
-                    <small class="text-muted">Projects Created</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
-                <div class="card-body text-center">
-                    <i class="fas fa-chalkboard-teacher fa-2x mb-2" style="color: #17a2b8;"></i>
-                    <h3 class="mb-0">{{ enrollments|length }}</h3>
-                    <small class="text-muted">Class Enrollments</small>
-                </div>
-            </div>
-        </div>
-    </div>
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --surface: #ffffff;
+        --background: #f8fafc;
+        --on-surface: #1e293b;
+        --text-secondary: #64748b;
+        --border: #e2e8f0;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --radius: 16px;
+        --radius-sm: 8px;
+    }
 
-    <!-- Quick Links -->
-    <h4 class="mb-3">Quick Links</h4>
-    <div class="row g-3">
-        <div class="col-md-4">
-            <a href="{{ url_for('store.my_courses') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
-                <div class="card-body d-flex align-items-center">
-                    <i class="fas fa-play-circle fa-2x me-3" style="color: #667eea;"></i>
-                    <div>
-                        <h5 class="mb-0 text-dark">My Courses</h5>
-                        <small class="text-muted">Continue learning</small>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{{ url_for('student_projects.my_projects') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
-                <div class="card-body d-flex align-items-center">
-                    <i class="fas fa-folder-open fa-2x me-3" style="color: #28a745;"></i>
-                    <div>
-                        <h5 class="mb-0 text-dark">My Projects</h5>
-                        <small class="text-muted">View your work</small>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{{ url_for('store.store') }}" class="card border-0 shadow-sm text-decoration-none" style="border-radius: 15px;">
-                <div class="card-body d-flex align-items-center">
-                    <i class="fas fa-store fa-2x me-3" style="color: #17a2b8;"></i>
-                    <div>
-                        <h5 class="mb-0 text-dark">Browse Courses</h5>
-                        <small class="text-muted">Find new courses</small>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
+    body {
+        background: var(--background);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
 
-    <!-- Recent Courses -->
-    {% if purchases %}
-    <h4 class="mt-5 mb-3">My Courses</h4>
-    <div class="row g-3">
-        {% for purchase in purchases[:6] %}
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="card-title">{{ purchase.course.title if purchase.course else 'Course' }}</h5>
-                    <p class="text-muted small">Purchased: {{ purchase.purchased_at.strftime('%Y-%m-%d') if purchase.purchased_at else 'N/A' }}</p>
-                    <a href="{{ url_for('store.learn_course', course_id=purchase.course_id) }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-play me-1"></i>Continue
-                    </a>
+    /* Modern Header */
+    .classroom-header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .welcome-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .welcome-content h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--on-surface);
+        margin: 0;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .welcome-subtitle {
+        color: var(--text-secondary);
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+    }
+
+    .quick-stats {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        text-align: center;
+        min-width: 100px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    /* Main Layout */
+    .classroom-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Quick Actions Sidebar */
+    .quick-actions {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        height: fit-content;
+        position: sticky;
+        top: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--on-surface);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--on-surface);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: var(--primary-gradient);
+        transition: left 0.3s ease;
+        z-index: 0;
+    }
+
+    .action-btn:hover::before {
+        left: 0;
+    }
+
+    .action-btn:hover {
+        color: white;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .action-btn i,
+    .action-btn span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .action-btn .badge {
+        margin-left: auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Main Content Area */
+    .main-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    /* Learning Materials Feed */
+    .materials-feed {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .feed-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .feed-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .feed-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .feed-btn:hover,
+    .feed-btn.active {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
+
+    .materials-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    .material-item {
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .material-item:hover {
+        background: #f8fafc;
+    }
+
+    .material-item:last-child {
+        border-bottom: none;
+    }
+
+    .material-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .class-badge {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .material-time {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .material-content {
+        color: var(--on-surface);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 0.5rem;
+        transition: background 0.2s;
+        position: relative;
+        max-height: 2.5em;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .material-content.expanded {
+        background: #fffbe7;
+        max-height: none;
+        white-space: normal;
+        overflow: visible;
+        z-index: 2;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .material-content::after {
+        content: 'Tap to expand';
+        position: absolute;
+        right: 1rem;
+        bottom: 0.5rem;
+        font-size: 0.8em;
+        color: #b5b5b5;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .material-content.expanded::after {
+        content: 'Tap to collapse';
+        color: #eab308;
+    }
+
+    .material-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .material-action {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .material-action:hover {
+        background: var(--primary-gradient);
+        color: white;
+        border-color: transparent;
+    }
+
+    /* Tools Sidebar */
+    .tools-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .tool-widget {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 2rem;
+    }
+
+    /* Clock Widget */
+    .clock-widget {
+        text-align: center;
+        background: var(--primary-gradient);
+        color: white;
+    }
+
+    .current-time {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .current-date {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Calendar Widget */
+    .calendar-widget {
+        background: var(--success-gradient);
+        color: white;
+    }
+
+    .calendar-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .calendar-day:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .calendar-day.today {
+        background: rgba(255, 255, 255, 0.3);
+        font-weight: 700;
+    }
+
+    /* Notes Widget */
+    .notes-widget textarea {
+        width: 100%;
+        min-height: 120px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        font-family: inherit;
+        resize: vertical;
+        transition: all 0.3s ease;
+    }
+
+    .notes-widget textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Progress Widget */
+    .progress-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .progress-label {
+        font-size: 0.875rem;
+        color: var(--on-surface);
+        font-weight: 500;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--primary-gradient);
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Custom Scrollbar */
+    .materials-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .materials-container::-webkit-scrollbar-track {
+        background: var(--background);
+    }
+
+    .materials-container::-webkit-scrollbar-thumb {
+        background: var(--primary-gradient);
+        border-radius: 4px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .classroom-container {
+            grid-template-columns: 1fr 2fr;
+        }
+        
+        .tools-sidebar {
+            grid-column: 1 / -1;
+            grid-row: 3;
+            flex-direction: row;
+            overflow-x: auto;
+        }
+        
+        .tool-widget {
+            min-width: 280px;
+            position: static;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .classroom-container {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .welcome-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .quick-stats {
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .tools-sidebar {
+            flex-direction: column;
+        }
+        
+        .tool-widget {
+            min-width: auto;
+        }
+        
+        .quick-actions {
+            position: static;
+        }
+        
+        .materials-container {
+            max-height: 400px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .classroom-container {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .quick-actions,
+        .tools-sidebar,
+        .main-content,
+        .tool-widget {
+            padding: 0.75rem !important;
+            border-radius: 10px !important;
+            min-width: 0 !important;
+        }
+        .feed-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+        .materials-container {
+            max-height: 300px;
+            padding: 0.5rem;
+        }
+        .material-item {
+            padding: 1rem;
+            font-size: 1rem;
+        }
+        .material-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        .material-actions {
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .material-action {
+            width: 100%;
+            justify-content: flex-start;
+        }
+        .tool-widget {
+            margin-bottom: 1rem;
+        }
+        .notes-widget textarea {
+            min-height: 80px;
+            font-size: 1rem;
+        }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .material-item {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+
+    /* Focus Styles */
+    .action-btn:focus,
+    .material-action:focus,
+    .feed-btn:focus {
+        outline: 2px solid #667eea;
+        outline-offset: 2px;
+    }
+</style>
+
+<!-- Modern Classroom Header -->
+<div class="classroom-header">
+    <div class="container">
+        <div class="welcome-section">
+            <div class="welcome-content">
+                <h1>Good {{ 'morning' if (now().hour < 12) else ('afternoon' if now().hour < 18 else 'evening') }}, {{ current_user.first_name }}! 👋</h1>
+                <p class="welcome-subtitle">Ready to continue your learning journey?</p>
+            </div>
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ individual_classes|length + group_classes|length if individual_classes and group_classes else 0 }}</div>
+                    <div class="stat-label">Active Classes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ materials|length if materials else 0 }}</div>
+                    <div class="stat-label">New Materials</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">85%</div>
+                    <div class="stat-label">Progress</div>
                 </div>
             </div>
         </div>
-        {% endfor %}
     </div>
-    {% endif %}
 </div>
+
+<div class="container">
+    <!-- Main Classroom Layout -->
+    <div class="classroom-container">
+        <!-- Quick Actions Sidebar -->
+        <div class="quick-actions">
+            <h3 class="section-title">
+                <i class="fas fa-bolt"></i>
+                Quick Actions
+            </h3>
+            
+            <a href="https://www.tinkercad.com/joinclass/SCT4QKX8A" class="action-btn" target="_blank">
+                <i class="fas fa-robot"></i>
+                <span>Tinkercad</span>
+                <span class="badge bg-primary">Join</span>
+            </a>
+
+            <a href="{{ url_for('store.store') }}" class="action-btn">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Browse Courses</span>
+                <span class="badge bg-primary">New</span>
+            </a>
+            
+            <a href="{{ url_for('store.store') }}" class="action-btn">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>Join Classes</span>
+            </a>
+            
+            <a href="{{ url_for('student_projects.student_projects') }}" class="action-btn">
+                <i class="fas fa-project-diagram"></i>
+                <span>Student Projects</span>
+            </a>
+            
+            <a href="{{ url_for('student_projects.create_project') }}" class="action-btn">
+                <i class="fas fa-plus-circle"></i>
+                <span>Submit Assignments</span>
+            </a>
+            
+            <a href="{{ url_for('integrations.ai_assistant') }}" class="action-btn">
+                <i class="fas fa-robot"></i>
+                <span>AI Assistant</span>
+                <span class="badge bg-success">24/7</span>
+            </a>
+            
+            <a href="{{ url_for('store.my_course_orders') }}" class="action-btn">
+                <i class="fas fa-receipt"></i>
+                <span>My Orders</span>
+            </a>
+
+            <!-- My Classes Summary -->
+            <div class="mt-4">
+                <h4 class="section-title">
+                    <i class="fas fa-book-open"></i>
+                    My Classes
+                </h4>
+                
+                {% if individual_classes or group_classes %}
+                    <div class="class-summary">
+                        {% for class in individual_classes %}
+                            <div class="action-btn mb-2" style="cursor: default;">
+                                <i class="fas fa-user"></i>
+                                <span>{{ class.name }}</span>
+                                <span class="badge bg-info">1:1</span>
+                            </div>
+                        {% endfor %}
+                        
+                        {% for class in group_classes %}
+                            <div class="action-btn mb-2" style="cursor: default;">
+                                <i class="fas fa-users"></i>
+                                <span>{{ class.name }}</span>
+                                <span class="badge bg-warning">{{ class.students|length }}/{{ class.max_students }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small">No classes enrolled yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Main Learning Feed -->
+        <div class="main-content">
+            <div class="materials-feed">
+                <div class="feed-header">
+                    <div>
+                        <h3 style="margin: 0; font-weight: 600;">
+                            <i class="fas fa-stream me-2"></i>
+                            Learning Materials
+                        </h3>
+                        <small style="opacity: 0.9;">Latest updates from your classes</small>
+                    </div>
+                    <div class="feed-controls">
+                        <button class="feed-btn active" onclick="filterMaterials('all')">All</button>
+                        <button class="feed-btn" onclick="filterMaterials('today')">Today</button>
+                        <button class="feed-btn" onclick="filterMaterials('week')">This Week</button>
+                    </div>
+                </div>
+                
+                <div class="materials-container" id="materials-container">
+                    {% if materials %}
+                        {% for material in materials %}
+                            <div class="material-item" data-date="{{ material.created_at.strftime('%Y-%m-%d') }}">
+                                <div class="material-header">
+                                    <span class="class-badge">{{ material.class_name }}</span>
+                                    <div class="material-time">
+                                        <i class="fas fa-clock"></i>
+                                        {{ material.created_at.strftime('%b %d, %I:%M %p') }}
+                                    </div>
+                                </div>
+                                
+                                <div class="material-content" id="material-{{ material.id }}">
+                                    {{ material.content|urlize(target='_blank')|safe }}
+                                </div>
+                                
+                                <div class="material-actions">
+                                    <button class="material-action" onclick="bookmarkMaterial({{ material.id }})">
+                                        <i class="fas fa-bookmark"></i>
+                                        Bookmark
+                                    </button>
+                                    <button class="material-action" onclick="shareMaterial({{ material.id }})">
+                                        <i class="fas fa-share"></i>
+                                        Share
+                                    </button>
+                                    <button class="material-action" onclick="downloadMaterial({{ material.id }})">
+                                        <i class="fas fa-download"></i>
+                                        Save
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-book-open"></i>
+                            <h4>No learning materials yet</h4>
+                            <p>Materials shared by your instructors will appear here.</p>
+                            <a href="{{ url_for('store.store') }}" class="btn" style="background: var(--primary-gradient); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; margin-top: 1rem; display: inline-block;">
+                                <i class="fas fa-plus me-2"></i>Join a Class
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools & Widgets Sidebar -->
+        <div class="tools-sidebar">
+            <!-- Live Clock Widget -->
+            <div class="tool-widget clock-widget">
+                <div class="current-time" id="current-time">--:--</div>
+                <div class="current-date" id="current-date">--</div>
+            </div>
+
+            <!-- Quick Calendar -->
+            <div class="tool-widget calendar-widget">
+                <h4 class="section-title" style="color: white; margin-bottom: 1rem;">
+                    <i class="fas fa-calendar-alt"></i>
+                    Calendar
+                </h4>
+                <div class="calendar-header" id="calendar-month">-- 2024</div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Quick Notes -->
+            <div class="tool-widget notes-widget">
+                <h4 class="section-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Quick Notes
+                </h4>
+                <textarea placeholder="Jot down your thoughts..." id="quick-notes"></textarea>
+                <button class="btn btn-sm mt-2" style="background: var(--primary-gradient); color: white; border: none; border-radius: 20px; padding: 0.5rem 1rem;" onclick="saveNotes()">
+                    <i class="fas fa-save me-1"></i>Save
+                </button>
+            </div>
+
+            <!-- Learning Progress -->
+            <div class="tool-widget">
+                <h4 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Progress
+                </h4>
+                
+                <div class="progress-item">
+                    <span class="progress-label">Course Completion</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                    <small class="text-muted">75%</small>
+                </div>
+                
+                <div class="progress-item">
+                    <span class="progress-label">Assignments</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 60%"></div>
+                    </div>
+                    <small class="text-muted">60%</small>
+                </div>
+                
+                <div class="progress-item">
+                    <span class="progress-label">Projects</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 90%"></div>
+                    </div>
+                    <small class="text-muted">90%</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize the modern classroom
+document.addEventListener('DOMContentLoaded', function() {
+    updateClock();
+    generateCalendar();
+    processAllMaterials();
+    loadSavedNotes();
+    
+    setInterval(updateClock, 1000);
+});
+
+// Real-time clock
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const dateString = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    document.getElementById('current-time').textContent = timeString;
+    document.getElementById('current-date').textContent = dateString;
+}
+
+// Generate calendar
+function generateCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+    
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    document.getElementById('calendar-month').textContent = `${monthNames[month]} ${year}`;
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const calendarGrid = document.getElementById('calendar-grid');
+    calendarGrid.innerHTML = '';
+
+    // Fill empty days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day';
+        emptyCell.style.visibility = 'hidden';
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    // Fill days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day';
+        if (day === today) {
+            dayCell.classList.add('today');
+        }
+        dayCell.textContent = day;
+        calendarGrid.appendChild(dayCell);
+    }
+}
+
+// Filter materials by time frame
+function filterMaterials(timeFrame) {
+    const allMaterials = document.querySelectorAll('.material-item');
+    
+    allMaterials.forEach(material => {
+        material.style.display = 'block';
+        
+        const materialDate = new Date(material.getAttribute('data-date'));
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        
+        if (timeFrame === 'today' && materialDate.toDateString() !== today.toDateString()) {
+            material.style.display = 'none';
+        } else if (timeFrame === 'week' && materialDate < oneWeekAgo) {
+            material.style.display = 'none';
+        }
+    });
+}
+
+// Process all materials
+function processAllMaterials() {
+    const allMaterials = document.querySelectorAll('.material-item');
+    
+    allMaterials.forEach(material => {
+        const contentDiv = material.querySelector('.material-content');
+        const fullContent = contentDiv.innerHTML;
+        
+        if (fullContent.includes('http') || fullContent.includes('www')) {
+            contentDiv.style.maxHeight = '200px';
+            contentDiv.style.overflow = 'hidden';
+        } else {
+            contentDiv.style.maxHeight = 'none';
+        }
+        
+        const materialDate = new Date(material.getAttribute('data-date'));
+        const today = new Date();
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(today.getDate() - 3);
+        
+        if (materialDate > threeDaysAgo) {
+            material.style.borderLeft = '4px solid var(--primary-gradient)';
+            material.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+        } else {
+            material.style.borderLeft = '4px solid transparent';
+        }
+    });
+}
+
+// Save notes to local storage
+function saveNotes() {
+    const notesContent = document.getElementById('quick-notes').value;
+    localStorage.setItem('quickNotes', notesContent);
+    alert('Notes saved!');
+}
+
+// Load saved notes from local storage
+function loadSavedNotes() {
+    const savedNotes = localStorage.getItem('quickNotes');
+    if (savedNotes) {
+        document.getElementById('quick-notes').value = savedNotes;
+    }
+}
+
+// Make material-content clickable to expand/collapse
+document.querySelectorAll('.material-content').forEach(function(content) {
+    content.addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('expanded');
+    });
+});
+
+// Bookmark material
+function bookmarkMaterial(materialId) {
+    const content = document.getElementById('material-' + materialId).innerText;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(content).then(function() {
+            alert('Material content copied to clipboard!');
+        }, function() {
+            alert('Failed to copy content.');
+        });
+    } else {
+        alert('Clipboard not supported.');
+    }
+}
+
+// Share material
+function shareMaterial(materialId) {
+    const content = document.getElementById('material-' + materialId).innerText;
+    if (navigator.share) {
+        navigator.share({
+            title: 'Learning Material',
+            text: content,
+            url: window.location.href
+        }).catch(() => {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(content).then(function() {
+            alert('Content copied! You can now paste it anywhere.');
+        });
+    } else {
+        alert('Sharing not supported.');
+    }
+}
+
+// Download material
+function downloadMaterial(materialId) {
+    const content = document.getElementById('material-' + materialId).innerText;
+    const blob = new Blob([content], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'material-' + materialId + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
 {% endblock %}

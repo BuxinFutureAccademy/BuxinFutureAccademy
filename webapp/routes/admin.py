@@ -325,6 +325,109 @@ def delete_class(class_type, class_id):
     return redirect(url_for('admin.admin_classes'))
 
 
+@bp.route('/admin/enrollments')
+@login_required
+def admin_enrollments():
+    """View all class enrollments"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    from flask import request
+    status_filter = request.args.get('status', '')
+    
+    query = ClassEnrollment.query
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    enrollments = query.order_by(ClassEnrollment.enrolled_at.desc()).all()
+    
+    # Get class names for each enrollment
+    for enrollment in enrollments:
+        if enrollment.class_type == 'individual':
+            class_obj = IndividualClass.query.get(enrollment.class_id)
+        else:
+            class_obj = GroupClass.query.get(enrollment.class_id)
+        enrollment.class_name = class_obj.name if class_obj else 'Unknown'
+        
+        # Get user info
+        user = User.query.get(enrollment.user_id)
+        enrollment.user = user
+    
+    return render_template('admin_enrollments.html', 
+        enrollments=enrollments,
+        status_filter=status_filter
+    )
+
+
+@bp.route('/admin/enrollment/<int:enrollment_id>')
+@login_required
+def view_enrollment(enrollment_id):
+    """View enrollment details"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+    
+    # Get class info
+    if enrollment.class_type == 'individual':
+        class_obj = IndividualClass.query.get(enrollment.class_id)
+    else:
+        class_obj = GroupClass.query.get(enrollment.class_id)
+    
+    # Get user info
+    user = User.query.get(enrollment.user_id)
+    
+    return render_template('view_enrollment.html',
+        enrollment=enrollment,
+        class_obj=class_obj,
+        user=user
+    )
+
+
+@bp.route('/admin/enrollment/<int:enrollment_id>/approve', methods=['POST'])
+@login_required
+def approve_enrollment(enrollment_id):
+    """Approve an enrollment"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+    enrollment.status = 'completed'
+    
+    try:
+        db.session.commit()
+        flash(f'Enrollment approved for {enrollment.customer_name}!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_enrollments'))
+
+
+@bp.route('/admin/enrollment/<int:enrollment_id>/reject', methods=['POST'])
+@login_required
+def reject_enrollment(enrollment_id):
+    """Reject an enrollment"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+    enrollment.status = 'rejected'
+    
+    try:
+        db.session.commit()
+        flash(f'Enrollment rejected for {enrollment.customer_name}.', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_enrollments'))
+
+
 @bp.route('/student/dashboard')
 @login_required
 def student_dashboard():

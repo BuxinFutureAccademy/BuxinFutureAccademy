@@ -7,56 +7,79 @@ bp = Blueprint('main', __name__)
 
 @bp.route('/')
 def index():
-    # Get gallery images (from admin + student projects)
-    gallery_images = HomeGallery.query.filter_by(
-        is_active=True, 
-        media_type='image'
-    ).order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).limit(12).all()
-    
-    # Get gallery videos
-    gallery_videos = HomeGallery.query.filter_by(
-        is_active=True, 
-        media_type='video'
-    ).order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).limit(8).all()
-    
-    # Get featured items
-    featured_images = HomeGallery.query.filter_by(
-        is_active=True, 
-        media_type='image',
-        is_featured=True
-    ).limit(6).all()
-    
-    featured_videos = HomeGallery.query.filter_by(
-        is_active=True, 
-        media_type='video',
-        is_featured=True
-    ).limit(4).all()
-    
-    # Get student victories
-    victories = StudentVictory.query.filter_by(is_active=True).order_by(
-        StudentVictory.display_order.asc(),
-        StudentVictory.achievement_date.desc()
-    ).limit(6).all()
-    
-    featured_victories = StudentVictory.query.filter_by(
-        is_active=True,
-        is_featured=True
-    ).limit(3).all()
-    
-    # Also get projects with images/videos that aren't in gallery yet (fallback)
-    projects_with_images = StudentProject.query.filter(
-        StudentProject.is_active == True,
-        StudentProject.image_url.isnot(None),
-        StudentProject.image_url != ''
-    ).order_by(StudentProject.created_at.desc()).limit(12).all()
-    
-    projects_with_videos = StudentProject.query.filter(
-        StudentProject.is_active == True,
-        StudentProject.youtube_url.isnot(None),
-        StudentProject.youtube_url != ''
-    ).order_by(StudentProject.created_at.desc()).limit(8).all()
-    
     from datetime import datetime
+    
+    # Initialize empty lists for graceful degradation if tables don't exist
+    gallery_images = []
+    gallery_videos = []
+    featured_images = []
+    featured_videos = []
+    victories = []
+    featured_victories = []
+    projects_with_images = []
+    projects_with_videos = []
+    
+    try:
+        # Get gallery images (from admin + student projects)
+        gallery_images = HomeGallery.query.filter_by(
+            is_active=True, 
+            media_type='image'
+        ).order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).limit(12).all()
+        
+        # Get gallery videos
+        gallery_videos = HomeGallery.query.filter_by(
+            is_active=True, 
+            media_type='video'
+        ).order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).limit(8).all()
+        
+        # Get featured items
+        featured_images = HomeGallery.query.filter_by(
+            is_active=True, 
+            media_type='image',
+            is_featured=True
+        ).limit(6).all()
+        
+        featured_videos = HomeGallery.query.filter_by(
+            is_active=True, 
+            media_type='video',
+            is_featured=True
+        ).limit(4).all()
+    except Exception as e:
+        # Table doesn't exist yet, continue with empty lists
+        current_app.logger.warning(f"HomeGallery table may not exist: {e}")
+    
+    try:
+        # Get student victories
+        victories = StudentVictory.query.filter_by(is_active=True).order_by(
+            StudentVictory.display_order.asc(),
+            StudentVictory.achievement_date.desc()
+        ).limit(6).all()
+        
+        featured_victories = StudentVictory.query.filter_by(
+            is_active=True,
+            is_featured=True
+        ).limit(3).all()
+    except Exception as e:
+        # Table doesn't exist yet, continue with empty lists
+        current_app.logger.warning(f"StudentVictory table may not exist: {e}")
+    
+    try:
+        # Also get projects with images/videos that aren't in gallery yet (fallback)
+        projects_with_images = StudentProject.query.filter(
+            StudentProject.is_active == True,
+            StudentProject.image_url.isnot(None),
+            StudentProject.image_url != ''
+        ).order_by(StudentProject.created_at.desc()).limit(12).all()
+        
+        projects_with_videos = StudentProject.query.filter(
+            StudentProject.is_active == True,
+            StudentProject.youtube_url.isnot(None),
+            StudentProject.youtube_url != ''
+        ).order_by(StudentProject.created_at.desc()).limit(8).all()
+    except Exception as e:
+        # Continue with empty lists
+        current_app.logger.warning(f"Error fetching student projects: {e}")
+    
     return render_template('index.html',
         gallery_images=gallery_images,
         gallery_videos=gallery_videos,

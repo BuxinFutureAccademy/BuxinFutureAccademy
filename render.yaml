@@ -3,7 +3,7 @@ services:
     name: learning-management-system
     runtime: python
     pythonVersion: "3.12.3"
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python -c "from webapp import create_app; from webapp.extensions import db; app = create_app(); app.app_context().push(); db.create_all(); print('Database tables created')"
     startCommand: gunicorn -c gunicorn.conf.py wsgi:app
     plan: free
     env:

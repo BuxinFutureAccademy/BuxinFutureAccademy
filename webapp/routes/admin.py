@@ -21,43 +21,59 @@ bp = Blueprint('admin', __name__)
 @bp.route('/admin/setup-gallery-tables')
 def setup_gallery_tables():
     """Create gallery and victory tables - accessible without login for initial setup"""
+    from sqlalchemy import text
+    messages = []
+    
     try:
+        # First create all tables
         db.create_all()
+        messages.append("Tables created")
         
-        # Add new columns if they don't exist (for existing databases)
-        from sqlalchemy import text
-        columns_added = []
+        # Check if video_format column exists
         try:
-            db.session.execute(text("ALTER TABLE home_gallery ADD COLUMN video_format VARCHAR(20) DEFAULT 'long'"))
-            columns_added.append('video_format')
-            db.session.commit()
-        except Exception:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='home_gallery' AND column_name='video_format'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE home_gallery ADD COLUMN video_format VARCHAR(20) DEFAULT 'long'"))
+                db.session.commit()
+                messages.append("Added video_format column")
+            else:
+                messages.append("video_format column already exists")
+        except Exception as e:
             db.session.rollback()
+            messages.append(f"video_format error: {str(e)}")
         
+        # Check if video_platform column exists
         try:
-            db.session.execute(text("ALTER TABLE home_gallery ADD COLUMN video_platform VARCHAR(50) DEFAULT 'youtube'"))
-            columns_added.append('video_platform')
-            db.session.commit()
-        except Exception:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='home_gallery' AND column_name='video_platform'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE home_gallery ADD COLUMN video_platform VARCHAR(50) DEFAULT 'youtube'"))
+                db.session.commit()
+                messages.append("Added video_platform column")
+            else:
+                messages.append("video_platform column already exists")
+        except Exception as e:
             db.session.rollback()
+            messages.append(f"video_platform error: {str(e)}")
         
-        columns_msg = f"<li>Added new columns: {', '.join(columns_added)}</li>" if columns_added else ""
+        messages_html = "".join([f"<li>{m}</li>" for m in messages])
         
         return f"""
         <html>
-        <head><title>Tables Created</title>
+        <head><title>Tables Updated</title>
         <style>body {{ font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }}
-        .card {{ background: white; padding: 40px; border-radius: 15px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
-        h1 {{ color: #28a745; }} a {{ color: #667eea; }}</style></head>
+        .card {{ background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
+        h1 {{ color: #28a745; }} a {{ color: #667eea; }} ul {{ text-align: left; }}</style></head>
         <body>
             <div class="card">
-                <h1>✅ Success!</h1>
-                <p>All database tables have been created/updated successfully:</p>
-                <ul style="text-align: left;">
-                    <li>home_gallery</li>
-                    <li>student_victory</li>
-                    {columns_msg}
-                </ul>
+                <h1>✅ Database Updated!</h1>
+                <p>Results:</p>
+                <ul>{messages_html}</ul>
                 <p><a href="/admin/gallery">Go to Gallery Management</a></p>
                 <p><a href="/admin/victories">Go to Victories Management</a></p>
                 <p><a href="/">Go to Homepage</a></p>
@@ -72,7 +88,7 @@ def setup_gallery_tables():
         <style>body {{ font-family: Arial; padding: 40px; text-align: center; }}
         .error {{ color: #dc3545; }}</style></head>
         <body>
-            <h1 class="error">❌ Error Creating Tables</h1>
+            <h1 class="error">❌ Error</h1>
             <p>{str(e)}</p>
             <p><a href="/">Go to Homepage</a></p>
         </body>

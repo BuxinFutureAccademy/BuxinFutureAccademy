@@ -89,31 +89,52 @@ def available_classes():
 @login_required
 def enroll_class(class_type, class_id):
     """Enroll in a class"""
+    from ..models import ClassPricing
+    
+    # Get pricing type from URL parameter (individual, group, family, school)
+    pricing_type = request.args.get('pricing', 'individual')
+    
+    # Get the class object
     if class_type == 'individual':
         class_obj = IndividualClass.query.get_or_404(class_id)
-        fee_display = "$100 USD"
-        amount = 100.0
     else:
         class_obj = GroupClass.query.get_or_404(class_id)
-        fee_display = "D1000 GMD"
-        amount = 1000.0
+    
+    # Get pricing from database
+    pricing_data = ClassPricing.get_all_pricing()
+    selected_pricing = pricing_data.get(pricing_type, pricing_data.get('individual', {}))
+    
+    # Get price and display info
+    amount = selected_pricing.get('price', 100)
+    pricing_name = selected_pricing.get('name', pricing_type.title())
+    pricing_color = selected_pricing.get('color', '#00d4ff')
+    pricing_icon = selected_pricing.get('icon', 'fa-user')
+    max_students = selected_pricing.get('max_students', 1)
+    features = selected_pricing.get('features', [])
+    fee_display = f"${int(amount)} USD"
     
     # Payment methods
     payment_methods = [
         {
             'id': 'wave',
             'name': 'Wave Money',
-            'details': '<strong>Wave Number:</strong> +220 XXX XXXX<br>Send payment and screenshot receipt'
+            'icon': 'fa-mobile-alt',
+            'color': '#00a8ff',
+            'details': 'Send payment via Wave and upload screenshot'
         },
         {
             'id': 'bank',
             'name': 'Bank Transfer',
-            'details': '<strong>Bank:</strong> Trust Bank<br><strong>Account:</strong> XXXXXXXXXX<br><strong>Name:</strong> BuXin Academy'
+            'icon': 'fa-university',
+            'color': '#28a745',
+            'details': 'Transfer to our bank account'
         },
         {
             'id': 'cash',
             'name': 'Cash Payment',
-            'details': 'Visit our office to pay in cash'
+            'icon': 'fa-money-bill-wave',
+            'color': '#ffc107',
+            'details': 'Pay in cash at our office'
         }
     ]
     
@@ -143,7 +164,7 @@ def enroll_class(class_type, class_id):
             db.session.add(enrollment)
             db.session.commit()
             flash(f'Enrollment submitted! We will verify your payment and grant access soon.', 'success')
-            return redirect(url_for('admin.student_dashboard'))
+            return redirect(url_for('main.index'))
         except Exception as e:
             db.session.rollback()
             flash(f'Enrollment failed: {str(e)}', 'danger')
@@ -152,7 +173,14 @@ def enroll_class(class_type, class_id):
         'enroll_class.html',
         class_obj=class_obj,
         class_type=class_type,
+        pricing_type=pricing_type,
+        pricing_name=pricing_name,
+        pricing_color=pricing_color,
+        pricing_icon=pricing_icon,
+        max_students=max_students,
+        features=features,
         fee_display=fee_display,
+        amount=amount,
         payment_methods=payment_methods
     )
 

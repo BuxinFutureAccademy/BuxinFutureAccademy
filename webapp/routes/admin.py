@@ -23,19 +23,40 @@ def setup_gallery_tables():
     """Create gallery and victory tables - accessible without login for initial setup"""
     try:
         db.create_all()
-        return """
+        
+        # Add new columns if they don't exist (for existing databases)
+        from sqlalchemy import text
+        columns_added = []
+        try:
+            db.session.execute(text("ALTER TABLE home_gallery ADD COLUMN video_format VARCHAR(20) DEFAULT 'long'"))
+            columns_added.append('video_format')
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        
+        try:
+            db.session.execute(text("ALTER TABLE home_gallery ADD COLUMN video_platform VARCHAR(50) DEFAULT 'youtube'"))
+            columns_added.append('video_platform')
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        
+        columns_msg = f"<li>Added new columns: {', '.join(columns_added)}</li>" if columns_added else ""
+        
+        return f"""
         <html>
         <head><title>Tables Created</title>
-        <style>body { font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }
-        .card { background: white; padding: 40px; border-radius: 15px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        h1 { color: #28a745; } a { color: #667eea; }</style></head>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }}
+        .card {{ background: white; padding: 40px; border-radius: 15px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
+        h1 {{ color: #28a745; }} a {{ color: #667eea; }}</style></head>
         <body>
             <div class="card">
                 <h1>✅ Success!</h1>
-                <p>All database tables have been created successfully, including:</p>
+                <p>All database tables have been created/updated successfully:</p>
                 <ul style="text-align: left;">
                     <li>home_gallery</li>
                     <li>student_victory</li>
+                    {columns_msg}
                 </ul>
                 <p><a href="/admin/gallery">Go to Gallery Management</a></p>
                 <p><a href="/admin/victories">Go to Victories Management</a></p>

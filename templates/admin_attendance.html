@@ -321,9 +321,8 @@
                         </span>
                     </td>
                     <td>
-                        {% if att.marker %}
-                            {% set marker = User.query.get(att.marked_by) %}
-                            {{ marker.first_name }} {{ marker.last_name if marker else 'Unknown' }}
+                        {% if att.marker_name %}
+                            {{ att.marker_name }}
                         {% else %}
                             <span class="text-muted">System</span>
                         {% endif %}

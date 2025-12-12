@@ -464,7 +464,7 @@ def admin_dashboard():
     try:
         materials = LearningMaterial.query.order_by(LearningMaterial.created_at.desc()).limit(50).all()
     except Exception:
-        materials = []
+    materials = []
     
     return render_template('admin_dashboard.html',
         students=students,
@@ -520,19 +520,19 @@ def create_class():
             return render_template('create_class.html')
         
         try:
-            try:
-                max_students = int(max_students)
+                try:
+                    max_students = int(max_students)
             except Exception:
-                max_students = 10
+                    max_students = 10
 
             # All classes are now a single type; we use GroupClass as the unified model
-            new_class = GroupClass(
-                name=name,
-                description=description,
-                teacher_id=current_user.id,
-                max_students=max_students
-            )
-
+                new_class = GroupClass(
+                    name=name,
+                    description=description,
+                    teacher_id=current_user.id,
+                    max_students=max_students
+                )
+            
             db.session.add(new_class)
             db.session.commit()
             flash(f'Class "{name}" created successfully!', 'success')
@@ -1160,12 +1160,18 @@ def admin_attendance():
     
     attendance_records = attendance_query.order_by(Attendance.created_at.desc()).all()
     
-    # Get class names and student names
+    # Get class names, student names, and marker names
     for att in attendance_records:
         class_obj = GroupClass.query.get(att.class_id) or IndividualClass.query.get(att.class_id)
         att.class_name = class_obj.name if class_obj else 'Unknown'
         student = User.query.get(att.student_id)
         att.student_name = f"{student.first_name} {student.last_name}" if student else 'Unknown'
+        # Get marker (who marked the attendance)
+        if att.marked_by:
+            marker = User.query.get(att.marked_by)
+            att.marker_name = f"{marker.first_name} {marker.last_name}" if marker else 'Unknown'
+        else:
+            att.marker_name = 'System'
     
     # Get all students enrolled in classes
     all_enrollments = ClassEnrollment.query.filter_by(status='completed').all()
@@ -1286,13 +1292,53 @@ def admin_registered_students():
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
     
-    filter_type = request.args.get('type', '')  # 'school', 'family', or 'all'
+    filter_type = request.args.get('type', '')  # 'school', 'family', 'individual', 'group', or 'all'
     
     # Get all school students
     school_students = SchoolStudent.query.order_by(SchoolStudent.created_at.desc()).all()
     
     # Get all family members
     family_members = FamilyMember.query.order_by(FamilyMember.created_at.desc()).all()
+    
+    # Get individual students (enrollments with class_type='individual')
+    individual_enrollments = ClassEnrollment.query.filter_by(
+        class_type='individual',
+        status='completed'
+    ).order_by(ClassEnrollment.enrolled_at.desc()).all()
+    
+    individual_students = []
+    for enrollment in individual_enrollments:
+        student = User.query.get(enrollment.user_id)
+        if student:
+            class_obj = IndividualClass.query.get(enrollment.class_id) or GroupClass.query.get(enrollment.class_id)
+            individual_students.append({
+                'user': student,
+                'enrollment': enrollment,
+                'class': class_obj
+            })
+    
+    # Get group students (enrollments with class_type='group')
+    group_enrollments = ClassEnrollment.query.filter_by(
+        class_type='group',
+        status='completed'
+    ).order_by(ClassEnrollment.enrolled_at.desc()).all()
+    
+    # Group by class
+    group_students_by_class = {}
+    for enrollment in group_enrollments:
+        class_obj = GroupClass.query.get(enrollment.class_id)
+        if class_obj:
+            if class_obj.id not in group_students_by_class:
+                group_students_by_class[class_obj.id] = {
+                    'class': class_obj,
+                    'students': []
+                }
+            student = User.query.get(enrollment.user_id)
+            if student:
+                group_students_by_class[class_obj.id]['students'].append({
+                    'user': student,
+                    'enrollment': enrollment
+                })
     
     # Group school students by school name
     schools_grouped = {}
@@ -1314,9 +1360,15 @@ def admin_registered_students():
     unique_schools = list(schools_grouped.keys())
     unique_families = list(families_grouped.keys())
     
+    # Calculate total group students count
+    total_group_students = sum(len(class_data['students']) for class_data in group_students_by_class.values())
+    
     return render_template('admin_registered_students.html',
                          school_students=school_students,
                          family_members=family_members,
+                         individual_students=individual_students,
+                         group_students_by_class=group_students_by_class,
+                         total_group_students=total_group_students,
                          schools_grouped=schools_grouped,
                          families_grouped=families_grouped,
                          unique_schools=unique_schools,

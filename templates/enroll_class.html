@@ -467,8 +467,8 @@
                 <a href="{{ url_for('store.available_classes') }}?type={{ pricing_type }}" class="back-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
-            </div>
-        </div>
+                </div>
+                    </div>
     </nav>
 
     <!-- Main Content -->
@@ -479,12 +479,12 @@
                 <div class="step">
                     <div class="step-circle completed"><i class="fas fa-check"></i></div>
                     <span class="step-text">Select Plan</span>
-                </div>
+                                </div>
                 <div class="step-line completed"></div>
                 <div class="step">
                     <div class="step-circle completed"><i class="fas fa-check"></i></div>
                     <span class="step-text">Choose Class</span>
-                    </div>
+                                </div>
                 <div class="step-line completed"></div>
                 <div class="step">
                     <div class="step-circle active">3</div>
@@ -494,9 +494,9 @@
                 <div class="step">
                     <div class="step-circle pending">4</div>
                     <span class="step-text">Complete</span>
-                                </div>
-                                </div>
-
+                        </div>
+                    </div>
+                    
             <div class="row g-4">
                 <!-- Left Column - Pricing Summary -->
                 <div class="col-lg-5">
@@ -520,8 +520,8 @@
                             <li><i class="fas fa-check-circle"></i> Certificate upon completion</li>
                             <li><i class="fas fa-check-circle"></i> Hands-on robotics projects</li>
                         </ul>
-                        </div>
-                    </div>
+                                        </div>
+                                    </div>
                     
                 <!-- Right Column - Payment Form -->
                 <div class="col-lg-7">
@@ -572,7 +572,7 @@
                                     <input type="email" class="form-control" name="email" 
                                            value="{{ current_user.email }}" 
                                            placeholder="your@email.com" required>
-                                </div>
+                            </div>
                         </div>
                         
                             <div class="mb-4">
@@ -595,7 +595,7 @@
                                        accept="image/*,.pdf" class="d-none" required
                                        onchange="updateFileName(this)">
                                 <div id="file-name" class="mt-2" style="color: var(--accent);"></div>
-                        </div>
+                            </div>
                         
                             <!-- Info Alert -->
                             <div class="info-alert">
@@ -612,8 +612,8 @@
                                     <i class="fas fa-rocket"></i>
                                     Complete Enrollment - ${{ amount|int }}
                             </button>
-                            </div>
-
+                        </div>
+                        
                             <!-- Secure Badge -->
                             <div class="secure-badge">
                                 <i class="fas fa-shield-alt"></i>
@@ -642,6 +642,6 @@
             const fileName = input.files[0]?.name || '';
             document.getElementById('file-name').textContent = fileName ? '✓ ' + fileName : '';
         }
-    </script>
+</script>
 </body>
 </html>

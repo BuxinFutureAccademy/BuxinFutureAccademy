@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <style>
-        :root {
+<style>
+    :root {
             --primary: #00d4ff;
             --primary-dark: #0099cc;
             --secondary: #ff6b35;
@@ -167,26 +167,26 @@
             color: var(--primary);
             font-size: 1.5rem;
             cursor: pointer;
-        }
+    }
 
-        /* ========== HERO SECTION ========== */
-        .hero-section {
+    /* ========== HERO SECTION ========== */
+    .hero-section {
             min-height: 100vh;
             background: var(--gradient-dark);
             position: relative;
-            display: flex;
-            align-items: center;
+        display: flex;
+        align-items: center;
             padding: 100px 0 60px;
-            overflow: hidden;
-        }
+        overflow: hidden;
+    }
 
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
             background: 
                 radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 80% 70%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
@@ -211,10 +211,10 @@
         @keyframes gridMove {
             0% { transform: translate(0, 0); }
             100% { transform: translate(50px, 50px); }
-        }
+    }
 
-        .hero-content {
-            position: relative;
+    .hero-content {
+        position: relative;
             z-index: 2;
         }
 
@@ -238,14 +238,14 @@
         @keyframes pulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); }
             50% { box-shadow: 0 0 0 10px rgba(0, 212, 255, 0); }
-        }
+    }
 
-        .hero-title {
+    .hero-title {
             font-family: var(--font-tech);
             font-size: 4rem;
-            font-weight: 800;
+        font-weight: 800;
             line-height: 1.1;
-            margin-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
             text-transform: uppercase;
         }
 
@@ -261,10 +261,10 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
+    }
 
-        .hero-subtitle {
-            font-size: 1.3rem;
+    .hero-subtitle {
+        font-size: 1.3rem;
             color: rgba(255, 255, 255, 0.7);
             margin-bottom: 2.5rem;
             max-width: 550px;
@@ -280,14 +280,14 @@
         .btn-cyber {
             background: var(--gradient-cyber);
             color: var(--dark);
-            padding: 1rem 2.5rem;
-            border-radius: 50px;
+        padding: 1rem 2.5rem;
+        border-radius: 50px;
             font-family: var(--font-tech);
             font-size: 0.9rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            text-decoration: none;
+        text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 10px;
@@ -297,14 +297,14 @@
         }
 
         .btn-cyber:hover {
-            transform: translateY(-3px);
+        transform: translateY(-3px);
             box-shadow: var(--shadow-neon);
             color: var(--dark);
-        }
+    }
 
         .btn-outline {
             background: transparent;
-            color: white;
+        color: white;
             padding: 1rem 2.5rem;
             border-radius: 50px;
             font-family: var(--font-tech);
@@ -322,17 +322,17 @@
 
         .btn-outline:hover {
             border-color: var(--primary);
-            color: var(--primary);
+        color: var(--primary);
             background: rgba(0, 212, 255, 0.1);
-        }
+    }
 
         .hero-visual {
-            position: relative;
-        }
+        position: relative;
+    }
 
         .robot-image {
-            max-width: 100%;
-            border-radius: 20px;
+        max-width: 100%;
+        border-radius: 20px;
             box-shadow: var(--shadow-neon);
             border: 2px solid rgba(0, 212, 255, 0.3);
         }
@@ -385,7 +385,7 @@
 
         .badge-number {
             font-size: 1.5rem;
-            font-weight: 800;
+        font-weight: 800;
             color: white;
         }
 
@@ -411,7 +411,7 @@
         }
 
         .section-header {
-            text-align: center;
+        text-align: center;
             margin-bottom: 4rem;
         }
 
@@ -471,7 +471,7 @@
         }
 
         .gallery-item:hover {
-            transform: translateY(-10px);
+        transform: translateY(-10px);
             box-shadow: var(--shadow-neon);
             border-color: var(--primary);
         }
@@ -520,13 +520,13 @@
         .video-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 107, 53, 0.2);
-            border-radius: 20px;
-            overflow: hidden;
+        border-radius: 20px;
+        overflow: hidden;
             transition: all 0.4s ease;
-        }
+    }
 
         .video-card:hover {
-            transform: translateY(-10px);
+        transform: translateY(-10px);
             box-shadow: var(--shadow-fire);
             border-color: var(--secondary);
         }
@@ -569,10 +569,10 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(247, 37, 133, 0.2));
-            display: flex;
+        display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        align-items: center;
+        justify-content: center;
             cursor: pointer;
         }
 
@@ -592,19 +592,19 @@
             flex-direction: column;
             align-items: center;
             background: rgba(0,0,0,0.5);
-            padding: 1.5rem;
+        padding: 1.5rem;
             border-radius: 15px;
         }
 
         .video-placeholder i {
             font-size: 4rem;
             color: var(--secondary);
-            margin-bottom: 0.5rem;
-        }
+        margin-bottom: 0.5rem;
+    }
 
         .video-placeholder span {
             color: white;
-            font-size: 0.9rem;
+        font-size: 0.9rem;
         }
 
         .video-info {
@@ -615,7 +615,7 @@
             font-family: var(--font-tech);
             font-size: 1.1rem;
             font-weight: 600;
-            color: white;
+        color: white;
             margin-bottom: 0.5rem;
         }
 
@@ -648,12 +648,12 @@
         .victory-card {
             background: rgba(255, 215, 0, 0.05);
             border: 1px solid rgba(255, 215, 0, 0.3);
-            border-radius: 20px;
-            padding: 2rem;
-            text-align: center;
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
             transition: all 0.4s ease;
-            height: 100%;
-        }
+        height: 100%;
+    }
 
         .victory-card:hover {
             transform: translateY(-10px);
@@ -662,15 +662,15 @@
         }
 
         .victory-icon {
-            width: 80px;
-            height: 80px;
+        width: 80px;
+        height: 80px;
             background: linear-gradient(135deg, #ffd700, #ff8c00);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
             margin: 0 auto 1.5rem;
-            font-size: 2rem;
+        font-size: 2rem;
             color: var(--dark);
         }
 
@@ -686,7 +686,7 @@
         .victory-title {
             font-family: var(--font-tech);
             font-size: 1.1rem;
-            font-weight: 700;
+        font-weight: 700;
             color: #ffd700;
             text-transform: uppercase;
             margin-bottom: 0.5rem;
@@ -732,7 +732,7 @@
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 215, 0, 0.2);
             border-radius: 25px;
-            padding: 2rem;
+        padding: 2rem;
             text-align: center;
             position: relative;
             transition: all 0.4s ease;
@@ -775,23 +775,23 @@
         .class-type-icon {
             width: 80px;
             height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
             font-size: 2rem;
             color: var(--dark);
-        }
+    }
 
         .class-type-title {
             font-family: var(--font-tech);
             font-size: 1.5rem;
-            font-weight: 700;
+        font-weight: 700;
             color: white;
             text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
+        margin-bottom: 0.5rem;
+    }
 
         .class-type-price {
             font-family: var(--font-tech);
@@ -831,8 +831,8 @@
 
         .class-type-btn {
             display: inline-flex;
-            align-items: center;
-            justify-content: center;
+        align-items: center;
+        justify-content: center;
             padding: 1rem 2rem;
             border-radius: 50px;
             font-family: var(--font-tech);
@@ -841,7 +841,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             text-decoration: none;
-            transition: all 0.3s ease;
+        transition: all 0.3s ease;
             width: 100%;
         }
 
@@ -869,14 +869,14 @@
 
         .btn-family {
             background: var(--gradient-fire);
-            color: white;
-        }
+        color: white;
+    }
 
         .btn-family:hover {
             box-shadow: var(--shadow-fire);
             transform: translateY(-3px);
-            color: white;
-        }
+        color: white;
+    }
 
         .btn-school {
             background: linear-gradient(135deg, #9b59b6, #3498db);
@@ -940,8 +940,8 @@
         }
 
         .contact-info-item {
-            display: flex;
-            align-items: center;
+        display: flex;
+        align-items: center;
             gap: 1rem;
             margin-bottom: 1.5rem;
         }
@@ -954,7 +954,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+        font-size: 1.2rem;
             color: var(--dark);
         }
 
@@ -995,8 +995,8 @@
             font-family: var(--font-tech);
             font-size: 1.2rem;
             font-weight: 700;
-            color: var(--primary);
-        }
+        color: var(--primary);
+    }
 
         .footer-desc {
             color: rgba(255, 255, 255, 0.5);
@@ -1015,8 +1015,8 @@
         }
 
         .footer-links {
-            list-style: none;
-            padding: 0;
+        list-style: none;
+        padding: 0;
             margin: 0;
         }
 
@@ -1046,8 +1046,8 @@
             background: rgba(0, 212, 255, 0.1);
             border: 1px solid rgba(0, 212, 255, 0.3);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
+        display: flex;
+        align-items: center;
             justify-content: center;
             color: var(--primary);
             text-decoration: none;
@@ -1056,7 +1056,7 @@
 
         .social-link:hover {
             background: var(--primary);
-            color: var(--dark);
+        color: var(--dark);
             transform: translateY(-3px);
         }
 
@@ -1097,7 +1097,7 @@
         /* ========== RESPONSIVE ========== */
         @media (max-width: 992px) {
             .nav-links {
-                display: none;
+        display: none;
                 position: absolute;
                 top: 100%;
                 left: 0;
@@ -1123,7 +1123,7 @@
             }
 
             .hero-title {
-                font-size: 2.5rem;
+        font-size: 2.5rem;
             }
 
             .section-title {
@@ -1136,11 +1136,11 @@
         }
 
         @media (max-width: 576px) {
-            .hero-title {
+        .hero-title {
                 font-size: 2rem;
-            }
+        }
 
-            .hero-subtitle {
+        .hero-subtitle {
                 font-size: 1rem;
             }
 
@@ -1154,9 +1154,9 @@
 
             .nav-container {
                 padding: 0 1rem;
-            }
         }
-    </style>
+    }
+</style>
 </head>
 <body>
     <!-- Navigation -->
@@ -1186,11 +1186,11 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-section">
+<section class="hero-section">
         <div class="hero-grid"></div>
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6 hero-content">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 hero-content">
                     <div class="hero-badge">
                         <i class="fas fa-robot"></i>
                         <span>Robotics & AI Academy</span>
@@ -1204,17 +1204,17 @@
                         Join BuXin Robotics Academy and learn to build robots, program AI, and create the future. 
                         Hands-on classes for young innovators ready to change the world.
                     </p>
-                    <div class="hero-buttons">
+                <div class="hero-buttons">
                         <a href="#class-types" class="btn-cyber">
                             <i class="fas fa-graduation-cap"></i>
                             Register Now
-                        </a>
+                    </a>
                         <a href="#gallery" class="btn-outline">
                             <i class="fas fa-images"></i>
                             View Projects
-                        </a>
-                    </div>
+                    </a>
                 </div>
+            </div>
                 <div class="col-lg-6 hero-visual mt-5 mt-lg-0">
                     <img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600" 
                          alt="Robotics" class="robot-image">
@@ -1223,85 +1223,85 @@
                         <div class="badge-text">
                             <div class="badge-number">500+</div>
                             <div class="badge-label">Students</div>
-                        </div>
-                    </div>
+            </div>
+        </div>
                     <div class="floating-badge badge-2">
                         <div class="badge-icon"><i class="fas fa-robot"></i></div>
                         <div class="badge-text">
                             <div class="badge-number">50+</div>
                             <div class="badge-label">Robots Built</div>
-                        </div>
-                    </div>
-                </div>
+    </div>
+            </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- About Section -->
     <section class="section section-dark" id="about">
-        <div class="container">
+    <div class="container">
             <div class="section-header">
                 <div class="section-badge">
                     <i class="fas fa-info-circle"></i>
                     <span>About Us</span>
-                </div>
+        </div>
                 <h2 class="section-title">Who We <span class="highlight">Are</span></h2>
                 <p class="section-subtitle">
                     BuXin is an innovative African technology company specializing in robotics, AI, and electric vehicles.
                 </p>
             </div>
             
-            <div class="row g-4">
-                <div class="col-md-4">
+        <div class="row g-4">
+            <div class="col-md-4">
                     <div class="victory-card" style="border-color: rgba(0, 212, 255, 0.3);">
                         <div class="victory-icon" style="background: var(--gradient-cyber);">
                             <i class="fas fa-robot"></i>
-                        </div>
+                </div>
                         <h4 class="victory-title" style="color: var(--primary);">Robotics Classes</h4>
                         <p class="victory-desc">
                             Learn to build and program robots from scratch. From Arduino basics to advanced AI-powered robots.
                         </p>
-                    </div>
                 </div>
-                <div class="col-md-4">
+            </div>
+            <div class="col-md-4">
                     <div class="victory-card" style="border-color: rgba(255, 107, 53, 0.3);">
                         <div class="victory-icon" style="background: var(--gradient-fire);">
                             <i class="fas fa-brain"></i>
-                        </div>
+                </div>
                         <h4 class="victory-title" style="color: var(--secondary);">AI & Coding</h4>
                         <p class="victory-desc">
                             Master Python, machine learning, and artificial intelligence with hands-on projects.
                         </p>
-                    </div>
                 </div>
-                <div class="col-md-4">
+            </div>
+            <div class="col-md-4">
                     <div class="victory-card" style="border-color: rgba(57, 255, 20, 0.3);">
                         <div class="victory-icon" style="background: var(--gradient-neon);">
                             <i class="fas fa-bolt"></i>
-                        </div>
+                </div>
                         <h4 class="victory-title" style="color: var(--accent);">Electric Vehicles</h4>
                         <p class="victory-desc">
                             Explore sustainable technology with our electric vehicle projects and green tech initiatives.
                         </p>
-                    </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- Class Types Section -->
     <section class="section class-types-section" id="class-types">
-        <div class="container">
+    <div class="container">
             <div class="section-header">
                 <div class="section-badge" style="border-color: rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.1);">
                     <i class="fas fa-graduation-cap" style="color: #ffd700;"></i>
                     <span style="color: #ffd700;">Register Now</span>
-                </div>
+        </div>
                 <h2 class="section-title">Choose Your <span style="background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Class Type</span></h2>
                 <p class="section-subtitle">
                     Select the class type that best fits your learning needs and budget.
                 </p>
-            </div>
+                    </div>
             
             <div class="row g-4 justify-content-center">
                 {% for type_key in ['individual', 'group', 'family', 'school'] %}
@@ -1320,7 +1320,7 @@
                         {% endif %}
                         <div class="class-type-icon" style="background: {{ p_color }};">
                             <i class="fas {{ p_icon }}"></i>
-                        </div>
+                </div>
                         <h3 class="class-type-title">{{ p_name }}</h3>
                         <div class="class-type-price">${{ p_price }}</div>
                         <p class="class-type-desc">
@@ -1338,26 +1338,26 @@
                         <a href="{{ url_for('store.available_classes') }}?type={{ type_key }}" class="class-type-btn" style="background: {{ p_color }}; color: {% if p_color == '#39ff14' or p_color == '#00d4ff' %}var(--dark){% else %}white{% endif %};">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
-                    </div>
-                </div>
-                {% endfor %}
             </div>
+                    </div>
+                {% endfor %}
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- Student Gallery Section -->
     <section class="section section-gradient" id="gallery">
-        <div class="container">
+    <div class="container">
             <div class="section-header">
                 <div class="section-badge">
                     <i class="fas fa-images"></i>
                     <span>Student Gallery</span>
-                </div>
+        </div>
                 <h2 class="section-title">Student <span class="highlight">Projects</span></h2>
                 <p class="section-subtitle">
                     Explore amazing robotics projects created by our talented students.
                 </p>
-            </div>
+                </div>
             
             {% if gallery_images or projects_with_images %}
             <div class="gallery-grid">
@@ -1370,7 +1370,7 @@
                         {% if item.source_project %}
                         <p class="gallery-author">By {{ item.source_project.student.first_name }} {{ item.source_project.student.last_name }}</p>
                         {% endif %}
-                    </div>
+            </div>
                 </div>
                 {% endfor %}
                 
@@ -1382,7 +1382,7 @@
                     <div class="gallery-overlay">
                         <h5 class="gallery-title">{{ project.title }}</h5>
                         <p class="gallery-author">By {{ project.student.first_name }} {{ project.student.last_name }}</p>
-                    </div>
+            </div>
                 </div>
                 {% endfor %}
                 {% endif %}
@@ -1392,24 +1392,24 @@
                 <i class="fas fa-images"></i>
                 <h4>No Images Yet</h4>
                 <p>Student project images will appear here</p>
-            </div>
-            {% endif %}
         </div>
-    </section>
+            {% endif %}
+    </div>
+</section>
 
     <!-- Student Videos Section -->
     <section class="section section-dark" id="videos">
-        <div class="container">
+    <div class="container">
             <div class="section-header">
                 <div class="section-badge" style="border-color: rgba(255, 107, 53, 0.3); background: rgba(255, 107, 53, 0.1);">
                     <i class="fas fa-video" style="color: var(--secondary);"></i>
                     <span style="color: var(--secondary);">Student Videos</span>
-                </div>
+        </div>
                 <h2 class="section-title">Student <span class="fire" style="background: var(--gradient-fire); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Videos</span></h2>
                 <p class="section-subtitle">
                     Watch our students showcase their robotics projects and achievements.
                 </p>
-            </div>
+                </div>
             
             {% if gallery_videos or projects_with_videos %}
             <div class="video-grid">
@@ -1437,15 +1437,15 @@
                             <div class="play-overlay">
                                 <i class="fas fa-play-circle"></i>
                                 <span>Watch Video</span>
-                            </div>
-                        </div>
+            </div>
+                </div>
                         {% endif %}
-                    </div>
+            </div>
                     <div class="video-info">
                         <h5 class="video-title">{{ item.title }}</h5>
                         <p class="video-desc">{{ item.description[:100] if item.description else '' }}{% if item.description and item.description|length > 100 %}...{% endif %}</p>
-                    </div>
                 </div>
+            </div>
                 {% endfor %}
                 
                 {% if not gallery_videos %}
@@ -1458,35 +1458,35 @@
                         <div class="video-placeholder">
                             <i class="fas fa-play-circle"></i>
                             <span>Video</span>
-                        </div>
+                </div>
                         {% endif %}
-                    </div>
+                </div>
                     <div class="video-info">
                         <h5 class="video-title">{{ project.title }}</h5>
                         <p class="video-desc">By {{ project.student.first_name }} {{ project.student.last_name }}</p>
-                    </div>
+                </div>
                 </div>
                 {% endfor %}
                 {% endif %}
-            </div>
+                </div>
             {% else %}
             <div class="empty-state">
                 <i class="fas fa-video"></i>
                 <h4>No Videos Yet</h4>
                 <p>Student project videos will appear here</p>
-            </div>
+                </div>
             {% endif %}
-        </div>
-    </section>
+    </div>
+</section>
 
     <!-- Student Victories Section -->
     <section class="section victories-section" id="victories">
-        <div class="container">
+    <div class="container">
             <div class="section-header">
                 <div class="section-badge" style="border-color: rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.1);">
                     <i class="fas fa-trophy" style="color: #ffd700;"></i>
                     <span style="color: #ffd700;">Student Victory</span>
-                </div>
+        </div>
                 <h2 class="section-title">Student <span style="background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Victories</span></h2>
                 <p class="section-subtitle">
                     Celebrating our students' achievements and accomplishments.
@@ -1494,7 +1494,7 @@
             </div>
             
             {% if victories %}
-            <div class="row g-4">
+        <div class="row g-4">
                 {% for victory in victories %}
                 <div class="col-lg-4 col-md-6">
                     <div class="victory-card">
@@ -1504,7 +1504,7 @@
                         {% else %}
                         <div class="victory-icon">
                             <i class="fas fa-trophy"></i>
-                        </div>
+                </div>
                         {% endif %}
                         <h4 class="victory-title">{{ victory.title }}</h4>
                         <p class="victory-desc">{{ victory.description[:150] }}{% if victory.description|length > 150 %}...{% endif %}</p>
@@ -1516,7 +1516,7 @@
                         {% if victory.achievement_date %}
                         <p class="victory-date"><i class="fas fa-calendar me-1"></i>{{ victory.achievement_date.strftime('%B %d, %Y') }}</p>
                         {% endif %}
-                    </div>
+            </div>
                 </div>
                 {% endfor %}
             </div>
@@ -1525,24 +1525,24 @@
                 <i class="fas fa-trophy"></i>
                 <h4>No Victories Yet</h4>
                 <p>Student achievements will be showcased here</p>
-            </div>
+                </div>
             {% endif %}
-        </div>
-    </section>
+    </div>
+</section>
 
     <!-- Contact Section -->
     <section class="section contact-section" id="contact">
-        <div class="container">
+    <div class="container">
             <div class="section-header">
                 <div class="section-badge">
                     <i class="fas fa-envelope"></i>
                     <span>Contact Us</span>
-                </div>
+        </div>
                 <h2 class="section-title">Get In <span class="highlight">Touch</span></h2>
                 <p class="section-subtitle">
                     Ready to start your robotics journey? Contact us today!
                 </p>
-            </div>
+                </div>
             
             <div class="row justify-content-center">
                 <div class="col-lg-10">
@@ -1553,48 +1553,48 @@
                                 <form class="contact-form" id="contactForm">
                                     <div class="mb-3">
                                         <input type="email" class="form-control" placeholder="Your Email" id="contactEmail" required>
-                                    </div>
+            </div>
                                     <div class="mb-3">
                                         <input type="text" class="form-control" placeholder="WhatsApp Number" id="contactWhatsapp" required>
-                                    </div>
+                </div>
                                     <div class="mb-3">
                                         <textarea class="form-control" rows="4" placeholder="Your Message" id="contactMessage" required></textarea>
-                                    </div>
+            </div>
                                     <button type="submit" class="btn-cyber w-100">
                                         <i class="fas fa-paper-plane"></i>
                                         Send Message
                                     </button>
                                 </form>
-                            </div>
+                </div>
                             <div class="col-lg-6">
                                 <h4 style="font-family: var(--font-tech); margin-bottom: 2rem;">Contact Information</h4>
                                 <div class="contact-info-item">
                                     <div class="contact-info-icon">
                                         <i class="fas fa-envelope"></i>
-                                    </div>
+            </div>
                                     <div class="contact-info-text">
                                         <h5>Email</h5>
                                         <p>info@buxin.com</p>
-                                    </div>
-                                </div>
+                </div>
+            </div>
                                 <div class="contact-info-item">
                                     <div class="contact-info-icon">
                                         <i class="fab fa-whatsapp"></i>
-                                    </div>
+        </div>
                                     <div class="contact-info-text">
                                         <h5>WhatsApp</h5>
                                         <p>+220 XXX XXXX</p>
-                                    </div>
-                                </div>
+                    </div>
+                    </div>
                                 <div class="contact-info-item">
                                     <div class="contact-info-icon">
                                         <i class="fas fa-map-marker-alt"></i>
-                                    </div>
+                    </div>
                                     <div class="contact-info-text">
                                         <h5>Location</h5>
                                         <p>The Gambia, West Africa</p>
-                                    </div>
-                                </div>
+                    </div>
+                    </div>
                                 
                                 <div class="social-links mt-4">
                                     <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
@@ -1602,24 +1602,24 @@
                                     <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
                                     <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
                                     <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
-                                </div>
+                </div>
                             </div>
                         </div>
-                    </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="container">
+    <div class="container">
             <div class="row g-4">
                 <div class="col-lg-4">
                     <div class="footer-brand">
                         <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" alt="BuXin">
                         <span class="footer-brand-text">BuXin Robotics</span>
-                    </div>
+        </div>
                     <p class="footer-desc">
                         Pioneering the future of technology in Africa through innovative robotics, AI, and sustainable solutions.
                     </p>
@@ -1661,8 +1661,8 @@
             </div>
             <div class="footer-bottom">
                 <p>&copy; {{ now().year if now else 2025 }} BuXin Robotics Academy. All rights reserved.</p>
-            </div>
         </div>
+    </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1730,7 +1730,7 @@
         // Now function for footer year
         function now() {
             return new Date();
-        }
-    </script>
+}
+</script>
 </body>
 </html>

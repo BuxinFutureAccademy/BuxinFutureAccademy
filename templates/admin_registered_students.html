@@ -224,13 +224,21 @@
         <h1 class="header-title">
             <i class="fas fa-users"></i> REGISTERED STUDENTS MANAGEMENT
         </h1>
-        <p class="text-muted mb-0">View all students registered in school and family classes</p>
+        <p class="text-muted mb-0">View all students registered in individual, group, school, and family classes</p>
     </div>
 </div>
 
 <div class="container">
     <!-- Quick Stats -->
     <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ individual_students|length }}</div>
+            <div class="stat-label">Individual Students</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_group_students }}</div>
+            <div class="stat-label">Group Students</div>
+        </div>
         <div class="stat-card">
             <div class="stat-number">{{ school_students|length }}</div>
             <div class="stat-label">School Students</div>
@@ -254,6 +262,12 @@
         <a href="{{ url_for('admin.admin_registered_students') }}" class="filter-tab {% if not filter_type or filter_type == 'all' %}active{% endif %}">
             <i class="fas fa-list"></i> All
         </a>
+        <a href="{{ url_for('admin.admin_registered_students', type='individual') }}" class="filter-tab {% if filter_type == 'individual' %}active{% endif %}">
+            <i class="fas fa-user"></i> Individual
+        </a>
+        <a href="{{ url_for('admin.admin_registered_students', type='group') }}" class="filter-tab {% if filter_type == 'group' %}active{% endif %}">
+            <i class="fas fa-users"></i> Group
+        </a>
         <a href="{{ url_for('admin.admin_registered_students', type='school') }}" class="filter-tab {% if filter_type == 'school' %}active{% endif %}">
             <i class="fas fa-school"></i> Schools
         </a>
@@ -261,6 +275,77 @@
             <i class="fas fa-home"></i> Families
         </a>
     </div>
+
+    <!-- Individual Students -->
+    {% if (not filter_type or filter_type == 'all' or filter_type == 'individual') and individual_students %}
+    <div class="mb-5">
+        <h2 style="color: var(--primary); font-family: var(--font-tech); margin-bottom: 1.5rem;">
+            <i class="fas fa-user"></i> INDIVIDUAL STUDENTS
+        </h2>
+        
+        <div class="students-list">
+            {% for item in individual_students %}
+            <div class="student-card">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 212, 255, 0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                    <i class="fas fa-user" style="font-size: 2rem; color: var(--primary);"></i>
+                </div>
+                <div class="student-name">{{ item.user.first_name }} {{ item.user.last_name }}</div>
+                <div class="student-info"><i class="fas fa-envelope"></i> {{ item.user.email }}</div>
+                {% if item.user.username %}
+                <div class="student-info"><i class="fas fa-at"></i> {{ item.user.username }}</div>
+                {% endif %}
+                {% if item.class %}
+                <div class="student-info" style="margin-top: 0.5rem;">
+                    <i class="fas fa-chalkboard-teacher"></i> {{ item.class.name }}
+                </div>
+                {% endif %}
+                <div class="student-info" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent);">
+                    <i class="fas fa-calendar"></i> Enrolled: {{ item.enrollment.enrolled_at.strftime('%b %d, %Y') }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Group Students -->
+    {% if (not filter_type or filter_type == 'all' or filter_type == 'group') and group_students_by_class %}
+    <div class="mb-5">
+        <h2 style="color: var(--primary); font-family: var(--font-tech); margin-bottom: 1.5rem;">
+            <i class="fas fa-users"></i> GROUP STUDENTS
+        </h2>
+        
+        {% for class_id, class_data in group_students_by_class.items() %}
+        <div class="school-card" onclick="toggleGroup('{{ class_id }}')">
+            <div class="school-header">
+                <h3 class="school-name">
+                    <i class="fas fa-users"></i> {{ class_data.class.name }}
+                </h3>
+                <span class="student-count">{{ class_data.students|length }} Student{{ 's' if class_data.students|length != 1 else '' }}</span>
+            </div>
+            <div id="group-{{ class_id }}" style="display: none;">
+                <div class="students-list">
+                    {% for student_item in class_data.students %}
+                    <div class="student-card">
+                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 212, 255, 0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                            <i class="fas fa-user" style="font-size: 2rem; color: var(--primary);"></i>
+                        </div>
+                        <div class="student-name">{{ student_item.user.first_name }} {{ student_item.user.last_name }}</div>
+                        <div class="student-info"><i class="fas fa-envelope"></i> {{ student_item.user.email }}</div>
+                        {% if student_item.user.username %}
+                        <div class="student-info"><i class="fas fa-at"></i> {{ student_item.user.username }}</div>
+                        {% endif %}
+                        <div class="student-info" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent);">
+                            <i class="fas fa-calendar"></i> Enrolled: {{ student_item.enrollment.enrolled_at.strftime('%b %d, %Y') }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <!-- School Students -->
     {% if (not filter_type or filter_type == 'all' or filter_type == 'school') and school_students %}
@@ -353,7 +438,7 @@
     </div>
     {% endif %}
 
-    {% if not school_students and not family_members %}
+    {% if not individual_students and not group_students_by_class and not school_students and not family_members %}
     <div class="empty-state">
         <i class="fas fa-users-slash"></i>
         <h4>No Registered Students</h4>
@@ -369,6 +454,15 @@ function toggleSchool(schoolId) {
         studentsDiv.style.display = 'block';
     } else {
         studentsDiv.style.display = 'none';
+    }
+}
+
+function toggleGroup(classId) {
+    const groupDiv = document.getElementById('group-' + classId);
+    if (groupDiv.style.display === 'none') {
+        groupDiv.style.display = 'block';
+    } else {
+        groupDiv.style.display = 'none';
     }
 }
 </script>

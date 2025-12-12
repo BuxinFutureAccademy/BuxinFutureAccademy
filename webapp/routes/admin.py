@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user, logout_user
 
 from ..extensions import db
@@ -11,6 +11,8 @@ from ..models import (
     RoboticsProjectSubmission,
     IndividualClass,
     GroupClass,
+    HomeGallery,
+    StudentVictory,
 )
 
 bp = Blueprint('admin', __name__)
@@ -463,7 +465,6 @@ def admin_edit_user(user_id):
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.health'))
     user = User.query.get_or_404(user_id)
-    from flask import request, render_template
     if request.method == 'POST':
         try:
             user.first_name = request.form.get('first_name', user.first_name)
@@ -479,3 +480,360 @@ def admin_edit_user(user_id):
             db.session.rollback()
             flash(f'Failed to update user: {e}', 'danger')
     return render_template('admin_user_edit.html', user=user)
+
+
+# ========== GALLERY MANAGEMENT ==========
+@bp.route('/admin/gallery')
+@login_required
+def admin_gallery():
+    """Admin page to manage homepage gallery (images and videos)"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    media_type = request.args.get('type', '')
+    source = request.args.get('source', '')
+    
+    query = HomeGallery.query
+    if media_type:
+        query = query.filter_by(media_type=media_type)
+    if source:
+        query = query.filter_by(source_type=source)
+    
+    gallery_items = query.order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).all()
+    
+    # Get student projects with images or videos for quick import
+    student_projects_with_images = StudentProject.query.filter(
+        StudentProject.is_active == True,
+        StudentProject.image_url.isnot(None),
+        StudentProject.image_url != ''
+    ).all()
+    
+    student_projects_with_videos = StudentProject.query.filter(
+        StudentProject.is_active == True,
+        StudentProject.youtube_url.isnot(None),
+        StudentProject.youtube_url != ''
+    ).all()
+    
+    # Stats
+    total_images = HomeGallery.query.filter_by(media_type='image').count()
+    total_videos = HomeGallery.query.filter_by(media_type='video').count()
+    from_projects = HomeGallery.query.filter_by(source_type='student_project').count()
+    
+    return render_template('admin_gallery.html',
+        gallery_items=gallery_items,
+        student_projects_with_images=student_projects_with_images,
+        student_projects_with_videos=student_projects_with_videos,
+        total_images=total_images,
+        total_videos=total_videos,
+        from_projects=from_projects,
+        media_type_filter=media_type,
+        source_filter=source
+    )
+
+
+@bp.route('/admin/gallery/add', methods=['GET', 'POST'])
+@login_required
+def admin_gallery_add():
+    """Add new gallery item"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        media_type = request.form.get('media_type', 'image')
+        media_url = request.form.get('media_url', '').strip()
+        thumbnail_url = request.form.get('thumbnail_url', '').strip()
+        is_featured = request.form.get('is_featured') == 'on'
+        display_order = request.form.get('display_order', 0, type=int)
+        
+        if not title or not media_url:
+            flash('Title and media URL are required.', 'danger')
+            return render_template('admin_gallery_form.html', action='add')
+        
+        try:
+            gallery_item = HomeGallery(
+                title=title,
+                description=description,
+                media_type=media_type,
+                media_url=media_url,
+                thumbnail_url=thumbnail_url or None,
+                source_type='admin',
+                is_active=True,
+                is_featured=is_featured,
+                display_order=display_order,
+                created_by=current_user.id
+            )
+            db.session.add(gallery_item)
+            db.session.commit()
+            flash(f'{media_type.title()} added to gallery successfully!', 'success')
+            return redirect(url_for('admin.admin_gallery'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding gallery item: {str(e)}', 'danger')
+    
+    return render_template('admin_gallery_form.html', action='add')
+
+
+@bp.route('/admin/gallery/<int:item_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_gallery_edit(item_id):
+    """Edit gallery item"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    item = HomeGallery.query.get_or_404(item_id)
+    
+    if request.method == 'POST':
+        item.title = request.form.get('title', item.title).strip()
+        item.description = request.form.get('description', '').strip()
+        item.media_url = request.form.get('media_url', item.media_url).strip()
+        item.thumbnail_url = request.form.get('thumbnail_url', '').strip() or None
+        item.is_active = request.form.get('is_active') == 'on'
+        item.is_featured = request.form.get('is_featured') == 'on'
+        item.display_order = request.form.get('display_order', 0, type=int)
+        
+        try:
+            db.session.commit()
+            flash('Gallery item updated successfully!', 'success')
+            return redirect(url_for('admin.admin_gallery'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating gallery item: {str(e)}', 'danger')
+    
+    return render_template('admin_gallery_form.html', action='edit', item=item)
+
+
+@bp.route('/admin/gallery/<int:item_id>/delete', methods=['POST'])
+@login_required
+def admin_gallery_delete(item_id):
+    """Delete gallery item"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    item = HomeGallery.query.get_or_404(item_id)
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        flash('Gallery item deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting gallery item: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_gallery'))
+
+
+@bp.route('/admin/gallery/import-project', methods=['POST'])
+@login_required
+def admin_gallery_import_project():
+    """Import media from student project to gallery"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    project_id = request.form.get('project_id', type=int)
+    import_type = request.form.get('import_type', 'image')  # 'image' or 'video'
+    
+    project = StudentProject.query.get_or_404(project_id)
+    
+    try:
+        if import_type == 'image' and project.image_url:
+            # Check if already imported
+            existing = HomeGallery.query.filter_by(
+                source_type='student_project',
+                source_project_id=project_id,
+                media_type='image'
+            ).first()
+            if existing:
+                flash('This image is already in the gallery.', 'warning')
+                return redirect(url_for('admin.admin_gallery'))
+            
+            gallery_item = HomeGallery(
+                title=f"{project.title} - Image",
+                description=project.description[:200] if project.description else None,
+                media_type='image',
+                media_url=project.image_url,
+                source_type='student_project',
+                source_project_id=project_id,
+                is_active=True,
+                created_by=current_user.id
+            )
+            db.session.add(gallery_item)
+            db.session.commit()
+            flash(f'Image from "{project.title}" added to gallery!', 'success')
+            
+        elif import_type == 'video' and project.youtube_url:
+            # Check if already imported
+            existing = HomeGallery.query.filter_by(
+                source_type='student_project',
+                source_project_id=project_id,
+                media_type='video'
+            ).first()
+            if existing:
+                flash('This video is already in the gallery.', 'warning')
+                return redirect(url_for('admin.admin_gallery'))
+            
+            gallery_item = HomeGallery(
+                title=f"{project.title} - Video",
+                description=project.description[:200] if project.description else None,
+                media_type='video',
+                media_url=project.youtube_url,
+                thumbnail_url=project.image_url,
+                source_type='student_project',
+                source_project_id=project_id,
+                is_active=True,
+                created_by=current_user.id
+            )
+            db.session.add(gallery_item)
+            db.session.commit()
+            flash(f'Video from "{project.title}" added to gallery!', 'success')
+        else:
+            flash('No valid media found in this project.', 'warning')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error importing media: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_gallery'))
+
+
+# ========== STUDENT VICTORIES ==========
+@bp.route('/admin/victories')
+@login_required
+def admin_victories():
+    """Admin page to manage student victories"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    victories = StudentVictory.query.order_by(
+        StudentVictory.display_order.asc(),
+        StudentVictory.achievement_date.desc()
+    ).all()
+    
+    return render_template('admin_victories.html', victories=victories)
+
+
+@bp.route('/admin/victories/add', methods=['GET', 'POST'])
+@login_required
+def admin_victory_add():
+    """Add new student victory"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    students = User.query.filter_by(is_student=True).order_by(User.first_name.asc()).all()
+    
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        achievement_type = request.form.get('achievement_type', '').strip()
+        image_url = request.form.get('image_url', '').strip()
+        achievement_date_str = request.form.get('achievement_date', '')
+        student_id = request.form.get('student_id', type=int)
+        student_name = request.form.get('student_name', '').strip()
+        is_featured = request.form.get('is_featured') == 'on'
+        display_order = request.form.get('display_order', 0, type=int)
+        
+        if not title or not description:
+            flash('Title and description are required.', 'danger')
+            return render_template('admin_victory_form.html', action='add', students=students)
+        
+        achievement_date = None
+        if achievement_date_str:
+            try:
+                from datetime import datetime as dt
+                achievement_date = dt.strptime(achievement_date_str, '%Y-%m-%d').date()
+            except:
+                pass
+        
+        try:
+            victory = StudentVictory(
+                title=title,
+                description=description,
+                achievement_type=achievement_type or None,
+                image_url=image_url or None,
+                achievement_date=achievement_date,
+                student_id=student_id if student_id else None,
+                student_name=student_name or None,
+                is_active=True,
+                is_featured=is_featured,
+                display_order=display_order,
+                created_by=current_user.id
+            )
+            db.session.add(victory)
+            db.session.commit()
+            flash('Student victory added successfully!', 'success')
+            return redirect(url_for('admin.admin_victories'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding victory: {str(e)}', 'danger')
+    
+    return render_template('admin_victory_form.html', action='add', students=students)
+
+
+@bp.route('/admin/victories/<int:victory_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_victory_edit(victory_id):
+    """Edit student victory"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    victory = StudentVictory.query.get_or_404(victory_id)
+    students = User.query.filter_by(is_student=True).order_by(User.first_name.asc()).all()
+    
+    if request.method == 'POST':
+        victory.title = request.form.get('title', victory.title).strip()
+        victory.description = request.form.get('description', victory.description).strip()
+        victory.achievement_type = request.form.get('achievement_type', '').strip() or None
+        victory.image_url = request.form.get('image_url', '').strip() or None
+        victory.student_id = request.form.get('student_id', type=int) or None
+        victory.student_name = request.form.get('student_name', '').strip() or None
+        victory.is_active = request.form.get('is_active') == 'on'
+        victory.is_featured = request.form.get('is_featured') == 'on'
+        victory.display_order = request.form.get('display_order', 0, type=int)
+        
+        achievement_date_str = request.form.get('achievement_date', '')
+        if achievement_date_str:
+            try:
+                from datetime import datetime as dt
+                victory.achievement_date = dt.strptime(achievement_date_str, '%Y-%m-%d').date()
+            except:
+                pass
+        else:
+            victory.achievement_date = None
+        
+        try:
+            db.session.commit()
+            flash('Student victory updated successfully!', 'success')
+            return redirect(url_for('admin.admin_victories'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating victory: {str(e)}', 'danger')
+    
+    return render_template('admin_victory_form.html', action='edit', victory=victory, students=students)
+
+
+@bp.route('/admin/victories/<int:victory_id>/delete', methods=['POST'])
+@login_required
+def admin_victory_delete(victory_id):
+    """Delete student victory"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    victory = StudentVictory.query.get_or_404(victory_id)
+    try:
+        db.session.delete(victory)
+        db.session.commit()
+        flash('Student victory deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting victory: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_victories'))

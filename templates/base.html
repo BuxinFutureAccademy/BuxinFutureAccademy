@@ -179,14 +179,14 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{{ url_for('store.store') }}">
-                                    <i class="fas fa-store me-2"></i>Course Store
+                                    <i class="fas fa-store me-2"></i>Browse Classes
                                 </a></li>
                                 {% if not current_user.is_admin %}
                                     <li><a class="dropdown-item" href="{{ url_for('store.my_courses') }}">
-                                        <i class="fas fa-book-open me-2"></i>My Courses
+                                        <i class="fas fa-book-open me-2"></i>My Classes
                                     </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('store.my_course_orders') }}">
-                                        <i class="fas fa-receipt me-2"></i>Course Orders
+                                        <i class="fas fa-receipt me-2"></i>Class Orders
                                     </a></li>
                                 {% endif %}
                             </ul>
@@ -270,10 +270,16 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li><h6 class="dropdown-header">Content Management</h6></li>
                                     <li><a class="dropdown-item" href="{{ url_for('store.admin_courses') }}">
-                                        <i class="fas fa-graduation-cap me-2"></i>Manage Courses
+                                        <i class="fas fa-graduation-cap me-2"></i>Manage Classes
                                     </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('student_projects.admin_projects') }}">
                                         <i class="fas fa-project-diagram me-2"></i>Student Projects
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_gallery') }}">
+                                        <i class="fas fa-images me-2"></i>Homepage Gallery
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_victories') }}">
+                                        <i class="fas fa-trophy me-2"></i>Student Victories
                                     </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('projects.admin_robotics_submissions') }}">
                                         <i class="fas fa-robot me-2"></i>Robotics Submissions
@@ -318,7 +324,7 @@
                         <!-- Guest Navigation -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('store.store') }}">
-                                <i class="fas fa-store me-1"></i>Courses
+                                <i class="fas fa-store me-1"></i>Classes
                             </a>
                         </li>
                         <!-- Student Projects for Guests -->
@@ -385,7 +391,7 @@
                     <div class="col">
                         <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store.store') }}">
                             <i class="fas fa-graduation-cap"></i>
-                            <div>Courses</div>
+                            <div>Classes</div>
                         </a>
                     </div>
                     <div class="col">
@@ -414,7 +420,7 @@
                     <div class="col">
                         <a class="nav-link {% if request.endpoint == 'store' %}active{% endif %}" href="{{ url_for('store.store') }}">
                             <i class="fas fa-graduation-cap"></i>
-                            <div>Courses</div>
+                            <div>Classes</div>
                         </a>
                     </div>
                     <div class="col">

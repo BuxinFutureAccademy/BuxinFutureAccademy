@@ -1,12 +1,73 @@
 import os
 from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request
 from ..services.mailer import send_bulk_email
+from ..models import HomeGallery, StudentVictory, StudentProject
 
 bp = Blueprint('main', __name__)
 
 @bp.route('/')
 def index():
-    return render_template('index.html')
+    # Get gallery images (from admin + student projects)
+    gallery_images = HomeGallery.query.filter_by(
+        is_active=True, 
+        media_type='image'
+    ).order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).limit(12).all()
+    
+    # Get gallery videos
+    gallery_videos = HomeGallery.query.filter_by(
+        is_active=True, 
+        media_type='video'
+    ).order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).limit(8).all()
+    
+    # Get featured items
+    featured_images = HomeGallery.query.filter_by(
+        is_active=True, 
+        media_type='image',
+        is_featured=True
+    ).limit(6).all()
+    
+    featured_videos = HomeGallery.query.filter_by(
+        is_active=True, 
+        media_type='video',
+        is_featured=True
+    ).limit(4).all()
+    
+    # Get student victories
+    victories = StudentVictory.query.filter_by(is_active=True).order_by(
+        StudentVictory.display_order.asc(),
+        StudentVictory.achievement_date.desc()
+    ).limit(6).all()
+    
+    featured_victories = StudentVictory.query.filter_by(
+        is_active=True,
+        is_featured=True
+    ).limit(3).all()
+    
+    # Also get projects with images/videos that aren't in gallery yet (fallback)
+    projects_with_images = StudentProject.query.filter(
+        StudentProject.is_active == True,
+        StudentProject.image_url.isnot(None),
+        StudentProject.image_url != ''
+    ).order_by(StudentProject.created_at.desc()).limit(12).all()
+    
+    projects_with_videos = StudentProject.query.filter(
+        StudentProject.is_active == True,
+        StudentProject.youtube_url.isnot(None),
+        StudentProject.youtube_url != ''
+    ).order_by(StudentProject.created_at.desc()).limit(8).all()
+    
+    from datetime import datetime
+    return render_template('index.html',
+        gallery_images=gallery_images,
+        gallery_videos=gallery_videos,
+        featured_images=featured_images,
+        featured_videos=featured_videos,
+        victories=victories,
+        featured_victories=featured_victories,
+        projects_with_images=projects_with_images,
+        projects_with_videos=projects_with_videos,
+        now=datetime.now
+    )
 
 @bp.route('/about')
 def about():

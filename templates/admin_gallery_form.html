@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'add' %}Add{% else %}Edit{% endif %} Gallery Item - Admin{% endblock %}
+
+{% block content %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    .preview-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .preview-box img {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 10px;
+    }
+    .preview-icon {
+        font-size: 4rem;
+        color: #cbd5e0;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-{% if action == 'add' %}plus{% else %}edit{% endif %} me-2 text-primary"></i>
+                        {% if action == 'add' %}Add Gallery Item{% else %}Edit Gallery Item{% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% if action == 'add' %}Add a new image or video to the homepage gallery{% else %}Update gallery item details{% endif %}
+                    </p>
+                </div>
+                <a href="{{ url_for('admin.admin_gallery') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back
+                </a>
+            </div>
+
+            <div class="form-card">
+                <form method="POST" id="galleryForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Title *</label>
+                            <input type="text" name="title" class="form-control" required
+                                   value="{{ item.title if item else '' }}" placeholder="Enter title">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Media Type *</label>
+                            <select name="media_type" class="form-select" id="mediaType" {% if action == 'edit' %}disabled{% endif %}>
+                                <option value="image" {% if item and item.media_type == 'image' %}selected{% endif %}>Image</option>
+                                <option value="video" {% if item and item.media_type == 'video' %}selected{% endif %}>Video</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea name="description" class="form-control" rows="3" 
+                                  placeholder="Brief description of this media">{{ item.description if item else '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Media URL *</label>
+                        <input type="url" name="media_url" class="form-control" id="mediaUrl" required
+                               value="{{ item.media_url if item else '' }}" 
+                               placeholder="https://... (image URL or YouTube video URL)">
+                        <small class="text-muted">
+                            For images: Direct image URL (e.g., from Cloudinary, Imgur)<br>
+                            For videos: YouTube URL (e.g., https://www.youtube.com/watch?v=...)
+                        </small>
+                    </div>
+
+                    <div class="mb-3" id="thumbnailField" style="{% if item and item.media_type == 'image' %}display:none{% endif %}">
+                        <label class="form-label fw-bold">Thumbnail URL (for videos)</label>
+                        <input type="url" name="thumbnail_url" class="form-control"
+                               value="{{ item.thumbnail_url if item else '' }}" 
+                               placeholder="https://... (optional thumbnail image)">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Display Order</label>
+                            <input type="number" name="display_order" class="form-control" 
+                                   value="{{ item.display_order if item else 0 }}" min="0">
+                            <small class="text-muted">Lower numbers appear first</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Featured</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_featured" id="isFeatured"
+                                       {% if item and item.is_featured %}checked{% endif %}>
+                                <label class="form-check-label" for="isFeatured">Show in featured section</label>
+                            </div>
+                        </div>
+                        {% if action == 'edit' %}
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Status</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                                       {% if item and item.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">Active (visible on homepage)</label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Preview</label>
+                        <div class="preview-box" id="previewBox">
+                            {% if item and item.media_url %}
+                                {% if item.media_type == 'image' %}
+                                <img src="{{ item.media_url }}" alt="Preview" id="previewImg">
+                                {% else %}
+                                <iframe id="previewVideo" width="100%" height="300" 
+                                        src="{{ item.get_youtube_embed_url() or '' }}" 
+                                        frameborder="0" allowfullscreen style="border-radius: 10px;"></iframe>
+                                {% endif %}
+                            {% else %}
+                            <i class="fas fa-image preview-icon" id="previewIcon"></i>
+                            <p class="text-muted mt-2" id="previewText">Enter a URL to see preview</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>{% if action == 'add' %}Add to Gallery{% else %}Save Changes{% endif %}
+                        </button>
+                        <a href="{{ url_for('admin.admin_gallery') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('mediaType').addEventListener('change', function() {
+    const thumbnailField = document.getElementById('thumbnailField');
+    if (this.value === 'video') {
+        thumbnailField.style.display = 'block';
+    } else {
+        thumbnailField.style.display = 'none';
+    }
+});
+
+document.getElementById('mediaUrl').addEventListener('input', function() {
+    updatePreview();
+});
+
+function updatePreview() {
+    const url = document.getElementById('mediaUrl').value;
+    const mediaType = document.getElementById('mediaType').value;
+    const previewBox = document.getElementById('previewBox');
+    
+    if (!url) {
+        previewBox.innerHTML = `
+            <i class="fas fa-image preview-icon" id="previewIcon"></i>
+            <p class="text-muted mt-2" id="previewText">Enter a URL to see preview</p>
+        `;
+        return;
+    }
+    
+    if (mediaType === 'image') {
+        previewBox.innerHTML = `<img src="${url}" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 10px;" onerror="this.outerHTML='<i class=\\'fas fa-exclamation-triangle preview-icon text-warning\\'></i><p class=\\'text-warning mt-2\\'>Could not load image</p>'">`;
+    } else {
+        // Extract YouTube video ID
+        let videoId = '';
+        if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1].split('?')[0];
+        } else if (url.includes('watch?v=')) {
+            videoId = url.split('watch?v=')[1].split('&')[0];
+        } else if (url.includes('embed/')) {
+            videoId = url.split('embed/')[1].split('?')[0];
+        }
+        
+        if (videoId) {
+            previewBox.innerHTML = `<iframe width="100%" height="300" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="border-radius: 10px;"></iframe>`;
+        } else {
+            previewBox.innerHTML = `
+                <i class="fas fa-video preview-icon"></i>
+                <p class="text-muted mt-2">Enter a valid YouTube URL</p>
+            `;
+        }
+    }
+}
+</script>
+{% endblock %}
+

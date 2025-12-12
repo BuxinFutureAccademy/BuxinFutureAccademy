@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'add' %}Add{% else %}Edit{% endif %} Student Victory - Admin{% endblock %}
+
+{% block content %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    .preview-box {
+        background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .preview-box img {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 10px;
+    }
+    .preview-icon {
+        font-size: 4rem;
+        color: rgba(255,255,255,0.9);
+    }
+</style>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-{% if action == 'add' %}plus{% else %}edit{% endif %} me-2 text-warning"></i>
+                        {% if action == 'add' %}Add Student Victory{% else %}Edit Student Victory{% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% if action == 'add' %}Add a new student achievement{% else %}Update victory details{% endif %}
+                    </p>
+                </div>
+                <a href="{{ url_for('admin.admin_victories') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back
+                </a>
+            </div>
+
+            <div class="form-card">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Title *</label>
+                        <input type="text" name="title" class="form-control" required
+                               value="{{ victory.title if victory else '' }}" 
+                               placeholder="e.g., 1st Place - National Robotics Competition">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description *</label>
+                        <textarea name="description" class="form-control" rows="3" required
+                                  placeholder="Describe the achievement...">{{ victory.description if victory else '' }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Achievement Type</label>
+                            <select name="achievement_type" class="form-select">
+                                <option value="">Select type...</option>
+                                <option value="competition" {% if victory and victory.achievement_type == 'competition' %}selected{% endif %}>Competition</option>
+                                <option value="certification" {% if victory and victory.achievement_type == 'certification' %}selected{% endif %}>Certification</option>
+                                <option value="project" {% if victory and victory.achievement_type == 'project' %}selected{% endif %}>Project</option>
+                                <option value="award" {% if victory and victory.achievement_type == 'award' %}selected{% endif %}>Award</option>
+                                <option value="recognition" {% if victory and victory.achievement_type == 'recognition' %}selected{% endif %}>Recognition</option>
+                                <option value="other" {% if victory and victory.achievement_type == 'other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Achievement Date</label>
+                            <input type="date" name="achievement_date" class="form-control"
+                                   value="{{ victory.achievement_date.strftime('%Y-%m-%d') if victory and victory.achievement_date else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Select Student (Registered)</label>
+                            <select name="student_id" class="form-select">
+                                <option value="">No registered student</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}" {% if victory and victory.student_id == student.id %}selected{% endif %}>
+                                    {{ student.first_name }} {{ student.last_name }} ({{ student.email }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Or Enter Student Name</label>
+                            <input type="text" name="student_name" class="form-control"
+                                   value="{{ victory.student_name if victory else '' }}" 
+                                   placeholder="For non-registered students">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Image URL</label>
+                        <input type="url" name="image_url" class="form-control" id="imageUrl"
+                               value="{{ victory.image_url if victory else '' }}" 
+                               placeholder="https://... (achievement photo or certificate)">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Display Order</label>
+                            <input type="number" name="display_order" class="form-control" 
+                                   value="{{ victory.display_order if victory else 0 }}" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Featured</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_featured" id="isFeatured"
+                                       {% if victory and victory.is_featured %}checked{% endif %}>
+                                <label class="form-check-label" for="isFeatured">Show in featured section</label>
+                            </div>
+                        </div>
+                        {% if action == 'edit' %}
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Status</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                                       {% if victory and victory.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">Active</label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Preview</label>
+                        <div class="preview-box" id="previewBox">
+                            {% if victory and victory.image_url %}
+                            <img src="{{ victory.image_url }}" alt="Preview" id="previewImg">
+                            {% else %}
+                            <i class="fas fa-trophy preview-icon" id="previewIcon"></i>
+                            <p class="text-white mt-2" id="previewText">Enter image URL to see preview</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg text-white">
+                            <i class="fas fa-save me-2"></i>{% if action == 'add' %}Add Victory{% else %}Save Changes{% endif %}
+                        </button>
+                        <a href="{{ url_for('admin.admin_victories') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('imageUrl').addEventListener('input', function() {
+    const url = this.value;
+    const previewBox = document.getElementById('previewBox');
+    
+    if (url) {
+        previewBox.innerHTML = `<img src="${url}" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 10px;" onerror="this.outerHTML='<i class=\\'fas fa-exclamation-triangle preview-icon text-white\\'></i><p class=\\'text-white mt-2\\'>Could not load image</p>'">`;
+    } else {
+        previewBox.innerHTML = `
+            <i class="fas fa-trophy preview-icon" id="previewIcon"></i>
+            <p class="text-white mt-2" id="previewText">Enter image URL to see preview</p>
+        `;
+    }
+});
+</script>
+{% endblock %}
+

@@ -196,24 +196,28 @@ def get_user_redirect_url(user):
     """
     Get redirect URL based on user type:
     - Admin → Admin Dashboard
-    - Student with class enrollment → Student Dashboard
-    - User without enrollment → Homepage
+    - Student with CONFIRMED class enrollment → Student Dashboard
+    - User with pending enrollment OR no enrollment → Homepage
+    
+    NOTE: Only admin-confirmed enrollments allow access to student dashboard
     """
     # Admin goes to admin dashboard
     if user.is_admin:
         return url_for('admin.admin_dashboard')
     
-    # Check if user has any class enrollments
+    # Check if user has any CONFIRMED class enrollments (status = 'completed')
     try:
-        has_enrollment = ClassEnrollment.query.filter_by(
-            user_id=user.id
+        has_confirmed_enrollment = ClassEnrollment.query.filter_by(
+            user_id=user.id,
+            status='completed'  # Only confirmed enrollments count
         ).first() is not None
         
-        if has_enrollment:
-            # Student with enrollment → Student Dashboard
+        if has_confirmed_enrollment:
+            # Student with confirmed enrollment → Student Dashboard
             return url_for('admin.student_dashboard')
         else:
-            # User without enrollment → Homepage
+            # User without confirmed enrollment → Homepage
+            # (includes pending enrollments - they still go to homepage)
             return url_for('main.index')
     except Exception:
         # If error checking enrollment, default to index

@@ -475,6 +475,27 @@ def reject_enrollment(enrollment_id):
 @login_required
 def student_dashboard():
     from datetime import datetime
+    from flask import flash
+    
+    # Check if user has any CONFIRMED enrollment (status = 'completed')
+    # Only confirmed students can access the dashboard
+    has_confirmed_enrollment = ClassEnrollment.query.filter_by(
+        user_id=current_user.id,
+        status='completed'
+    ).first() is not None
+    
+    if not has_confirmed_enrollment and not current_user.is_admin:
+        # Check if they have pending enrollment
+        has_pending = ClassEnrollment.query.filter_by(
+            user_id=current_user.id,
+            status='pending'
+        ).first() is not None
+        
+        if has_pending:
+            flash('Your class enrollment is pending approval. Please wait for admin confirmation.', 'warning')
+        else:
+            flash('You need to enroll in a class first. Please register for a class to access your dashboard.', 'info')
+        return redirect(url_for('main.index'))
     
     purchases = Purchase.query.filter_by(user_id=current_user.id, status='completed').all()
     projects = StudentProject.query.filter_by(student_id=current_user.id).all()

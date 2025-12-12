@@ -1,7 +1,7 @@
 import os
 from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request
 from ..services.mailer import send_bulk_email
-from ..models import HomeGallery, StudentVictory, StudentProject
+from ..models import HomeGallery, StudentVictory, StudentProject, ClassPricing
 
 bp = Blueprint('main', __name__)
 
@@ -84,6 +84,9 @@ def index():
         db.session.rollback()
         current_app.logger.warning(f"Error fetching student projects: {e}")
     
+    # Get class pricing
+    pricing_data = ClassPricing.get_all_pricing()
+    
     return render_template('index.html',
         gallery_images=gallery_images,
         gallery_videos=gallery_videos,
@@ -93,6 +96,7 @@ def index():
         featured_victories=featured_victories,
         projects_with_images=projects_with_images,
         projects_with_videos=projects_with_videos,
+        pricing_data=pricing_data,
         now=datetime.now
     )
 

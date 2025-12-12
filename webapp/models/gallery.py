@@ -101,6 +101,58 @@ class HomeGallery(db.Model):
         return 'ratio-16x9'  # Horizontal video (default)
 
 
+class ClassPricing(db.Model):
+    """Model for class type pricing"""
+    __tablename__ = 'class_pricing'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    class_type = db.Column(db.String(50), unique=True, nullable=False)  # 'individual', 'group', 'family', 'school'
+    name = db.Column(db.String(100), nullable=False)  # Display name
+    price = db.Column(db.Float, nullable=False)
+    description = db.Column(db.Text)
+    max_students = db.Column(db.Integer, default=1)  # Max students for this type
+    icon = db.Column(db.String(50), default='fa-user')  # FontAwesome icon
+    color = db.Column(db.String(20), default='#00d4ff')  # Theme color
+    features = db.Column(db.Text)  # JSON string of features
+    is_active = db.Column(db.Boolean, default=True)
+    is_popular = db.Column(db.Boolean, default=False)
+    display_order = db.Column(db.Integer, default=0)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get_default_pricing():
+        """Return default pricing if database is empty"""
+        return {
+            'individual': {'name': 'Individual', 'price': 100, 'icon': 'fa-user', 'color': '#00d4ff', 'max_students': 1, 'features': ['1 Student', 'Personal Instructor', 'Flexible Schedule']},
+            'group': {'name': 'Group', 'price': 125, 'icon': 'fa-users', 'color': '#39ff14', 'max_students': 10, 'features': ['2+ Students', 'Team Projects', 'Collaborative Learning']},
+            'family': {'name': 'Family', 'price': 200, 'icon': 'fa-home', 'color': '#ff6b35', 'max_students': 4, 'features': ['Up to 4 People', 'Family Bonding', 'Best Value'], 'is_popular': True},
+            'school': {'name': 'School', 'price': 300, 'icon': 'fa-school', 'color': '#9b59b6', 'max_students': 30, 'features': ['School Groups', 'Curriculum Support', 'Bulk Enrollment']}
+        }
+    
+    @staticmethod
+    def get_all_pricing():
+        """Get all pricing from database or defaults"""
+        try:
+            pricing_list = ClassPricing.query.filter_by(is_active=True).order_by(ClassPricing.display_order).all()
+            if pricing_list:
+                result = {}
+                for p in pricing_list:
+                    features = p.features.split(',') if p.features else []
+                    result[p.class_type] = {
+                        'name': p.name,
+                        'price': p.price,
+                        'icon': p.icon,
+                        'color': p.color,
+                        'max_students': p.max_students,
+                        'features': features,
+                        'is_popular': p.is_popular
+                    }
+                return result
+        except Exception:
+            pass
+        return ClassPricing.get_default_pricing()
+
+
 class StudentVictory(db.Model):
     """Model for student achievements/victories"""
     __tablename__ = 'student_victory'

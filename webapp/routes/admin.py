@@ -13,6 +13,7 @@ from ..models import (
     GroupClass,
     HomeGallery,
     StudentVictory,
+    ClassPricing,
 )
 
 bp = Blueprint('admin', __name__)
@@ -61,6 +62,37 @@ def setup_gallery_tables():
             db.session.rollback()
             messages.append(f"video_platform error: {str(e)}")
         
+        # Check if class_pricing table exists and create if needed
+        try:
+            result = db.session.execute(text("""
+                SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name='class_pricing')
+            """))
+            if not result.fetchone()[0]:
+                db.session.execute(text("""
+                    CREATE TABLE class_pricing (
+                        id SERIAL PRIMARY KEY,
+                        class_type VARCHAR(50) UNIQUE NOT NULL,
+                        name VARCHAR(100) NOT NULL,
+                        price FLOAT NOT NULL,
+                        description TEXT,
+                        max_students INTEGER DEFAULT 1,
+                        icon VARCHAR(50) DEFAULT 'fa-user',
+                        color VARCHAR(20) DEFAULT '#00d4ff',
+                        features TEXT,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        is_popular BOOLEAN DEFAULT FALSE,
+                        display_order INTEGER DEFAULT 0,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                db.session.commit()
+                messages.append("Created class_pricing table")
+            else:
+                messages.append("class_pricing table already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"class_pricing: {str(e)}")
+        
         messages_html = "".join([f"<li>{m}</li>" for m in messages])
         
         return f"""
@@ -76,6 +108,7 @@ def setup_gallery_tables():
                 <ul>{messages_html}</ul>
                 <p><a href="/admin/gallery">Go to Gallery Management</a></p>
                 <p><a href="/admin/victories">Go to Victories Management</a></p>
+                <p><a href="/admin/pricing">Go to Pricing Management</a></p>
                 <p><a href="/">Go to Homepage</a></p>
             </div>
         </body>
@@ -1064,3 +1097,79 @@ def admin_victory_delete(victory_id):
         flash(f'Error deleting victory: {str(e)}', 'danger')
     
     return redirect(url_for('admin.admin_victories'))
+
+
+# ==================== PRICING MANAGEMENT ====================
+
+@bp.route('/admin/pricing')
+@login_required
+def admin_pricing():
+    """Manage class pricing"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get pricing data from database or use defaults
+    pricing_data = ClassPricing.get_all_pricing()
+    
+    return render_template('admin_pricing.html', pricing_data=pricing_data)
+
+
+@bp.route('/admin/pricing/<class_type>/update', methods=['POST'])
+@login_required
+def update_pricing(class_type):
+    """Update pricing for a class type"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    price = request.form.get('price', type=float)
+    name = request.form.get('name', '').strip()
+    max_students = request.form.get('max_students', 1, type=int)
+    features = request.form.get('features', '').strip()
+    color = request.form.get('color', '#00d4ff').strip()
+    is_popular = request.form.get('is_popular') == 'on'
+    
+    # Get default icon based on class type
+    default_icons = {
+        'individual': 'fa-user',
+        'group': 'fa-users',
+        'family': 'fa-home',
+        'school': 'fa-school'
+    }
+    
+    try:
+        # Try to find existing pricing record
+        pricing = ClassPricing.query.filter_by(class_type=class_type).first()
+        
+        if pricing:
+            # Update existing
+            pricing.price = price
+            pricing.name = name
+            pricing.max_students = max_students
+            pricing.features = features
+            pricing.color = color
+            pricing.is_popular = is_popular
+        else:
+            # Create new
+            pricing = ClassPricing(
+                class_type=class_type,
+                name=name,
+                price=price,
+                max_students=max_students,
+                features=features,
+                color=color,
+                icon=default_icons.get(class_type, 'fa-user'),
+                is_popular=is_popular,
+                is_active=True,
+                display_order={'individual': 1, 'group': 2, 'family': 3, 'school': 4}.get(class_type, 5)
+            )
+            db.session.add(pricing)
+        
+        db.session.commit()
+        flash(f'{name} pricing updated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating pricing: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_pricing'))

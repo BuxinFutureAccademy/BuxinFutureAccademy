@@ -1304,86 +1304,43 @@
             </div>
             
             <div class="row g-4 justify-content-center">
-                <!-- Individual Class -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card">
-                        <div class="class-type-icon" style="background: var(--gradient-cyber);">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <h3 class="class-type-title">Individual</h3>
-                        <div class="class-type-price">$100</div>
-                        <p class="class-type-desc">One-on-one personalized learning with dedicated instructor attention.</p>
-                        <ul class="class-type-features">
-                            <li><i class="fas fa-check"></i> 1 Student</li>
-                            <li><i class="fas fa-check"></i> Personal Instructor</li>
-                            <li><i class="fas fa-check"></i> Flexible Schedule</li>
-                        </ul>
-                        <a href="{{ url_for('store.available_classes') }}?type=individual" class="class-type-btn btn-individual">
-                            <i class="fas fa-rocket me-2"></i>Register Now
-                        </a>
-                    </div>
-                </div>
+                {% for type_key in ['individual', 'group', 'family', 'school'] %}
+                {% set pricing = pricing_data.get(type_key, {}) %}
+                {% set p_name = pricing.get('name', type_key|title) %}
+                {% set p_price = pricing.get('price', 100)|int %}
+                {% set p_icon = pricing.get('icon', 'fa-user') %}
+                {% set p_color = pricing.get('color', '#00d4ff') %}
+                {% set p_features = pricing.get('features', []) %}
+                {% set p_popular = pricing.get('is_popular', false) %}
                 
-                <!-- Group Class -->
                 <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card">
-                        <div class="class-type-icon" style="background: var(--gradient-neon);">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <h3 class="class-type-title">Group</h3>
-                        <div class="class-type-price">$125</div>
-                        <p class="class-type-desc">Learn together with other students in interactive group sessions.</p>
-                        <ul class="class-type-features">
-                            <li><i class="fas fa-check"></i> 2+ Students</li>
-                            <li><i class="fas fa-check"></i> Team Projects</li>
-                            <li><i class="fas fa-check"></i> Collaborative Learning</li>
-                        </ul>
-                        <a href="{{ url_for('store.available_classes') }}?type=group" class="class-type-btn btn-group">
-                            <i class="fas fa-rocket me-2"></i>Register Now
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Family Class -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card class-type-popular">
+                    <div class="class-type-card {% if p_popular %}class-type-popular{% endif %}">
+                        {% if p_popular %}
                         <div class="popular-badge">Popular</div>
-                        <div class="class-type-icon" style="background: var(--gradient-fire);">
-                            <i class="fas fa-home"></i>
+                        {% endif %}
+                        <div class="class-type-icon" style="background: {{ p_color }};">
+                            <i class="fas {{ p_icon }}"></i>
                         </div>
-                        <h3 class="class-type-title">Family</h3>
-                        <div class="class-type-price">$200</div>
-                        <p class="class-type-desc">Perfect for families! Learn robotics together with up to 4 members.</p>
+                        <h3 class="class-type-title">{{ p_name }}</h3>
+                        <div class="class-type-price">${{ p_price }}</div>
+                        <p class="class-type-desc">
+                            {% if type_key == 'individual' %}One-on-one personalized learning with dedicated instructor attention.
+                            {% elif type_key == 'group' %}Learn together with other students in interactive group sessions.
+                            {% elif type_key == 'family' %}Perfect for families! Learn robotics together with up to 4 members.
+                            {% elif type_key == 'school' %}Designed for schools and educational institutions.
+                            {% endif %}
+                        </p>
                         <ul class="class-type-features">
-                            <li><i class="fas fa-check"></i> Up to 4 People</li>
-                            <li><i class="fas fa-check"></i> Family Bonding</li>
-                            <li><i class="fas fa-check"></i> Best Value</li>
+                            {% for feature in p_features %}
+                            <li><i class="fas fa-check"></i> {{ feature }}</li>
+                            {% endfor %}
                         </ul>
-                        <a href="{{ url_for('store.available_classes') }}?type=family" class="class-type-btn btn-family">
+                        <a href="{{ url_for('store.available_classes') }}?type={{ type_key }}" class="class-type-btn" style="background: {{ p_color }}; color: {% if p_color == '#39ff14' or p_color == '#00d4ff' %}var(--dark){% else %}white{% endif %};">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
                     </div>
                 </div>
-                
-                <!-- School Class -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card">
-                        <div class="class-type-icon" style="background: linear-gradient(135deg, #9b59b6, #3498db);">
-                            <i class="fas fa-school"></i>
-                        </div>
-                        <h3 class="class-type-title">School</h3>
-                        <div class="class-type-price">$300</div>
-                        <p class="class-type-desc">Designed for schools and educational institutions.</p>
-                        <ul class="class-type-features">
-                            <li><i class="fas fa-check"></i> School Groups</li>
-                            <li><i class="fas fa-check"></i> Curriculum Support</li>
-                            <li><i class="fas fa-check"></i> Bulk Enrollment</li>
-                        </ul>
-                        <a href="{{ url_for('store.available_classes') }}?type=school" class="class-type-btn btn-school">
-                            <i class="fas fa-rocket me-2"></i>Register Now
-                        </a>
-                    </div>
-                </div>
+                {% endfor %}
             </div>
         </div>
     </section>

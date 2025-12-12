@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Class Pricing - Admin{% endblock %}
+
+{% block content %}
+<style>
+    .pricing-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    .pricing-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    .price-display {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    .pricing-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3rem;
+    }
+    .popular-badge {
+        background: linear-gradient(135deg, #ff6b35, #f72585);
+        color: white;
+        padding: 0.2rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .feature-list li {
+        padding: 0.3rem 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    .feature-list li i {
+        color: #28a745;
+        margin-right: 8px;
+    }
+    .quick-edit {
+        display: none;
+    }
+    .pricing-card.editing .quick-edit {
+        display: block;
+    }
+    .pricing-card.editing .price-display-section {
+        display: none;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-tags me-2 text-success"></i>Manage Class Pricing</h2>
+            <p class="text-muted mb-0">Set prices for different class types</p>
+        </div>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="row">
+        {% for type_key, pricing in pricing_data.items() %}
+        <div class="col-lg-6 col-xl-3">
+            <div class="pricing-card" style="border-color: {{ pricing.color }};" id="card-{{ type_key }}">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="pricing-icon" style="background: {{ pricing.color }};">
+                        <i class="fas {{ pricing.icon }}"></i>
+                    </div>
+                    {% if pricing.is_popular %}
+                    <span class="popular-badge">Popular</span>
+                    {% endif %}
+                </div>
+                
+                <h4 class="mb-1">{{ pricing.name }}</h4>
+                <p class="text-muted small mb-2">{{ type_key }} class</p>
+                
+                <!-- Price Display Section -->
+                <div class="price-display-section">
+                    <div class="price-display" style="color: {{ pricing.color }};">${{ pricing.price|int }}</div>
+                    
+                    <ul class="feature-list mt-3">
+                        {% for feature in pricing.features %}
+                        <li><i class="fas fa-check"></i>{{ feature }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <button class="btn btn-outline-primary btn-sm mt-3 w-100" onclick="toggleEdit('{{ type_key }}')">
+                        <i class="fas fa-edit me-1"></i>Edit Price
+                    </button>
+                </div>
+                
+                <!-- Quick Edit Form -->
+                <div class="quick-edit">
+                    <form method="POST" action="{{ url_for('admin.update_pricing', class_type=type_key) }}">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Price ($)</label>
+                            <input type="number" name="price" class="form-control" 
+                                   value="{{ pricing.price|int }}" min="0" step="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Display Name</label>
+                            <input type="text" name="name" class="form-control" 
+                                   value="{{ pricing.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Max Students</label>
+                            <input type="number" name="max_students" class="form-control" 
+                                   value="{{ pricing.max_students }}" min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Features (comma separated)</label>
+                            <input type="text" name="features" class="form-control" 
+                                   value="{{ pricing.features|join(', ') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Color</label>
+                            <input type="color" name="color" class="form-control form-control-color w-100" 
+                                   value="{{ pricing.color }}">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="is_popular" 
+                                   id="popular-{{ type_key }}" {% if pricing.is_popular %}checked{% endif %}>
+                            <label class="form-check-label small" for="popular-{{ type_key }}">
+                                Mark as Popular
+                            </label>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success btn-sm flex-grow-1">
+                                <i class="fas fa-save me-1"></i>Save
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleEdit('{{ type_key }}')">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Info Card -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5><i class="fas fa-info-circle me-2 text-info"></i>How Pricing Works</h5>
+            <ul class="mb-0">
+                <li><strong>Individual ($100)</strong> - One-on-one classes with personal instructor</li>
+                <li><strong>Group ($125)</strong> - Classes with 2 or more students learning together</li>
+                <li><strong>Family ($200)</strong> - Up to 4 family members can join the same class</li>
+                <li><strong>School ($300)</strong> - For schools and educational institutions</li>
+            </ul>
+            <hr>
+            <p class="mb-0 text-muted small">
+                <i class="fas fa-lightbulb me-1"></i>
+                Prices are shown on the homepage and used during enrollment. Changes take effect immediately.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleEdit(type) {
+    const card = document.getElementById('card-' + type);
+    card.classList.toggle('editing');
+}
+</script>
+{% endblock %}
+

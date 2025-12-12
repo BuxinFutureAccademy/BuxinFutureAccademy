@@ -8,6 +8,7 @@ bp = Blueprint('main', __name__)
 @bp.route('/')
 def index():
     from datetime import datetime
+    from ..extensions import db
     
     # Initialize empty lists for graceful degradation if tables don't exist
     gallery_images = []
@@ -45,7 +46,8 @@ def index():
             is_featured=True
         ).limit(4).all()
     except Exception as e:
-        # Table doesn't exist yet, continue with empty lists
+        # Table doesn't exist yet, rollback and continue with empty lists
+        db.session.rollback()
         current_app.logger.warning(f"HomeGallery table may not exist: {e}")
     
     try:
@@ -60,7 +62,8 @@ def index():
             is_featured=True
         ).limit(3).all()
     except Exception as e:
-        # Table doesn't exist yet, continue with empty lists
+        # Table doesn't exist yet, rollback and continue with empty lists
+        db.session.rollback()
         current_app.logger.warning(f"StudentVictory table may not exist: {e}")
     
     try:
@@ -77,7 +80,8 @@ def index():
             StudentProject.youtube_url != ''
         ).order_by(StudentProject.created_at.desc()).limit(8).all()
     except Exception as e:
-        # Continue with empty lists
+        # Rollback and continue with empty lists
+        db.session.rollback()
         current_app.logger.warning(f"Error fetching student projects: {e}")
     
     return render_template('index.html',
@@ -91,6 +95,32 @@ def index():
         projects_with_videos=projects_with_videos,
         now=datetime.now
     )
+
+
+@bp.route('/admin/create-gallery-tables')
+def create_gallery_tables():
+    """Admin endpoint to create the new gallery tables"""
+    from flask_login import current_user
+    from ..extensions import db
+    
+    # Check if user is admin (allow if not logged in for initial setup)
+    try:
+        if current_user.is_authenticated and not current_user.is_admin:
+            return jsonify({"error": "Admin access required"}), 403
+    except:
+        pass
+    
+    try:
+        db.create_all()
+        return jsonify({
+            "success": True,
+            "message": "All database tables created successfully including home_gallery and student_victory"
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 @bp.route('/about')
 def about():

@@ -30,6 +30,101 @@
         font-size: 4rem;
         color: #cbd5e0;
     }
+    .upload-option {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .upload-option:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    .upload-option.active {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    .upload-option i {
+        font-size: 2rem;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    .method-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .method-tab {
+        flex: 1;
+        padding: 1rem;
+        text-align: center;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    .method-tab:hover {
+        border-color: #667eea;
+    }
+    .method-tab.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .method-tab i {
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .method-content {
+        display: none;
+    }
+    .method-content.active {
+        display: block;
+    }
+    .file-drop-zone {
+        border: 2px dashed #ccc;
+        border-radius: 10px;
+        padding: 3rem 1rem;
+        text-align: center;
+        background: #fafafa;
+        transition: all 0.3s ease;
+    }
+    .file-drop-zone.dragover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    .file-drop-zone i {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    .file-input-hidden {
+        display: none;
+    }
+    .selected-file {
+        background: #e8f5e9;
+        border: 1px solid #a5d6a7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .selected-file i {
+        color: #4caf50;
+        font-size: 1.5rem;
+    }
+    .remove-file {
+        margin-left: auto;
+        color: #dc3545;
+        cursor: pointer;
+    }
 </style>
 
 <div class="container py-4">
@@ -51,7 +146,7 @@
             </div>
 
             <div class="form-card">
-                <form method="POST" id="galleryForm">
+                <form method="POST" id="galleryForm" enctype="multipart/form-data">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Title *</label>
@@ -73,22 +168,79 @@
                                   placeholder="Brief description of this media">{{ item.description if item else '' }}</textarea>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Media URL *</label>
-                        <input type="url" name="media_url" class="form-control" id="mediaUrl" required
-                               value="{{ item.media_url if item else '' }}" 
-                               placeholder="https://... (image URL or YouTube video URL)">
-                        <small class="text-muted">
-                            For images: Direct image URL (e.g., from Cloudinary, Imgur)<br>
-                            For videos: YouTube URL (e.g., https://www.youtube.com/watch?v=...)
-                        </small>
+                    <!-- Media Input Method Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">How do you want to add the media?</label>
+                        <div class="method-tabs">
+                            <div class="method-tab active" data-method="url" onclick="selectMethod('url')">
+                                <i class="fas fa-link"></i>
+                                <span>Use URL Link</span>
+                            </div>
+                            <div class="method-tab" data-method="upload" onclick="selectMethod('upload')">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Upload File</span>
+                            </div>
+                        </div>
+                        
+                        <!-- URL Input Method -->
+                        <div class="method-content active" id="urlMethod">
+                            <div class="mb-3">
+                                <label class="form-label">Media URL</label>
+                                <input type="url" name="media_url" class="form-control" id="mediaUrl"
+                                       value="{{ item.media_url if item else '' }}" 
+                                       placeholder="https://... (image URL or YouTube video URL)">
+                                <small class="text-muted">
+                                    <strong>For images:</strong> Direct image URL (e.g., from Cloudinary, Imgur, Google Drive)<br>
+                                    <strong>For videos:</strong> YouTube URL (e.g., https://www.youtube.com/watch?v=...)
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- File Upload Method -->
+                        <div class="method-content" id="uploadMethod">
+                            <div class="file-drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <h5>Drag & drop file here</h5>
+                                <p class="text-muted mb-2">or click to browse</p>
+                                <small class="text-muted">
+                                    <span id="imageFormats">Supported: JPG, PNG, GIF, WebP (Max 10MB)</span>
+                                    <span id="videoFormats" style="display:none;">Supported: MP4, WebM, MOV (Max 50MB)</span>
+                                </small>
+                            </div>
+                            <input type="file" name="media_file" id="fileInput" class="file-input-hidden" 
+                                   accept="image/*,video/*" onchange="handleFileSelect(this)">
+                            <div id="selectedFile" class="selected-file" style="display:none;">
+                                <i class="fas fa-file"></i>
+                                <div>
+                                    <strong id="fileName"></strong>
+                                    <br><small id="fileSize" class="text-muted"></small>
+                                </div>
+                                <i class="fas fa-times remove-file" onclick="removeFile()"></i>
+                            </div>
+                        </div>
                     </div>
 
+                    <!-- Thumbnail for videos -->
                     <div class="mb-3" id="thumbnailField" style="{% if item and item.media_type == 'image' %}display:none{% endif %}">
-                        <label class="form-label fw-bold">Thumbnail URL (for videos)</label>
-                        <input type="url" name="thumbnail_url" class="form-control"
-                               value="{{ item.thumbnail_url if item else '' }}" 
-                               placeholder="https://... (optional thumbnail image)">
+                        <label class="form-label fw-bold">Thumbnail (for videos)</label>
+                        <div class="method-tabs" style="margin-bottom: 1rem;">
+                            <div class="method-tab active" data-method="thumb-url" onclick="selectThumbMethod('thumb-url')" style="padding: 0.5rem;">
+                                <i class="fas fa-link" style="font-size: 1rem;"></i>
+                                <span style="font-size: 0.85rem;">URL</span>
+                            </div>
+                            <div class="method-tab" data-method="thumb-upload" onclick="selectThumbMethod('thumb-upload')" style="padding: 0.5rem;">
+                                <i class="fas fa-upload" style="font-size: 1rem;"></i>
+                                <span style="font-size: 0.85rem;">Upload</span>
+                            </div>
+                        </div>
+                        <div id="thumbUrlMethod">
+                            <input type="url" name="thumbnail_url" class="form-control"
+                                   value="{{ item.thumbnail_url if item else '' }}" 
+                                   placeholder="https://... (optional thumbnail image)">
+                        </div>
+                        <div id="thumbUploadMethod" style="display:none;">
+                            <input type="file" name="thumbnail_file" class="form-control" accept="image/*">
+                        </div>
                     </div>
 
                     <div class="row">
@@ -132,10 +284,12 @@
                                 {% endif %}
                             {% else %}
                             <i class="fas fa-image preview-icon" id="previewIcon"></i>
-                            <p class="text-muted mt-2" id="previewText">Enter a URL to see preview</p>
+                            <p class="text-muted mt-2" id="previewText">Enter a URL or upload a file to see preview</p>
                             {% endif %}
                         </div>
                     </div>
+
+                    <input type="hidden" name="input_method" id="inputMethod" value="url">
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary btn-lg">
@@ -150,17 +304,67 @@
 </div>
 
 <script>
+let currentMethod = 'url';
+
+function selectMethod(method) {
+    currentMethod = method;
+    document.getElementById('inputMethod').value = method;
+    
+    // Update tabs
+    document.querySelectorAll('.method-tab').forEach(tab => {
+        if (tab.dataset.method === method) {
+            tab.classList.add('active');
+        } else if (tab.dataset.method === 'url' || tab.dataset.method === 'upload') {
+            tab.classList.remove('active');
+        }
+    });
+    
+    // Show/hide content
+    document.getElementById('urlMethod').classList.toggle('active', method === 'url');
+    document.getElementById('uploadMethod').classList.toggle('active', method === 'upload');
+    
+    // Update preview if switching to URL
+    if (method === 'url') {
+        updatePreview();
+    }
+}
+
+function selectThumbMethod(method) {
+    document.querySelectorAll('.method-tab').forEach(tab => {
+        if (tab.dataset.method === method) {
+            tab.classList.add('active');
+        } else if (tab.dataset.method === 'thumb-url' || tab.dataset.method === 'thumb-upload') {
+            tab.classList.remove('active');
+        }
+    });
+    
+    document.getElementById('thumbUrlMethod').style.display = method === 'thumb-url' ? 'block' : 'none';
+    document.getElementById('thumbUploadMethod').style.display = method === 'thumb-upload' ? 'block' : 'none';
+}
+
 document.getElementById('mediaType').addEventListener('change', function() {
     const thumbnailField = document.getElementById('thumbnailField');
+    const imageFormats = document.getElementById('imageFormats');
+    const videoFormats = document.getElementById('videoFormats');
+    const fileInput = document.getElementById('fileInput');
+    
     if (this.value === 'video') {
         thumbnailField.style.display = 'block';
+        imageFormats.style.display = 'none';
+        videoFormats.style.display = 'inline';
+        fileInput.accept = 'video/*';
     } else {
         thumbnailField.style.display = 'none';
+        imageFormats.style.display = 'inline';
+        videoFormats.style.display = 'none';
+        fileInput.accept = 'image/*';
     }
 });
 
 document.getElementById('mediaUrl').addEventListener('input', function() {
-    updatePreview();
+    if (currentMethod === 'url') {
+        updatePreview();
+    }
 });
 
 function updatePreview() {
@@ -171,7 +375,7 @@ function updatePreview() {
     if (!url) {
         previewBox.innerHTML = `
             <i class="fas fa-image preview-icon" id="previewIcon"></i>
-            <p class="text-muted mt-2" id="previewText">Enter a URL to see preview</p>
+            <p class="text-muted mt-2" id="previewText">Enter a URL or upload a file to see preview</p>
         `;
         return;
     }
@@ -194,11 +398,72 @@ function updatePreview() {
         } else {
             previewBox.innerHTML = `
                 <i class="fas fa-video preview-icon"></i>
-                <p class="text-muted mt-2">Enter a valid YouTube URL</p>
+                <p class="text-muted mt-2">Enter a valid YouTube URL for preview</p>
             `;
         }
     }
 }
+
+// File drag and drop
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        document.getElementById('fileInput').files = files;
+        handleFileSelect(document.getElementById('fileInput'));
+    }
+});
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (file) {
+        document.getElementById('selectedFile').style.display = 'flex';
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        
+        // Update preview for images
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewBox').innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 10px;">`;
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/')) {
+            document.getElementById('previewBox').innerHTML = `
+                <i class="fas fa-video preview-icon" style="color: #667eea;"></i>
+                <p class="text-muted mt-2">Video selected: ${file.name}</p>
+            `;
+        }
+    }
+}
+
+function removeFile() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('selectedFile').style.display = 'none';
+    document.getElementById('previewBox').innerHTML = `
+        <i class="fas fa-image preview-icon" id="previewIcon"></i>
+        <p class="text-muted mt-2" id="previewText">Enter a URL or upload a file to see preview</p>
+    `;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 </script>
 {% endblock %}
-

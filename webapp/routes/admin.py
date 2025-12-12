@@ -591,7 +591,7 @@ def admin_gallery():
 @bp.route('/admin/gallery/add', methods=['GET', 'POST'])
 @login_required
 def admin_gallery_add():
-    """Add new gallery item"""
+    """Add new gallery item - supports both URL and file upload"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
@@ -604,9 +604,49 @@ def admin_gallery_add():
         thumbnail_url = request.form.get('thumbnail_url', '').strip()
         is_featured = request.form.get('is_featured') == 'on'
         display_order = request.form.get('display_order', 0, type=int)
+        input_method = request.form.get('input_method', 'url')
         
-        if not title or not media_url:
-            flash('Title and media URL are required.', 'danger')
+        # Handle file upload if chosen
+        if input_method == 'upload':
+            media_file = request.files.get('media_file')
+            if media_file and media_file.filename:
+                from ..services.cloudinary_service import cloudinary_service
+                
+                # Determine resource type
+                resource_type = 'video' if media_type == 'video' else 'image'
+                folder = f'gallery/{media_type}s'
+                
+                success, result = cloudinary_service.upload_file(
+                    media_file,
+                    folder=folder,
+                    resource_type=resource_type
+                )
+                
+                if success:
+                    media_url = result['url']
+                    flash(f'File uploaded successfully!', 'info')
+                else:
+                    flash(f'Upload failed: {result}', 'danger')
+                    return render_template('admin_gallery_form.html', action='add')
+        
+        # Handle thumbnail upload
+        thumbnail_file = request.files.get('thumbnail_file')
+        if thumbnail_file and thumbnail_file.filename:
+            from ..services.cloudinary_service import cloudinary_service
+            success, result = cloudinary_service.upload_file(
+                thumbnail_file,
+                folder='gallery/thumbnails',
+                resource_type='image'
+            )
+            if success:
+                thumbnail_url = result['url']
+        
+        if not title:
+            flash('Title is required.', 'danger')
+            return render_template('admin_gallery_form.html', action='add')
+        
+        if not media_url:
+            flash('Please provide a media URL or upload a file.', 'danger')
             return render_template('admin_gallery_form.html', action='add')
         
         try:
@@ -636,7 +676,7 @@ def admin_gallery_add():
 @bp.route('/admin/gallery/<int:item_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_gallery_edit(item_id):
-    """Edit gallery item"""
+    """Edit gallery item - supports both URL and file upload"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
@@ -646,11 +686,52 @@ def admin_gallery_edit(item_id):
     if request.method == 'POST':
         item.title = request.form.get('title', item.title).strip()
         item.description = request.form.get('description', '').strip()
-        item.media_url = request.form.get('media_url', item.media_url).strip()
-        item.thumbnail_url = request.form.get('thumbnail_url', '').strip() or None
         item.is_active = request.form.get('is_active') == 'on'
         item.is_featured = request.form.get('is_featured') == 'on'
         item.display_order = request.form.get('display_order', 0, type=int)
+        
+        input_method = request.form.get('input_method', 'url')
+        
+        # Handle file upload if chosen
+        if input_method == 'upload':
+            media_file = request.files.get('media_file')
+            if media_file and media_file.filename:
+                from ..services.cloudinary_service import cloudinary_service
+                
+                resource_type = 'video' if item.media_type == 'video' else 'image'
+                folder = f'gallery/{item.media_type}s'
+                
+                success, result = cloudinary_service.upload_file(
+                    media_file,
+                    folder=folder,
+                    resource_type=resource_type
+                )
+                
+                if success:
+                    item.media_url = result['url']
+                    flash(f'File uploaded successfully!', 'info')
+                else:
+                    flash(f'Upload failed: {result}', 'danger')
+        else:
+            # Use URL from form
+            new_url = request.form.get('media_url', '').strip()
+            if new_url:
+                item.media_url = new_url
+        
+        # Handle thumbnail
+        thumbnail_file = request.files.get('thumbnail_file')
+        if thumbnail_file and thumbnail_file.filename:
+            from ..services.cloudinary_service import cloudinary_service
+            success, result = cloudinary_service.upload_file(
+                thumbnail_file,
+                folder='gallery/thumbnails',
+                resource_type='image'
+            )
+            if success:
+                item.thumbnail_url = result['url']
+        else:
+            new_thumb = request.form.get('thumbnail_url', '').strip()
+            item.thumbnail_url = new_thumb or None
         
         try:
             db.session.commit()

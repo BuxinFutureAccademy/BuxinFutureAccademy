@@ -18,6 +18,47 @@ from ..models import (
 bp = Blueprint('admin', __name__)
 
 
+@bp.route('/admin/setup-gallery-tables')
+def setup_gallery_tables():
+    """Create gallery and victory tables - accessible without login for initial setup"""
+    try:
+        db.create_all()
+        return """
+        <html>
+        <head><title>Tables Created</title>
+        <style>body { font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }
+        .card { background: white; padding: 40px; border-radius: 15px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #28a745; } a { color: #667eea; }</style></head>
+        <body>
+            <div class="card">
+                <h1>✅ Success!</h1>
+                <p>All database tables have been created successfully, including:</p>
+                <ul style="text-align: left;">
+                    <li>home_gallery</li>
+                    <li>student_victory</li>
+                </ul>
+                <p><a href="/admin/gallery">Go to Gallery Management</a></p>
+                <p><a href="/admin/victories">Go to Victories Management</a></p>
+                <p><a href="/">Go to Homepage</a></p>
+            </div>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Error</title>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; }}
+        .error {{ color: #dc3545; }}</style></head>
+        <body>
+            <h1 class="error">❌ Error Creating Tables</h1>
+            <p>{str(e)}</p>
+            <p><a href="/">Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
+
 # Utilities
 
 def anonymize_user_data(user_id: int) -> bool:
@@ -494,31 +535,46 @@ def admin_gallery():
     media_type = request.args.get('type', '')
     source = request.args.get('source', '')
     
-    query = HomeGallery.query
-    if media_type:
-        query = query.filter_by(media_type=media_type)
-    if source:
-        query = query.filter_by(source_type=source)
+    # Initialize with empty values in case tables don't exist
+    gallery_items = []
+    student_projects_with_images = []
+    student_projects_with_videos = []
+    total_images = 0
+    total_videos = 0
+    from_projects = 0
     
-    gallery_items = query.order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).all()
+    try:
+        query = HomeGallery.query
+        if media_type:
+            query = query.filter_by(media_type=media_type)
+        if source:
+            query = query.filter_by(source_type=source)
+        
+        gallery_items = query.order_by(HomeGallery.display_order.asc(), HomeGallery.created_at.desc()).all()
+        
+        # Stats
+        total_images = HomeGallery.query.filter_by(media_type='image').count()
+        total_videos = HomeGallery.query.filter_by(media_type='video').count()
+        from_projects = HomeGallery.query.filter_by(source_type='student_project').count()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Gallery tables not found. Please create them first by visiting /admin/create-gallery-tables', 'warning')
     
-    # Get student projects with images or videos for quick import
-    student_projects_with_images = StudentProject.query.filter(
-        StudentProject.is_active == True,
-        StudentProject.image_url.isnot(None),
-        StudentProject.image_url != ''
-    ).all()
-    
-    student_projects_with_videos = StudentProject.query.filter(
-        StudentProject.is_active == True,
-        StudentProject.youtube_url.isnot(None),
-        StudentProject.youtube_url != ''
-    ).all()
-    
-    # Stats
-    total_images = HomeGallery.query.filter_by(media_type='image').count()
-    total_videos = HomeGallery.query.filter_by(media_type='video').count()
-    from_projects = HomeGallery.query.filter_by(source_type='student_project').count()
+    try:
+        # Get student projects with images or videos for quick import
+        student_projects_with_images = StudentProject.query.filter(
+            StudentProject.is_active == True,
+            StudentProject.image_url.isnot(None),
+            StudentProject.image_url != ''
+        ).all()
+        
+        student_projects_with_videos = StudentProject.query.filter(
+            StudentProject.is_active == True,
+            StudentProject.youtube_url.isnot(None),
+            StudentProject.youtube_url != ''
+        ).all()
+    except Exception:
+        db.session.rollback()
     
     return render_template('admin_gallery.html',
         gallery_items=gallery_items,
@@ -710,10 +766,15 @@ def admin_victories():
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
     
-    victories = StudentVictory.query.order_by(
-        StudentVictory.display_order.asc(),
-        StudentVictory.achievement_date.desc()
-    ).all()
+    victories = []
+    try:
+        victories = StudentVictory.query.order_by(
+            StudentVictory.display_order.asc(),
+            StudentVictory.achievement_date.desc()
+        ).all()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Victories table not found. Please create it first by visiting /admin/create-gallery-tables', 'warning')
     
     return render_template('admin_victories.html', victories=victories)
 

@@ -649,6 +649,10 @@ def admin_gallery_add():
             flash('Please provide a media URL or upload a file.', 'danger')
             return render_template('admin_gallery_form.html', action='add')
         
+        # Get video-specific fields
+        video_format = request.form.get('video_format', 'long')
+        video_platform = request.form.get('video_platform', 'youtube')
+        
         try:
             gallery_item = HomeGallery(
                 title=title,
@@ -656,6 +660,8 @@ def admin_gallery_add():
                 media_type=media_type,
                 media_url=media_url,
                 thumbnail_url=thumbnail_url or None,
+                video_format=video_format if media_type == 'video' else None,
+                video_platform=video_platform if media_type == 'video' else None,
                 source_type='admin',
                 is_active=True,
                 is_featured=is_featured,
@@ -689,6 +695,11 @@ def admin_gallery_edit(item_id):
         item.is_active = request.form.get('is_active') == 'on'
         item.is_featured = request.form.get('is_featured') == 'on'
         item.display_order = request.form.get('display_order', 0, type=int)
+        
+        # Update video-specific fields
+        if item.media_type == 'video':
+            item.video_format = request.form.get('video_format', 'long')
+            item.video_platform = request.form.get('video_platform', 'youtube')
         
         input_method = request.form.get('input_method', 'url')
         

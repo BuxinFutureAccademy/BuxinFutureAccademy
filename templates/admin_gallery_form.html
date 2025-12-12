@@ -161,6 +161,29 @@
                             </select>
                         </div>
                     </div>
+                    
+                    <!-- Video Options (shown when video is selected) -->
+                    <div class="row" id="videoOptions" style="{% if not item or item.media_type == 'image' %}display:none{% endif %}">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Video Format</label>
+                            <select name="video_format" class="form-select" id="videoFormat">
+                                <option value="long" {% if item and item.video_format == 'long' %}selected{% endif %}>Long Video (16:9 Landscape)</option>
+                                <option value="short" {% if item and item.video_format == 'short' %}selected{% endif %}>Short Video (9:16 Portrait - TikTok/Reels)</option>
+                            </select>
+                            <small class="text-muted">Select based on your video orientation</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Video Platform</label>
+                            <select name="video_platform" class="form-select" id="videoPlatform">
+                                <option value="youtube" {% if item and item.video_platform == 'youtube' %}selected{% endif %}>YouTube</option>
+                                <option value="facebook" {% if item and item.video_platform == 'facebook' %}selected{% endif %}>Facebook</option>
+                                <option value="tiktok" {% if item and item.video_platform == 'tiktok' %}selected{% endif %}>TikTok</option>
+                                <option value="instagram" {% if item and item.video_platform == 'instagram' %}selected{% endif %}>Instagram</option>
+                                <option value="other" {% if item and item.video_platform == 'other' %}selected{% endif %}>Other / Direct Upload</option>
+                            </select>
+                            <small class="text-muted">Select where the video is from</small>
+                        </div>
+                    </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Description</label>
@@ -346,15 +369,18 @@ document.getElementById('mediaType').addEventListener('change', function() {
     const thumbnailField = document.getElementById('thumbnailField');
     const imageFormats = document.getElementById('imageFormats');
     const videoFormats = document.getElementById('videoFormats');
+    const videoOptions = document.getElementById('videoOptions');
     const fileInput = document.getElementById('fileInput');
     
     if (this.value === 'video') {
         thumbnailField.style.display = 'block';
+        videoOptions.style.display = 'flex';
         imageFormats.style.display = 'none';
         videoFormats.style.display = 'inline';
         fileInput.accept = 'video/*';
     } else {
         thumbnailField.style.display = 'none';
+        videoOptions.style.display = 'none';
         imageFormats.style.display = 'inline';
         videoFormats.style.display = 'none';
         fileInput.accept = 'image/*';

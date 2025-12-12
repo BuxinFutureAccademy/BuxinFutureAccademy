@@ -25,6 +25,8 @@ def upgrade():
         sa.Column('media_type', sa.String(length=20), nullable=False),
         sa.Column('media_url', sa.String(length=500), nullable=False),
         sa.Column('thumbnail_url', sa.String(length=500), nullable=True),
+        sa.Column('video_format', sa.String(length=20), nullable=True, default='long'),
+        sa.Column('video_platform', sa.String(length=50), nullable=True, default='youtube'),
         sa.Column('source_type', sa.String(length=50), nullable=True, default='admin'),
         sa.Column('source_project_id', sa.Integer(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=True, default=True),

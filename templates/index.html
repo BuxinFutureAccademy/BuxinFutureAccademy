@@ -531,19 +531,35 @@
             border-color: var(--secondary);
         }
 
-        .video-wrapper {
-            position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
+        /* Short video card (9:16 aspect ratio) */
+        .video-card.video-short {
+            max-width: 280px;
         }
 
-        .video-wrapper iframe {
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 default */
+            height: 0;
+            overflow: hidden;
+        }
+
+        .video-wrapper.ratio-16x9 {
+            padding-bottom: 56.25%; /* 16:9 landscape */
+        }
+
+        .video-wrapper.ratio-9x16 {
+            padding-bottom: 177.78%; /* 9:16 portrait/short video */
+        }
+
+        .video-wrapper iframe,
+        .video-wrapper video {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             border: none;
+            border-radius: 10px 10px 0 0;
         }
 
         .video-placeholder {
@@ -560,10 +576,35 @@
             cursor: pointer;
         }
 
+        .video-placeholder img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-placeholder .play-overlay {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0,0,0,0.5);
+            padding: 1.5rem;
+            border-radius: 15px;
+        }
+
         .video-placeholder i {
             font-size: 4rem;
             color: var(--secondary);
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .video-placeholder span {
+            color: white;
+            font-size: 0.9rem;
         }
 
         .video-info {
@@ -582,6 +623,22 @@
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.6);
         }
+
+        /* Platform badges */
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .platform-youtube { background: rgba(255, 0, 0, 0.2); color: #ff0000; }
+        .platform-facebook { background: rgba(24, 119, 242, 0.2); color: #1877f2; }
+        .platform-tiktok { background: rgba(0, 0, 0, 0.3); color: #fff; border: 1px solid #ff0050; }
+        .platform-instagram { background: linear-gradient(45deg, rgba(405, 0, 255, 0.2), rgba(255, 0, 128, 0.2)); color: #e1306c; }
 
         /* ========== VICTORIES SECTION ========== */
         .victories-section {
@@ -1121,20 +1178,41 @@
             {% if gallery_videos or projects_with_videos %}
             <div class="video-grid">
                 {% for item in gallery_videos %}
-                <div class="video-card">
-                    <div class="video-wrapper">
-                        {% if item.get_youtube_embed_url() %}
-                        <iframe src="{{ item.get_youtube_embed_url() }}" allowfullscreen></iframe>
+                <div class="video-card {% if item.video_format == 'short' %}video-short{% endif %}">
+                    <div class="video-wrapper {% if item.video_format == 'short' %}ratio-9x16{% else %}ratio-16x9{% endif %}">
+                        {% set embed_url = item.get_embed_url() %}
+                        {% if embed_url %}
+                            {% if item.is_direct_video() %}
+                            <!-- Direct video file -->
+                            <video controls poster="{{ item.thumbnail_url or '' }}">
+                                <source src="{{ embed_url }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            {% else %}
+                            <!-- Embedded video (YouTube, Facebook, TikTok, etc.) -->
+                            <iframe src="{{ embed_url }}" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                            {% endif %}
                         {% else %}
-                        <div class="video-placeholder">
-                            <i class="fas fa-play-circle"></i>
-                            <span>Video</span>
+                        <!-- Fallback: Show thumbnail with play button -->
+                        <div class="video-placeholder" onclick="window.open('{{ item.media_url }}', '_blank')">
+                            {% if item.thumbnail_url %}
+                            <img src="{{ item.thumbnail_url }}" alt="{{ item.title }}" style="width:100%;height:100%;object-fit:cover;">
+                            {% endif %}
+                            <div class="play-overlay">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Watch on {{ item.video_platform|default('External Site')|title }}</span>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
                     <div class="video-info">
                         <h5 class="video-title">{{ item.title }}</h5>
                         <p class="video-desc">{{ item.description[:100] if item.description else '' }}{% if item.description and item.description|length > 100 %}...{% endif %}</p>
+                        {% if item.video_platform and item.video_platform != 'other' %}
+                        <span class="platform-badge platform-{{ item.video_platform }}">
+                            <i class="fab fa-{{ item.video_platform }}"></i> {{ item.video_platform|title }}
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -1142,7 +1220,7 @@
                 {% if not gallery_videos %}
                 {% for project in projects_with_videos %}
                 <div class="video-card">
-                    <div class="video-wrapper">
+                    <div class="video-wrapper ratio-16x9">
                         {% if project.get_youtube_embed_url() %}
                         <iframe src="{{ project.get_youtube_embed_url() }}" allowfullscreen></iframe>
                         {% else %}

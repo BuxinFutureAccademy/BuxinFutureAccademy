@@ -292,8 +292,14 @@
                                     <li><a class="dropdown-item" href="{{ url_for('store.admin_course_orders') }}">
                                         <i class="fas fa-receipt me-2"></i>Course Orders
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('store.admin_course_orders') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_enrollments') }}">
                                         <i class="fas fa-user-graduate me-2"></i>Class Enrollments
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_attendance') }}">
+                                        <i class="fas fa-calendar-check me-2"></i>Attendance Management
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_registered_students') }}">
+                                        <i class="fas fa-user-graduate me-2"></i>Registered Students
                                     </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('admin.admin_users') }}">
                                         <i class="fas fa-users me-2"></i>Manage Users

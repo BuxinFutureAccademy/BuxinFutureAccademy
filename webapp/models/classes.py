@@ -47,3 +47,69 @@ class GroupClass(db.Model):
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     max_students = db.Column(db.Integer, default=10)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Attendance(db.Model):
+    """Model for tracking student attendance"""
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    class_id = db.Column(db.Integer, nullable=False)  # Can be IndividualClass or GroupClass ID
+    class_type = db.Column(db.String(20), nullable=False)  # 'individual', 'group', 'family', 'school'
+    attendance_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+    status = db.Column(db.String(20), nullable=False, default='present')  # 'present', 'absent', 'late'
+    marked_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Who marked it (student or admin)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    student = db.relationship('User', foreign_keys=[student_id], lazy='select')
+    marker = db.relationship('User', foreign_keys=[marked_by], lazy='select')
+    
+    # Unique constraint: one attendance record per student per class per day
+    __table_args__ = (db.UniqueConstraint('student_id', 'class_id', 'attendance_date', name='unique_attendance'),)
+
+
+class SchoolStudent(db.Model):
+    """Model for students registered by schools within a classroom"""
+    id = db.Column(db.Integer, primary_key=True)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('class_enrollment.id'), nullable=False)
+    class_id = db.Column(db.Integer, nullable=False)
+    school_name = db.Column(db.String(200), nullable=False)
+    student_name = db.Column(db.String(100), nullable=False)
+    student_age = db.Column(db.Integer)
+    student_image_url = db.Column(db.String(500))
+    student_email = db.Column(db.String(120))
+    student_phone = db.Column(db.String(20))
+    parent_name = db.Column(db.String(100))
+    parent_phone = db.Column(db.String(20))
+    parent_email = db.Column(db.String(120))
+    additional_info = db.Column(db.Text)  # Any other information about the student
+    registered_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # The school admin who registered
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    enrollment = db.relationship('ClassEnrollment', lazy='select')
+    registrar = db.relationship('User', foreign_keys=[registered_by], lazy='select')
+
+
+class FamilyMember(db.Model):
+    """Model for family members registered within a family class"""
+    id = db.Column(db.Integer, primary_key=True)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('class_enrollment.id'), nullable=False)
+    class_id = db.Column(db.Integer, nullable=False)
+    member_name = db.Column(db.String(100), nullable=False)
+    member_age = db.Column(db.Integer)
+    member_image_url = db.Column(db.String(500))
+    member_email = db.Column(db.String(120))
+    member_phone = db.Column(db.String(20))
+    relationship = db.Column(db.String(50))  # e.g., 'Son', 'Daughter', 'Brother', 'Sister', etc.
+    additional_info = db.Column(db.Text)
+    registered_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # The family head who registered
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    enrollment = db.relationship('ClassEnrollment', lazy='select')
+    registrar = db.relationship('User', foreign_keys=[registered_by], lazy='select')
+    
+    # Note: Maximum 4 family members per enrollment is enforced in application code
+    # (PostgreSQL doesn't support subqueries in CHECK constraints)

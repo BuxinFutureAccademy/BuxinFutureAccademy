@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Management - Admin{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #00d4ff;
+        --secondary: #ff6b35;
+        --accent: #39ff14;
+        --dark: #0a0a1a;
+        --darker: #050510;
+        --font-tech: 'Orbitron', sans-serif;
+        --font-body: 'Rajdhani', sans-serif;
+    }
+
+    body {
+        background: var(--darker);
+        color: white;
+        font-family: var(--font-body);
+    }
+
+    .attendance-header {
+        background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+        border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .header-title {
+        font-family: var(--font-tech);
+        font-size: 2rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--primary);
+    }
+
+    .filter-card {
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-card label {
+        color: var(--primary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+
+    .filter-card select,
+    .filter-card input {
+        background: rgba(5, 5, 16, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+    }
+
+    .filter-card select:focus,
+    .filter-card input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        outline: none;
+    }
+
+    .attendance-table-card {
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        overflow-x: auto;
+    }
+
+    .table {
+        color: white;
+    }
+
+    .table thead {
+        background: rgba(0, 212, 255, 0.1);
+        border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+    }
+
+    .table thead th {
+        color: var(--primary);
+        font-family: var(--font-tech);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.85rem;
+        border: none;
+        padding: 1rem;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(0, 212, 255, 0.05);
+    }
+
+    .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        border: none;
+    }
+
+    .badge-present {
+        background: rgba(57, 255, 20, 0.2);
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    .badge-absent {
+        background: rgba(255, 107, 53, 0.2);
+        color: var(--secondary);
+        border: 1px solid var(--secondary);
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    .btn-mark {
+        padding: 0.4rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-mark-present {
+        background: linear-gradient(135deg, #39ff14 0%, #00d4ff 100%);
+        color: var(--dark);
+    }
+
+    .btn-mark-present:hover {
+        box-shadow: 0 0 20px rgba(57, 255, 20, 0.5);
+        transform: scale(1.05);
+    }
+
+    .btn-mark-absent {
+        background: linear-gradient(135deg, #ff6b35 0%, #f72585 100%);
+        color: white;
+    }
+
+    .btn-mark-absent:hover {
+        box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+        transform: scale(1.05);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        transform: translateY(-5px);
+    }
+
+    .stat-number {
+        font-family: var(--font-tech);
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+</style>
+
+<div class="attendance-header">
+    <div class="container">
+        <h1 class="header-title">
+            <i class="fas fa-calendar-check"></i> ATTENDANCE MANAGEMENT
+        </h1>
+        <p class="text-muted mb-0">View and manage student attendance records</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ attendance_records|length }}</div>
+            <div class="stat-label">Records Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ all_classes|length }}</div>
+            <div class="stat-label">Total Classes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {{ attendance_records|selectattr('status', 'equalto', 'present')|list|length }}
+            </div>
+            <div class="stat-label">Present Today</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+        <form method="GET" action="{{ url_for('admin.admin_attendance') }}" class="row g-3">
+            <div class="col-md-3">
+                <label for="date" class="form-label">
+                    <i class="fas fa-calendar"></i> Date
+                </label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ filter_date.isoformat() }}">
+            </div>
+            <div class="col-md-3">
+                <label for="class_id" class="form-label">
+                    <i class="fas fa-chalkboard"></i> Class
+                </label>
+                <select class="form-select" id="class_id" name="class_id">
+                    <option value="">All Classes</option>
+                    {% for cls in all_classes %}
+                    <option value="{{ cls.id }}" {% if selected_class_id == cls.id %}selected{% endif %}>
+                        {{ cls.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="student_id" class="form-label">
+                    <i class="fas fa-user"></i> Student
+                </label>
+                <select class="form-select" id="student_id" name="student_id">
+                    <option value="">All Students</option>
+                    {% for cls_id, students in enrolled_students.items() %}
+                        {% for student in students %}
+                        <option value="{{ student.id }}" {% if selected_student_id == student.id %}selected{% endif %}>
+                            {{ student.name }}
+                        </option>
+                        {% endfor %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100" style="background: var(--primary); border: none;">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="attendance-table-card">
+        {% if attendance_records %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Student</th>
+                    <th>Class</th>
+                    <th>Status</th>
+                    <th>Marked By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attendance_records %}
+                <tr>
+                    <td>{{ att.attendance_date.strftime('%B %d, %Y') }}</td>
+                    <td>
+                        <strong>{{ att.student_name }}</strong>
+                        {% set stats = monthly_stats.get(att.student_id, {}) %}
+                        {% if stats %}
+                        <br><small class="text-muted">{{ stats.percentage }}% this month</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ att.class_name }}</td>
+                    <td>
+                        <span class="badge-{% if att.status == 'present' %}present{% else %}absent{% endif %}">
+                            <i class="fas fa-{% if att.status == 'present' %}check{% else %}times{% endif %}"></i>
+                            {{ att.status|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if att.marker %}
+                            {% set marker = User.query.get(att.marked_by) %}
+                            {{ marker.first_name }} {{ marker.last_name if marker else 'Unknown' }}
+                        {% else %}
+                            <span class="text-muted">System</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.admin_mark_attendance') }}" style="display: inline;">
+                            <input type="hidden" name="student_id" value="{{ att.student_id }}">
+                            <input type="hidden" name="class_id" value="{{ att.class_id }}">
+                            <input type="hidden" name="attendance_date" value="{{ att.attendance_date.isoformat() }}">
+                            <button type="submit" name="status" value="present" class="btn-mark btn-mark-present">
+                                <i class="fas fa-check"></i> Present
+                            </button>
+                            <button type="submit" name="status" value="absent" class="btn-mark btn-mark-absent">
+                                <i class="fas fa-times"></i> Absent
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-times"></i>
+            <h4>No Attendance Records</h4>
+            <p>No attendance records found for the selected filters.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Mark Attendance for Students -->
+    {% if selected_class_id %}
+    <div class="attendance-table-card mt-4">
+        <h3 style="color: var(--primary); font-family: var(--font-tech); margin-bottom: 1.5rem;">
+            <i class="fas fa-users"></i> MARK ATTENDANCE FOR CLASS
+        </h3>
+        {% set class_students_list = enrolled_students.get(selected_class_id, []) %}
+        {% if class_students_list %}
+        <div class="row">
+            {% for student in class_students_list %}
+            <div class="col-md-4 mb-3">
+                <div class="stat-card" style="text-align: left;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong style="color: var(--primary);">{{ student.name }}</strong>
+                            <br><small class="text-muted">{{ student.username }}</small>
+                            {% set stats = monthly_stats.get(student.id, {}) %}
+                            {% if stats %}
+                            <br><small style="color: var(--accent);">{{ stats.percentage }}% this month</small>
+                            {% endif %}
+                        </div>
+                        <form method="POST" action="{{ url_for('admin.admin_mark_attendance') }}">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <input type="hidden" name="class_id" value="{{ selected_class_id }}">
+                            <input type="hidden" name="attendance_date" value="{{ filter_date.isoformat() }}">
+                            <div class="btn-group-vertical">
+                                <button type="submit" name="status" value="present" class="btn-mark btn-mark-present mb-1">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="submit" name="status" value="absent" class="btn-mark btn-mark-absent">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">No students enrolled in this class.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

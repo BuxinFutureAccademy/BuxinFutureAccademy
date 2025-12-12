@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Registered Students - Admin{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #00d4ff;
+        --secondary: #ff6b35;
+        --accent: #39ff14;
+        --dark: #0a0a1a;
+        --darker: #050510;
+        --font-tech: 'Orbitron', sans-serif;
+        --font-body: 'Rajdhani', sans-serif;
+    }
+
+    body {
+        background: var(--darker);
+        color: white;
+        font-family: var(--font-body);
+    }
+
+    .admin-header {
+        background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+        border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .header-title {
+        font-family: var(--font-tech);
+        font-size: 2rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--primary);
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        padding: 0.8rem 1.5rem;
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 10px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+
+    .filter-tab:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .filter-tab.active {
+        background: var(--primary);
+        color: var(--dark);
+        border-color: var(--primary);
+    }
+
+    .school-card {
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .school-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        transform: translateX(5px);
+    }
+
+    .school-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .school-name {
+        font-family: var(--font-tech);
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-transform: uppercase;
+    }
+
+    .student-count {
+        background: rgba(57, 255, 20, 0.2);
+        color: var(--accent);
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .students-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .student-card {
+        background: rgba(5, 5, 16, 0.6);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        border-radius: 10px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .student-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .student-image {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: white;
+        margin-bottom: 0.25rem;
+    }
+
+    .student-info {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .family-group {
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .family-header {
+        font-family: var(--font-tech);
+        font-size: 1.2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        transform: translateY(-5px);
+    }
+
+    .stat-number {
+        font-family: var(--font-tech);
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+</style>
+
+<div class="admin-header">
+    <div class="container">
+        <h1 class="header-title">
+            <i class="fas fa-users"></i> REGISTERED STUDENTS MANAGEMENT
+        </h1>
+        <p class="text-muted mb-0">View all students registered in school and family classes</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ school_students|length }}</div>
+            <div class="stat-label">School Students</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ family_members|length }}</div>
+            <div class="stat-label">Family Members</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ unique_schools|length }}</div>
+            <div class="stat-label">Schools</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ unique_families|length }}</div>
+            <div class="stat-label">Families</div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <a href="{{ url_for('admin.admin_registered_students') }}" class="filter-tab {% if not filter_type or filter_type == 'all' %}active{% endif %}">
+            <i class="fas fa-list"></i> All
+        </a>
+        <a href="{{ url_for('admin.admin_registered_students', type='school') }}" class="filter-tab {% if filter_type == 'school' %}active{% endif %}">
+            <i class="fas fa-school"></i> Schools
+        </a>
+        <a href="{{ url_for('admin.admin_registered_students', type='family') }}" class="filter-tab {% if filter_type == 'family' %}active{% endif %}">
+            <i class="fas fa-home"></i> Families
+        </a>
+    </div>
+
+    <!-- School Students -->
+    {% if (not filter_type or filter_type == 'all' or filter_type == 'school') and school_students %}
+    <div class="mb-5">
+        <h2 style="color: var(--primary); font-family: var(--font-tech); margin-bottom: 1.5rem;">
+            <i class="fas fa-school"></i> SCHOOL STUDENTS
+        </h2>
+        
+        {% for school_name, students in schools_grouped.items() %}
+        <div class="school-card" onclick="toggleSchool('{{ school_name|replace(' ', '_') }}')">
+            <div class="school-header">
+                <h3 class="school-name">
+                    <i class="fas fa-school"></i> {{ school_name }}
+                </h3>
+                <span class="student-count">{{ students|length }} Student{{ 's' if students|length != 1 else '' }}</span>
+            </div>
+            <div id="students-{{ school_name|replace(' ', '_') }}" style="display: none;">
+                <div class="students-list">
+                    {% for student in students %}
+                    <div class="student-card">
+                        {% if student.student_image_url %}
+                        <img src="{{ student.student_image_url }}" alt="{{ student.student_name }}" class="student-image">
+                        {% else %}
+                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 212, 255, 0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                            <i class="fas fa-user" style="font-size: 2rem; color: var(--primary);"></i>
+                        </div>
+                        {% endif %}
+                        <div class="student-name">{{ student.student_name }}</div>
+                        {% if student.student_age %}
+                        <div class="student-info">Age: {{ student.student_age }}</div>
+                        {% endif %}
+                        {% if student.student_email %}
+                        <div class="student-info"><i class="fas fa-envelope"></i> {{ student.student_email }}</div>
+                        {% endif %}
+                        {% if student.parent_name %}
+                        <div class="student-info">Parent: {{ student.parent_name }}</div>
+                        {% endif %}
+                        {% if student.additional_info %}
+                        <div class="student-info" style="margin-top: 0.5rem; font-size: 0.8rem;">{{ student.additional_info[:50] }}...</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Family Members -->
+    {% if (not filter_type or filter_type == 'all' or filter_type == 'family') and family_members %}
+    <div class="mb-5">
+        <h2 style="color: var(--primary); font-family: var(--font-tech); margin-bottom: 1.5rem;">
+            <i class="fas fa-home"></i> FAMILY MEMBERS
+        </h2>
+        
+        {% for enrollment_id, members in families_grouped.items() %}
+        <div class="family-group">
+            <div class="family-header">
+                <i class="fas fa-users"></i> Family Group ({{ members|length }} Member{{ 's' if members|length != 1 else '' }})
+            </div>
+            <div class="students-list">
+                {% for member in members %}
+                <div class="student-card">
+                    {% if member.member_image_url %}
+                    <img src="{{ member.member_image_url }}" alt="{{ member.member_name }}" class="student-image">
+                    {% else %}
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 212, 255, 0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                        <i class="fas fa-user" style="font-size: 2rem; color: var(--primary);"></i>
+                    </div>
+                    {% endif %}
+                    <div class="student-name">{{ member.member_name }}</div>
+                    {% if member.relationship %}
+                    <div class="student-info">{{ member.relationship }}</div>
+                    {% endif %}
+                    {% if member.member_age %}
+                    <div class="student-info">Age: {{ member.member_age }}</div>
+                    {% endif %}
+                    {% if member.member_email %}
+                    <div class="student-info"><i class="fas fa-envelope"></i> {{ member.member_email }}</div>
+                    {% endif %}
+                    {% if member.additional_info %}
+                    <div class="student-info" style="margin-top: 0.5rem; font-size: 0.8rem;">{{ member.additional_info[:50] }}...</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not school_students and not family_members %}
+    <div class="empty-state">
+        <i class="fas fa-users-slash"></i>
+        <h4>No Registered Students</h4>
+        <p>No students or family members have been registered yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleSchool(schoolId) {
+    const studentsDiv = document.getElementById('students-' + schoolId);
+    if (studentsDiv.style.display === 'none') {
+        studentsDiv.style.display = 'block';
+    } else {
+        studentsDiv.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
+

@@ -354,33 +354,28 @@ body {
                     <h5><i class="fas fa-share me-2"></i>Share Learning Material</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
-                        <div class="form-group">
-                            <label for="class_id" class="form-label">
-                                <i class="fas fa-users me-2"></i>Select Recipients
+                    <form method="POST" id="shareMaterialForm">
+                        <!-- Recipient Type Selector -->
+                        <div class="form-group mb-3">
+                            <label for="recipient_type" class="form-label">
+                                <i class="fas fa-filter me-2"></i>Select Class Type
                             </label>
-                            <select class="form-select" id="class_id" name="class_id" required>
-                                <option value="">Choose who to share with...</option>
-                                
-                                <!-- Individual Students -->
-                                <optgroup label="📚 Individual Students">
-                                    {% for student in individual_students %}
-                                        <option value="individual_student_{{ student.id }}">
-                                            👤 {{ student.first_name }} {{ student.last_name }} ({{ student.username }})
-                                        </option>
-                                    {% endfor %}
-                                </optgroup>
-                                
-                                <!-- Classes -->
-                                {% if classes %}
-                                <optgroup label="🎓 Classes">
-                                    {% for class in classes %}
-                                        <option value="class_{{ class.id }}">
-                                            📖 {{ class.name }}{% if class.max_students is defined %} ({{ class.students|length if class.students else 0 }}/{{ class.max_students }} students){% endif %}
-                                        </option>
-                                    {% endfor %}
-                                </optgroup>
-                                {% endif %}
+                            <select class="form-select" id="recipient_type" name="recipient_type" required onchange="updateRecipientOptions()">
+                                <option value="">Choose class type...</option>
+                                <option value="individual">👤 Individual Students</option>
+                                <option value="school">🏫 School Classes</option>
+                                <option value="family">👨‍👩‍👧‍👦 Family Classes</option>
+                                <option value="group">👥 Group Classes</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Recipient Selector (Dynamic) -->
+                        <div class="form-group mb-3">
+                            <label for="recipient_id" class="form-label">
+                                <i class="fas fa-users me-2"></i>Select Recipient
+                            </label>
+                            <select class="form-select" id="recipient_id" name="recipient_id" required>
+                                <option value="">First select a class type above...</option>
                             </select>
                         </div>
                         
@@ -409,6 +404,85 @@ Links will be automatically formatted and clickable for students." required></te
                             <i class="fas fa-paper-plane me-2"></i>Share Material
                         </button>
                     </form>
+                    
+                    <script>
+                    // Store data for JavaScript
+                    const individualStudents = [
+                        {% for student in individual_students %}
+                        {id: {{ student.id }}, name: "{{ student.first_name }} {{ student.last_name }}", username: "{{ student.username }}"}{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ];
+                    
+                    const schoolEnrollments = [
+                        {% for enrollment in school_enrollments_data %}
+                        {
+                            id: {{ enrollment.id }},
+                            class_id: {{ enrollment.class_id }},
+                            school_name: "{{ enrollment.school_name|e }}",
+                            student_count: {{ enrollment.student_count }}
+                        }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ];
+                    
+                    const familyEnrollments = [
+                        {% for enrollment in family_enrollments_data %}
+                        {
+                            id: {{ enrollment.id }},
+                            class_id: {{ enrollment.class_id }},
+                            member_count: {{ enrollment.member_count }},
+                            family_name: "{{ enrollment.family_name|e }}"
+                        }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ];
+                    
+                    const groupClasses = [
+                        {% for class in group_classes_data %}
+                        {
+                            id: {{ class.id }},
+                            name: "{{ class.name|e }}",
+                            student_count: {{ class.student_count }}
+                        }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ];
+                    
+                    function updateRecipientOptions() {
+                        const recipientType = document.getElementById('recipient_type').value;
+                        const recipientSelect = document.getElementById('recipient_id');
+                        
+                        // Clear existing options
+                        recipientSelect.innerHTML = '<option value="">Select recipient...</option>';
+                        
+                        if (recipientType === 'individual') {
+                            individualStudents.forEach(student => {
+                                const option = document.createElement('option');
+                                option.value = student.id;
+                                option.textContent = `👤 ${student.name} (${student.username})`;
+                                recipientSelect.appendChild(option);
+                            });
+                        } else if (recipientType === 'school') {
+                            schoolEnrollments.forEach(enrollment => {
+                                const option = document.createElement('option');
+                                option.value = enrollment.id;
+                                option.textContent = `🏫 ${enrollment.school_name} (${enrollment.student_count + 1} members)`;
+                                recipientSelect.appendChild(option);
+                            });
+                        } else if (recipientType === 'family') {
+                            familyEnrollments.forEach(enrollment => {
+                                const option = document.createElement('option');
+                                option.value = enrollment.id;
+                                option.textContent = `👨‍👩‍👧‍👦 ${enrollment.family_name} (${enrollment.member_count + 1} members)`;
+                                recipientSelect.appendChild(option);
+                            });
+                        } else if (recipientType === 'group') {
+                            groupClasses.forEach(classItem => {
+                                const option = document.createElement('option');
+                                option.value = classItem.id;
+                                option.textContent = `👥 ${classItem.name} (${classItem.student_count} students)`;
+                                recipientSelect.appendChild(option);
+                            });
+                        }
+                    }
+                    </script>
                 </div>
             </div>
         </div>

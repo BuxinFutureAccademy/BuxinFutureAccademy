@@ -14,6 +14,10 @@ from ..models import (
     HomeGallery,
     StudentVictory,
     ClassPricing,
+    Attendance,
+    SchoolStudent,
+    FamilyMember,
+    LearningMaterial,
 )
 
 bp = Blueprint('admin', __name__)
@@ -254,14 +258,137 @@ def admin_dashboard():
     
     from flask import request
     
-    # Handle POST for sharing materials (placeholder - implement based on your Material model)
+    # Handle POST for sharing materials
     if request.method == 'POST':
-        # TODO: Implement material sharing logic based on your Material model
-        flash('Material sharing feature - implement based on your data model', 'info')
+        recipient_type = request.form.get('recipient_type', '')  # 'individual', 'school', 'family', 'group'
+        recipient_id = request.form.get('recipient_id', '')
+        content = request.form.get('message', '').strip()
+        
+        if not recipient_type or not recipient_id or not content:
+            flash('Please select a recipient type, recipient, and provide content.', 'danger')
+        else:
+            try:
+                if recipient_type == 'individual':
+                    # Share to individual student
+                    student_id = int(recipient_id)
+                    student = User.query.get(student_id)
+                    if student:
+                        material = LearningMaterial(
+                            class_id=f"student_{student_id}",
+                            class_type='individual',
+                            actual_class_id=student_id,
+                            content=content,
+                            created_by=current_user.id
+                        )
+                        db.session.add(material)
+                        db.session.commit()
+                        flash(f'Material shared with {student.first_name} {student.last_name}!', 'success')
+                    else:
+                        flash('Student not found.', 'danger')
+                
+                elif recipient_type == 'school':
+                    # Share to all students in a school class
+                    enrollment_id = int(recipient_id)
+                    enrollment = ClassEnrollment.query.get(enrollment_id)
+                    if enrollment and enrollment.class_type == 'school':
+                        # Get all registered students for this school
+                        school_students = SchoolStudent.query.filter_by(
+                            enrollment_id=enrollment_id,
+                            class_id=enrollment.class_id
+                        ).all()
+                        
+                        # Also get the main enrolled user
+                        main_user = User.query.get(enrollment.user_id)
+                        
+                        shared_count = 0
+                        # Share to main enrolled user
+                        if main_user:
+                            material = LearningMaterial(
+                                class_id=f"school_{enrollment.class_id}_enrollment_{enrollment_id}",
+                                class_type='school',
+                                actual_class_id=enrollment.class_id,
+                                content=content,
+                                created_by=current_user.id
+                            )
+                            db.session.add(material)
+                            shared_count += 1
+                        
+                        # Share to all registered students (they see it through their enrollment)
+                        # We create one material record for the school class, and all students see it
+                        material = LearningMaterial(
+                            class_id=f"school_{enrollment.class_id}_enrollment_{enrollment_id}",
+                            class_type='school',
+                            actual_class_id=enrollment.class_id,
+                            content=content,
+                            created_by=current_user.id
+                        )
+                        db.session.add(material)
+                        db.session.commit()
+                        flash(f'Material shared with school class! All {len(school_students) + 1} members will see it.', 'success')
+                    else:
+                        flash('Invalid school enrollment.', 'danger')
+                
+                elif recipient_type == 'family':
+                    # Share to all family members
+                    enrollment_id = int(recipient_id)
+                    enrollment = ClassEnrollment.query.get(enrollment_id)
+                    if enrollment and enrollment.class_type == 'family':
+                        # Get all registered family members
+                        family_members = FamilyMember.query.filter_by(
+                            enrollment_id=enrollment_id,
+                            class_id=enrollment.class_id
+                        ).all()
+                        
+                        # Get main enrolled user
+                        main_user = User.query.get(enrollment.user_id)
+                        
+                        # Create material for the family class - all members see it
+                        material = LearningMaterial(
+                            class_id=f"family_{enrollment.class_id}_enrollment_{enrollment_id}",
+                            class_type='family',
+                            actual_class_id=enrollment.class_id,
+                            content=content,
+                            created_by=current_user.id
+                        )
+                        db.session.add(material)
+                        db.session.commit()
+                        flash(f'Material shared with family class! All {len(family_members) + 1} members will see it.', 'success')
+                    else:
+                        flash('Invalid family enrollment.', 'danger')
+                
+                elif recipient_type == 'group':
+                    # Share to all students in a group class
+                    class_id = int(recipient_id)
+                    class_obj = GroupClass.query.get(class_id)
+                    if class_obj:
+                        # Get all enrollments for this group class
+                        group_enrollments = ClassEnrollment.query.filter_by(
+                            class_id=class_id,
+                            class_type='group',
+                            status='completed'
+                        ).all()
+                        
+                        # Create material for the group class - all enrolled students see it
+                        material = LearningMaterial(
+                            class_id=f"group_{class_id}",
+                            class_type='group',
+                            actual_class_id=class_id,
+                            content=content,
+                            created_by=current_user.id
+                        )
+                        db.session.add(material)
+                        db.session.commit()
+                        flash(f'Material shared with group class "{class_obj.name}"! All {len(group_enrollments)} enrolled students will see it.', 'success')
+                    else:
+                        flash('Group class not found.', 'danger')
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error sharing material: {str(e)}', 'danger')
     
     # Get all data for the dashboard
     students = User.query.filter_by(is_student=True).all()
-    individual_students = students  # Same as students for selection
+    individual_students = students
     
     # Get course orders
     course_orders = Purchase.query.order_by(Purchase.purchased_at.desc()).limit(50).all()
@@ -272,24 +399,81 @@ def admin_dashboard():
     # Get robotics count
     robotics_count = RoboticsProjectSubmission.query.count()
     
-    # Unified classes (legacy individual classes included for completeness)
+    # Get all classes
     try:
-        classes = GroupClass.query.all()
+        all_group_classes = GroupClass.query.all()
     except Exception:
-        classes = []
+        all_group_classes = []
+    
     try:
-        legacy_individual = IndividualClass.query.all()
-        classes = classes + legacy_individual
+        all_individual_classes = IndividualClass.query.all()
     except Exception:
-        pass
-    individual_classes = []
-    group_classes = []
-    materials = []
+        all_individual_classes = []
+    
+    # Get school enrollments (for school type) with school names
+    school_enrollments_data = []
+    school_enrollments = ClassEnrollment.query.filter_by(
+        class_type='school',
+        status='completed'
+    ).all()
+    for enrollment in school_enrollments:
+        # Get school name from first registered student
+        first_student = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).first()
+        school_name = first_student.school_name if first_student else 'School'
+        student_count = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).count()
+        school_enrollments_data.append({
+            'id': enrollment.id,
+            'class_id': enrollment.class_id,
+            'school_name': school_name,
+            'student_count': student_count
+        })
+    
+    # Get family enrollments (for family type) with member counts
+    family_enrollments_data = []
+    family_enrollments = ClassEnrollment.query.filter_by(
+        class_type='family',
+        status='completed'
+    ).all()
+    for enrollment in family_enrollments:
+        member_count = FamilyMember.query.filter_by(enrollment_id=enrollment.id).count()
+        # Get main user name
+        main_user = User.query.get(enrollment.user_id)
+        family_name = f"{main_user.first_name} {main_user.last_name}'s Family" if main_user else 'Family'
+        family_enrollments_data.append({
+            'id': enrollment.id,
+            'class_id': enrollment.class_id,
+            'member_count': member_count,
+            'family_name': family_name
+        })
+    
+    # Get group classes with student counts
+    group_classes_data = []
+    for class_obj in all_group_classes:
+        student_count = ClassEnrollment.query.filter_by(
+            class_id=class_obj.id,
+            class_type='group',
+            status='completed'
+        ).count()
+        group_classes_data.append({
+            'id': class_obj.id,
+            'name': class_obj.name,
+            'student_count': student_count
+        })
+    
+    # Get materials
+    try:
+        materials = LearningMaterial.query.order_by(LearningMaterial.created_at.desc()).limit(50).all()
+    except Exception:
+        materials = []
     
     return render_template('admin_dashboard.html',
         students=students,
         individual_students=individual_students,
-        classes=classes,
+        all_group_classes=all_group_classes,
+        all_individual_classes=all_individual_classes,
+        school_enrollments_data=school_enrollments_data,
+        family_enrollments_data=family_enrollments_data,
+        group_classes_data=group_classes_data,
         materials=materials,
         course_orders=course_orders,
         enrollments=enrollments,
@@ -539,8 +723,9 @@ def reject_enrollment(enrollment_id):
 @bp.route('/student/dashboard')
 @login_required
 def student_dashboard():
-    from datetime import datetime
+    from datetime import datetime, date, timedelta
     from flask import flash
+    from calendar import monthrange
     
     # Check if user has any CONFIRMED enrollment (status = 'completed')
     # Only confirmed students can access the dashboard
@@ -564,12 +749,155 @@ def student_dashboard():
     
     purchases = Purchase.query.filter_by(user_id=current_user.id, status='completed').all()
     projects = StudentProject.query.filter_by(student_id=current_user.id).all()
-    enrollments = ClassEnrollment.query.filter_by(user_id=current_user.id).all()
+    enrollments = ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').all()
     
     # Get classes the student is enrolled in
-    individual_classes = []
-    group_classes = []
+    enrolled_classes = []
+    for enrollment in enrollments:
+        # Try GroupClass first (unified), then IndividualClass (legacy)
+        class_obj = GroupClass.query.get(enrollment.class_id) or IndividualClass.query.get(enrollment.class_id)
+        if class_obj:
+            enrolled_classes.append({
+                'id': class_obj.id,
+                'name': class_obj.name,
+                'description': class_obj.description,
+                'class_type': enrollment.class_type,  # individual, group, family, school
+                'enrollment': enrollment
+            })
+    
+    # Get all students in same classes (for group/family classes)
+    class_students = {}  # {class_id: [list of students]}
+    for cls in enrolled_classes:
+        if cls['class_type'] in ['group', 'family', 'school']:
+            # Get all enrollments for this class
+            class_enrollments = ClassEnrollment.query.filter_by(
+                class_id=cls['id'],
+                status='completed'
+            ).all()
+            students = []
+            for enr in class_enrollments:
+                student = User.query.get(enr.user_id)
+                if student:
+                    students.append({
+                        'id': student.id,
+                        'name': f"{student.first_name} {student.last_name}",
+                        'username': student.username
+                    })
+            class_students[cls['id']] = students
+    
+    # Get attendance data for current month
+    today = date.today()
+    month_start = date(today.year, today.month, 1)
+    month_end = date(today.year, today.month, monthrange(today.year, today.month)[1])
+    
+    attendance_records = {}
+    monthly_stats = {}
+    all_class_attendance = {}  # For group classes - all students' attendance
+    
+    for cls in enrolled_classes:
+        # Get attendance for current user in this class this month
+        attendance = Attendance.query.filter(
+            Attendance.student_id == current_user.id,
+            Attendance.class_id == cls['id'],
+            Attendance.attendance_date >= month_start,
+            Attendance.attendance_date <= month_end
+        ).order_by(Attendance.attendance_date.desc()).all()
+        
+        attendance_records[cls['id']] = attendance
+        
+        # For group classes, get all students' attendance
+        if cls['class_type'] in ['group', 'family', 'school']:
+            all_students_attendance = Attendance.query.filter(
+                Attendance.class_id == cls['id'],
+                Attendance.attendance_date >= month_start,
+                Attendance.attendance_date <= month_end
+            ).order_by(Attendance.attendance_date.desc()).all()
+            all_class_attendance[cls['id']] = all_students_attendance
+        
+        # Calculate monthly percentage
+        total_days = monthrange(today.year, today.month)[1]
+        present_days = len([a for a in attendance if a.status == 'present'])
+        percentage = (present_days / total_days * 100) if total_days > 0 else 0
+        monthly_stats[cls['id']] = {
+            'present': present_days,
+            'total': total_days,
+            'percentage': round(percentage, 1)
+        }
+    
+    # Check today's attendance
+    today_attendance = {}
+    for cls in enrolled_classes:
+        today_att = Attendance.query.filter(
+            Attendance.student_id == current_user.id,
+            Attendance.class_id == cls['id'],
+            Attendance.attendance_date == today
+        ).first()
+        today_attendance[cls['id']] = today_att
+    
+    # Get registered students/family members for school/family classes
+    registered_students = {}  # {class_id: [list of SchoolStudent]}
+    registered_family = {}    # {class_id: [list of FamilyMember]}
+    
+    for cls in enrolled_classes:
+        if cls['class_type'] == 'school':
+            # Get all registered students for this school class
+            students = SchoolStudent.query.filter_by(
+                class_id=cls['id'],
+                enrollment_id=cls['enrollment'].id
+            ).all()
+            registered_students[cls['id']] = students
+        elif cls['class_type'] == 'family':
+            # Get all registered family members
+            members = FamilyMember.query.filter_by(
+                class_id=cls['id'],
+                enrollment_id=cls['enrollment'].id
+            ).all()
+            registered_family[cls['id']] = members
+    
+    # Get materials shared to student's classes
     materials = []
+    for cls in enrolled_classes:
+        # Get materials for this class based on class type
+        if cls['class_type'] == 'individual':
+            # Materials shared directly to student or to individual class
+            from sqlalchemy import or_
+            class_materials = LearningMaterial.query.filter(
+                or_(
+                    LearningMaterial.class_id == f"student_{current_user.id}",
+                    (LearningMaterial.class_type == 'individual') & (LearningMaterial.actual_class_id == cls['id'])
+                )
+            ).all()
+            materials.extend(class_materials)
+        elif cls['class_type'] == 'group':
+            # Materials shared to this group class
+            class_materials = LearningMaterial.query.filter_by(
+                class_type='group',
+                actual_class_id=cls['id']
+            ).all()
+            materials.extend(class_materials)
+        elif cls['class_type'] == 'school':
+            # Materials shared to this school enrollment
+            enrollment_id = cls['enrollment'].id
+            class_materials = LearningMaterial.query.filter(
+                LearningMaterial.class_id.like(f"%school_{cls['id']}_enrollment_{enrollment_id}%")
+            ).all()
+            materials.extend(class_materials)
+        elif cls['class_type'] == 'family':
+            # Materials shared to this family enrollment
+            enrollment_id = cls['enrollment'].id
+            class_materials = LearningMaterial.query.filter(
+                LearningMaterial.class_id.like(f"%family_{cls['id']}_enrollment_{enrollment_id}%")
+            ).all()
+            materials.extend(class_materials)
+    
+    # Remove duplicates and sort by date
+    seen_ids = set()
+    unique_materials = []
+    for material in materials:
+        if material.id not in seen_ids:
+            seen_ids.add(material.id)
+            unique_materials.append(material)
+    materials = sorted(unique_materials, key=lambda x: x.created_at, reverse=True)
     
     # Helper function for time-based greeting
     def now():
@@ -579,10 +907,421 @@ def student_dashboard():
                           purchases=purchases, 
                           projects=projects,
                           enrollments=enrollments,
-                          individual_classes=individual_classes,
-                          group_classes=group_classes,
+                          enrolled_classes=enrolled_classes,
+                          class_students=class_students,
+                          attendance_records=attendance_records,
+                          all_class_attendance=all_class_attendance,
+                          monthly_stats=monthly_stats,
+                          today_attendance=today_attendance,
+                          registered_students=registered_students,
+                          registered_family=registered_family,
                           materials=materials,
-                          now=now)
+                          now=now,
+                          today=today)
+
+
+@bp.route('/student/mark-attendance', methods=['POST'])
+@login_required
+def mark_attendance():
+    """Student marks their own attendance"""
+    from datetime import date
+    
+    class_id = request.form.get('class_id', type=int)
+    status = request.form.get('status', 'present')  # present, absent
+    student_id = request.form.get('student_id', type=int)  # For group/family classes
+    
+    # If student_id is provided, it's for marking another student (in group/family)
+    # Otherwise, mark self
+    target_student_id = student_id if student_id else current_user.id
+    
+    # Verify enrollment
+    enrollment = ClassEnrollment.query.filter_by(
+        user_id=target_student_id,
+        class_id=class_id,
+        status='completed'
+    ).first()
+    
+    if not enrollment:
+        flash('You are not enrolled in this class.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Check if already marked today
+    today = date.today()
+    existing = Attendance.query.filter_by(
+        student_id=target_student_id,
+        class_id=class_id,
+        attendance_date=today
+    ).first()
+    
+    if existing:
+        existing.status = status
+        existing.marked_by = current_user.id
+        flash('Attendance updated successfully!', 'success')
+    else:
+        new_attendance = Attendance(
+            student_id=target_student_id,
+            class_id=class_id,
+            class_type=enrollment.class_type,
+            attendance_date=today,
+            status=status,
+            marked_by=current_user.id
+        )
+        db.session.add(new_attendance)
+        flash('Attendance marked successfully!', 'success')
+    
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error marking attendance: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.student_dashboard'))
+
+
+@bp.route('/student/register-student', methods=['POST'])
+@login_required
+def register_student():
+    """Register a student for a school class"""
+    from werkzeug.utils import secure_filename
+    import cloudinary
+    import cloudinary.uploader
+    
+    enrollment_id = request.form.get('enrollment_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    school_name = request.form.get('school_name', '').strip()
+    student_name = request.form.get('student_name', '').strip()
+    student_age = request.form.get('student_age', type=int)
+    student_email = request.form.get('student_email', '').strip()
+    student_phone = request.form.get('student_phone', '').strip()
+    parent_name = request.form.get('parent_name', '').strip()
+    parent_phone = request.form.get('parent_phone', '').strip()
+    parent_email = request.form.get('parent_email', '').strip()
+    additional_info = request.form.get('additional_info', '').strip()
+    
+    # Verify enrollment
+    enrollment = ClassEnrollment.query.filter_by(
+        id=enrollment_id,
+        user_id=current_user.id,
+        class_id=class_id,
+        class_type='school',
+        status='completed'
+    ).first()
+    
+    if not enrollment:
+        flash('Invalid enrollment or you do not have permission.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    if not school_name or not student_name:
+        flash('School name and student name are required.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Handle image upload
+    student_image_url = None
+    if 'student_image' in request.files:
+        image_file = request.files['student_image']
+        if image_file and image_file.filename:
+            try:
+                upload_result = cloudinary.uploader.upload(image_file)
+                student_image_url = upload_result.get('secure_url')
+            except Exception as e:
+                flash(f'Error uploading image: {str(e)}', 'warning')
+    
+    try:
+        new_student = SchoolStudent(
+            enrollment_id=enrollment_id,
+            class_id=class_id,
+            school_name=school_name,
+            student_name=student_name,
+            student_age=student_age,
+            student_image_url=student_image_url,
+            student_email=student_email,
+            student_phone=student_phone,
+            parent_name=parent_name,
+            parent_phone=parent_phone,
+            parent_email=parent_email,
+            additional_info=additional_info,
+            registered_by=current_user.id
+        )
+        db.session.add(new_student)
+        db.session.commit()
+        flash(f'Student "{student_name}" registered successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error registering student: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.student_dashboard'))
+
+
+@bp.route('/student/register-family-member', methods=['POST'])
+@login_required
+def register_family_member():
+    """Register a family member for a family class"""
+    from werkzeug.utils import secure_filename
+    import cloudinary
+    import cloudinary.uploader
+    
+    enrollment_id = request.form.get('enrollment_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    member_name = request.form.get('member_name', '').strip()
+    member_age = request.form.get('member_age', type=int)
+    member_email = request.form.get('member_email', '').strip()
+    member_phone = request.form.get('member_phone', '').strip()
+    relationship = request.form.get('relationship', '').strip()
+    additional_info = request.form.get('additional_info', '').strip()
+    
+    # Verify enrollment
+    enrollment = ClassEnrollment.query.filter_by(
+        id=enrollment_id,
+        user_id=current_user.id,
+        class_id=class_id,
+        class_type='family',
+        status='completed'
+    ).first()
+    
+    if not enrollment:
+        flash('Invalid enrollment or you do not have permission.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Check if already at max (4 family members)
+    existing_count = FamilyMember.query.filter_by(enrollment_id=enrollment_id).count()
+    if existing_count >= 4:
+        flash('Maximum 4 family members allowed per family class.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    if not member_name:
+        flash('Family member name is required.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Handle image upload
+    member_image_url = None
+    if 'member_image' in request.files:
+        image_file = request.files['member_image']
+        if image_file and image_file.filename:
+            try:
+                upload_result = cloudinary.uploader.upload(image_file)
+                member_image_url = upload_result.get('secure_url')
+            except Exception as e:
+                flash(f'Error uploading image: {str(e)}', 'warning')
+    
+    try:
+        new_member = FamilyMember(
+            enrollment_id=enrollment_id,
+            class_id=class_id,
+            member_name=member_name,
+            member_age=member_age,
+            member_image_url=member_image_url,
+            member_email=member_email,
+            member_phone=member_phone,
+            relationship=relationship,
+            additional_info=additional_info,
+            registered_by=current_user.id
+        )
+        db.session.add(new_member)
+        db.session.commit()
+        flash(f'Family member "{member_name}" registered successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error registering family member: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.student_dashboard'))
+
+
+@bp.route('/admin/attendance')
+@login_required
+def admin_attendance():
+    """Admin view and manage attendance"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    from datetime import date, timedelta
+    from calendar import monthrange
+    
+    # Get filter parameters
+    selected_date = request.args.get('date', date.today().isoformat())
+    selected_class_id = request.args.get('class_id', type=int)
+    selected_student_id = request.args.get('student_id', type=int)
+    
+    try:
+        filter_date = date.fromisoformat(selected_date)
+    except:
+        filter_date = date.today()
+    
+    # Get all classes
+    all_classes = GroupClass.query.all() + IndividualClass.query.all()
+    
+    # Get attendance for selected date
+    attendance_query = Attendance.query.filter_by(attendance_date=filter_date)
+    
+    if selected_class_id:
+        attendance_query = attendance_query.filter_by(class_id=selected_class_id)
+    if selected_student_id:
+        attendance_query = attendance_query.filter_by(student_id=selected_student_id)
+    
+    attendance_records = attendance_query.order_by(Attendance.created_at.desc()).all()
+    
+    # Get class names and student names
+    for att in attendance_records:
+        class_obj = GroupClass.query.get(att.class_id) or IndividualClass.query.get(att.class_id)
+        att.class_name = class_obj.name if class_obj else 'Unknown'
+        student = User.query.get(att.student_id)
+        att.student_name = f"{student.first_name} {student.last_name}" if student else 'Unknown'
+    
+    # Get all students enrolled in classes
+    all_enrollments = ClassEnrollment.query.filter_by(status='completed').all()
+    enrolled_students = {}
+    for enr in all_enrollments:
+        if enr.class_id not in enrolled_students:
+            enrolled_students[enr.class_id] = []
+        student = User.query.get(enr.user_id)
+        if student:
+            enrolled_students[enr.class_id].append({
+                'id': student.id,
+                'name': f"{student.first_name} {student.last_name}",
+                'username': student.username
+            })
+    
+    # Get monthly stats for each student
+    today = date.today()
+    month_start = date(today.year, today.month, 1)
+    month_end = date(today.year, today.month, monthrange(today.year, today.month)[1])
+    
+    monthly_stats = {}
+    all_students = User.query.filter_by(is_student=True).all()
+    for student in all_students:
+        student_attendance = Attendance.query.filter(
+            Attendance.student_id == student.id,
+            Attendance.attendance_date >= month_start,
+            Attendance.attendance_date <= month_end
+        ).all()
+        
+        total_days = monthrange(today.year, today.month)[1]
+        present_days = len([a for a in student_attendance if a.status == 'present'])
+        percentage = (present_days / total_days * 100) if total_days > 0 else 0
+        
+        monthly_stats[student.id] = {
+            'present': present_days,
+            'total': total_days,
+            'percentage': round(percentage, 1)
+        }
+    
+    return render_template('admin_attendance.html',
+                         attendance_records=attendance_records,
+                         all_classes=all_classes,
+                         enrolled_students=enrolled_students,
+                         filter_date=filter_date,
+                         selected_class_id=selected_class_id,
+                         selected_student_id=selected_student_id,
+                         monthly_stats=monthly_stats)
+
+
+@bp.route('/admin/mark-attendance', methods=['POST'])
+@login_required
+def admin_mark_attendance():
+    """Admin marks attendance for students"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    from datetime import date
+    
+    student_id = request.form.get('student_id', type=int)
+    class_id = request.form.get('class_id', type=int)
+    attendance_date_str = request.form.get('attendance_date', date.today().isoformat())
+    status = request.form.get('status', 'present')
+    
+    try:
+        attendance_date = date.fromisoformat(attendance_date_str)
+    except:
+        attendance_date = date.today()
+    
+    # Verify enrollment
+    enrollment = ClassEnrollment.query.filter_by(
+        user_id=student_id,
+        class_id=class_id,
+        status='completed'
+    ).first()
+    
+    if not enrollment:
+        flash('Student is not enrolled in this class.', 'danger')
+        return redirect(url_for('admin.admin_attendance'))
+    
+    # Check if already marked
+    existing = Attendance.query.filter_by(
+        student_id=student_id,
+        class_id=class_id,
+        attendance_date=attendance_date
+    ).first()
+    
+    if existing:
+        existing.status = status
+        existing.marked_by = current_user.id
+        flash('Attendance updated successfully!', 'success')
+    else:
+        new_attendance = Attendance(
+            student_id=student_id,
+            class_id=class_id,
+            class_type=enrollment.class_type,
+            attendance_date=attendance_date,
+            status=status,
+            marked_by=current_user.id
+        )
+        db.session.add(new_attendance)
+        flash('Attendance marked successfully!', 'success')
+    
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error marking attendance: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_attendance', date=attendance_date_str, class_id=class_id))
+
+
+@bp.route('/admin/registered-students')
+@login_required
+def admin_registered_students():
+    """Admin view all registered students and family members"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    filter_type = request.args.get('type', '')  # 'school', 'family', or 'all'
+    
+    # Get all school students
+    school_students = SchoolStudent.query.order_by(SchoolStudent.created_at.desc()).all()
+    
+    # Get all family members
+    family_members = FamilyMember.query.order_by(FamilyMember.created_at.desc()).all()
+    
+    # Group school students by school name
+    schools_grouped = {}
+    for student in school_students:
+        school_name = student.school_name
+        if school_name not in schools_grouped:
+            schools_grouped[school_name] = []
+        schools_grouped[school_name].append(student)
+    
+    # Group family members by enrollment_id
+    families_grouped = {}
+    for member in family_members:
+        enrollment_id = member.enrollment_id
+        if enrollment_id not in families_grouped:
+            families_grouped[enrollment_id] = []
+        families_grouped[enrollment_id].append(member)
+    
+    # Get unique counts
+    unique_schools = list(schools_grouped.keys())
+    unique_families = list(families_grouped.keys())
+    
+    return render_template('admin_registered_students.html',
+                         school_students=school_students,
+                         family_members=family_members,
+                         schools_grouped=schools_grouped,
+                         families_grouped=families_grouped,
+                         unique_schools=unique_schools,
+                         unique_families=unique_families,
+                         filter_type=filter_type)
 
 
 @bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])

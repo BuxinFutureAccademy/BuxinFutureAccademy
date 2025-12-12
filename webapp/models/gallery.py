@@ -132,12 +132,15 @@ class ClassPricing(db.Model):
     @staticmethod
     def get_all_pricing():
         """Get all pricing from database or defaults"""
+        from ..extensions import db
         try:
             pricing_list = ClassPricing.query.filter_by(is_active=True).order_by(ClassPricing.display_order).all()
             if pricing_list:
                 result = {}
                 for p in pricing_list:
                     features = p.features.split(',') if p.features else []
+                    # Strip whitespace from features
+                    features = [f.strip() for f in features if f.strip()]
                     result[p.class_type] = {
                         'name': p.name,
                         'price': p.price,
@@ -149,7 +152,11 @@ class ClassPricing(db.Model):
                     }
                 return result
         except Exception:
-            pass
+            # Rollback to clear failed transaction
+            try:
+                db.session.rollback()
+            except:
+                pass
         return ClassPricing.get_default_pricing()
 
 

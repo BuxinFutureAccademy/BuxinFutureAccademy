@@ -21,6 +21,7 @@ def index():
     projects_with_videos = []
     
     try:
+        db.session.rollback()  # Ensure clean transaction state
         # Get gallery images (from admin + student projects)
         gallery_images = HomeGallery.query.filter_by(
             is_active=True, 
@@ -84,8 +85,13 @@ def index():
         db.session.rollback()
         current_app.logger.warning(f"Error fetching student projects: {e}")
     
-    # Get class pricing
-    pricing_data = ClassPricing.get_all_pricing()
+    # Get class pricing - with rollback to clear any failed transactions
+    try:
+        db.session.rollback()  # Clear any failed transaction state
+        pricing_data = ClassPricing.get_all_pricing()
+    except Exception:
+        db.session.rollback()
+        pricing_data = ClassPricing.get_default_pricing()
     
     return render_template('index.html',
         gallery_images=gallery_images,

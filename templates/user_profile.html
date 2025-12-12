@@ -209,11 +209,7 @@
                                     <div class="row align-items-center">
                                         <div class="col-md-6">
                                             <h6 class="mb-1">
-                                                {% if enrollment.class_type == 'individual' %}
-                                                    {% set class_obj = IndividualClass.query.get(enrollment.class_id) %}
-                                                {% else %}
-                                                    {% set class_obj = GroupClass.query.get(enrollment.class_id) %}
-                                                {% endif %}
+                                                {% set class_obj = GroupClass.query.get(enrollment.class_id) or IndividualClass.query.get(enrollment.class_id) %}
                                                 {{ class_obj.name if class_obj else 'Unknown Class' }}
                                                 <span class="badge bg-info ms-2">{{ enrollment.class_type.title() }}</span>
                                             </h6>

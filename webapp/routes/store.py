@@ -68,37 +68,51 @@ def store():
 @bp.route('/available-classes', endpoint='available_classes')
 def available_classes():
     """Browse and enroll in available classes"""
+    from ..models import ClassPricing
+
+    pricing_type = request.args.get('type', 'individual')
+
     try:
-        individual_classes = IndividualClass.query.all()
+        pricing_data = ClassPricing.get_all_pricing()
+        pricing_info = pricing_data.get(pricing_type, pricing_data.get('individual', {}))
     except Exception:
-        individual_classes = []
-    
+        pricing_data = {}
+        pricing_info = {'name': pricing_type.title(), 'price': 100}
+
+    classes = []
     try:
-        group_classes = GroupClass.query.all()
+        classes = GroupClass.query.all()
     except Exception:
-        group_classes = []
+        classes = []
+
+    # Include legacy individual classes if they exist
+    try:
+        legacy_individual = IndividualClass.query.all()
+        classes = classes + legacy_individual
+    except Exception:
+        pass
     
     return render_template(
         'available_classes.html',
-        individual_classes=individual_classes,
-        group_classes=group_classes
+        classes=classes,
+        pricing_type=pricing_type,
+        pricing_info=pricing_info,
+        pricing_data=pricing_data
     )
 
 
-@bp.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])
+@bp.route('/enroll/<int:class_id>', methods=['GET', 'POST'])
+@bp.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])  # legacy URL with class_type
 @login_required
-def enroll_class(class_type, class_id):
+def enroll_class(class_id, class_type=None):
     """Enroll in a class"""
     from ..models import ClassPricing
     
     # Get pricing type from URL parameter (individual, group, family, school)
     pricing_type = request.args.get('pricing', 'individual')
     
-    # Get the class object
-    if class_type == 'individual':
-        class_obj = IndividualClass.query.get_or_404(class_id)
-    else:
-        class_obj = GroupClass.query.get_or_404(class_id)
+    # Get the class object (unified class model uses GroupClass; keep legacy individual support)
+    class_obj = GroupClass.query.get(class_id) or IndividualClass.query.get_or_404(class_id)
     
     # Get pricing from database
     pricing_data = ClassPricing.get_all_pricing()
@@ -151,7 +165,7 @@ def enroll_class(class_type, class_id):
             from ..models import ClassEnrollment
             enrollment = ClassEnrollment(
                 user_id=current_user.id,
-                class_type=class_type,
+                class_type=pricing_type,  # store selected pricing plan
                 class_id=class_id,
                 amount=amount,
                 customer_name=full_name,

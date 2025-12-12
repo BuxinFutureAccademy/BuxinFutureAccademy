@@ -606,30 +606,26 @@
         <div class="hero-grid"></div>
         <div class="container">
             <div class="hero-content">
-                {% set class_type = request.args.get('type', 'individual') %}
-                {% set type_info = {
-                    'individual': {'name': 'Individual', 'price': '$100', 'icon': 'fa-user', 'color': '#00d4ff'},
-                    'group': {'name': 'Group', 'price': '$125', 'icon': 'fa-users', 'color': '#39ff14'},
-                    'family': {'name': 'Family', 'price': '$200', 'icon': 'fa-home', 'color': '#ff6b35'},
-                    'school': {'name': 'School', 'price': '$300', 'icon': 'fa-school', 'color': '#9b59b6'}
-                } %}
-                {% set info = type_info.get(class_type, type_info['individual']) %}
+                {% set class_type = pricing_type or 'individual' %}
+                {% set p_name = pricing_info.get('name', class_type|title) %}
+                {% set p_price = pricing_info.get('price', 100)|int %}
+                {% set p_icon = pricing_info.get('icon', 'fa-rocket') %}
+                {% set p_color = pricing_info.get('color', '#00d4ff') %}
                 
-                <div class="hero-badge pulse-badge" style="border-color: {{ info.color }}40; background: {{ info.color }}20;">
-                    <i class="fas {{ info.icon }}" style="color: {{ info.color }};"></i>
-                    <span style="color: {{ info.color }};">{{ info.name }} Class - {{ info.price }}</span>
+                <div class="hero-badge pulse-badge" style="border-color: {{ p_color }}40; background: {{ p_color }}20;">
+                    <i class="fas {{ p_icon }}" style="color: {{ p_color }};"></i>
+                    <span style="color: {{ p_color }};">{{ p_name }} Plan - ${{ p_price }}</span>
                 </div>
                 <h1 class="hero-title">
-                    <span class="highlight">{{ info.name }}</span> Classes
+                    <span class="highlight">{{ p_name }}</span> Classes
                 </h1>
                 <p class="hero-subtitle">
-                    You selected <strong>{{ info.name }}</strong> class type ({{ info.price }}). 
-                    Choose a class below to start your robotics journey!
+                    You selected the <strong>{{ p_name }}</strong> plan ( ${{ p_price }} ). Choose any class below; your payment will use this plan.
                 </p>
                 
-                <!-- Class Type Selector -->
+                <!-- Pricing Plan Selector -->
                 <div class="type-selector mt-4">
-                    <span class="text-muted me-2">Change type:</span>
+                    <span class="text-muted me-2">Change plan:</span>
                     <a href="?type=individual" class="type-pill {% if class_type == 'individual' %}active{% endif %}" style="--pill-color: #00d4ff;">Individual</a>
                     <a href="?type=group" class="type-pill {% if class_type == 'group' %}active{% endif %}" style="--pill-color: #39ff14;">Group</a>
                     <a href="?type=family" class="type-pill {% if class_type == 'family' %}active{% endif %}" style="--pill-color: #ff6b35;">Family</a>
@@ -643,112 +639,66 @@
     <section class="classes-section">
         <div class="container">
             <div class="row">
-                <!-- Individual Classes -->
-                <div class="col-lg-6 mb-5">
+                <div class="col-12 mb-4">
                     <h3 class="section-title">
-                        <span class="icon"><i class="fas fa-user"></i></span>
-                        Individual Classes
+                        <span class="icon"><i class="fas fa-chalkboard-teacher"></i></span>
+                        All Classes
                     </h3>
-                    <p class="text-muted mb-4">One-on-one personalized learning with expert instructors</p>
-                    
-                    {% if individual_classes %}
-                        {% for class in individual_classes %}
-                        <div class="class-card">
-                            <div class="class-header">
+                    <p class="text-muted">Pick any class. The price you pay follows the plan you selected above.</p>
+                </div>
+                
+                {% set pricing_type = pricing_type or 'individual' %}
+                {% if classes %}
+                    {% for class in classes %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="class-card {% if class.max_students is defined %}group-card{% endif %}">
+                            <div class="class-header {% if class.max_students is defined %}group{% endif %}">
                                 <h4 class="class-name">{{ class.name }}</h4>
-                                <p class="class-meta"><i class="fas fa-user-graduate me-1"></i> Personal Instructor</p>
+                                {% if class.max_students is defined %}
+                                <p class="class-meta">
+                                    <i class="fas fa-users me-1"></i> 
+                                    {{ class.students|length if (class.students is defined and class.students) else 0 }}/{{ class.max_students }} Students
+                                </p>
+                                {% else %}
+                                <p class="class-meta"><i class="fas fa-user-graduate me-1"></i> Standard Class</p>
+                                {% endif %}
                             </div>
                             <div class="class-body">
-                                <p class="class-desc">{{ class.description or 'Personalized one-on-one robotics learning experience with hands-on projects and expert guidance.' }}</p>
+                                <p class="class-desc">{{ class.description or 'Hands-on robotics learning with our coaches.' }}</p>
                                 <div class="class-features">
-                                    <span class="feature-badge badge-individual">
-                                        <i class="fas fa-user"></i> 1-on-1 Learning
+                                    <span class="feature-badge badge-group">
+                                        <i class="fas fa-rocket"></i> Project-Based
                                     </span>
                                     <span class="feature-badge badge-spots">
                                         <i class="fas fa-clock"></i> Flexible Schedule
                                     </span>
                                 </div>
-                                {% set pricing_type = request.args.get('type', 'individual') %}
-                                {% if current_user.is_authenticated %}
-                                    <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}?pricing={{ pricing_type }}" class="enroll-btn enroll-btn-primary">
-                                        <i class="fas fa-rocket"></i> Enroll Now
-                                    </a>
-                                {% else %}
-                                    <a href="{{ url_for('auth.login') }}?next={{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}%3Fpricing%3D{{ pricing_type }}" class="enroll-btn enroll-btn-login">
-                                        <i class="fas fa-sign-in-alt"></i> Login to Enroll
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-robot"></i>
-                            <h4>No Individual Classes Yet</h4>
-                            <p>New classes coming soon! Check back later.</p>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Group Classes -->
-                <div class="col-lg-6 mb-5">
-                    <h3 class="section-title group">
-                        <span class="icon"><i class="fas fa-users"></i></span>
-                        Group Classes
-                    </h3>
-                    <p class="text-muted mb-4">Learn together with other students in interactive sessions</p>
-                    
-                    {% if group_classes %}
-                        {% for class in group_classes %}
-                        <div class="class-card group-card">
-                            <div class="class-header group">
-                                <h4 class="class-name">{{ class.name }}</h4>
-                                <p class="class-meta">
-                                    <i class="fas fa-users me-1"></i> 
-                                    {{ class.students|length if class.students else 0 }}/{{ class.max_students }} Students
-                                </p>
-                            </div>
-                            <div class="class-body">
-                                <p class="class-desc">{{ class.description or 'Collaborate with peers, build team projects, and learn robotics in a fun group environment.' }}</p>
-                                <div class="class-features">
-                                    <span class="feature-badge badge-group">
-                                        <i class="fas fa-users"></i> Group Learning
-                                    </span>
-                                    {% if class.students and class.students|length >= class.max_students %}
-                                        <span class="feature-badge badge-full">
-                                            <i class="fas fa-ban"></i> Class Full
-                                        </span>
-                                    {% else %}
-                                        <span class="feature-badge badge-spots">
-                                            <i class="fas fa-check-circle"></i> Spots Available
-                                        </span>
-                                    {% endif %}
-                                </div>
-                                {% set pricing_type = request.args.get('type', 'group') %}
-                                {% if class.students and class.students|length >= class.max_students %}
+                                {% if class.max_students is defined and class.students is defined and class.students and class.students|length >= class.max_students %}
                                     <button class="enroll-btn enroll-btn-disabled" disabled>
                                         <i class="fas fa-ban"></i> Class Full
                                     </button>
                                 {% elif current_user.is_authenticated %}
-                                    <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}?pricing={{ pricing_type }}" class="enroll-btn enroll-btn-group">
-                                        <i class="fas fa-rocket"></i> Enroll Now
+                                    <a href="{{ url_for('store.enroll_class', class_id=class.id) }}?pricing={{ pricing_type }}" class="enroll-btn enroll-btn-group">
+                                        <i class="fas fa-rocket"></i> Enroll with {{ p_name }} Plan
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('auth.login') }}?next={{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}%3Fpricing%3D{{ pricing_type }}" class="enroll-btn enroll-btn-login">
+                                    <a href="{{ url_for('auth.login') }}?next={{ url_for('store.enroll_class', class_id=class.id) }}%3Fpricing%3D{{ pricing_type }}" class="enroll-btn enroll-btn-login">
                                         <i class="fas fa-sign-in-alt"></i> Login to Enroll
                                     </a>
                                 {% endif %}
                             </div>
                         </div>
-                        {% endfor %}
-                    {% else %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
                         <div class="empty-state">
-                            <i class="fas fa-users"></i>
-                            <h4>No Group Classes Yet</h4>
-                            <p>Group sessions coming soon! Stay tuned.</p>
+                            <i class="fas fa-robot"></i>
+                            <h4>No Classes Yet</h4>
+                            <p>New classes coming soon! Check back later.</p>
                         </div>
-                    {% endif %}
-                </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </section>

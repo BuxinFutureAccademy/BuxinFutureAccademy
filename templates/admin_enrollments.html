@@ -105,17 +105,11 @@
                         </td>
                         <td>{{ enrollment.class_name }}</td>
                         <td>
-                            <span class="badge {% if enrollment.class_type == 'individual' %}bg-primary{% else %}bg-success{% endif %}">
+                            <span class="badge bg-primary">
                                 {{ enrollment.class_type|title }}
                             </span>
                         </td>
-                        <td>
-                            {% if enrollment.class_type == 'individual' %}
-                                ${{ enrollment.amount }}
-                            {% else %}
-                                D{{ enrollment.amount }}
-                            {% endif %}
-                        </td>
+                        <td>${{ enrollment.amount }}</td>
                         <td>{{ enrollment.payment_method or 'N/A' }}</td>
                         <td>{{ enrollment.enrolled_at.strftime('%Y-%m-%d %H:%M') if enrollment.enrolled_at else 'N/A' }}</td>
                         <td>

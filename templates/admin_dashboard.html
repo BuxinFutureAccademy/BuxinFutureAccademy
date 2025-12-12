@@ -371,23 +371,12 @@ body {
                                     {% endfor %}
                                 </optgroup>
                                 
-                                <!-- Individual Classes -->
-                                {% if individual_classes %}
-                                <optgroup label="👨‍🎓 Individual Classes">
-                                    {% for class in individual_classes %}
-                                        <option value="individual_{{ class.id }}">
-                                            📖 {{ class.name }} ({{ class.students|length }} student{{ 's' if class.students|length != 1 else '' }})
-                                        </option>
-                                    {% endfor %}
-                                </optgroup>
-                                {% endif %}
-                                
-                                <!-- Group Classes -->
-                                {% if group_classes %}
-                                <optgroup label="👥 Group Classes">
-                                    {% for class in group_classes %}
-                                        <option value="group_{{ class.id }}">
-                                            🎓 {{ class.name }} ({{ class.students|length }}/{{ class.max_students }} students)
+                                <!-- Classes -->
+                                {% if classes %}
+                                <optgroup label="🎓 Classes">
+                                    {% for class in classes %}
+                                        <option value="class_{{ class.id }}">
+                                            📖 {{ class.name }}{% if class.max_students is defined %} ({{ class.students|length if class.students else 0 }}/{{ class.max_students }} students){% endif %}
                                         </option>
                                     {% endfor %}
                                 </optgroup>
@@ -463,51 +452,21 @@ Links will be automatically formatted and clickable for students." required></te
         <!-- Classes Tab -->
         <div class="tab-pane fade" id="classes" role="tabpanel">
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5><i class="fas fa-user me-2"></i>Individual Classes</h5>
+                            <h5><i class="fas fa-chalkboard-teacher me-2"></i>Classes</h5>
                         </div>
                         <div class="card-body">
-                            {% if individual_classes %}
-                                {% for class in individual_classes %}
+                            {% if classes %}
+                                {% for class in classes %}
                                     <div class="material-item">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div class="flex-grow-1">
                                                 <h6>{{ class.name }}</h6>
                                                 <p class="text-muted mb-1">{{ class.description or 'No description' }}</p>
-                                                <small class="text-success">{{ class.students|length }} student(s)</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="empty-state">
-                                    <i class="fas fa-user-plus"></i>
-                                    <h6>No individual classes</h6>
-                                    <p>Create your first individual class</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header" style="background: linear-gradient(135deg, var(--warning-color), #fd7e14);">
-                            <h5><i class="fas fa-users me-2"></i>Group Classes</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if group_classes %}
-                                {% for class in group_classes %}
-                                    <div class="material-item">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6>{{ class.name }}</h6>
-                                                <p class="text-muted mb-1">{{ class.description or 'No description' }}</p>
-                                                <small class="text-info">{{ class.students|length }}/{{ class.max_students }} students</small>
-                                                {% if class.students|length >= class.max_students %}
-                                                    <span class="badge bg-danger ms-2">Full</span>
+                                                {% if class.max_students is defined %}
+                                                <small class="text-info">{{ class.students|length if (class.students is defined and class.students) else 0 }}/{{ class.max_students }} students</small>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -515,9 +474,9 @@ Links will be automatically formatted and clickable for students." required></te
                                 {% endfor %}
                             {% else %}
                                 <div class="empty-state">
-                                    <i class="fas fa-users"></i>
-                                    <h6>No group classes</h6>
-                                    <p>Create your first group class</p>
+                                    <i class="fas fa-user-plus"></i>
+                                    <h6>No classes</h6>
+                                    <p>Create your first class</p>
                                 </div>
                             {% endif %}
                         </div>
@@ -536,7 +495,7 @@ Links will be automatically formatted and clickable for students." required></te
                             <div class="text-center">
                                 <i class="fas fa-plus-circle fa-3x text-info mb-3"></i>
                                 <h6>Create Class</h6>
-                                <p class="text-muted">Start a new individual or group class</p>
+                                <p class="text-muted">Start a new class</p>
                                 <a href="{{ url_for('admin.create_class') }}" class="btn btn-info mb-2">
                                     <i class="fas fa-plus me-2"></i>Create Class
                                 </a>
@@ -738,7 +697,7 @@ Links will be automatically formatted and clickable for students." required></te
         <div class="col-md-2">
             <div class="stat-card">
                 <i class="fas fa-chalkboard-teacher stat-icon text-danger"></i>
-                <div class="stat-number">{{ ((individual_classes|length if individual_classes else 0) + (group_classes|length if group_classes else 0)) }}</div>
+                <div class="stat-number">{{ classes|length if classes else 0 }}</div>
                 <div class="stat-label">Total Classes</div>
             </div>
         </div>

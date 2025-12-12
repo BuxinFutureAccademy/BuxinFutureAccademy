@@ -5,9 +5,9 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow">
-                <div class="card-header {% if class_type == 'group' %}bg-success{% else %}bg-primary{% endif %} text-white">
+                <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
-                        <i class="fas fa-edit me-2"></i>Edit {{ class_type|title }} Class
+                        <i class="fas fa-edit me-2"></i>Edit Class
                     </h4>
                 </div>
                 <div class="card-body">
@@ -23,7 +23,7 @@
                             <textarea class="form-control" id="description" name="description" rows="3">{{ class_obj.description or '' }}</textarea>
                         </div>
                         
-                        {% if class_type == 'group' %}
+                        {% if class_obj.max_students is defined %}
                         <div class="mb-4">
                             <label for="max_students" class="form-label fw-bold">Maximum Students</label>
                             <input type="number" class="form-control" id="max_students" name="max_students" 
@@ -33,7 +33,7 @@
                         {% endif %}
                         
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn {% if class_type == 'group' %}btn-success{% else %}btn-primary{% endif %}">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-2"></i>Save Changes
                             </button>
                             <a href="{{ url_for('admin.admin_classes') }}" class="btn btn-secondary">
@@ -51,7 +51,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Deleting this class will remove it permanently. This action cannot be undone.</p>
-                    <form action="{{ url_for('admin.delete_class', class_type=class_type, class_id=class_obj.id) }}" 
+                    <form action="{{ url_for('admin.delete_class', class_id=class_obj.id) }}" 
                           method="POST" 
                           onsubmit="return confirm('Are you sure you want to delete this class? This action cannot be undone!');">
                         <button type="submit" class="btn btn-danger">

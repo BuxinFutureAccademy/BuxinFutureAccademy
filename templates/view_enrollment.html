@@ -103,7 +103,7 @@
                         <div class="col-md-6 info-row">
                             <div class="info-label">Class Type</div>
                             <div class="info-value">
-                                <span class="badge {% if enrollment.class_type == 'individual' %}bg-primary{% else %}bg-success{% endif %}">
+                                <span class="badge bg-primary">
                                     {{ enrollment.class_type|title }}
                                 </span>
                             </div>
@@ -122,11 +122,7 @@
                         <div class="col-md-6 info-row">
                             <div class="info-label">Amount</div>
                             <div class="info-value h4 text-success mb-0">
-                                {% if enrollment.class_type == 'individual' %}
-                                    ${{ enrollment.amount }} USD
-                                {% else %}
-                                    D{{ enrollment.amount }} GMD
-                                {% endif %}
+                                ${{ enrollment.amount }} USD
                             </div>
                         </div>
                         <div class="col-md-6 info-row">

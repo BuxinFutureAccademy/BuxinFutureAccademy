@@ -272,7 +272,16 @@ def admin_dashboard():
     # Get robotics count
     robotics_count = RoboticsProjectSubmission.query.count()
     
-    # Placeholder empty lists for classes and materials (implement based on your models)
+    # Unified classes (legacy individual classes included for completeness)
+    try:
+        classes = GroupClass.query.all()
+    except Exception:
+        classes = []
+    try:
+        legacy_individual = IndividualClass.query.all()
+        classes = classes + legacy_individual
+    except Exception:
+        pass
     individual_classes = []
     group_classes = []
     materials = []
@@ -280,8 +289,7 @@ def admin_dashboard():
     return render_template('admin_dashboard.html',
         students=students,
         individual_students=individual_students,
-        individual_classes=individual_classes,
-        group_classes=group_classes,
+        classes=classes,
         materials=materials,
         course_orders=course_orders,
         enrollments=enrollments,
@@ -319,7 +327,6 @@ def create_class():
     from flask import request
     
     if request.method == 'POST':
-        class_type = request.form.get('class_type', 'individual')
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         max_students = request.form.get('max_students', 10)
@@ -329,27 +336,22 @@ def create_class():
             return render_template('create_class.html')
         
         try:
-            if class_type == 'individual':
-                new_class = IndividualClass(
-                    name=name,
-                    description=description,
-                    teacher_id=current_user.id
-                )
-            else:
-                try:
-                    max_students = int(max_students)
-                except:
-                    max_students = 10
-                new_class = GroupClass(
-                    name=name,
-                    description=description,
-                    teacher_id=current_user.id,
-                    max_students=max_students
-                )
-            
+            try:
+                max_students = int(max_students)
+            except Exception:
+                max_students = 10
+
+            # All classes are now a single type; we use GroupClass as the unified model
+            new_class = GroupClass(
+                name=name,
+                description=description,
+                teacher_id=current_user.id,
+                max_students=max_students
+            )
+
             db.session.add(new_class)
             db.session.commit()
-            flash(f'{class_type.title()} class "{name}" created successfully!', 'success')
+            flash(f'Class "{name}" created successfully!', 'success')
             return redirect(url_for('admin.admin_dashboard'))
         except Exception as e:
             db.session.rollback()
@@ -367,18 +369,20 @@ def admin_classes():
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
     
+    # Legacy individual classes are kept for display, but new classes use GroupClass
     individual_classes = IndividualClass.query.all()
     group_classes = GroupClass.query.all()
+    all_classes = group_classes + individual_classes
     
     return render_template('admin_classes.html',
-        individual_classes=individual_classes,
-        group_classes=group_classes
+        classes=all_classes
     )
 
 
-@bp.route('/admin/edit-class/<class_type>/<int:class_id>', methods=['GET', 'POST'])
+@bp.route('/admin/edit-class/<int:class_id>', methods=['GET', 'POST'])
+@bp.route('/admin/edit-class/<class_type>/<int:class_id>', methods=['GET', 'POST'])  # legacy URL
 @login_required
-def edit_class(class_type, class_id):
+def edit_class(class_id, class_type=None):
     """Edit a class"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
@@ -386,19 +390,17 @@ def edit_class(class_type, class_id):
     
     from flask import request
     
-    if class_type == 'individual':
-        class_obj = IndividualClass.query.get_or_404(class_id)
-    else:
-        class_obj = GroupClass.query.get_or_404(class_id)
+    # Prefer unified GroupClass; fall back to legacy IndividualClass for older records
+    class_obj = GroupClass.query.get(class_id) or IndividualClass.query.get_or_404(class_id)
     
     if request.method == 'POST':
         class_obj.name = request.form.get('name', class_obj.name).strip()
         class_obj.description = request.form.get('description', class_obj.description).strip()
         
-        if class_type == 'group':
+        if hasattr(class_obj, 'max_students'):
             try:
                 class_obj.max_students = int(request.form.get('max_students', 10))
-            except:
+            except Exception:
                 class_obj.max_students = 10
         
         try:
@@ -409,21 +411,19 @@ def edit_class(class_type, class_id):
             db.session.rollback()
             flash(f'Error updating class: {str(e)}', 'danger')
     
-    return render_template('edit_class.html', class_obj=class_obj, class_type=class_type)
+    return render_template('edit_class.html', class_obj=class_obj)
 
 
-@bp.route('/admin/delete-class/<class_type>/<int:class_id>', methods=['POST'])
+@bp.route('/admin/delete-class/<int:class_id>', methods=['POST'])
+@bp.route('/admin/delete-class/<class_type>/<int:class_id>', methods=['POST'])  # legacy URL
 @login_required
-def delete_class(class_type, class_id):
+def delete_class(class_id, class_type=None):
     """Delete a class"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
     
-    if class_type == 'individual':
-        class_obj = IndividualClass.query.get_or_404(class_id)
-    else:
-        class_obj = GroupClass.query.get_or_404(class_id)
+    class_obj = GroupClass.query.get(class_id) or IndividualClass.query.get_or_404(class_id)
     
     class_name = class_obj.name
     
@@ -457,10 +457,8 @@ def admin_enrollments():
     
     # Get class names for each enrollment
     for enrollment in enrollments:
-        if enrollment.class_type == 'individual':
-            class_obj = IndividualClass.query.get(enrollment.class_id)
-        else:
-            class_obj = GroupClass.query.get(enrollment.class_id)
+        # Unified classes now live in GroupClass; keep legacy lookup for old data
+        class_obj = GroupClass.query.get(enrollment.class_id) or IndividualClass.query.get(enrollment.class_id)
         enrollment.class_name = class_obj.name if class_obj else 'Unknown'
         
         # Get user info
@@ -484,10 +482,7 @@ def view_enrollment(enrollment_id):
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     
     # Get class info
-    if enrollment.class_type == 'individual':
-        class_obj = IndividualClass.query.get(enrollment.class_id)
-    else:
-        class_obj = GroupClass.query.get(enrollment.class_id)
+    class_obj = GroupClass.query.get(enrollment.class_id) or IndividualClass.query.get(enrollment.class_id)
     
     # Get user info
     user = User.query.get(enrollment.user_id)

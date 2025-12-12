@@ -520,18 +520,18 @@ def create_class():
             return render_template('create_class.html')
         
         try:
-                try:
-                    max_students = int(max_students)
+            try:
+                max_students = int(max_students)
             except Exception:
-                    max_students = 10
+                max_students = 10
 
             # All classes are now a single type; we use GroupClass as the unified model
-                new_class = GroupClass(
-                    name=name,
-                    description=description,
-                    teacher_id=current_user.id,
-                    max_students=max_students
-                )
+            new_class = GroupClass(
+                name=name,
+                description=description,
+                teacher_id=current_user.id,
+                max_students=max_students
+            )
             
             db.session.add(new_class)
             db.session.commit()

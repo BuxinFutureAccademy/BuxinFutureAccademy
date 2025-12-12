@@ -464,7 +464,7 @@ def admin_dashboard():
     try:
         materials = LearningMaterial.query.order_by(LearningMaterial.created_at.desc()).limit(50).all()
     except Exception:
-    materials = []
+        materials = []
     
     return render_template('admin_dashboard.html',
         students=students,

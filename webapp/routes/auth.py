@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user, login_required, login_user, logout_user
 
 from ..extensions import db
-from ..models import User, PasswordResetToken
+from ..models import User, PasswordResetToken, ClassEnrollment
 from ..services.mailer import send_bulk_email
 
 bp = Blueprint('auth', __name__)
@@ -171,17 +171,53 @@ def reset_password(token):
 @bp.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        # Redirect based on user type
+        return redirect(get_user_redirect_url(current_user))
+    
     if request.method == 'POST':
         identifier = request.form.get('email', '').strip().lower() or request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter((User.email == identifier) | (User.username == identifier)).first() if identifier else None
         if user and user.check_password(password):
             login_user(user)
-            next_url = request.args.get('next') or url_for('main.index')
-            return redirect(next_url)
+            
+            # Check for next URL first
+            next_url = request.args.get('next')
+            if next_url:
+                return redirect(next_url)
+            
+            # Redirect based on user type and enrollment
+            return redirect(get_user_redirect_url(user))
         flash('Invalid credentials.', 'danger')
     return render_template('login.html')
+
+
+def get_user_redirect_url(user):
+    """
+    Get redirect URL based on user type:
+    - Admin → Admin Dashboard
+    - Student with class enrollment → Student Dashboard
+    - User without enrollment → Homepage
+    """
+    # Admin goes to admin dashboard
+    if user.is_admin:
+        return url_for('admin.admin_dashboard')
+    
+    # Check if user has any class enrollments
+    try:
+        has_enrollment = ClassEnrollment.query.filter_by(
+            user_id=user.id
+        ).first() is not None
+        
+        if has_enrollment:
+            # Student with enrollment → Student Dashboard
+            return url_for('admin.student_dashboard')
+        else:
+            # User without enrollment → Homepage
+            return url_for('main.index')
+    except Exception:
+        # If error checking enrollment, default to index
+        return url_for('main.index')
 
 
 @bp.route('/logout')

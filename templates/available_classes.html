@@ -540,6 +540,42 @@
                 justify-content: center;
             }
         }
+
+        /* Type Selector Pills */
+        .type-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .type-pill {
+            padding: 0.5rem 1.2rem;
+            border-radius: 25px;
+            font-family: var(--font-tech);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .type-pill:hover {
+            color: var(--pill-color);
+            border-color: var(--pill-color);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .type-pill.active {
+            color: var(--dark);
+            background: var(--pill-color);
+            border-color: var(--pill-color);
+        }
     </style>
 </head>
 <body>
@@ -570,17 +606,35 @@
         <div class="hero-grid"></div>
         <div class="container">
             <div class="hero-content">
-                <div class="hero-badge pulse-badge">
-                    <i class="fas fa-robot"></i>
-                    <span>Join the Future</span>
+                {% set class_type = request.args.get('type', 'individual') %}
+                {% set type_info = {
+                    'individual': {'name': 'Individual', 'price': '$100', 'icon': 'fa-user', 'color': '#00d4ff'},
+                    'group': {'name': 'Group', 'price': '$125', 'icon': 'fa-users', 'color': '#39ff14'},
+                    'family': {'name': 'Family', 'price': '$200', 'icon': 'fa-home', 'color': '#ff6b35'},
+                    'school': {'name': 'School', 'price': '$300', 'icon': 'fa-school', 'color': '#9b59b6'}
+                } %}
+                {% set info = type_info.get(class_type, type_info['individual']) %}
+                
+                <div class="hero-badge pulse-badge" style="border-color: {{ info.color }}40; background: {{ info.color }}20;">
+                    <i class="fas {{ info.icon }}" style="color: {{ info.color }};"></i>
+                    <span style="color: {{ info.color }};">{{ info.name }} Class - {{ info.price }}</span>
                 </div>
                 <h1 class="hero-title">
-                    <span class="highlight">Robotics</span> Classes
+                    <span class="highlight">{{ info.name }}</span> Classes
                 </h1>
                 <p class="hero-subtitle">
-                    Learn to build robots, program AI, and create amazing projects. 
-                    Choose your class and start your journey to becoming a tech innovator!
+                    You selected <strong>{{ info.name }}</strong> class type ({{ info.price }}). 
+                    Choose a class below to start your robotics journey!
                 </p>
+                
+                <!-- Class Type Selector -->
+                <div class="type-selector mt-4">
+                    <span class="text-muted me-2">Change type:</span>
+                    <a href="?type=individual" class="type-pill {% if class_type == 'individual' %}active{% endif %}" style="--pill-color: #00d4ff;">Individual</a>
+                    <a href="?type=group" class="type-pill {% if class_type == 'group' %}active{% endif %}" style="--pill-color: #39ff14;">Group</a>
+                    <a href="?type=family" class="type-pill {% if class_type == 'family' %}active{% endif %}" style="--pill-color: #ff6b35;">Family</a>
+                    <a href="?type=school" class="type-pill {% if class_type == 'school' %}active{% endif %}" style="--pill-color: #9b59b6;">School</a>
+                </div>
             </div>
         </div>
     </section>
@@ -614,12 +668,13 @@
                                         <i class="fas fa-clock"></i> Flexible Schedule
                                     </span>
                                 </div>
+                                {% set pricing_type = request.args.get('type', 'individual') %}
                                 {% if current_user.is_authenticated %}
-                                    <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}" class="enroll-btn enroll-btn-primary">
+                                    <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}?pricing={{ pricing_type }}" class="enroll-btn enroll-btn-primary">
                                         <i class="fas fa-rocket"></i> Enroll Now
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn enroll-btn-login">
+                                    <a href="{{ url_for('auth.login') }}?next={{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}%3Fpricing%3D{{ pricing_type }}" class="enroll-btn enroll-btn-login">
                                         <i class="fas fa-sign-in-alt"></i> Login to Enroll
                                     </a>
                                 {% endif %}
@@ -669,16 +724,17 @@
                                         </span>
                                     {% endif %}
                                 </div>
+                                {% set pricing_type = request.args.get('type', 'group') %}
                                 {% if class.students and class.students|length >= class.max_students %}
                                     <button class="enroll-btn enroll-btn-disabled" disabled>
                                         <i class="fas fa-ban"></i> Class Full
                                     </button>
                                 {% elif current_user.is_authenticated %}
-                                    <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}" class="enroll-btn enroll-btn-group">
+                                    <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}?pricing={{ pricing_type }}" class="enroll-btn enroll-btn-group">
                                         <i class="fas fa-rocket"></i> Enroll Now
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn enroll-btn-login">
+                                    <a href="{{ url_for('auth.login') }}?next={{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}%3Fpricing%3D{{ pricing_type }}" class="enroll-btn enroll-btn-login">
                                         <i class="fas fa-sign-in-alt"></i> Login to Enroll
                                     </a>
                                 {% endif %}

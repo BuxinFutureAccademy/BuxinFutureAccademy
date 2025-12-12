@@ -709,6 +709,186 @@
             margin-top: 0.5rem;
         }
 
+        /* ========== CLASS TYPES SECTION ========== */
+        .class-types-section {
+            background: var(--gradient-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .class-types-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 107, 53, 0.1) 0%, transparent 40%);
+        }
+
+        .class-type-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 25px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.4s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .class-type-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .class-type-card.class-type-popular {
+            border-color: var(--secondary);
+            background: rgba(255, 107, 53, 0.05);
+        }
+
+        .class-type-card.class-type-popular:hover {
+            box-shadow: 0 20px 40px rgba(255, 107, 53, 0.3);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gradient-fire);
+            color: white;
+            padding: 0.4rem 1.5rem;
+            border-radius: 20px;
+            font-family: var(--font-tech);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .class-type-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: var(--dark);
+        }
+
+        .class-type-title {
+            font-family: var(--font-tech);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .class-type-price {
+            font-family: var(--font-tech);
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .class-type-desc {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .class-type-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.5rem;
+            text-align: left;
+        }
+
+        .class-type-features li {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .class-type-features li i {
+            color: var(--accent);
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .class-type-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-family: var(--font-tech);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-individual {
+            background: var(--gradient-cyber);
+            color: var(--dark);
+        }
+
+        .btn-individual:hover {
+            box-shadow: var(--shadow-neon);
+            transform: translateY(-3px);
+            color: var(--dark);
+        }
+
+        .btn-group {
+            background: var(--gradient-neon);
+            color: var(--dark);
+        }
+
+        .btn-group:hover {
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
+            transform: translateY(-3px);
+            color: var(--dark);
+        }
+
+        .btn-family {
+            background: var(--gradient-fire);
+            color: white;
+        }
+
+        .btn-family:hover {
+            box-shadow: var(--shadow-fire);
+            transform: translateY(-3px);
+            color: white;
+        }
+
+        .btn-school {
+            background: linear-gradient(135deg, #9b59b6, #3498db);
+            color: white;
+        }
+
+        .btn-school:hover {
+            box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+            transform: translateY(-3px);
+            color: white;
+        }
+
         /* ========== CONTACT SECTION ========== */
         .contact-section {
             background: var(--gradient-dark);
@@ -1025,9 +1205,9 @@
                         Hands-on classes for young innovators ready to change the world.
                     </p>
                     <div class="hero-buttons">
-                        <a href="{{ url_for('store.available_classes') }}" class="btn-cyber">
+                        <a href="#class-types" class="btn-cyber">
                             <i class="fas fa-graduation-cap"></i>
-                            Join Classes
+                            Register Now
                         </a>
                         <a href="#gallery" class="btn-outline">
                             <i class="fas fa-images"></i>
@@ -1103,6 +1283,105 @@
                         <p class="victory-desc">
                             Explore sustainable technology with our electric vehicle projects and green tech initiatives.
                         </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Class Types Section -->
+    <section class="section class-types-section" id="class-types">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge" style="border-color: rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.1);">
+                    <i class="fas fa-graduation-cap" style="color: #ffd700;"></i>
+                    <span style="color: #ffd700;">Register Now</span>
+                </div>
+                <h2 class="section-title">Choose Your <span style="background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Class Type</span></h2>
+                <p class="section-subtitle">
+                    Select the class type that best fits your learning needs and budget.
+                </p>
+            </div>
+            
+            <div class="row g-4 justify-content-center">
+                <!-- Individual Class -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="class-type-card">
+                        <div class="class-type-icon" style="background: var(--gradient-cyber);">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h3 class="class-type-title">Individual</h3>
+                        <div class="class-type-price">$100</div>
+                        <p class="class-type-desc">One-on-one personalized learning with dedicated instructor attention.</p>
+                        <ul class="class-type-features">
+                            <li><i class="fas fa-check"></i> 1 Student</li>
+                            <li><i class="fas fa-check"></i> Personal Instructor</li>
+                            <li><i class="fas fa-check"></i> Flexible Schedule</li>
+                        </ul>
+                        <a href="{{ url_for('store.available_classes') }}?type=individual" class="class-type-btn btn-individual">
+                            <i class="fas fa-rocket me-2"></i>Register Now
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Group Class -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="class-type-card">
+                        <div class="class-type-icon" style="background: var(--gradient-neon);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="class-type-title">Group</h3>
+                        <div class="class-type-price">$125</div>
+                        <p class="class-type-desc">Learn together with other students in interactive group sessions.</p>
+                        <ul class="class-type-features">
+                            <li><i class="fas fa-check"></i> 2+ Students</li>
+                            <li><i class="fas fa-check"></i> Team Projects</li>
+                            <li><i class="fas fa-check"></i> Collaborative Learning</li>
+                        </ul>
+                        <a href="{{ url_for('store.available_classes') }}?type=group" class="class-type-btn btn-group">
+                            <i class="fas fa-rocket me-2"></i>Register Now
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Family Class -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="class-type-card class-type-popular">
+                        <div class="popular-badge">Popular</div>
+                        <div class="class-type-icon" style="background: var(--gradient-fire);">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <h3 class="class-type-title">Family</h3>
+                        <div class="class-type-price">$200</div>
+                        <p class="class-type-desc">Perfect for families! Learn robotics together with up to 4 members.</p>
+                        <ul class="class-type-features">
+                            <li><i class="fas fa-check"></i> Up to 4 People</li>
+                            <li><i class="fas fa-check"></i> Family Bonding</li>
+                            <li><i class="fas fa-check"></i> Best Value</li>
+                        </ul>
+                        <a href="{{ url_for('store.available_classes') }}?type=family" class="class-type-btn btn-family">
+                            <i class="fas fa-rocket me-2"></i>Register Now
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- School Class -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="class-type-card">
+                        <div class="class-type-icon" style="background: linear-gradient(135deg, #9b59b6, #3498db);">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <h3 class="class-type-title">School</h3>
+                        <div class="class-type-price">$300</div>
+                        <p class="class-type-desc">Designed for schools and educational institutions.</p>
+                        <ul class="class-type-features">
+                            <li><i class="fas fa-check"></i> School Groups</li>
+                            <li><i class="fas fa-check"></i> Curriculum Support</li>
+                            <li><i class="fas fa-check"></i> Bulk Enrollment</li>
+                        </ul>
+                        <a href="{{ url_for('store.available_classes') }}?type=school" class="class-type-btn btn-school">
+                            <i class="fas fa-rocket me-2"></i>Register Now
+                        </a>
                     </div>
                 </div>
             </div>

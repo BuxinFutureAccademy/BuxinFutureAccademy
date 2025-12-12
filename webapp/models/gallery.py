@@ -13,10 +13,6 @@ class HomeGallery(db.Model):
     media_url = db.Column(db.String(500), nullable=False)
     thumbnail_url = db.Column(db.String(500))  # For videos
     
-    # Video specific fields
-    video_format = db.Column(db.String(20), default='long')  # 'short' (9:16) or 'long' (16:9)
-    video_platform = db.Column(db.String(50), default='youtube')  # 'youtube', 'facebook', 'tiktok', 'instagram', 'other'
-    
     # Source tracking
     source_type = db.Column(db.String(50), default='admin')  # 'admin' or 'student_project'
     source_project_id = db.Column(db.Integer, db.ForeignKey('student_project.id'), nullable=True)
@@ -101,10 +97,8 @@ class HomeGallery(db.Model):
         return any(ext in self.media_url.lower() for ext in ['.mp4', '.webm', '.mov', '.ogg'])
     
     def get_aspect_ratio_class(self):
-        """Get CSS class for video aspect ratio"""
-        if self.video_format == 'short':
-            return 'ratio-9x16'  # Vertical video
-        return 'ratio-16x9'  # Horizontal video
+        """Get CSS class for video aspect ratio - defaults to 16:9"""
+        return 'ratio-16x9'  # Horizontal video (default)
 
 
 class StudentVictory(db.Model):

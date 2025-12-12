@@ -1178,8 +1178,8 @@
             {% if gallery_videos or projects_with_videos %}
             <div class="video-grid">
                 {% for item in gallery_videos %}
-                <div class="video-card {% if item.video_format == 'short' %}video-short{% endif %}">
-                    <div class="video-wrapper {% if item.video_format == 'short' %}ratio-9x16{% else %}ratio-16x9{% endif %}">
+                <div class="video-card">
+                    <div class="video-wrapper ratio-16x9">
                         {% set embed_url = item.get_embed_url() %}
                         {% if embed_url %}
                             {% if item.is_direct_video() %}
@@ -1200,7 +1200,7 @@
                             {% endif %}
                             <div class="play-overlay">
                                 <i class="fas fa-play-circle"></i>
-                                <span>Watch on {{ item.video_platform|default('External Site')|title }}</span>
+                                <span>Watch Video</span>
                             </div>
                         </div>
                         {% endif %}
@@ -1208,11 +1208,6 @@
                     <div class="video-info">
                         <h5 class="video-title">{{ item.title }}</h5>
                         <p class="video-desc">{{ item.description[:100] if item.description else '' }}{% if item.description and item.description|length > 100 %}...{% endif %}</p>
-                        {% if item.video_platform and item.video_platform != 'other' %}
-                        <span class="platform-badge platform-{{ item.video_platform }}">
-                            <i class="fab fa-{{ item.video_platform }}"></i> {{ item.video_platform|title }}
-                        </span>
-                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

@@ -938,10 +938,23 @@ def admin_victory_add():
         student_name = request.form.get('student_name', '').strip()
         is_featured = request.form.get('is_featured') == 'on'
         display_order = request.form.get('display_order', 0, type=int)
+        input_method = request.form.get('input_method', 'url')
         
         if not title or not description:
             flash('Title and description are required.', 'danger')
             return render_template('admin_victory_form.html', action='add', students=students)
+        
+        # Handle file upload
+        if input_method == 'upload' and 'image_file' in request.files:
+            file = request.files['image_file']
+            if file and file.filename:
+                try:
+                    from ..services.cloudinary_service import cloudinary_service
+                    upload_result = cloudinary_service.upload_file(file, folder='victories')
+                    if upload_result and 'secure_url' in upload_result:
+                        image_url = upload_result['secure_url']
+                except Exception as upload_error:
+                    flash(f'File upload failed: {str(upload_error)}', 'warning')
         
         achievement_date = None
         if achievement_date_str:
@@ -991,12 +1004,26 @@ def admin_victory_edit(victory_id):
         victory.title = request.form.get('title', victory.title).strip()
         victory.description = request.form.get('description', victory.description).strip()
         victory.achievement_type = request.form.get('achievement_type', '').strip() or None
-        victory.image_url = request.form.get('image_url', '').strip() or None
         victory.student_id = request.form.get('student_id', type=int) or None
         victory.student_name = request.form.get('student_name', '').strip() or None
         victory.is_active = request.form.get('is_active') == 'on'
         victory.is_featured = request.form.get('is_featured') == 'on'
         victory.display_order = request.form.get('display_order', 0, type=int)
+        
+        # Handle image - URL or upload
+        input_method = request.form.get('input_method', 'url')
+        if input_method == 'upload' and 'image_file' in request.files:
+            file = request.files['image_file']
+            if file and file.filename:
+                try:
+                    from ..services.cloudinary_service import cloudinary_service
+                    upload_result = cloudinary_service.upload_file(file, folder='victories')
+                    if upload_result and 'secure_url' in upload_result:
+                        victory.image_url = upload_result['secure_url']
+                except Exception as upload_error:
+                    flash(f'File upload failed: {str(upload_error)}', 'warning')
+        else:
+            victory.image_url = request.form.get('image_url', '').strip() or None
         
         achievement_date_str = request.form.get('achievement_date', '')
         if achievement_date_str:

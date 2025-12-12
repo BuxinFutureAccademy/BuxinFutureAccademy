@@ -30,6 +30,36 @@
         font-size: 4rem;
         color: rgba(255,255,255,0.9);
     }
+    .input-method-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    .input-method-tabs .btn {
+        flex: 1;
+    }
+    .input-method-tabs .btn.active {
+        background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+        color: white;
+        border-color: transparent;
+    }
+    .upload-area {
+        border: 2px dashed #ddd;
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .upload-area:hover {
+        border-color: #ffd700;
+        background: rgba(255, 215, 0, 0.05);
+    }
+    .upload-area i {
+        font-size: 3rem;
+        color: #ffd700;
+        margin-bottom: 1rem;
+    }
 </style>
 
 <div class="container py-4">
@@ -51,7 +81,7 @@
             </div>
 
             <div class="form-card">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Title *</label>
                         <input type="text" name="title" class="form-control" required
@@ -105,11 +135,43 @@
                         </div>
                     </div>
 
+                    <!-- Image Input Method -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Image URL</label>
-                        <input type="url" name="image_url" class="form-control" id="imageUrl"
-                               value="{{ victory.image_url if victory else '' }}" 
-                               placeholder="https://... (achievement photo or certificate)">
+                        <label class="form-label fw-bold">Achievement Image</label>
+                        <p class="text-muted small mb-2">Add a photo or certificate image</p>
+                        
+                        <div class="input-method-tabs">
+                            <button type="button" class="btn btn-outline-secondary active" id="urlTabBtn" onclick="showUrlInput()">
+                                <i class="fas fa-link me-2"></i>Use URL Link
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="uploadTabBtn" onclick="showUploadInput()">
+                                <i class="fas fa-upload me-2"></i>Upload File
+                            </button>
+                        </div>
+                        
+                        <input type="hidden" name="input_method" id="inputMethod" value="url">
+                        
+                        <!-- URL Input -->
+                        <div id="urlInputSection">
+                            <input type="url" name="image_url" class="form-control" id="imageUrl"
+                                   value="{{ victory.image_url if victory else '' }}" 
+                                   placeholder="https://... (image URL)">
+                            <small class="text-muted">Direct image URL (e.g., from Cloudinary, Imgur, Google Drive)</small>
+                        </div>
+                        
+                        <!-- File Upload -->
+                        <div id="uploadInputSection" style="display: none;">
+                            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p class="mb-1 fw-bold">Click to upload image</p>
+                                <p class="text-muted small mb-0">JPG, PNG, GIF up to 10MB</p>
+                            </div>
+                            <input type="file" name="image_file" id="fileInput" accept="image/*" class="d-none" onchange="handleFileSelect(this)">
+                            <div id="selectedFile" class="mt-2 text-success" style="display: none;">
+                                <i class="fas fa-check-circle me-1"></i>
+                                <span id="selectedFileName"></span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -146,7 +208,7 @@
                             <img src="{{ victory.image_url }}" alt="Preview" id="previewImg">
                             {% else %}
                             <i class="fas fa-trophy preview-icon" id="previewIcon"></i>
-                            <p class="text-white mt-2" id="previewText">Enter image URL to see preview</p>
+                            <p class="text-white mt-2" id="previewText">Enter image URL or upload file to see preview</p>
                             {% endif %}
                         </div>
                     </div>
@@ -164,6 +226,38 @@
 </div>
 
 <script>
+function showUrlInput() {
+    document.getElementById('urlInputSection').style.display = 'block';
+    document.getElementById('uploadInputSection').style.display = 'none';
+    document.getElementById('urlTabBtn').classList.add('active');
+    document.getElementById('uploadTabBtn').classList.remove('active');
+    document.getElementById('inputMethod').value = 'url';
+}
+
+function showUploadInput() {
+    document.getElementById('urlInputSection').style.display = 'none';
+    document.getElementById('uploadInputSection').style.display = 'block';
+    document.getElementById('urlTabBtn').classList.remove('active');
+    document.getElementById('uploadTabBtn').classList.add('active');
+    document.getElementById('inputMethod').value = 'upload';
+}
+
+function handleFileSelect(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('selectedFile').style.display = 'block';
+        document.getElementById('selectedFileName').textContent = file.name;
+        
+        // Preview the image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewBox = document.getElementById('previewBox');
+            previewBox.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 10px;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
 document.getElementById('imageUrl').addEventListener('input', function() {
     const url = this.value;
     const previewBox = document.getElementById('previewBox');
@@ -173,10 +267,9 @@ document.getElementById('imageUrl').addEventListener('input', function() {
     } else {
         previewBox.innerHTML = `
             <i class="fas fa-trophy preview-icon" id="previewIcon"></i>
-            <p class="text-white mt-2" id="previewText">Enter image URL to see preview</p>
+            <p class="text-white mt-2" id="previewText">Enter image URL or upload file to see preview</p>
         `;
     }
 });
 </script>
 {% endblock %}
-

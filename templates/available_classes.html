@@ -1,157 +1,738 @@
-{% extends "base.html" %}
-
-{% block content %}
-<style>
-    .class-card {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-        overflow: hidden;
-    }
-    .class-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-    .class-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem;
-    }
-    .class-header.group {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    }
-    .enroll-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        border-radius: 25px;
-        padding: 0.5rem 1.5rem;
-        color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    .enroll-btn:hover {
-        transform: scale(1.05);
-        color: white;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-    .enroll-btn.group {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    }
-    .enroll-btn.group:hover {
-        box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
-    }
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: #6c757d;
-    }
-    .empty-state i {
-        font-size: 4rem;
-        opacity: 0.5;
-        margin-bottom: 1rem;
-    }
-</style>
-
-<div class="container mt-4">
-    <div class="text-center mb-4">
-        <h2><i class="fas fa-chalkboard-teacher me-2" style="color: #667eea;"></i>Available Classes</h2>
-        <p class="text-muted">Browse and enroll in available classes to start your learning journey</p>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Robotics Classes - BuXin Academy</title>
+    <link rel="icon" href="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <div class="row g-4">
-        <!-- Individual Classes -->
-        <div class="col-lg-6">
-            <h4 class="mb-3"><i class="fas fa-user me-2 text-primary"></i>Individual Classes (1-on-1)</h4>
-            {% if individual_classes %}
-                {% for class in individual_classes %}
-                    <div class="class-card card mb-3">
-                        <div class="class-header">
-                            <h5 class="mb-0">{{ class.name }}</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ class.description or 'Personalized one-on-one learning experience' }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-primary">Individual</span>
+    <style>
+        :root {
+            --primary: #00d4ff;
+            --primary-dark: #0099cc;
+            --secondary: #ff6b35;
+            --accent: #39ff14;
+            --dark: #0a0a1a;
+            --darker: #050510;
+            --gradient-cyber: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
+            --gradient-fire: linear-gradient(135deg, #ff6b35 0%, #f72585 100%);
+            --gradient-neon: linear-gradient(135deg, #39ff14 0%, #00d4ff 100%);
+            --gradient-dark: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+            --shadow-neon: 0 0 30px rgba(0, 212, 255, 0.3);
+            --shadow-fire: 0 0 30px rgba(255, 107, 53, 0.3);
+            --font-tech: 'Orbitron', sans-serif;
+            --font-body: 'Rajdhani', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--darker);
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* ========== NAVBAR ========== */
+        .robotics-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 0.8rem 0;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            gap: 12px;
+        }
+
+        .nav-brand img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            box-shadow: var(--shadow-neon);
+        }
+
+        .nav-brand-text {
+            font-family: var(--font-tech);
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .nav-brand-text span {
+            color: var(--secondary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-link {
+            font-family: var(--font-tech);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 0.5rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary);
+        }
+
+        .nav-cta {
+            background: var(--gradient-fire);
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            font-family: var(--font-tech);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-fire);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        /* ========== HERO SECTION ========== */
+        .classes-hero {
+            background: var(--gradient-dark);
+            padding: 150px 0 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .classes-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
+        }
+
+        .hero-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 0.5rem 1.2rem;
+            border-radius: 25px;
+            font-family: var(--font-tech);
+            font-size: 0.75rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-tech);
+            font-size: 3.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .hero-title .highlight {
+            background: var(--gradient-cyber);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        /* ========== CLASSES SECTION ========== */
+        .classes-section {
+            padding: 80px 0;
+            background: var(--darker);
+        }
+
+        .section-title {
+            font-family: var(--font-tech);
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title .icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-cyber);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .section-title.group .icon {
+            background: var(--gradient-neon);
+        }
+
+        /* ========== CLASS CARDS ========== */
+        .class-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .class-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-neon);
+            border-color: var(--primary);
+        }
+
+        .class-card.group-card {
+            border-color: rgba(57, 255, 20, 0.2);
+        }
+
+        .class-card.group-card:hover {
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
+            border-color: var(--accent);
+        }
+
+        .class-header {
+            background: var(--gradient-cyber);
+            padding: 1.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .class-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+
+        .class-header.group {
+            background: var(--gradient-neon);
+        }
+
+        .class-name {
+            font-family: var(--font-tech);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .class-meta {
+            font-size: 0.85rem;
+            color: rgba(0, 0, 0, 0.7);
+        }
+
+        .class-body {
+            padding: 1.5rem 2rem;
+        }
+
+        .class-desc {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .class-features {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .feature-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-individual {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--primary);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .badge-group {
+            background: rgba(57, 255, 20, 0.2);
+            color: var(--accent);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+        }
+
+        .badge-spots {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--secondary);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        .badge-full {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4444;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+        }
+
+        /* ========== ENROLL BUTTONS ========== */
+        .enroll-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-family: var(--font-tech);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .enroll-btn-primary {
+            background: var(--gradient-cyber);
+            color: var(--dark);
+        }
+
+        .enroll-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-neon);
+            color: var(--dark);
+        }
+
+        .enroll-btn-group {
+            background: var(--gradient-neon);
+            color: var(--dark);
+        }
+
+        .enroll-btn-group:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
+            color: var(--dark);
+        }
+
+        .enroll-btn-disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.4);
+            cursor: not-allowed;
+        }
+
+        .enroll-btn-login {
+            background: var(--gradient-fire);
+            color: white;
+        }
+
+        .enroll-btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-fire);
+            color: white;
+        }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: rgba(0, 212, 255, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state h4 {
+            font-family: var(--font-tech);
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* ========== CTA SECTION ========== */
+        .cta-section {
+            background: var(--gradient-dark);
+            padding: 80px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-title {
+            font-family: var(--font-tech);
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .cta-text {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        /* ========== FOOTER ========== */
+        .footer {
+            background: rgba(5, 5, 16, 0.95);
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .footer-text {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); }
+            50% { box-shadow: 0 0 0 15px rgba(0, 212, 255, 0); }
+        }
+
+        .pulse-badge {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 992px) {
+            .nav-links {
+                display: none;
+            }
+            .hero-title {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            .class-header, .class-body {
+                padding: 1rem 1.5rem;
+            }
+            .enroll-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="robotics-navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="nav-brand">
+                <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" alt="BuXin">
+                <span class="nav-brand-text">Bu<span>Xin</span></span>
+            </a>
+            
+            <ul class="nav-links">
+                <li><a href="{{ url_for('main.index') }}#about" class="nav-link">About Us</a></li>
+                <li><a href="{{ url_for('main.index') }}#gallery" class="nav-link">Student Gallery</a></li>
+                <li><a href="{{ url_for('main.index') }}#videos" class="nav-link">Student Videos</a></li>
+                <li><a href="{{ url_for('main.index') }}#victories" class="nav-link">Student Victory</a></li>
+                <li><a href="{{ url_for('main.index') }}#contact" class="nav-link">Contact Us</a></li>
+            </ul>
+            
+            <a href="{{ url_for('auth.login') }}" class="nav-cta">
+                <i class="fas fa-chalkboard-teacher me-2"></i>Classroom
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="classes-hero">
+        <div class="hero-grid"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge pulse-badge">
+                    <i class="fas fa-robot"></i>
+                    <span>Join the Future</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="highlight">Robotics</span> Classes
+                </h1>
+                <p class="hero-subtitle">
+                    Learn to build robots, program AI, and create amazing projects. 
+                    Choose your class and start your journey to becoming a tech innovator!
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Classes Section -->
+    <section class="classes-section">
+        <div class="container">
+            <div class="row">
+                <!-- Individual Classes -->
+                <div class="col-lg-6 mb-5">
+                    <h3 class="section-title">
+                        <span class="icon"><i class="fas fa-user"></i></span>
+                        Individual Classes
+                    </h3>
+                    <p class="text-muted mb-4">One-on-one personalized learning with expert instructors</p>
+                    
+                    {% if individual_classes %}
+                        {% for class in individual_classes %}
+                        <div class="class-card">
+                            <div class="class-header">
+                                <h4 class="class-name">{{ class.name }}</h4>
+                                <p class="class-meta"><i class="fas fa-user-graduate me-1"></i> Personal Instructor</p>
+                            </div>
+                            <div class="class-body">
+                                <p class="class-desc">{{ class.description or 'Personalized one-on-one robotics learning experience with hands-on projects and expert guidance.' }}</p>
+                                <div class="class-features">
+                                    <span class="feature-badge badge-individual">
+                                        <i class="fas fa-user"></i> 1-on-1 Learning
+                                    </span>
+                                    <span class="feature-badge badge-spots">
+                                        <i class="fas fa-clock"></i> Flexible Schedule
+                                    </span>
                                 </div>
                                 {% if current_user.is_authenticated %}
-                                    <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}" class="enroll-btn btn">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Enroll Now
+                                    <a href="{{ url_for('store.enroll_class', class_type='individual', class_id=class.id) }}" class="enroll-btn enroll-btn-primary">
+                                        <i class="fas fa-rocket"></i> Enroll Now
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn btn">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Login to Enroll
+                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn enroll-btn-login">
+                                        <i class="fas fa-sign-in-alt"></i> Login to Enroll
                                     </a>
                                 {% endif %}
                             </div>
                         </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="class-card card">
-                    <div class="card-body empty-state">
-                        <i class="fas fa-chalkboard"></i>
-                        <h5>No Individual Classes Available</h5>
-                        <p>Check back soon for new classes!</p>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-        
-        <!-- Group Classes -->
-        <div class="col-lg-6">
-            <h4 class="mb-3"><i class="fas fa-users me-2 text-success"></i>Group Classes</h4>
-            {% if group_classes %}
-                {% for class in group_classes %}
-                    <div class="class-card card mb-3">
-                        <div class="class-header group">
-                            <h5 class="mb-0">{{ class.name }}</h5>
-                            <small>{{ class.students|length if class.students else 0 }}/{{ class.max_students }} students</small>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-robot"></i>
+                            <h4>No Individual Classes Yet</h4>
+                            <p>New classes coming soon! Check back later.</p>
                         </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ class.description or 'Learn together with other students' }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-success">Group Class</span>
+                    {% endif %}
+                </div>
+
+                <!-- Group Classes -->
+                <div class="col-lg-6 mb-5">
+                    <h3 class="section-title group">
+                        <span class="icon"><i class="fas fa-users"></i></span>
+                        Group Classes
+                    </h3>
+                    <p class="text-muted mb-4">Learn together with other students in interactive sessions</p>
+                    
+                    {% if group_classes %}
+                        {% for class in group_classes %}
+                        <div class="class-card group-card">
+                            <div class="class-header group">
+                                <h4 class="class-name">{{ class.name }}</h4>
+                                <p class="class-meta">
+                                    <i class="fas fa-users me-1"></i> 
+                                    {{ class.students|length if class.students else 0 }}/{{ class.max_students }} Students
+                                </p>
+                            </div>
+                            <div class="class-body">
+                                <p class="class-desc">{{ class.description or 'Collaborate with peers, build team projects, and learn robotics in a fun group environment.' }}</p>
+                                <div class="class-features">
+                                    <span class="feature-badge badge-group">
+                                        <i class="fas fa-users"></i> Group Learning
+                                    </span>
                                     {% if class.students and class.students|length >= class.max_students %}
-                                        <span class="badge bg-danger ms-1">Full</span>
+                                        <span class="feature-badge badge-full">
+                                            <i class="fas fa-ban"></i> Class Full
+                                        </span>
                                     {% else %}
-                                        <span class="badge bg-info ms-1">Spots Available</span>
+                                        <span class="feature-badge badge-spots">
+                                            <i class="fas fa-check-circle"></i> Spots Available
+                                        </span>
                                     {% endif %}
                                 </div>
                                 {% if class.students and class.students|length >= class.max_students %}
-                                    <button class="btn btn-secondary" disabled>Class Full</button>
+                                    <button class="enroll-btn enroll-btn-disabled" disabled>
+                                        <i class="fas fa-ban"></i> Class Full
+                                    </button>
                                 {% elif current_user.is_authenticated %}
-                                    <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}" class="enroll-btn group btn">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Enroll Now
+                                    <a href="{{ url_for('store.enroll_class', class_type='group', class_id=class.id) }}" class="enroll-btn enroll-btn-group">
+                                        <i class="fas fa-rocket"></i> Enroll Now
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn group btn">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Login to Enroll
+                                    <a href="{{ url_for('auth.login') }}" class="enroll-btn enroll-btn-login">
+                                        <i class="fas fa-sign-in-alt"></i> Login to Enroll
                                     </a>
                                 {% endif %}
                             </div>
                         </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="class-card card">
-                    <div class="card-body empty-state">
-                        <i class="fas fa-users"></i>
-                        <h5>No Group Classes Available</h5>
-                        <p>Check back soon for new group sessions!</p>
-                    </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <h4>No Group Classes Yet</h4>
+                            <p>Group sessions coming soon! Stay tuned.</p>
+                        </div>
+                    {% endif %}
                 </div>
-            {% endif %}
+            </div>
         </div>
-    </div>
-    
-    <!-- Back to Dashboard -->
-    <div class="text-center mt-4">
-        <a href="{{ url_for('store.store') }}" class="btn btn-outline-primary">
-            <i class="fas fa-arrow-left me-2"></i>Browse Courses
-        </a>
-    </div>
-</div>
-{% endblock %}
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Ready to Start <span style="color: var(--primary);">Building?</span></h2>
+                <p class="cta-text">
+                    Join hundreds of students already learning robotics, AI, and coding at BuXin Academy. 
+                    Your journey to becoming a tech innovator starts here!
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('main.index') }}" class="enroll-btn enroll-btn-primary">
+                        <i class="fas fa-home"></i> Back to Home
+                    </a>
+                    {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('auth.register') }}" class="enroll-btn enroll-btn-login">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="{{ url_for('main.index') }}">Home</a>
+                <a href="{{ url_for('main.index') }}#about">About</a>
+                <a href="{{ url_for('main.index') }}#contact">Contact</a>
+                <a href="{{ url_for('auth.login') }}">Classroom</a>
+            </div>
+            <p class="footer-text">&copy; 2025 BuXin Robotics Academy. Building Tomorrow's Innovators.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

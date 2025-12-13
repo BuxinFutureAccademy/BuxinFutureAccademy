@@ -23,6 +23,127 @@ from ..models import (
 bp = Blueprint('admin', __name__)
 
 
+@bp.route('/admin/setup-learning-material-columns')
+def setup_learning_material_columns():
+    """Add new columns to learning_material table for enhanced materials support - accessible without login for initial setup"""
+    from sqlalchemy import text
+    messages = []
+    
+    try:
+        # Check and add material_type column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='learning_material' AND column_name='material_type'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE learning_material ADD COLUMN material_type VARCHAR(20) DEFAULT 'text'"))
+                db.session.commit()
+                messages.append("Added material_type column")
+            else:
+                messages.append("material_type column already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"material_type error: {str(e)}")
+        
+        # Check and add file_url column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='learning_material' AND column_name='file_url'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE learning_material ADD COLUMN file_url VARCHAR(500)"))
+                db.session.commit()
+                messages.append("Added file_url column")
+            else:
+                messages.append("file_url column already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"file_url error: {str(e)}")
+        
+        # Check and add file_type column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='learning_material' AND column_name='file_type'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE learning_material ADD COLUMN file_type VARCHAR(50)"))
+                db.session.commit()
+                messages.append("Added file_type column")
+            else:
+                messages.append("file_type column already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"file_type error: {str(e)}")
+        
+        # Check and add youtube_url column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='learning_material' AND column_name='youtube_url'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE learning_material ADD COLUMN youtube_url VARCHAR(500)"))
+                db.session.commit()
+                messages.append("Added youtube_url column")
+            else:
+                messages.append("youtube_url column already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"youtube_url error: {str(e)}")
+        
+        # Check and add file_name column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='learning_material' AND column_name='file_name'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE learning_material ADD COLUMN file_name VARCHAR(255)"))
+                db.session.commit()
+                messages.append("Added file_name column")
+            else:
+                messages.append("file_name column already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"file_name error: {str(e)}")
+        
+        messages_html = "".join([f"<li>{m}</li>" for m in messages])
+        
+        return f"""
+        <html>
+        <head><title>Learning Material Columns Updated</title>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }}
+        .card {{ background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
+        h1 {{ color: #28a745; }} a {{ color: #667eea; }} ul {{ text-align: left; }}</style></head>
+        <body>
+            <div class="card">
+                <h1>✅ Database Updated!</h1>
+                <p>Learning Material table columns:</p>
+                <ul>{messages_html}</ul>
+                <p><a href="/student/dashboard">Go to Student Dashboard</a></p>
+                <p><a href="/">Go to Homepage</a></p>
+            </div>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Error</title>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; }}
+        .error {{ color: #dc3545; }}</style></head>
+        <body>
+            <h1 class="error">❌ Error</h1>
+            <p>{str(e)}</p>
+            <p><a href="/">Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
+
 @bp.route('/admin/setup-gallery-tables')
 def setup_gallery_tables():
     """Create gallery and victory tables - accessible without login for initial setup"""
@@ -1012,48 +1133,58 @@ def student_dashboard():
     
     # Get materials shared to student's classes
     materials = []
-    for cls in enrolled_classes:
-        # Get materials for this class based on class type
-        if cls['class_type'] == 'individual':
-            # Materials shared directly to student or to individual class
-            from sqlalchemy import or_
-            class_materials = LearningMaterial.query.filter(
-                or_(
-                    LearningMaterial.class_id == f"student_{current_user.id}",
-                    (LearningMaterial.class_type == 'individual') & (LearningMaterial.actual_class_id == cls['id'])
-                )
-            ).all()
-            materials.extend(class_materials)
-        elif cls['class_type'] == 'group':
-            # Materials shared to this group class
-            class_materials = LearningMaterial.query.filter_by(
-                class_type='group',
-                actual_class_id=cls['id']
-            ).all()
-            materials.extend(class_materials)
-        elif cls['class_type'] == 'school':
-            # Materials shared to this school enrollment
-            enrollment_id = cls['enrollment'].id
-            class_materials = LearningMaterial.query.filter(
-                LearningMaterial.class_id.like(f"%school_{cls['id']}_enrollment_{enrollment_id}%")
-            ).all()
-            materials.extend(class_materials)
-        elif cls['class_type'] == 'family':
-            # Materials shared to this family enrollment
-            enrollment_id = cls['enrollment'].id
-            class_materials = LearningMaterial.query.filter(
-                LearningMaterial.class_id.like(f"%family_{cls['id']}_enrollment_{enrollment_id}%")
-            ).all()
-            materials.extend(class_materials)
-    
-    # Remove duplicates and sort by date
-    seen_ids = set()
-    unique_materials = []
-    for material in materials:
-        if material.id not in seen_ids:
-            seen_ids.add(material.id)
-            unique_materials.append(material)
-    materials = sorted(unique_materials, key=lambda x: x.created_at, reverse=True)
+    try:
+        for cls in enrolled_classes:
+            # Get materials for this class based on class type
+            if cls['class_type'] == 'individual':
+                # Materials shared directly to student or to individual class
+                from sqlalchemy import or_
+                class_materials = LearningMaterial.query.filter(
+                    or_(
+                        LearningMaterial.class_id == f"student_{current_user.id}",
+                        (LearningMaterial.class_type == 'individual') & (LearningMaterial.actual_class_id == cls['id'])
+                    )
+                ).all()
+                materials.extend(class_materials)
+            elif cls['class_type'] == 'group':
+                # Materials shared to this group class
+                class_materials = LearningMaterial.query.filter_by(
+                    class_type='group',
+                    actual_class_id=cls['id']
+                ).all()
+                materials.extend(class_materials)
+            elif cls['class_type'] == 'school':
+                # Materials shared to this school enrollment
+                enrollment_id = cls['enrollment'].id
+                class_materials = LearningMaterial.query.filter(
+                    LearningMaterial.class_id.like(f"%school_{cls['id']}_enrollment_{enrollment_id}%")
+                ).all()
+                materials.extend(class_materials)
+            elif cls['class_type'] == 'family':
+                # Materials shared to this family enrollment
+                enrollment_id = cls['enrollment'].id
+                class_materials = LearningMaterial.query.filter(
+                    LearningMaterial.class_id.like(f"%family_{cls['id']}_enrollment_{enrollment_id}%")
+                ).all()
+                materials.extend(class_materials)
+        
+        # Remove duplicates and sort by date
+        seen_ids = set()
+        unique_materials = []
+        for material in materials:
+            if material.id not in seen_ids:
+                seen_ids.add(material.id)
+                unique_materials.append(material)
+        materials = sorted(unique_materials, key=lambda x: x.created_at, reverse=True)
+    except Exception as e:
+        # If columns don't exist yet, check if it's a column error
+        error_str = str(e)
+        if 'material_type' in error_str or 'file_url' in error_str or 'youtube_url' in error_str or 'UndefinedColumn' in error_str:
+            # Redirect to migration route
+            flash('Database needs to be updated. Please visit the migration route first.', 'warning')
+            return redirect(url_for('admin.setup_learning_material_columns'))
+        # Re-raise if it's a different error
+        raise
     
     # Helper function for time-based greeting
     def now():

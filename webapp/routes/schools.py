@@ -70,6 +70,7 @@ def register_school():
             flash('Passwords do not match.', 'danger')
             return render_template('register_school.html')
         
+        try:
             # Check existing user
             existing_user = User.query.filter_by(username=username).first()
             if existing_user:
@@ -86,6 +87,7 @@ def register_school():
             if existing_school:
                 flash('School email already registered.', 'danger')
                 return render_template('register_school.html')
+            
             # Create user account for school admin
             user = User(
                 username=username,

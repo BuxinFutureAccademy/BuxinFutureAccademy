@@ -4,12 +4,28 @@ from flask_login import login_required, current_user, login_user
 from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
+from sqlalchemy.exc import ProgrammingError, InternalError
+from sqlalchemy import text
 
 from ..extensions import db
 from ..models import User, School, RegisteredSchoolStudent
 from ..models.schools import generate_school_id, generate_student_id
 
 bp = Blueprint('schools', __name__)
+
+
+def check_database_setup():
+    """Check if school tables exist, return error message if not"""
+    try:
+        # Try a simple query to check if School table exists
+        db.session.execute(text("SELECT 1 FROM school LIMIT 1"))
+        return None
+    except (ProgrammingError, InternalError) as e:
+        db.session.rollback()
+        return "Database tables not set up. Please visit /admin/setup-school-tables first."
+    except Exception as e:
+        db.session.rollback()
+        return f"Database error: {str(e)}"
 
 
 @bp.route('/register-school', methods=['GET', 'POST'])
@@ -19,6 +35,12 @@ def register_school():
         return redirect(url_for('main.index'))
     
     if request.method == 'POST':
+        # Check database setup first
+        db_error = check_database_setup()
+        if db_error:
+            flash(db_error, 'danger')
+            return render_template('register_school.html')
+        
         # School information
         school_name = request.form.get('school_name', '').strip()
         school_email = request.form.get('school_email', '').strip().lower()
@@ -48,21 +70,22 @@ def register_school():
             flash('Passwords do not match.', 'danger')
             return render_template('register_school.html')
         
-        # Check existing user
-        if User.query.filter_by(username=username).first():
-            flash('Username already taken.', 'danger')
-            return render_template('register_school.html')
-        
-        if User.query.filter_by(email=admin_email).first():
-            flash('Email already registered.', 'danger')
-            return render_template('register_school.html')
-        
-        # Check if school email already exists
-        if School.query.filter_by(school_email=school_email).first():
-            flash('School email already registered.', 'danger')
-            return render_template('register_school.html')
-        
-        try:
+            # Check existing user
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user:
+                flash('Username already taken.', 'danger')
+                return render_template('register_school.html')
+            
+            existing_email = User.query.filter_by(email=admin_email).first()
+            if existing_email:
+                flash('Email already registered.', 'danger')
+                return render_template('register_school.html')
+            
+            # Check if school email already exists
+            existing_school = School.query.filter_by(school_email=school_email).first()
+            if existing_school:
+                flash('School email already registered.', 'danger')
+                return render_template('register_school.html')
             # Create user account for school admin
             user = User(
                 username=username,

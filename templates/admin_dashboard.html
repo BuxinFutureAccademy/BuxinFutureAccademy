@@ -354,7 +354,7 @@ body {
                     <h5><i class="fas fa-share me-2"></i>Share Learning Material</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" id="shareMaterialForm">
+                    <form method="POST" id="shareMaterialForm" enctype="multipart/form-data">
                         <!-- Recipient Type Selector -->
                         <div class="form-group mb-3">
                             <label for="recipient_type" class="form-label">
@@ -383,21 +383,47 @@ body {
                             <label for="message" class="form-label">
                                 <i class="fas fa-edit me-2"></i>Learning Content
                             </label>
-                            <textarea class="form-control" id="message" name="message" rows="8" 
+                            <textarea class="form-control" id="message" name="message" rows="6" 
                                       placeholder="Enter your learning material here...
 
 📝 Text content, instructions, or assignments
-🔗 Links: https://example.com/resource
-📷 Image links: https://example.com/image.jpg
-📄 PDF links: https://example.com/document.pdf
-🎥 Video links: https://example.com/video.mp4
+🔗 YouTube links: https://www.youtube.com/watch?v=... (will be embedded as video)
+🔗 Other links: https://example.com/resource
 
-Links will be automatically formatted and clickable for students." required></textarea>
+Or upload a file below (Image, Video, or PDF)."></textarea>
+                            <script>
+                            // Make textarea optional if file is uploaded
+                            document.getElementById('material_file').addEventListener('change', function() {
+                                const textarea = document.getElementById('message');
+                                if (this.files && this.files.length > 0) {
+                                    textarea.removeAttribute('required');
+                                } else {
+                                    textarea.setAttribute('required', 'required');
+                                }
+                            });
+                            </script>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="material_file" class="form-label">
+                                <i class="fas fa-upload me-2"></i>Upload File (Optional)
+                            </label>
+                            <input type="file" class="form-control" id="material_file" name="material_file" 
+                                   accept="image/*,video/*,.pdf">
+                            <small class="form-text text-muted">
+                                Supported: Images (JPG, PNG, GIF), Videos (MP4, AVI, MOV), PDFs. 
+                                YouTube links in text will be automatically embedded.
+                            </small>
                         </div>
                         
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Tip:</strong> Add links to photos, PDFs, or documents. They will appear as clickable links for students.
+                            <strong>Tip:</strong> 
+                            <ul class="mb-0 mt-2">
+                                <li>Upload images, videos, or PDFs directly - they will be displayed inline</li>
+                                <li>Paste YouTube links in the text area - they will be embedded as playable videos</li>
+                                <li>All content will be visible/playable directly in the classroom without leaving the page</li>
+                            </ul>
                         </div>
                         
                         <button type="submit" class="btn btn-primary">

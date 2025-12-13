@@ -10,6 +10,13 @@ class LearningMaterial(db.Model):
     actual_class_id = db.Column(db.Integer, nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # File upload support
+    material_type = db.Column(db.String(20), default='text')  # 'text', 'image', 'video', 'pdf', 'youtube'
+    file_url = db.Column(db.String(500))  # URL for uploaded files (Cloudinary)
+    file_type = db.Column(db.String(50))  # MIME type or file extension
+    youtube_url = db.Column(db.String(500))  # YouTube URL if material_type is 'youtube'
+    file_name = db.Column(db.String(255))  # Original filename
 
     def class_name(self):
         from .users import User  # local import to avoid circulars

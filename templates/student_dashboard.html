@@ -285,6 +285,22 @@
         border: 1px solid var(--robotics-secondary);
     }
 
+    .badge-not-marked {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+    }
+
+    /* Live Class Pulse Animation */
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
     .attendance-btn {
         padding: 0.8rem 1.5rem;
         border: none;
@@ -776,6 +792,48 @@
 
         <!-- Main Content Area -->
         <div class="main-content">
+            <!-- Registration Buttons Section -->
+            {% if enrolled_classes %}
+            <div class="attendance-section">
+                <h2 class="section-title">
+                    <i class="fas fa-user-plus"></i>
+                    REGISTRATION
+                </h2>
+                
+                {% for cls in enrolled_classes %}
+                    {% if cls.class_type == 'school' %}
+                    <div class="attendance-card">
+                        <div class="attendance-header">
+                            <div>
+                                <div class="student-name">{{ cls.name }}</div>
+                                <small class="text-muted">School Class</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="attendance-btn btn-present" data-bs-toggle="modal" data-bs-target="#registerStudentModal{{ cls.id }}">
+                                <i class="fas fa-user-graduate"></i> REGISTER YOUR STUDENTS
+                            </button>
+                        </div>
+                    </div>
+                    {% elif cls.class_type == 'family' %}
+                    <div class="attendance-card">
+                        <div class="attendance-header">
+                            <div>
+                                <div class="student-name">{{ cls.name }}</div>
+                                <small class="text-muted">Family Class</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="attendance-btn btn-present" data-bs-toggle="modal" data-bs-target="#registerFamilyModal{{ cls.id }}">
+                                <i class="fas fa-users"></i> REGISTER YOUR FAMILY MEMBERS
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Attendance Section -->
             {% if enrolled_classes %}
             <div class="attendance-section">
@@ -785,6 +843,7 @@
                 </h2>
                 
                 {% for cls in enrolled_classes %}
+                <!-- Self Attendance Card -->
                 <div class="attendance-card">
                     <div class="attendance-header">
                         <div>
@@ -839,9 +898,105 @@
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- All Students Attendance (for schools, groups, and group classes) -->
+                {% if cls.class_type in ['school', 'group', 'family'] and all_students_for_attendance.get(cls.id) %}
+                <div class="attendance-card">
+                    <div class="attendance-header">
+                        <div>
+                            <div class="student-name">All Students - {{ cls.name }}</div>
+                            <small class="text-muted">Take attendance for all students in this class</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="students-list">
+                            {% for student in all_students_for_attendance[cls.id] %}
+                            <div class="student-attendance-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-bottom: 0.5rem; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                                <div>
+                                    <strong style="color: var(--robotics-primary);">{{ student.name }}</strong>
+                                    {% if student.type == 'school_student' %}
+                                        <small class="text-muted d-block">{{ student.school_name }}</small>
+                                    {% elif student.type == 'family_member' %}
+                                        <small class="text-muted d-block">{{ student.relationship }}</small>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if student.type == 'user' %}
+                                        {% set student_today_att = all_students_today_attendance.get(cls.id, {}).get(student.id) %}
+                                        {% if student_today_att %}
+                                            {% if student_today_att.status == 'present' %}
+                                                <span class="attendance-badge badge-present">PRESENT</span>
+                                            {% else %}
+                                                <span class="attendance-badge badge-absent">ABSENT</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
+                                                <input type="hidden" name="student_id" value="{{ student.id }}">
+                                                <input type="hidden" name="class_id" value="{{ cls.id }}">
+                                                <input type="hidden" name="class_type" value="{{ cls.class_type }}">
+                                                <input type="hidden" name="status" value="present">
+                                                <button type="submit" class="btn btn-sm btn-success" style="margin-right: 0.25rem; background: var(--robotics-neon); color: var(--robotics-dark); border: none;">
+                                                    <i class="fas fa-check"></i> Present
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
+                                                <input type="hidden" name="student_id" value="{{ student.id }}">
+                                                <input type="hidden" name="class_id" value="{{ cls.id }}">
+                                                <input type="hidden" name="class_type" value="{{ cls.class_type }}">
+                                                <input type="hidden" name="status" value="absent">
+                                                <button type="submit" class="btn btn-sm btn-danger" style="background: var(--danger-gradient); border: none;">
+                                                    <i class="fas fa-times"></i> Absent
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted small">Registered Student</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
             {% endif %}
+
+            <!-- Live Classes Section -->
+            <div class="attendance-section" style="margin-bottom: 2rem;">
+                <h2 class="section-title" style="color: var(--robotics-accent);">
+                    <i class="fas fa-video"></i>
+                    LIVE CLASSES
+                </h2>
+                <div class="attendance-card" style="background: var(--surface-solid); border: 2px solid var(--robotics-accent);">
+                    <div class="attendance-header">
+                        <div>
+                            <div class="student-name" style="color: var(--robotics-accent); font-size: 1.5rem;">
+                                <i class="fas fa-circle" style="color: #ff0000; animation: pulse 2s infinite;"></i>
+                                LIVE CLASS IN SESSION
+                            </div>
+                            <small class="text-muted">Join the live class meeting now</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3" style="border-radius: var(--radius-sm); overflow: hidden; background: #000; min-height: 500px;">
+                        <iframe 
+                            allow="camera; microphone; fullscreen; display-capture; autoplay" 
+                            src="https://meet.jit.si/SportingDimensionsEmphasizeGenerally" 
+                            style="height: 600px; width: 100%; border: 0px; display: block;">
+                        </iframe>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="alert" style="background: rgba(57, 255, 20, 0.1); border: 1px solid var(--robotics-accent); color: var(--on-surface);">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Instructions:</strong> Click "Allow" when prompted to enable your camera and microphone for the live class.
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Learning Materials Feed -->
             <div class="materials-feed">
@@ -872,8 +1027,58 @@
                                     </div>
                                 </div>
                                 
-                                <div class="material-content" id="material-{{ material.id }}" onclick="toggleExpand({{ material.id }})">
-                                    {{ material.content|urlize(target='_blank')|safe }}
+                                <div class="material-content" id="material-{{ material.id }}">
+                                    <!-- YouTube Video -->
+                                    {% if material.material_type == 'youtube' and material.youtube_url %}
+                                        {% set youtube_id = material.youtube_url.split('v=')[1].split('&')[0] if 'v=' in material.youtube_url else (material.youtube_url.split('youtu.be/')[1].split('?')[0] if 'youtu.be/' in material.youtube_url else material.youtube_url.split('/')[-1]) %}
+                                        <div class="youtube-embed-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-bottom: 1rem; border-radius: var(--radius-sm); overflow: hidden; background: #000;">
+                                            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+                                                    src="https://www.youtube.com/embed/{{ youtube_id }}?rel=0" 
+                                                    frameborder="0" 
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                                    allowfullscreen></iframe>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Uploaded Image -->
+                                    {% if material.material_type == 'image' and material.file_url %}
+                                        <div class="material-image-container" style="margin-bottom: 1rem;">
+                                            <img src="{{ material.file_url }}" 
+                                                 alt="{{ material.file_name or 'Learning Material Image' }}" 
+                                                 style="max-width: 100%; height: auto; border-radius: var(--radius-sm); cursor: pointer;"
+                                                 onclick="openImageModal('{{ material.file_url }}', '{{ material.file_name or 'Image' }}')">
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Uploaded Video -->
+                                    {% if material.material_type == 'video' and material.file_url %}
+                                        <div class="material-video-container" style="margin-bottom: 1rem;">
+                                            <video controls style="width: 100%; max-height: 500px; border-radius: var(--radius-sm);">
+                                                <source src="{{ material.file_url }}" type="video/{{ material.file_type or 'mp4' }}">
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- PDF Viewer -->
+                                    {% if material.material_type == 'pdf' and material.file_url %}
+                                        <div class="material-pdf-container" style="margin-bottom: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+                                            <iframe src="{{ material.file_url }}#toolbar=1" 
+                                                    style="width: 100%; height: 600px; border: none;"
+                                                    type="application/pdf">
+                                            </iframe>
+                                            <div style="padding: 0.5rem; background: var(--surface); text-align: center;">
+                                                <a href="{{ material.file_url }}" target="_blank" style="color: var(--robotics-primary); text-decoration: none;">
+                                                    <i class="fas fa-download me-2"></i>Download PDF: {{ material.file_name or 'Document' }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Text Content -->
+                                    <div onclick="toggleExpand({{ material.id }})" style="cursor: pointer;">
+                                        {{ material.content|urlize(target='_blank')|safe }}
+                                    </div>
                                 </div>
                                 
                                 <div class="material-actions">
@@ -954,15 +1159,218 @@
     </div>
 </div>
 
+<!-- Registration Modals -->
+{% for cls in enrolled_classes %}
+    {% if cls.class_type == 'school' %}
+    <!-- Register Student Modal -->
+    <div class="modal fade" id="registerStudentModal{{ cls.id }}" tabindex="-1" aria-labelledby="registerStudentModalLabel{{ cls.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                    <h5 class="modal-title" id="registerStudentModalLabel{{ cls.id }}" style="color: var(--robotics-primary);">
+                        <i class="fas fa-user-graduate me-2"></i>Register Student - {{ cls.name }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin.register_student') }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" name="enrollment_id" value="{{ cls.enrollment.id }}">
+                        <input type="hidden" name="class_id" value="{{ cls.id }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">School Name *</label>
+                            <input type="text" class="form-control" name="school_name" required style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Student Name *</label>
+                            <input type="text" class="form-control" name="student_name" required style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Student Age</label>
+                                <input type="number" class="form-control" name="student_age" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Student Email</label>
+                                <input type="email" class="form-control" name="student_email" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Student Phone</label>
+                            <input type="text" class="form-control" name="student_phone" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Student Photo</label>
+                            <input type="file" class="form-control" name="student_image" accept="image/*" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        
+                        <hr style="border-color: var(--border);">
+                        
+                        <h6 style="color: var(--robotics-primary);">Parent/Guardian Information</h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Parent Name</label>
+                            <input type="text" class="form-control" name="parent_name" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Parent Phone</label>
+                                <input type="text" class="form-control" name="parent_phone" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Parent Email</label>
+                                <input type="email" class="form-control" name="parent_email" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Additional Information</label>
+                            <textarea class="form-control" name="additional_info" rows="3" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background: var(--surface); border: 1px solid var(--border);">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="background: var(--robotics-gradient); border: none;">Register Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% elif cls.class_type == 'family' %}
+    <!-- Register Family Member Modal -->
+    <div class="modal fade" id="registerFamilyModal{{ cls.id }}" tabindex="-1" aria-labelledby="registerFamilyModalLabel{{ cls.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                    <h5 class="modal-title" id="registerFamilyModalLabel{{ cls.id }}" style="color: var(--robotics-primary);">
+                        <i class="fas fa-users me-2"></i>Register Family Member - {{ cls.name }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin.register_family_member') }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" name="enrollment_id" value="{{ cls.enrollment.id }}">
+                        <input type="hidden" name="class_id" value="{{ cls.id }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Member Name *</label>
+                            <input type="text" class="form-control" name="member_name" required style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Member Age</label>
+                                <input type="number" class="form-control" name="member_age" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Relationship</label>
+                                <select class="form-control" name="relationship" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                                    <option value="">Select Relationship</option>
+                                    <option value="Son">Son</option>
+                                    <option value="Daughter">Daughter</option>
+                                    <option value="Brother">Brother</option>
+                                    <option value="Sister">Sister</option>
+                                    <option value="Cousin">Cousin</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Member Email</label>
+                                <input type="email" class="form-control" name="member_email" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Member Phone</label>
+                                <input type="text" class="form-control" name="member_phone" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Member Photo</label>
+                            <input type="file" class="form-control" name="member_image" accept="image/*" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Additional Information</label>
+                            <textarea class="form-control" name="additional_info" rows="3" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);"></textarea>
+                        </div>
+                        
+                        {% if registered_family.get(cls.id) %}
+                        <div class="alert alert-info" style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--robotics-primary); color: var(--on-surface);">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You have registered {{ registered_family[cls.id]|length }} family member(s). Maximum 4 family members allowed.
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background: var(--surface); border: 1px solid var(--border);">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="background: var(--robotics-gradient); border: none;">Register Family Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
 <script>
 // Initialize the modern classroom
 document.addEventListener('DOMContentLoaded', function() {
     updateClock();
     generateCalendar();
     loadSavedNotes();
+    processYouTubeLinksInContent();
     
     setInterval(updateClock, 1000);
 });
+
+// Process YouTube links in material content (for backward compatibility)
+function processYouTubeLinksInContent() {
+    const materialContents = document.querySelectorAll('.material-content');
+    materialContents.forEach(function(contentDiv) {
+        // Skip if already has YouTube embed
+        if (contentDiv.querySelector('.youtube-embed-container')) {
+            return;
+        }
+        
+        const text = contentDiv.innerHTML;
+        // Match YouTube URLs
+        const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/g;
+        let match;
+        let hasYouTube = false;
+        
+        while ((match = youtubeRegex.exec(text)) !== null) {
+            hasYouTube = true;
+            const videoId = match[1];
+            const youtubeUrl = match[0];
+            
+            // Create embed container
+            const embedContainer = document.createElement('div');
+            embedContainer.className = 'youtube-embed-container';
+            embedContainer.style.cssText = 'position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-bottom: 1rem; border-radius: var(--radius-sm); overflow: hidden; background: #000;';
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed/${videoId}?rel=0`;
+            iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
+            iframe.frameBorder = '0';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            iframe.allowFullscreen = true;
+            
+            embedContainer.appendChild(iframe);
+            
+            // Replace the YouTube link in content with embed
+            contentDiv.innerHTML = contentDiv.innerHTML.replace(youtubeUrl, '');
+            contentDiv.insertBefore(embedContainer, contentDiv.firstChild);
+        }
+    });
+}
 
 // Real-time clock
 function updateClock() {
@@ -1095,22 +1503,66 @@ function bookmarkMaterial(materialId) {
 
 // Share material: use Web Share API or fallback to copy
 function shareMaterial(materialId) {
-    const content = document.getElementById('material-' + materialId).innerText;
+    const materialElement = document.getElementById('material-' + materialId);
+    const content = materialElement.innerText;
+    const materialUrl = window.location.href + '#material-' + materialId;
+    
     if (navigator.share) {
         navigator.share({
             title: 'Learning Material',
             text: content,
-            url: window.location.href
+            url: materialUrl
         }).catch(() => {
             // User cancelled or not supported
         });
     } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(content).then(function() {
-            alert('Content copied! You can now paste it anywhere.');
+        navigator.clipboard.writeText(materialUrl).then(function() {
+            alert('Material link copied! You can now share it.');
         });
     } else {
-        alert('Sharing not supported.');
+        // Fallback: show share dialog
+        const shareText = `Check out this learning material:\n\n${content}\n\n${materialUrl}`;
+        prompt('Copy this link to share:', materialUrl);
     }
+}
+
+// Open image in modal for full-size viewing
+function openImageModal(imageUrl, imageTitle) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('imageModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'imageModal';
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="background: var(--surface-solid); border: 1px solid var(--border);">
+                    <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                        <h5 class="modal-title" style="color: var(--robotics-primary);" id="imageModalTitle"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                    </div>
+                    <div class="modal-body text-center" style="padding: 0;">
+                        <img id="modalImage" src="" alt="" style="max-width: 100%; height: auto; border-radius: 0;">
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('modalImage').alt = imageTitle;
+    document.getElementById('imageModalTitle').textContent = imageTitle;
+    
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
+
+// Extract YouTube ID from URL
+function extractYouTubeId(url) {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[8].length === 11) ? match[8] : null;
 }
 </script>
 {% endblock %}

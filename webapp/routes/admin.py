@@ -264,8 +264,87 @@ def admin_dashboard():
         recipient_id = request.form.get('recipient_id', '')
         content = request.form.get('message', '').strip()
         
-        if not recipient_type or not recipient_id or not content:
-            flash('Please select a recipient type, recipient, and provide content.', 'danger')
+        # Helper function to detect YouTube URLs
+        def extract_youtube_id(url):
+            """Extract YouTube video ID from various URL formats"""
+            import re
+            patterns = [
+                r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
+                r'youtube\.com\/watch\?.*v=([^&\n?#]+)'
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, url)
+                if match:
+                    return match.group(1)
+            return None
+        
+        def detect_youtube_url(text):
+            """Detect if text contains YouTube URL"""
+            import re
+            youtube_pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})'
+            match = re.search(youtube_pattern, text)
+            if match:
+                return f"https://www.youtube.com/watch?v={match.group(1)}"
+            return None
+        
+        # Determine material type and handle file uploads
+        material_type = 'text'
+        file_url = None
+        file_type = None
+        file_name = None
+        youtube_url = None
+        
+        # Check for YouTube URL in content
+        youtube_url = detect_youtube_url(content)
+        if youtube_url:
+            material_type = 'youtube'
+        
+        # Check for file upload
+        uploaded_file = request.files.get('material_file')
+        if uploaded_file and uploaded_file.filename:
+            from ..services.cloudinary_service import CloudinaryService
+            from werkzeug.utils import secure_filename
+            
+            file_name = secure_filename(uploaded_file.filename)
+            file_ext = file_name.lower().split('.')[-1] if '.' in file_name else ''
+            
+            # Determine resource type and material type
+            if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']:
+                resource_type = 'image'
+                material_type = 'image'
+            elif file_ext in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv']:
+                resource_type = 'video'
+                material_type = 'video'
+            elif file_ext in ['pdf']:
+                resource_type = 'raw'
+                material_type = 'pdf'
+            else:
+                resource_type = 'raw'
+                material_type = 'text'
+            
+            # Upload to Cloudinary
+            folder = 'learning_materials'
+            success, result = CloudinaryService.upload_file(
+                file=uploaded_file,
+                folder=folder,
+                resource_type=resource_type
+            )
+            
+            if success:
+                file_url = result.get('url')
+                file_type = result.get('format', file_ext)
+            else:
+                flash(f'File upload failed: {result}', 'warning')
+        
+        # If no file and no YouTube, check if content is just a link (for backward compatibility)
+        if material_type == 'text' and content.startswith('http'):
+            # Keep as text with link
+            pass
+        
+        if not recipient_type or not recipient_id:
+            flash('Please select a recipient type and recipient.', 'danger')
+        elif not content and not file_url and not youtube_url:
+            flash('Please provide content, upload a file, or include a YouTube link.', 'danger')
         else:
             try:
                 if recipient_type == 'individual':
@@ -278,7 +357,12 @@ def admin_dashboard():
                             class_type='individual',
                             actual_class_id=student_id,
                             content=content,
-                            created_by=current_user.id
+                            created_by=current_user.id,
+                            material_type=material_type,
+                            file_url=file_url,
+                            file_type=file_type,
+                            file_name=file_name,
+                            youtube_url=youtube_url
                         )
                         db.session.add(material)
                         db.session.commit()
@@ -320,7 +404,12 @@ def admin_dashboard():
                             class_type='school',
                             actual_class_id=enrollment.class_id,
                             content=content,
-                            created_by=current_user.id
+                            created_by=current_user.id,
+                            material_type=material_type,
+                            file_url=file_url,
+                            file_type=file_type,
+                            file_name=file_name,
+                            youtube_url=youtube_url
                         )
                         db.session.add(material)
                         db.session.commit()
@@ -348,7 +437,12 @@ def admin_dashboard():
                             class_type='family',
                             actual_class_id=enrollment.class_id,
                             content=content,
-                            created_by=current_user.id
+                            created_by=current_user.id,
+                            material_type=material_type,
+                            file_url=file_url,
+                            file_type=file_type,
+                            file_name=file_name,
+                            youtube_url=youtube_url
                         )
                         db.session.add(material)
                         db.session.commit()
@@ -374,7 +468,12 @@ def admin_dashboard():
                             class_type='group',
                             actual_class_id=class_id,
                             content=content,
-                            created_by=current_user.id
+                            created_by=current_user.id,
+                            material_type=material_type,
+                            file_url=file_url,
+                            file_type=file_type,
+                            file_name=file_name,
+                            youtube_url=youtube_url
                         )
                         db.session.add(material)
                         db.session.commit()
@@ -767,6 +866,9 @@ def student_dashboard():
     
     # Get all students in same classes (for group/family classes)
     class_students = {}  # {class_id: [list of students]}
+    # Also get all students for attendance (includes registered students for schools)
+    all_students_for_attendance = {}  # {class_id: [list of all students for attendance]}
+    
     for cls in enrolled_classes:
         if cls['class_type'] in ['group', 'family', 'school']:
             # Get all enrollments for this class
@@ -781,9 +883,46 @@ def student_dashboard():
                     students.append({
                         'id': student.id,
                         'name': f"{student.first_name} {student.last_name}",
-                        'username': student.username
+                        'username': student.username,
+                        'type': 'user'  # Regular enrolled user
                     })
             class_students[cls['id']] = students
+            
+            # For attendance, also include registered students (for schools) or family members (for families)
+            attendance_students = list(students)  # Start with enrolled users
+            
+            if cls['class_type'] == 'school':
+                # Add registered school students
+                registered_school_students = SchoolStudent.query.filter_by(
+                    class_id=cls['id'],
+                    enrollment_id=cls['enrollment'].id
+                ).all()
+                for reg_student in registered_school_students:
+                    attendance_students.append({
+                        'id': f"school_student_{reg_student.id}",  # Unique identifier
+                        'name': reg_student.student_name,
+                        'username': None,
+                        'type': 'school_student',
+                        'school_student_id': reg_student.id,
+                        'school_name': reg_student.school_name
+                    })
+            elif cls['class_type'] == 'family':
+                # Add registered family members
+                registered_family_members = FamilyMember.query.filter_by(
+                    class_id=cls['id'],
+                    enrollment_id=cls['enrollment'].id
+                ).all()
+                for member in registered_family_members:
+                    attendance_students.append({
+                        'id': f"family_member_{member.id}",  # Unique identifier
+                        'name': member.member_name,
+                        'username': None,
+                        'type': 'family_member',
+                        'family_member_id': member.id,
+                        'relationship': member.relationship
+                    })
+            
+            all_students_for_attendance[cls['id']] = attendance_students
     
     # Get attendance data for current month
     today = date.today()
@@ -826,6 +965,8 @@ def student_dashboard():
     
     # Check today's attendance
     today_attendance = {}
+    all_students_today_attendance = {}  # {class_id: {student_id: attendance_record}}
+    
     for cls in enrolled_classes:
         today_att = Attendance.query.filter(
             Attendance.student_id == current_user.id,
@@ -833,6 +974,21 @@ def student_dashboard():
             Attendance.attendance_date == today
         ).first()
         today_attendance[cls['id']] = today_att
+        
+        # Get today's attendance for all students in this class
+        if cls['class_type'] in ['group', 'family', 'school']:
+            class_today_attendance = {}
+            # Get attendance for all enrolled users
+            for student in class_students.get(cls['id'], []):
+                if student['type'] == 'user':
+                    att = Attendance.query.filter(
+                        Attendance.student_id == student['id'],
+                        Attendance.class_id == cls['id'],
+                        Attendance.attendance_date == today
+                    ).first()
+                    if att:
+                        class_today_attendance[student['id']] = att
+            all_students_today_attendance[cls['id']] = class_today_attendance
     
     # Get registered students/family members for school/family classes
     registered_students = {}  # {class_id: [list of SchoolStudent]}
@@ -909,6 +1065,8 @@ def student_dashboard():
                           enrollments=enrollments,
                           enrolled_classes=enrolled_classes,
                           class_students=class_students,
+                          all_students_for_attendance=all_students_for_attendance,
+                          all_students_today_attendance=all_students_today_attendance,
                           attendance_records=attendance_records,
                           all_class_attendance=all_class_attendance,
                           monthly_stats=monthly_stats,
@@ -917,7 +1075,8 @@ def student_dashboard():
                           registered_family=registered_family,
                           materials=materials,
                           now=now,
-                          today=today)
+                          today=today,
+                          Attendance=Attendance)
 
 
 @bp.route('/student/mark-attendance', methods=['POST'])

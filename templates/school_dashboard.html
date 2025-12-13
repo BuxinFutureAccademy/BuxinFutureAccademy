@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --robotics-primary: #00d4ff;
+        --robotics-secondary: #ff6b35;
+        --robotics-accent: #39ff14;
+        --robotics-dark: #0a0a1a;
+        --surface-solid: rgba(5, 5, 16, 0.9);
+        --border: rgba(0, 212, 255, 0.3);
+        --on-surface: #ffffff;
+    }
+
+    .school-header {
+        background: var(--surface-solid);
+        border-bottom: 2px solid var(--border);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .school-id-badge {
+        background: var(--robotics-gradient);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+
+    .student-card {
+        background: var(--surface-solid);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .student-card:hover {
+        border-color: var(--robotics-primary);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+
+    .student-id {
+        background: rgba(57, 255, 20, 0.2);
+        color: var(--robotics-accent);
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="school-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 style="color: var(--robotics-primary); font-family: 'Orbitron', sans-serif; margin: 0;">
+                    <i class="fas fa-school me-2"></i>{{ school.school_name }}
+                </h1>
+                <div class="school-id-badge">
+                    <i class="fas fa-id-card me-2"></i>School System ID: {{ school.school_system_id }}
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="stat-card" style="background: var(--surface-solid); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+                    <div style="font-size: 2rem; color: var(--robotics-primary); font-weight: 700;">{{ students|length }}</div>
+                    <div style="color: var(--on-surface); opacity: 0.7;">Registered Students</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Register Student Button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#registerStudentModal" style="background: var(--robotics-gradient); border: none;">
+                <i class="fas fa-user-plus me-2"></i>Register New Student
+            </button>
+        </div>
+    </div>
+
+    <!-- Students List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card" style="background: var(--surface-solid); border: 1px solid var(--border);">
+                <div class="card-header" style="background: var(--robotics-gradient); color: white;">
+                    <h3 class="mb-0"><i class="fas fa-users me-2"></i>Registered Students</h3>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                        {% for student in students %}
+                        <div class="student-card">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    {% if student.student_image_url %}
+                                    <img src="{{ student.student_image_url }}" alt="{{ student.student_name }}" 
+                                         style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--robotics-primary);">
+                                    {% else %}
+                                    <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--robotics-gradient); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 style="color: var(--robotics-primary); margin: 0;">{{ student.student_name }}</h5>
+                                    <div class="student-id mt-2">
+                                        <i class="fas fa-id-badge me-1"></i>{{ student.student_system_id }}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    {% if student.user_id %}
+                                        {% set att = today_attendance.get(student.id) %}
+                                        {% if att %}
+                                            {% if att.status == 'present' %}
+                                                <span class="badge bg-success mb-2 d-block">Present Today</span>
+                                            {% else %}
+                                                <span class="badge bg-danger mb-2 d-block">Absent Today</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline-block; margin-right: 0.25rem;">
+                                                <input type="hidden" name="student_id" value="{{ student.user_id }}">
+                                                <input type="hidden" name="class_id" value="0">
+                                                <input type="hidden" name="class_type" value="school">
+                                                <input type="hidden" name="status" value="present">
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check"></i> Present
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline-block;">
+                                                <input type="hidden" name="student_id" value="{{ student.user_id }}">
+                                                <input type="hidden" name="class_id" value="0">
+                                                <input type="hidden" name="class_type" value="school">
+                                                <input type="hidden" name="status" value="absent">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-times"></i> Absent
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        {% if monthly_attendance.get(student.id) %}
+                                        <div class="mt-2">
+                                            <small class="text-muted d-block">This Month: {{ monthly_attendance[student.id].present }}/{{ monthly_attendance[student.id].total }} ({{ monthly_attendance[student.id].percentage }}%)</small>
+                                        </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">No Account</span>
+                                        <small class="d-block text-muted mt-1">Student needs to create account</small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <small class="text-muted">{{ student.created_at.strftime('%b %d, %Y') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-user-slash" style="font-size: 4rem; color: var(--border); opacity: 0.5;"></i>
+                            <p class="text-muted mt-3">No students registered yet. Register your first student above.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Student Modal -->
+<div class="modal fade" id="registerStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                <h5 class="modal-title" style="color: var(--robotics-primary);">
+                    <i class="fas fa-user-plus me-2"></i>Register New Student
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
+            </div>
+            <form method="POST" action="{{ url_for('schools.register_student_in_school') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Student Name *</label>
+                        <input type="text" class="form-control" name="student_name" required style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Student Age</label>
+                            <input type="number" class="form-control" name="student_age" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Student Email</label>
+                            <input type="email" class="form-control" name="student_email" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Student Phone</label>
+                        <input type="tel" class="form-control" name="student_phone" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Student Photo</label>
+                        <input type="file" class="form-control" name="student_image" accept="image/*" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                    </div>
+                    
+                    <hr style="border-color: var(--border);">
+                    
+                    <h6 style="color: var(--robotics-primary);">Parent/Guardian Information</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Parent Name</label>
+                        <input type="text" class="form-control" name="parent_name" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Parent Email</label>
+                            <input type="email" class="form-control" name="parent_email" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Parent Phone</label>
+                            <input type="tel" class="form-control" name="parent_phone" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Information</label>
+                        <textarea class="form-control" name="additional_info" rows="3" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);"></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info" style="background: rgba(0,212,255,0.1); border: 1px solid var(--robotics-primary);">
+                        <i class="fas fa-info-circle me-2"></i>
+                        A unique Student System ID will be automatically generated upon registration.
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: var(--robotics-gradient); border: none;">Register Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

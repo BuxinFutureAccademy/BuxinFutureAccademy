@@ -121,7 +121,8 @@ def create_app():
         materials as materials_bp,
         student_projects as student_projects_bp,
         file_uploads as file_uploads_bp,
-        health as health_bp
+        health as health_bp,
+        schools as schools_bp
     )
     # Register blueprints
     app.register_blueprint(main_bp)
@@ -135,6 +136,7 @@ def create_app():
     app.register_blueprint(student_projects_bp)
     app.register_blueprint(file_uploads_bp, url_prefix='/api')
     app.register_blueprint(health_bp)
+    app.register_blueprint(schools_bp)
 
     # Alias common endpoints without blueprint prefix to match existing templates
     try:

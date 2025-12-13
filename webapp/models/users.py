@@ -15,9 +15,22 @@ class User(UserMixin, db.Model):
     last_name = db.Column(db.String(50), nullable=False)
     whatsapp_number = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # School System Integration
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=True)  # If user is associated with a school
+    student_system_id = db.Column(db.String(20), nullable=True)  # Student System ID if registered as student in school
+    is_school_admin = db.Column(db.Boolean, default=False)  # True if this user is a school admin
+    is_school_student = db.Column(db.Boolean, default=False)  # True if this user is a registered school student
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def get_school(self):
+        """Get the school associated with this user"""
+        if self.school_id:
+            from .schools import School
+            return School.query.get(self.school_id)
+        return None

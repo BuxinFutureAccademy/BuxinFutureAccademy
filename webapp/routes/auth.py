@@ -196,6 +196,8 @@ def get_user_redirect_url(user):
     """
     Get redirect URL based on user type:
     - Admin → Admin Dashboard
+    - School Admin → School Dashboard (if approved) or Pending Approval page
+    - School Student → School Dashboard
     - Student with CONFIRMED class enrollment → Student Dashboard
     - User with pending enrollment OR no enrollment → Homepage
     
@@ -204,6 +206,23 @@ def get_user_redirect_url(user):
     # Admin goes to admin dashboard
     if user.is_admin:
         return url_for('admin.admin_dashboard')
+    
+    # School Admin - check school status
+    if user.is_school_admin:
+        from ..models import School
+        school = School.query.filter_by(user_id=user.id).first()
+        if school:
+            if school.status == 'active':
+                return url_for('schools.school_dashboard')
+            else:
+                return url_for('schools.school_pending_approval')
+    
+    # School Student - go to school dashboard
+    if user.is_school_student and user.school_id:
+        from ..models import School
+        school = School.query.get(user.school_id)
+        if school and school.status == 'active':
+            return url_for('schools.school_dashboard')
     
     # Check if user has any CONFIRMED class enrollments (status = 'completed')
     try:

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="register-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="register-header text-center mb-4">
+                    <div class="register-icon mb-3">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h1 class="register-title">Create Your <span class="text-gradient">Account</span></h1>
+                    <p class="register-subtitle">Complete your registration to access the classroom</p>
+                </div>
+
+                <div class="register-form-card">
+                    <div class="alert alert-success mb-4">
+                        <h5><i class="fas fa-check-circle me-2"></i>Student Found!</h5>
+                        <p class="mb-2"><strong>Name:</strong> {{ student.student_name }}</p>
+                        <p class="mb-2"><strong>Student System ID:</strong> <code style="background: rgba(57,255,20,0.2); padding: 0.25rem 0.5rem; border-radius: 4px;">{{ student.student_system_id }}</code></p>
+                        <p class="mb-0"><strong>School:</strong> {{ student.school.school_name }}</p>
+                    </div>
+
+                    <form method="POST" class="register-form">
+                        <div class="mb-3">
+                            <label class="form-label">Username *</label>
+                            <input type="text" class="form-control" name="username" required 
+                                   placeholder="Choose a unique username">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" name="email" required 
+                                   placeholder="your.email@example.com" value="{{ student.student_email or '' }}">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Password *</label>
+                                <input type="password" class="form-control" name="password" required 
+                                       placeholder="At least 6 characters">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Confirm Password *</label>
+                                <input type="password" class="form-control" name="confirm_password" required 
+                                       placeholder="Re-enter password">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-register w-100">
+                            <i class="fas fa-rocket me-2"></i>Create Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

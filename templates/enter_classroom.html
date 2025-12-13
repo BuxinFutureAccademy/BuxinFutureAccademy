@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="login-header text-center mb-4">
+                    <div class="login-icon mb-3">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <h1 class="login-title">Enter <span class="text-gradient">Classroom</span></h1>
+                    <p class="login-subtitle">Provide your School Name and System ID to access your classroom</p>
+                </div>
+
+                <div class="login-form-card">
+                    <form method="POST" class="login-form">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-school me-2"></i>School Name *
+                            </label>
+                            <input type="text" class="form-control" name="school_name" required 
+                                   placeholder="Enter your school name">
+                            <small class="form-text text-muted">The exact name of your school</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-id-card me-2"></i>System ID *
+                            </label>
+                            <input type="text" class="form-control" name="system_id" required 
+                                   placeholder="SCH-XXXXXX or STU-XXXXX" style="text-transform: uppercase;">
+                            <small class="form-text text-muted">
+                                Enter your School System ID (SCH-XXXXXX) or Student System ID (STU-XXXXX)
+                            </small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Don't have a System ID?</strong><br>
+                            <small>Schools: <a href="{{ url_for('schools.register_school') }}">Register your school</a><br>
+                            Students: Contact your school administrator for your Student System ID</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-login w-100">
+                            <i class="fas fa-sign-in-alt me-2"></i>Enter Classroom
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

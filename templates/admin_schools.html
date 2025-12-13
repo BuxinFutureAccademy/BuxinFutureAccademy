@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-school me-2"></i>School Management</h1>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-list me-2"></i>All Registered Schools</h3>
+        </div>
+        <div class="card-body">
+            {% if schools %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>School Name</th>
+                            <th>School System ID</th>
+                            <th>Admin Name</th>
+                            <th>Email</th>
+                            <th>Students</th>
+                            <th>Status</th>
+                            <th>Payment</th>
+                            <th>Registered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in schools %}
+                        <tr>
+                            <td><strong>{{ school.school_name }}</strong></td>
+                            <td><code>{{ school.school_system_id }}</code></td>
+                            <td>{{ school.admin_name }}</td>
+                            <td>{{ school.admin_email }}</td>
+                            <td><span class="badge bg-info">{{ school.student_count }}</span></td>
+                            <td>
+                                {% if school.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif school.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if school.payment_status == 'completed' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ school.created_at.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('admin.admin_school_detail', school_id=school.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-school" style="font-size: 4rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">No schools registered yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

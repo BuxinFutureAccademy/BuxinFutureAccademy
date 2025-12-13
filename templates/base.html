@@ -301,6 +301,9 @@
                                     <li><a class="dropdown-item" href="{{ url_for('admin.admin_registered_students') }}">
                                         <i class="fas fa-user-graduate me-2"></i>Registered Students
                                     </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_schools') }}">
+                                        <i class="fas fa-school me-2"></i>School Management
+                                    </a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('admin.admin_users') }}">
                                         <i class="fas fa-users me-2"></i>Manage Users
                                     </a></li>
@@ -313,6 +316,13 @@
                                         <i class="fas fa-credit-card me-2"></i>All Payments
                                     </a></li>
                                 </ul>
+                            </li>
+                        {% elif current_user.is_school_admin or current_user.is_school_student %}
+                            <!-- School Dashboard -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('schools.school_dashboard') }}">
+                                    <i class="fas fa-school me-1"></i>School Dashboard
+                                </a>
                             </li>
                         {% else %}
                             <!-- Student Dashboard -->

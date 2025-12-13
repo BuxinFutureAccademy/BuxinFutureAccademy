@@ -1175,9 +1175,14 @@
                 <li><a href="#contact" class="nav-link">Contact Us</a></li>
             </ul>
             
-            <a href="{{ url_for('auth.login') }}" class="nav-cta d-none d-lg-inline-flex">
-                <i class="fas fa-chalkboard-teacher me-2"></i>Classroom
-            </a>
+            <div class="d-none d-lg-flex align-items-center gap-2">
+                <a href="{{ url_for('schools.enter_classroom') }}" class="nav-cta" style="background: var(--gradient-neon);">
+                    <i class="fas fa-door-open me-2"></i>Enter Classroom
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="nav-cta">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+            </div>
             
             <button class="mobile-toggle" id="mobileToggle">
                 <i class="fas fa-bars"></i>

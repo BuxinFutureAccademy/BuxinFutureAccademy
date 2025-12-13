@@ -18,9 +18,99 @@ from ..models import (
     SchoolStudent,
     FamilyMember,
     LearningMaterial,
+    School,
+    RegisteredSchoolStudent,
 )
 
 bp = Blueprint('admin', __name__)
+
+
+@bp.route('/admin/setup-school-tables')
+def setup_school_tables():
+    """Create school and registered_school_student tables - accessible without login for initial setup"""
+    from sqlalchemy import text
+    messages = []
+    
+    try:
+        # First create all tables
+        db.create_all()
+        messages.append("Tables created")
+        
+        # Check if school table exists
+        try:
+            result = db.session.execute(text("""
+                SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name='school')
+            """))
+            if result.fetchone()[0]:
+                messages.append("school table exists")
+            else:
+                messages.append("school table will be created on next db.create_all()")
+        except Exception as e:
+            messages.append(f"school table check error: {str(e)}")
+        
+        # Check if school_student_registered table exists
+        try:
+            result = db.session.execute(text("""
+                SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name='school_student_registered')
+            """))
+            if result.fetchone()[0]:
+                messages.append("school_student_registered table exists")
+            else:
+                messages.append("school_student_registered table will be created on next db.create_all()")
+        except Exception as e:
+            messages.append(f"school_student_registered table check error: {str(e)}")
+        
+        # Check if user table has new columns
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='user' AND column_name='school_id'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN school_id INTEGER"))
+                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN student_system_id VARCHAR(20)"))
+                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN is_school_admin BOOLEAN DEFAULT FALSE"))
+                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN is_school_student BOOLEAN DEFAULT FALSE"))
+                db.session.commit()
+                messages.append("Added school-related columns to user table")
+            else:
+                messages.append("user table columns already exist")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"user table columns error: {str(e)}")
+        
+        messages_html = "".join([f"<li>{m}</li>" for m in messages])
+        
+        return f"""
+        <html>
+        <head><title>School Tables Updated</title>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }}
+        .card {{ background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
+        h1 {{ color: #28a745; }} a {{ color: #667eea; }} ul {{ text-align: left; }}</style></head>
+        <body>
+            <div class="card">
+                <h1>✅ Database Updated!</h1>
+                <p>School system tables:</p>
+                <ul>{messages_html}</ul>
+                <p><a href="/admin/setup-learning-material-columns">Update Learning Material Columns</a></p>
+                <p><a href="/">Go to Homepage</a></p>
+            </div>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Error</title>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; }}
+        .error {{ color: #dc3545; }}</style></head>
+        <body>
+            <h1 class="error">❌ Error</h1>
+            <p>{str(e)}</p>
+            <p><a href="/">Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
 
 
 @bp.route('/admin/setup-learning-material-columns')
@@ -1213,27 +1303,41 @@ def student_dashboard():
 @bp.route('/student/mark-attendance', methods=['POST'])
 @login_required
 def mark_attendance():
-    """Student marks their own attendance"""
+    """Student marks their own attendance or school admin marks student attendance"""
     from datetime import date
     
-    class_id = request.form.get('class_id', type=int)
+    class_id = request.form.get('class_id', type=int) or 0  # Can be 0 for school students
     status = request.form.get('status', 'present')  # present, absent
-    student_id = request.form.get('student_id', type=int)  # For group/family classes
+    student_id = request.form.get('student_id', type=int)  # For group/family classes or school students
     
-    # If student_id is provided, it's for marking another student (in group/family)
+    # If student_id is provided, it's for marking another student (in group/family/school)
     # Otherwise, mark self
     target_student_id = student_id if student_id else current_user.id
     
-    # Verify enrollment
-    enrollment = ClassEnrollment.query.filter_by(
-        user_id=target_student_id,
-        class_id=class_id,
-        status='completed'
-    ).first()
+    # Check if this is a school student (school admin marking attendance)
+    target_user = User.query.get(target_student_id)
+    is_school_context = False
     
-    if not enrollment:
-        flash('You are not enrolled in this class.', 'danger')
-        return redirect(url_for('admin.student_dashboard'))
+    if target_user and (target_user.is_school_student or current_user.is_school_admin):
+        # School student attendance - no enrollment needed
+        is_school_context = True
+        class_type = 'school'
+    else:
+        # Regular class enrollment attendance
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=target_student_id,
+            class_id=class_id,
+            status='completed'
+        ).first()
+        
+        if not enrollment:
+            flash('You are not enrolled in this class.', 'danger')
+            # Redirect based on user type
+            if current_user.is_school_admin:
+                return redirect(url_for('schools.school_dashboard'))
+            return redirect(url_for('admin.student_dashboard'))
+        
+        class_type = enrollment.class_type
     
     # Check if already marked today
     today = date.today()
@@ -1251,7 +1355,7 @@ def mark_attendance():
         new_attendance = Attendance(
             student_id=target_student_id,
             class_id=class_id,
-            class_type=enrollment.class_type,
+            class_type=class_type,
             attendance_date=today,
             status=status,
             marked_by=current_user.id
@@ -1265,6 +1369,9 @@ def mark_attendance():
         db.session.rollback()
         flash(f'Error marking attendance: {str(e)}', 'danger')
     
+    # Redirect based on user type
+    if current_user.is_school_admin:
+        return redirect(url_for('schools.school_dashboard'))
     return redirect(url_for('admin.student_dashboard'))
 
 
@@ -2249,3 +2356,81 @@ def update_pricing(class_type):
         flash(f'Error updating pricing: {str(e)}', 'danger')
     
     return redirect(url_for('admin.admin_pricing'))
+
+
+# ==================== SCHOOL MANAGEMENT ====================
+
+@bp.route('/admin/schools')
+@login_required
+def admin_schools():
+    """View all registered schools"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    schools = School.query.order_by(School.created_at.desc()).all()
+    
+    # Get counts for each school
+    for school in schools:
+        school.student_count = RegisteredSchoolStudent.query.filter_by(school_id=school.id).count()
+    
+    return render_template('admin_schools.html', schools=schools)
+
+
+@bp.route('/admin/schools/<int:school_id>')
+@login_required
+def admin_school_detail(school_id):
+    """View school details and students"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    school = School.query.get_or_404(school_id)
+    students = RegisteredSchoolStudent.query.filter_by(school_id=school_id).order_by(RegisteredSchoolStudent.created_at.desc()).all()
+    
+    return render_template('admin_school_detail.html', school=school, students=students)
+
+
+@bp.route('/admin/schools/<int:school_id>/approve', methods=['POST'])
+@login_required
+def approve_school(school_id):
+    """Approve a school registration"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    school = School.query.get_or_404(school_id)
+    
+    try:
+        school.status = 'active'
+        school.approved_at = datetime.utcnow()
+        school.approved_by = current_user.id
+        db.session.commit()
+        flash(f'School "{school.school_name}" has been approved!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error approving school: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+
+
+@bp.route('/admin/schools/<int:school_id>/reject', methods=['POST'])
+@login_required
+def reject_school(school_id):
+    """Reject a school registration"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    school = School.query.get_or_404(school_id)
+    reason = request.form.get('reason', '').strip()
+    
+    try:
+        school.status = 'rejected'
+        db.session.commit()
+        flash(f'School "{school.school_name}" has been rejected.', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error rejecting school: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_school_detail', school_id=school_id))

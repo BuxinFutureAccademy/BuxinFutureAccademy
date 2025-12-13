@@ -6,3 +6,4 @@ from .tokens import *
 from .materials import *
 from .student_projects import *
 from .gallery import *
+from .schools import *

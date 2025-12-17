@@ -1841,7 +1841,7 @@ def admin_edit_user(user_id):
         except Exception as e:
             db.session.rollback()
             flash(f'Failed to update user: {e}', 'danger')
-    return render_template('admin_user_edit.html', user=user)
+    return render_template('edit_user.html', user=user)
 
 
 # ========== GALLERY MANAGEMENT ==========

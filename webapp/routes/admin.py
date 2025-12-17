@@ -991,17 +991,48 @@ def view_enrollment(enrollment_id):
 @bp.route('/admin/enrollment/<int:enrollment_id>/approve', methods=['POST'])
 @login_required
 def approve_enrollment(enrollment_id):
-    """Approve an enrollment"""
+    """Approve an enrollment and generate Student ID"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         return redirect(url_for('main.index'))
     
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+    user = User.query.get(enrollment.user_id)
+    
+    if not user:
+        flash('User not found for this enrollment.', 'danger')
+        return redirect(url_for('admin.admin_enrollments'))
+    
+    # Generate Student ID if not already generated (for Group, Family, Individual classes)
+    if enrollment.class_type in ['group', 'family', 'individual']:
+        if not user.student_id:
+            from ..models.classes import generate_student_id_for_class
+            user.student_id = generate_student_id_for_class(enrollment.class_type)
+            user.class_type = enrollment.class_type
+            flash(f'Student ID generated: {user.student_id}', 'info')
+    
+    # Add student to class based on class type
+    if enrollment.class_type == 'individual':
+        from ..models.classes import IndividualClass, individual_class_students
+        class_obj = IndividualClass.query.get(enrollment.class_id)
+        if class_obj and user not in class_obj.students:
+            class_obj.students.append(user)
+    elif enrollment.class_type == 'group':
+        from ..models.classes import GroupClass, group_class_students
+        class_obj = GroupClass.query.get(enrollment.class_id)
+        if class_obj:
+            if len(class_obj.students) >= class_obj.max_students:
+                flash(f'Cannot approve: Group class is full ({len(class_obj.students)}/{class_obj.max_students} students).', 'warning')
+                return redirect(url_for('admin.admin_enrollments'))
+            if user not in class_obj.students:
+                class_obj.students.append(user)
+    
     enrollment.status = 'completed'
     
     try:
         db.session.commit()
-        flash(f'Enrollment approved for {enrollment.customer_name}!', 'success')
+        student_id_msg = f' (Student ID: {user.student_id})' if user.student_id else ''
+        flash(f'Enrollment approved for {enrollment.customer_name}!{student_id_msg}', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')

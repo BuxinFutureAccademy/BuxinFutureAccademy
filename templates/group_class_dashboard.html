@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --robotics-primary: #00d4ff;
+        --robotics-secondary: #ff6b35;
+        --robotics-accent: #39ff14;
+        --robotics-dark: #0a0a1a;
+        --robotics-darker: #050510;
+        --robotics-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
+        --robotics-neon: linear-gradient(135deg, #39ff14 0%, #00d4ff 100%);
+        --surface: rgba(255, 255, 255, 0.05);
+        --surface-solid: rgba(5, 5, 16, 0.9);
+        --background: var(--robotics-darker);
+        --on-surface: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --border: rgba(0, 212, 255, 0.3);
+        --shadow-neon: 0 0 30px rgba(0, 212, 255, 0.3);
+        --font-tech: 'Orbitron', sans-serif;
+        --font-body: 'Rajdhani', sans-serif;
+    }
+
+    body {
+        background: var(--background);
+        background-image: 
+            radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 30%, rgba(57, 255, 20, 0.1) 0%, transparent 50%),
+            linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+        font-family: var(--font-body);
+        color: var(--on-surface);
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        background: var(--surface-solid);
+        border-bottom: 2px solid var(--border);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-neon);
+    }
+
+    .dashboard-title {
+        font-family: var(--font-tech);
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: var(--robotics-neon);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-card h3 {
+        font-family: var(--font-tech);
+        color: var(--robotics-primary);
+        margin-bottom: 1rem;
+    }
+
+    .student-id-badge {
+        display: inline-block;
+        background: rgba(57, 255, 20, 0.2);
+        border: 1px solid var(--robotics-accent);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-family: var(--font-tech);
+        font-weight: 600;
+        color: var(--robotics-accent);
+    }
+
+    .students-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .student-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .materials-section {
+        margin-top: 2rem;
+    }
+
+    .material-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .material-card:hover {
+        border-color: var(--robotics-primary);
+        box-shadow: var(--shadow-neon);
+    }
+</style>
+
+<div class="dashboard-header">
+    <div class="container">
+        <h1 class="dashboard-title">Group Class Dashboard</h1>
+        <p class="text-secondary">{{ group_class.name }}</p>
+        {% if student_id %}
+        <div class="mt-3">
+            <span class="student-id-badge">
+                <i class="fas fa-id-card me-2"></i>Student ID: {{ student_id }}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container">
+    <!-- Class Information -->
+    <div class="info-card">
+        <h3><i class="fas fa-info-circle me-2"></i>Class Information</h3>
+        <p><strong>Class Name:</strong> {{ group_class.name }}</p>
+        {% if group_class.description %}
+        <p><strong>Description:</strong> {{ group_class.description }}</p>
+        {% endif %}
+        <p><strong>Total Students:</strong> {{ all_students|length }} / {{ group_class.max_students }}</p>
+    </div>
+
+    <!-- All Students in Group -->
+    <div class="info-card">
+        <h3><i class="fas fa-users me-2"></i>All Students in This Group</h3>
+        <div class="students-list">
+            {% for student in all_students %}
+            <div class="student-card">
+                <i class="fas fa-user-circle fa-3x mb-2" style="color: var(--robotics-primary);"></i>
+                <div><strong>{{ student.first_name }} {{ student.last_name }}</strong></div>
+                {% if student.student_id %}
+                <small class="text-muted">{{ student.student_id }}</small>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Learning Materials -->
+    <div class="materials-section">
+        <h3 class="mb-3" style="font-family: var(--font-tech); color: var(--robotics-primary);">
+            <i class="fas fa-book me-2"></i>Learning Materials
+        </h3>
+        {% if materials %}
+            {% for material in materials %}
+            <div class="material-card">
+                <h5>{{ material.title or 'Untitled Material' }}</h5>
+                {% if material.content %}
+                <p class="text-secondary">{{ material.content[:200] }}{% if material.content|length > 200 %}...{% endif %}</p>
+                {% endif %}
+                {% if material.file_url %}
+                <a href="{{ material.file_url }}" target="_blank" class="btn btn-sm" style="background: var(--robotics-gradient); color: white; margin-top: 0.5rem;">
+                    <i class="fas fa-download me-2"></i>Download
+                </a>
+                {% endif %}
+                <small class="text-muted d-block mt-2">
+                    <i class="fas fa-calendar me-1"></i>{{ material.created_at.strftime('%B %d, %Y') if material.created_at else '' }}
+                </small>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="info-card text-center">
+            <i class="fas fa-inbox fa-3x mb-3" style="color: var(--text-secondary);"></i>
+            <p class="text-secondary">No learning materials available yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="info-card mt-4">
+        <h3><i class="fas fa-bolt me-2"></i>Quick Actions</h3>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('student_projects.student_projects') }}" class="btn" style="background: var(--robotics-gradient); color: white;">
+                <i class="fas fa-project-diagram me-2"></i>View Projects
+            </a>
+            <a href="{{ url_for('student_projects.create_project') }}" class="btn" style="background: var(--robotics-neon); color: var(--robotics-dark);">
+                <i class="fas fa-plus-circle me-2"></i>Submit Assignment
+            </a>
+            <a href="{{ url_for('store.store') }}" class="btn" style="background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);">
+                <i class="fas fa-graduation-cap me-2"></i>Browse Courses
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

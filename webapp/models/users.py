@@ -21,6 +21,10 @@ class User(UserMixin, db.Model):
     student_system_id = db.Column(db.String(20), nullable=True)  # Student System ID if registered as student in school
     is_school_admin = db.Column(db.Boolean, default=False)  # True if this user is a school admin
     is_school_student = db.Column(db.Boolean, default=False)  # True if this user is a registered school student
+    
+    # General Student ID for ID-based access (Group, Family, Individual classes)
+    student_id = db.Column(db.String(20), unique=True, nullable=True)  # Auto-generated Student ID for class access
+    class_type = db.Column(db.String(20), nullable=True)  # 'individual', 'group', 'family', 'school' - tracks enrollment type
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

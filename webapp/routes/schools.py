@@ -338,66 +338,76 @@ def register_student_in_school():
 
 @bp.route('/enter-classroom', methods=['GET', 'POST'])
 def enter_classroom():
-    """Classroom entry system - validate School Name and System ID"""
+    """Classroom entry system - validate Full Name and Student ID (ID-based access)"""
     if request.method == 'POST':
-        school_name = request.form.get('school_name', '').strip()
-        system_id = request.form.get('system_id', '').strip().upper()
+        full_name = request.form.get('full_name', '').strip()
+        student_id = request.form.get('student_id', '').strip().upper()
         
-        if not school_name or not system_id:
-            flash('Please provide both School Name and System ID.', 'danger')
+        if not full_name or not student_id:
+            flash('Please provide both Full Name and Student ID.', 'danger')
             return render_template('enter_classroom.html')
         
-        # Check if it's a School System ID
-        if system_id.startswith('SCH-'):
-            school = School.query.filter_by(
-                school_system_id=system_id
-            ).first()
+        # Check if it's a Student ID (STU-XXXXX format)
+        if student_id.startswith('STU-'):
+            # First check for general student IDs (Group, Family, Individual classes)
+            user = User.query.filter_by(student_id=student_id).first()
             
-            if school:
-                # Verify school name matches (case-insensitive)
-                if school.school_name.lower() != school_name.lower():
-                    flash('School name does not match the System ID.', 'danger')
-                elif school.status == 'active':
-                    # School admin login
-                    if school.user_id:
-                        user = User.query.get(school.user_id)
-                        if user:
-                            login_user(user)
-                            return redirect(url_for('schools.school_dashboard'))
-                    flash('School account not properly configured.', 'danger')
-                elif school.status == 'pending':
-                    flash('Your school is pending admin approval. Please wait for confirmation.', 'warning')
-                else:
-                    flash('Your school registration has been rejected.', 'danger')
-            else:
-                flash('Invalid School System ID.', 'danger')
-        
-        # Check if it's a Student System ID
-        elif system_id.startswith('STU-'):
-            student = RegisteredSchoolStudent.query.filter_by(
-                student_system_id=system_id
-            ).first()
-            
-            if student and student.school:
-                # Verify school name matches
-                if student.school.school_name.lower() == school_name.lower() and student.school.status == 'active':
-                    # If student has user account, log them in
-                    if student.user_id:
-                        user = User.query.get(student.user_id)
-                        if user:
-                            login_user(user)
-                            return redirect(url_for('schools.school_dashboard'))
+            if user:
+                # Verify full name matches (case-insensitive, check both first+last name and customer_name from enrollment)
+                full_name_lower = full_name.lower()
+                user_full_name = f"{user.first_name} {user.last_name}".lower()
+                
+                # Also check enrollment customer_name
+                from ..models.classes import ClassEnrollment
+                enrollment = ClassEnrollment.query.filter_by(
+                    user_id=user.id,
+                    status='completed'
+                ).first()
+                
+                name_matches = (
+                    user_full_name == full_name_lower or
+                    (enrollment and enrollment.customer_name and enrollment.customer_name.lower() == full_name_lower)
+                )
+                
+                if name_matches:
+                    login_user(user)
+                    # Redirect based on class type
+                    if user.class_type == 'group':
+                        return redirect(url_for('main.group_class_dashboard'))
+                    elif user.class_type == 'family':
+                        return redirect(url_for('main.family_dashboard'))
+                    elif user.class_type == 'individual':
+                        return redirect(url_for('admin.student_dashboard'))
+                    elif user.is_school_student:
+                        return redirect(url_for('schools.school_dashboard'))
                     else:
-                        # Student needs to create account first
-                        session['pending_student_id'] = student.id
-                        flash(f'Welcome {student.student_name}! Please create an account to access the classroom.', 'info')
-                        return redirect(url_for('schools.student_create_account'))
+                        return redirect(url_for('admin.student_dashboard'))
                 else:
-                    flash('Invalid School Name or Student System ID.', 'danger')
+                    flash('Full name does not match the Student ID.', 'danger')
             else:
-                flash('Student System ID not found.', 'danger')
+                # Check for school student IDs (legacy support)
+                student = RegisteredSchoolStudent.query.filter_by(
+                    student_system_id=student_id
+                ).first()
+                
+                if student and student.school:
+                    # Verify name matches
+                    if student.student_name.lower() == full_name_lower and student.school.status == 'active':
+                        if student.user_id:
+                            user = User.query.get(student.user_id)
+                            if user:
+                                login_user(user)
+                                return redirect(url_for('schools.school_dashboard'))
+                        else:
+                            session['pending_student_id'] = student.id
+                            flash(f'Welcome {student.student_name}! Please create an account to access the classroom.', 'info')
+                            return redirect(url_for('schools.student_create_account'))
+                    else:
+                        flash('Full name does not match the Student ID.', 'danger')
+                else:
+                    flash('Student ID not found.', 'danger')
         else:
-            flash('Invalid System ID format. Must start with SCH- or STU-.', 'danger')
+            flash('Invalid Student ID format. Must start with STU-.', 'danger')
     
     return render_template('enter_classroom.html')
 

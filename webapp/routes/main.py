@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request
+from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request, flash
 from ..services.mailer import send_bulk_email
 from ..models import HomeGallery, StudentVictory, StudentProject, ClassPricing
 
@@ -218,3 +218,135 @@ Message:
     except Exception as e:
         print(f"Error sending support email: {e}")
         return jsonify(success=False, error="Internal error."), 500
+
+
+@bp.route('/group-class/dashboard')
+def group_class_dashboard():
+    """Group Class Dashboard - Shared dashboard for all students in a group class"""
+    from flask_login import login_required, current_user
+    from ..extensions import db
+    from ..models.classes import ClassEnrollment, GroupClass, LearningMaterial, Attendance
+    from datetime import datetime, date
+    
+    if not current_user.is_authenticated:
+        return redirect(url_for('schools.enter_classroom'))
+    
+    # Verify user is in a group class
+    if current_user.class_type != 'group':
+        flash('This dashboard is only for group class students.', 'warning')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Get user's group class enrollment
+    enrollment = ClassEnrollment.query.filter_by(
+        user_id=current_user.id,
+        class_type='group',
+        status='completed'
+    ).first()
+    
+    if not enrollment:
+        flash('No active group class enrollment found.', 'warning')
+        return redirect(url_for('main.index'))
+    
+    # Get the group class
+    group_class = GroupClass.query.get(enrollment.class_id)
+    if not group_class:
+        flash('Group class not found.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get all students in this group class
+    all_students = group_class.students
+    
+    # Get materials for this group class
+    materials = LearningMaterial.query.filter_by(
+        class_id=f'group_{group_class.id}'
+    ).order_by(LearningMaterial.created_at.desc()).all()
+    
+    # Get today's attendance for current user
+    today_attendance = Attendance.query.filter_by(
+        student_id=current_user.id,
+        class_id=group_class.id,
+        class_type='group',
+        attendance_date=date.today()
+    ).first()
+    
+    # Get attendance stats for current user
+    user_attendance = Attendance.query.filter_by(
+        student_id=current_user.id,
+        class_id=group_class.id,
+        class_type='group'
+    ).all()
+    
+    return render_template('group_class_dashboard.html',
+        group_class=group_class,
+        enrollment=enrollment,
+        all_students=all_students,
+        materials=materials,
+        today_attendance=today_attendance,
+        user_attendance=user_attendance,
+        student_id=current_user.student_id
+    )
+
+
+@bp.route('/family/dashboard')
+def family_dashboard():
+    """Family Dashboard - Dashboard for family members"""
+    from flask_login import login_required, current_user
+    from ..extensions import db
+    from ..models.classes import ClassEnrollment, LearningMaterial, Attendance, FamilyMember
+    from datetime import datetime, date
+    
+    if not current_user.is_authenticated:
+        return redirect(url_for('schools.enter_classroom'))
+    
+    # Verify user is in a family class
+    if current_user.class_type != 'family':
+        flash('This dashboard is only for family class members.', 'warning')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Get user's family class enrollment
+    enrollment = ClassEnrollment.query.filter_by(
+        user_id=current_user.id,
+        class_type='family',
+        status='completed'
+    ).first()
+    
+    if not enrollment:
+        flash('No active family class enrollment found.', 'warning')
+        return redirect(url_for('main.index'))
+    
+    # Get all family members in this enrollment
+    family_members = FamilyMember.query.filter_by(
+        enrollment_id=enrollment.id
+    ).all()
+    
+    # Get materials for this family class (family classes use the enrollment class_id)
+    materials = LearningMaterial.query.filter(
+        LearningMaterial.class_id.in_([
+            f'family_{enrollment.class_id}',
+            f'student_{current_user.id}'
+        ])
+    ).order_by(LearningMaterial.created_at.desc()).all()
+    
+    # Get today's attendance for current user
+    today_attendance = Attendance.query.filter_by(
+        student_id=current_user.id,
+        class_id=enrollment.class_id,
+        class_type='family',
+        attendance_date=date.today()
+    ).first()
+    
+    # Get attendance stats for current user
+    user_attendance = Attendance.query.filter_by(
+        student_id=current_user.id,
+        class_id=enrollment.class_id,
+        class_type='family'
+    ).all()
+    
+    return render_template('family_dashboard.html',
+        enrollment=enrollment,
+        family_members=family_members,
+        materials=materials,
+        today_attendance=today_attendance,
+        user_attendance=user_attendance,
+        student_id=current_user.student_id
+    )

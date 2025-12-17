@@ -113,3 +113,47 @@ class FamilyMember(db.Model):
     
     # Note: Maximum 4 family members per enrollment is enforced in application code
     # (PostgreSQL doesn't support subqueries in CHECK constraints)
+
+
+# ID Generation functions for Group, Family, and Individual classes
+import secrets
+import string
+
+def generate_student_id_for_class(class_type='individual'):
+    """
+    Generate a unique Student ID for Group, Family, or Individual classes
+    Format: STU-XXXXX (5-digit number)
+    """
+    from .users import User
+    
+    # Get all existing student IDs
+    existing_ids = [u.student_id for u in User.query.filter(
+        User.student_id.isnot(None)
+    ).all() if u.student_id and u.student_id.startswith('STU-')]
+    
+    if existing_ids:
+        # Extract numbers from existing IDs and find the max
+        numbers = []
+        for sid in existing_ids:
+            try:
+                num = int(sid.split('-')[1])
+                numbers.append(num)
+            except (ValueError, IndexError):
+                continue
+        
+        if numbers:
+            next_number = max(numbers) + 1
+        else:
+            next_number = 1
+    else:
+        next_number = 1
+    
+    # Format as 5-digit number with leading zeros
+    student_id = f"STU-{next_number:05d}"
+    
+    # Double-check uniqueness (shouldn't happen, but safety check)
+    while User.query.filter_by(student_id=student_id).first():
+        next_number += 1
+        student_id = f"STU-{next_number:05d}"
+    
+    return student_id

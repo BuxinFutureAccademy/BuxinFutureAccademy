@@ -2415,17 +2415,40 @@ def admin_individual_classes():
     if admin_check:
         return admin_check
     
-    # Handle POST actions (deactivate class)
+    # Handle POST actions (approve, reject, deactivate)
     if request.method == 'POST':
         enrollment_id = request.form.get('enrollment_id', type=int)
         action = request.form.get('action')
         
-        if action == 'deactivate' and enrollment_id:
+        if enrollment_id:
             enrollment = ClassEnrollment.query.get(enrollment_id)
-            if enrollment:
-                enrollment.status = 'rejected'  # Mark as rejected to deactivate
-                db.session.commit()
-                flash('Individual class has been deactivated.', 'success')
+            if enrollment and enrollment.class_type == 'individual':
+                if action == 'approve':
+                    # Approve enrollment and generate Student ID
+                    user = User.query.get(enrollment.user_id)
+                    if user:
+                        # Generate Student ID if not exists
+                        if not user.student_id:
+                            from ..models.classes import generate_student_id_for_class
+                            user.student_id = generate_student_id_for_class('individual')
+                            user.class_type = 'individual'
+                        
+                        # Add student to individual class
+                        individual_class = IndividualClass.query.get(enrollment.class_id)
+                        if individual_class and user not in individual_class.students:
+                            individual_class.students.append(user)
+                        
+                        enrollment.status = 'completed'
+                        db.session.commit()
+                        flash(f'Enrollment approved! Student ID: {user.student_id}', 'success')
+                elif action == 'reject':
+                    enrollment.status = 'rejected'
+                    db.session.commit()
+                    flash('Enrollment rejected.', 'warning')
+                elif action == 'deactivate':
+                    enrollment.status = 'rejected'  # Mark as rejected to deactivate
+                    db.session.commit()
+                    flash('Individual class has been deactivated.', 'success')
             return redirect(url_for('admin.admin_individual_classes'))
     
     # Get search and filter parameters
@@ -2649,21 +2672,31 @@ def admin_family_classes():
     
     enrollments = query.order_by(ClassEnrollment.enrolled_at.desc()).all()
     
-    # Build family list
+    # Build family list (separate pending and completed)
+    pending_families = []
     families = []
+    
     for enrollment in enrollments:
         user = User.query.get(enrollment.user_id)
         family_members = FamilyMember.query.filter_by(enrollment_id=enrollment.id).all()
         
-        families.append({
+        family_data = {
             'enrollment': enrollment,
             'parent_user': user,
             'family_name': enrollment.customer_name or f"{user.first_name} {user.last_name}" if user else 'Unknown',
             'total_students': len(family_members) + 1,  # +1 for the parent/registrant
             'payment_status': enrollment.status,
+            'payment_amount': enrollment.amount,
+            'payment_method': enrollment.payment_method or 'N/A',
+            'payment_proof': enrollment.payment_proof,
             'registration_date': enrollment.enrolled_at,
             'family_members': family_members
-        })
+        }
+        
+        if enrollment.status == 'pending':
+            pending_families.append(family_data)
+        else:
+            families.append(family_data)
     
     return render_template('admin_family_classes.html',
         families=families,

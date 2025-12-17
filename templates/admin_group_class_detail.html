@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .student-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    .student-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .class-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+    .action-btn {
+        border-radius: 20px;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-users me-2" style="color: #11998e;"></i>Group Class Details</h2>
+            <p class="text-muted mb-0">View all students in this group class</p>
+        </div>
+        <a href="{{ url_for('admin.admin_group_classes') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Group Classes
+        </a>
+    </div>
+    
+    <!-- Class Information -->
+    <div class="class-header">
+        <h3>{{ group_class.name }}</h3>
+        <p class="mb-0">{{ group_class.description or 'No description' }}</p>
+        <div class="mt-2">
+            <span class="badge bg-light text-dark">
+                {{ students|length }} / {{ group_class.max_students }} students
+            </span>
+        </div>
+    </div>
+    
+    <!-- Students List -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-user-graduate me-2"></i>All Students in This Group</h5>
+        </div>
+        <div class="card-body">
+            {% if students %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Student ID</th>
+                                <th>Payment Status</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td>
+                                    <div><strong>{{ student.student_name }}</strong></div>
+                                    <small class="text-muted">{{ student.user.email if student.user else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <code style="background: #f0f0f0; padding: 0.25rem 0.5rem; border-radius: 4px;">
+                                        {{ student.student_id }}
+                                    </code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if student.payment_status == 'completed' %}success{% else %}warning{% endif %}">
+                                        {{ student.payment_status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ student.registration_date.strftime('%Y-%m-%d') if student.registration_date else 'N/A' }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('admin.edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                           class="btn btn-sm btn-outline-info action-btn"
+                                           {% if not student.user %}disabled title="User account not found"{% endif %}>
+                                            <i class="fas fa-eye"></i> View Profile
+                                        </a>
+                                        <form action="{{ url_for('admin.admin_group_classes') }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="class_id" value="{{ group_class.id }}">
+                                            <input type="hidden" name="user_id" value="{{ student.user.id if student.user else '' }}">
+                                            <input type="hidden" name="action" value="remove_student">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger action-btn" 
+                                                    onclick="return confirm('Are you sure you want to remove this student from the group class?');"
+                                                    {% if not student.user %}disabled{% endif %}>
+                                                <i class="fas fa-user-minus"></i> Remove
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-user-slash fa-3x mb-3" style="opacity: 0.5;"></i>
+                    <p>No students enrolled in this group class yet</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Admin Actions -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5><i class="fas fa-cog me-2"></i>Class Management</h5>
+            <div class="d-flex gap-2">
+                <form action="{{ url_for('admin.admin_group_classes') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="class_id" value="{{ group_class.id }}">
+                    <input type="hidden" name="action" value="close_class">
+                    <button type="submit" class="btn btn-warning" 
+                            onclick="return confirm('Are you sure you want to close/pause this group class?');">
+                        <i class="fas fa-pause me-2"></i>Close / Pause Class
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -2391,6 +2391,308 @@ def update_pricing(class_type):
 
 # ==================== SCHOOL MANAGEMENT ====================
 
+@bp.route('/admin/individual-classes', methods=['GET', 'POST'])
+@login_required
+def admin_individual_classes():
+    """View and manage all individual (one-on-one) students and classes"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Handle POST actions (deactivate class)
+    if request.method == 'POST':
+        enrollment_id = request.form.get('enrollment_id', type=int)
+        action = request.form.get('action')
+        
+        if action == 'deactivate' and enrollment_id:
+            enrollment = ClassEnrollment.query.get(enrollment_id)
+            if enrollment:
+                enrollment.status = 'rejected'  # Mark as rejected to deactivate
+                db.session.commit()
+                flash('Individual class has been deactivated.', 'success')
+            return redirect(url_for('admin.admin_individual_classes'))
+    
+    # Get search and filter parameters
+    search = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', '')
+    
+    # Get all individual class enrollments
+    query = ClassEnrollment.query.filter_by(class_type='individual', status='completed')
+    
+    # Apply search filter
+    if search:
+        from sqlalchemy import or_
+        query = query.join(User).filter(
+            or_(
+                User.first_name.ilike(f'%{search}%'),
+                User.last_name.ilike(f'%{search}%'),
+                User.student_id.ilike(f'%{search}%'),
+                ClassEnrollment.customer_name.ilike(f'%{search}%')
+            )
+        )
+    
+    enrollments = query.order_by(ClassEnrollment.enrolled_at.desc()).all()
+    
+    # Build list of individual class students
+    individual_students = []
+    for enrollment in enrollments:
+        user = User.query.get(enrollment.user_id)
+        if user:
+            # Get the individual class
+            individual_class = IndividualClass.query.get(enrollment.class_id)
+            
+            individual_students.append({
+                'enrollment': enrollment,
+                'user': user,
+                'class': individual_class,
+                'student_name': f"{user.first_name} {user.last_name}",
+                'student_id': user.student_id or 'N/A',
+                'class_name': individual_class.name if individual_class else 'Unknown',
+                'payment_status': enrollment.status,
+                'registration_date': enrollment.enrolled_at,
+                'class_status': 'Active' if enrollment.status == 'completed' else 'Inactive'
+            })
+    
+    # Apply status filter
+    if status_filter:
+        if status_filter == 'active':
+            individual_students = [s for s in individual_students if s['class_status'] == 'Active']
+        elif status_filter == 'inactive':
+            individual_students = [s for s in individual_students if s['class_status'] == 'Inactive']
+    
+    return render_template('admin_individual_classes.html',
+        individual_students=individual_students,
+        search=search,
+        status_filter=status_filter
+    )
+
+
+@bp.route('/admin/group-classes')
+@login_required
+def admin_group_classes():
+    """View and manage group classes with multiple students"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get search parameter
+    search = request.args.get('search', '').strip()
+    
+    # Get all group classes
+    query = GroupClass.query
+    
+    if search:
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                GroupClass.name.ilike(f'%{search}%'),
+                GroupClass.description.ilike(f'%{search}%')
+            )
+        )
+    
+    group_classes = query.order_by(GroupClass.created_at.desc()).all()
+    
+    # Get enrollment info for each group class
+    for group_class in group_classes:
+        # Get all enrollments for this group class
+        enrollments = ClassEnrollment.query.filter_by(
+            class_id=group_class.id,
+            class_type='group',
+            status='completed'
+        ).all()
+        
+        group_class.total_students = len(group_class.students) if group_class.students else 0
+        group_class.class_status = 'Active' if group_class.total_students > 0 else 'Closed'
+        group_class.enrollments = enrollments
+    
+    return render_template('admin_group_classes.html',
+        group_classes=group_classes,
+        search=search
+    )
+
+
+@bp.route('/admin/group-classes/<int:class_id>', methods=['GET', 'POST'])
+@login_required
+def admin_group_class_detail(class_id):
+    """View detailed information about a specific group class"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Handle POST actions
+    if request.method == 'POST':
+        action = request.form.get('action')
+        user_id = request.form.get('user_id', type=int)
+        
+        if action == 'remove_student' and user_id:
+            group_class = GroupClass.query.get_or_404(class_id)
+            user = User.query.get(user_id)
+            if user and user in group_class.students:
+                group_class.students.remove(user)
+                db.session.commit()
+                flash(f'Student {user.first_name} {user.last_name} has been removed from the group class.', 'success')
+            return redirect(url_for('admin.admin_group_class_detail', class_id=class_id))
+        
+        if action == 'close_class':
+            # Mark all enrollments as rejected to close the class
+            enrollments = ClassEnrollment.query.filter_by(
+                class_id=class_id,
+                class_type='group',
+                status='completed'
+            ).all()
+            for enrollment in enrollments:
+                enrollment.status = 'rejected'
+            db.session.commit()
+            flash('Group class has been closed/paused.', 'success')
+            return redirect(url_for('admin.admin_group_class_detail', class_id=class_id))
+    
+    group_class = GroupClass.query.get_or_404(class_id)
+    
+    # Get all students in this group class
+    students = []
+    for student in group_class.students:
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=student.id,
+            class_id=class_id,
+            class_type='group',
+            status='completed'
+        ).first()
+        
+        students.append({
+            'user': student,
+            'student_name': f"{student.first_name} {student.last_name}",
+            'student_id': student.student_id or 'N/A',
+            'payment_status': enrollment.status if enrollment else 'N/A',
+            'registration_date': enrollment.enrolled_at if enrollment else None
+        })
+    
+    return render_template('admin_group_class_detail.html',
+        group_class=group_class,
+        students=students
+    )
+
+
+@bp.route('/admin/family-classes')
+@login_required
+def admin_family_classes():
+    """View and manage family-based registrations"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get search parameter
+    search = request.args.get('search', '').strip()
+    
+    # Get all family class enrollments
+    query = ClassEnrollment.query.filter_by(class_type='family', status='completed')
+    
+    if search:
+        from sqlalchemy import or_
+        query = query.join(User).filter(
+            or_(
+                User.first_name.ilike(f'%{search}%'),
+                User.last_name.ilike(f'%{search}%'),
+                User.student_id.ilike(f'%{search}%'),
+                ClassEnrollment.customer_name.ilike(f'%{search}%')
+            )
+        )
+    
+    enrollments = query.order_by(ClassEnrollment.enrolled_at.desc()).all()
+    
+    # Build family list
+    families = []
+    for enrollment in enrollments:
+        user = User.query.get(enrollment.user_id)
+        family_members = FamilyMember.query.filter_by(enrollment_id=enrollment.id).all()
+        
+        families.append({
+            'enrollment': enrollment,
+            'parent_user': user,
+            'family_name': enrollment.customer_name or f"{user.first_name} {user.last_name}" if user else 'Unknown',
+            'total_students': len(family_members) + 1,  # +1 for the parent/registrant
+            'payment_status': enrollment.status,
+            'registration_date': enrollment.enrolled_at,
+            'family_members': family_members
+        })
+    
+    return render_template('admin_family_classes.html',
+        families=families,
+        search=search
+    )
+
+
+@bp.route('/admin/family-classes/<int:enrollment_id>', methods=['GET', 'POST'])
+@login_required
+def admin_family_class_detail(enrollment_id):
+    """View detailed information about a specific family class"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Handle POST actions
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'suspend_family':
+            enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+            enrollment.status = 'rejected'  # Mark as rejected to suspend
+            db.session.commit()
+            flash('Family access has been suspended.', 'success')
+            return redirect(url_for('admin.admin_family_class_detail', enrollment_id=enrollment_id))
+    
+    enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+    
+    if enrollment.class_type != 'family':
+        flash('This is not a family class enrollment.', 'danger')
+        return redirect(url_for('admin.admin_family_classes'))
+    
+    # Get parent/registrant user
+    parent_user = User.query.get(enrollment.user_id)
+    
+    # Get all family members
+    family_members = FamilyMember.query.filter_by(enrollment_id=enrollment_id).all()
+    
+    # Build complete list of all family students
+    all_family_students = []
+    
+    # Add parent/registrant
+    if parent_user:
+        all_family_students.append({
+            'user': parent_user,
+            'member': None,
+            'student_name': f"{parent_user.first_name} {parent_user.last_name}",
+            'student_id': parent_user.student_id or 'N/A',
+            'assigned_class': 'Family Class',
+            'class_status': 'Active' if enrollment.status == 'completed' else 'Inactive',
+            'is_parent': True
+        })
+    
+    # Add family members (they may or may not have user accounts)
+    for member in family_members:
+        # Try to find user account for this member
+        member_user = None
+        if member.member_email:
+            member_user = User.query.filter_by(email=member.member_email).first()
+        
+        all_family_students.append({
+            'user': member_user,
+            'member': member,
+            'student_name': member.member_name,
+            'student_id': member_user.student_id if member_user else 'N/A',
+            'assigned_class': 'Family Class',
+            'class_status': 'Active' if enrollment.status == 'completed' else 'Inactive',
+            'is_parent': False,
+            'relationship': member.relationship
+        })
+    
+    return render_template('admin_family_class_detail.html',
+        enrollment=enrollment,
+        parent_user=parent_user,
+        all_family_students=all_family_students,
+        family_members=family_members
+    )
+
+
 @bp.route('/admin/schools')
 @login_required
 def admin_schools():

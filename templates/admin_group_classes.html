@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .class-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+        cursor: pointer;
+    }
+    .class-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    .class-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 15px 15px 0 0;
+    }
+    .status-badge {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .status-active {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        color: #2e7d32;
+    }
+    .status-closed {
+        background: linear-gradient(135deg, #ffecd2 0%, #ff6b6b 100%);
+        color: #c62828;
+    }
+    .search-box {
+        border-radius: 25px;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #e0e0e0;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-users me-2" style="color: #11998e;"></i>Group Classes</h2>
+            <p class="text-muted mb-0">Manage group classes with multiple students</p>
+        </div>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+    
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-10">
+                    <input type="text" class="form-control search-box" name="search" 
+                           placeholder="Search by Group Class Name..." 
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if group_classes %}
+        <div class="row">
+            {% for group_class in group_classes %}
+            <div class="col-md-6 mb-3">
+                <div class="class-card card" onclick="window.location='{{ url_for('admin.admin_group_class_detail', class_id=group_class.id) }}'">
+                    <div class="class-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ group_class.name }}</h5>
+                            <span class="badge bg-light text-dark">
+                                {{ group_class.total_students }} students
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-2">{{ group_class.description or 'No description' }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="status-badge status-{{ group_class.class_status|lower }}">
+                                    {{ group_class.class_status }}
+                                </span>
+                            </div>
+                            <div>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Created: {{ group_class.created_at.strftime('%Y-%m-%d') if group_class.created_at else 'N/A' }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ url_for('admin.admin_group_class_detail', class_id=group_class.id) }}" 
+                               class="btn btn-sm btn-primary w-100">
+                                <i class="fas fa-eye me-2"></i>View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center text-muted py-5">
+                <i class="fas fa-users fa-3x mb-3" style="opacity: 0.5;"></i>
+                <p>No group classes found</p>
+                {% if search %}
+                <a href="{{ url_for('admin.admin_group_classes') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-times me-1"></i>Clear Search
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

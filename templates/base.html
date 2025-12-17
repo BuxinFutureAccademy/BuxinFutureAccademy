@@ -304,6 +304,18 @@
                                     <li><a class="dropdown-item" href="{{ url_for('admin.admin_schools') }}">
                                         <i class="fas fa-school me-2"></i>School Management
                                     </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">Class Types</h6></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_individual_classes') }}">
+                                        <i class="fas fa-user me-2"></i>Individual Classes
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_group_classes') }}">
+                                        <i class="fas fa-users me-2"></i>Group Classes
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.admin_family_classes') }}">
+                                        <i class="fas fa-users me-2"></i>Family Classes
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="{{ url_for('admin.admin_users') }}">
                                         <i class="fas fa-users me-2"></i>Manage Users
                                     </a></li>

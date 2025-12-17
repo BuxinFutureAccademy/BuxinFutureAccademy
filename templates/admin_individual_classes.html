@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .student-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    .student-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .status-badge {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .status-active {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        color: #2e7d32;
+    }
+    .status-inactive {
+        background: linear-gradient(135deg, #ffecd2 0%, #ff6b6b 100%);
+        color: #c62828;
+    }
+    .filter-btn {
+        border-radius: 20px;
+        padding: 0.5rem 1.5rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .filter-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: transparent;
+        color: white;
+    }
+    .action-btn {
+        border-radius: 20px;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+    }
+    .search-box {
+        border-radius: 25px;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #e0e0e0;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-user me-2" style="color: #667eea;"></i>Individual Classes</h2>
+            <p class="text-muted mb-0">View and manage all individual (one-on-one) students and classes</p>
+        </div>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+    
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" class="form-control search-box" name="search" 
+                           placeholder="Search by Student Name or Student ID..." 
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if individual_students %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Student ID</th>
+                        <th>Class Name / Subject</th>
+                        <th>Payment Status</th>
+                        <th>Registration Date</th>
+                        <th>Class Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in individual_students %}
+                    <tr>
+                        <td>
+                            <div><strong>{{ student.student_name }}</strong></div>
+                            <small class="text-muted">{{ student.user.email if student.user else 'N/A' }}</small>
+                        </td>
+                        <td>
+                            <code style="background: #f0f0f0; padding: 0.25rem 0.5rem; border-radius: 4px;">
+                                {{ student.student_id }}
+                            </code>
+                        </td>
+                        <td>{{ student.class_name }}</td>
+                        <td>
+                            <span class="badge bg-{% if student.payment_status == 'completed' %}success{% else %}warning{% endif %}">
+                                {{ student.payment_status|title }}
+                            </span>
+                        </td>
+                        <td>{{ student.registration_date.strftime('%Y-%m-%d') if student.registration_date else 'N/A' }}</td>
+                        <td>
+                            <span class="status-badge status-{{ student.class_status|lower }}">
+                                {{ student.class_status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                   class="btn btn-sm btn-outline-info action-btn" 
+                                   {% if not student.user %}disabled title="User account not found"{% endif %}>
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{{ url_for('admin.edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                   class="btn btn-sm btn-outline-primary action-btn"
+                                   {% if not student.user %}disabled title="User account not found"{% endif %}>
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                {% if student.class_status == 'Active' %}
+                                <form action="{{ url_for('admin.admin_individual_classes') }}" method="POST" style="display: inline;">
+                                    <input type="hidden" name="enrollment_id" value="{{ student.enrollment.id }}">
+                                    <input type="hidden" name="action" value="deactivate">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning action-btn" 
+                                            onclick="return confirm('Are you sure you want to deactivate this individual class?');">
+                                        <i class="fas fa-pause"></i> Suspend
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center text-muted py-5">
+                <i class="fas fa-user fa-3x mb-3" style="opacity: 0.5;"></i>
+                <p>No individual class students found</p>
+                {% if search or status_filter %}
+                <a href="{{ url_for('admin.admin_individual_classes') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-times me-1"></i>Clear Filters
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

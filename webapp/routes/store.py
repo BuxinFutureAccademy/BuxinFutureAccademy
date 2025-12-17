@@ -254,8 +254,8 @@ def register_class(class_type, class_id):
             db.session.add(enrollment)
             db.session.commit()
             
-            flash(f'Registration submitted successfully! We will verify your payment and grant access soon. You will receive your Student ID after approval.', 'success')
-            return redirect(url_for('main.index'))
+            # Redirect to waiting for approval page (existing page)
+            return redirect(url_for('store.enrollment_pending_approval', enrollment_id=enrollment.id))
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Enrollment failed: {e}")
@@ -274,6 +274,21 @@ def register_class(class_type, class_id):
         amount=amount,
         payment_methods=payment_methods
     )
+
+
+@bp.route('/enrollment-pending/<int:enrollment_id>', endpoint='enrollment_pending_approval')
+def enrollment_pending_approval(enrollment_id):
+    """Waiting for approval page - Existing page reused for class enrollments"""
+    from ..models import ClassEnrollment
+    
+    enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
+    
+    # If already approved, redirect to homepage (student can access class with Name + ID)
+    if enrollment.status == 'completed':
+        flash('Your registration has been approved! You can now access your class using your Name + Student ID.', 'success')
+        return redirect(url_for('main.index'))
+    
+    return render_template('enrollment_pending_approval.html', enrollment=enrollment)
 
 
 @bp.route('/enroll/<int:class_id>', methods=['GET', 'POST'])

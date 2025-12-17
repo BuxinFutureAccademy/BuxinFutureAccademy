@@ -133,15 +133,25 @@
                             <div class="info-label">Transaction ID</div>
                             <div class="info-value">{{ enrollment.transaction_id or 'Not provided' }}</div>
                         </div>
-                        <div class="col-md-6 info-row">
-                            <div class="info-label">Payment Proof</div>
+                        <div class="col-12 info-row">
+                            <div class="info-label">Payment Proof Receipt</div>
                             <div class="info-value">
                                 {% if enrollment.payment_proof %}
-                                    <a href="{{ enrollment.payment_proof }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-image me-1"></i>View Proof
-                                    </a>
+                                    <div class="mt-2">
+                                        <img src="{{ enrollment.payment_proof }}" 
+                                             alt="Payment Proof" 
+                                             class="img-fluid rounded shadow-sm" 
+                                             style="max-width: 500px; max-height: 400px; border: 2px solid #dee2e6; cursor: pointer;"
+                                             onclick="window.open('{{ enrollment.payment_proof }}', '_blank')"
+                                             title="Click to view full size">
+                                    </div>
+                                    <div class="mt-2">
+                                        <a href="{{ enrollment.payment_proof }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-external-link-alt me-1"></i>Open Full Size
+                                        </a>
+                                    </div>
                                 {% else %}
-                                    Not uploaded
+                                    <span class="text-muted">Not uploaded</span>
                                 {% endif %}
                             </div>
                         </div>

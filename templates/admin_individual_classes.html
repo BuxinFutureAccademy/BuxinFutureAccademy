@@ -125,12 +125,12 @@
                         </td>
                         <td>
                             <div class="btn-group">
-                                <a href="{{ url_for('admin.edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) if student.user else '#' }}" 
                                    class="btn btn-sm btn-outline-info action-btn" 
                                    {% if not student.user %}disabled title="User account not found"{% endif %}>
                                     <i class="fas fa-eye"></i> View
                                 </a>
-                                <a href="{{ url_for('admin.edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) if student.user else '#' }}" 
                                    class="btn btn-sm btn-outline-primary action-btn"
                                    {% if not student.user %}disabled title="User account not found"{% endif %}>
                                     <i class="fas fa-edit"></i> Edit

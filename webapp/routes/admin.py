@@ -2570,13 +2570,46 @@ def admin_group_class_detail(class_id):
     if admin_check:
         return admin_check
     
-    # Handle POST actions
+    # Handle POST actions (approve, reject, remove student, close class)
     if request.method == 'POST':
         action = request.form.get('action')
         user_id = request.form.get('user_id', type=int)
+        enrollment_id = request.form.get('enrollment_id', type=int)
+        
+        group_class = GroupClass.query.get_or_404(class_id)
+        
+        # Handle enrollment approval/rejection
+        if enrollment_id and action in ['approve', 'reject']:
+            enrollment = ClassEnrollment.query.get(enrollment_id)
+            if enrollment and enrollment.class_type == 'group' and enrollment.class_id == class_id:
+                if action == 'approve':
+                    user = User.query.get(enrollment.user_id)
+                    if user:
+                        # Generate Student ID if not exists
+                        if not user.student_id:
+                            from ..models.classes import generate_student_id_for_class
+                            user.student_id = generate_student_id_for_class('group')
+                            user.class_type = 'group'
+                        
+                        # Check if class is full
+                        if len(group_class.students) >= group_class.max_students:
+                            flash(f'Cannot approve: Group class is full ({len(group_class.students)}/{group_class.max_students} students).', 'warning')
+                        elif user not in group_class.students:
+                            group_class.students.append(user)
+                            enrollment.status = 'completed'
+                            db.session.commit()
+                            flash(f'Enrollment approved! Student ID: {user.student_id}', 'success')
+                        else:
+                            enrollment.status = 'completed'
+                            db.session.commit()
+                            flash('Enrollment approved!', 'success')
+                elif action == 'reject':
+                    enrollment.status = 'rejected'
+                    db.session.commit()
+                    flash('Enrollment rejected.', 'warning')
+            return redirect(url_for('admin.admin_group_class_detail', class_id=class_id))
         
         if action == 'remove_student' and user_id:
-            group_class = GroupClass.query.get_or_404(class_id)
             user = User.query.get(user_id)
             if user and user in group_class.students:
                 group_class.students.remove(user)
@@ -2713,12 +2746,49 @@ def admin_family_class_detail(enrollment_id):
     if admin_check:
         return admin_check
     
-    # Handle POST actions
+    # Handle POST actions (approve, reject, suspend family, add/remove family member)
     if request.method == 'POST':
         action = request.form.get('action')
+        form_enrollment_id = request.form.get('enrollment_id', type=int)
+        
+        # Use form_enrollment_id if provided, otherwise use route parameter
+        target_enrollment_id = form_enrollment_id if form_enrollment_id else enrollment_id
+        enrollment = ClassEnrollment.query.get_or_404(target_enrollment_id)
+        
+        if enrollment.class_type != 'family':
+            flash('This is not a family class enrollment.', 'danger')
+            return redirect(url_for('admin.admin_family_classes'))
+        
+        # Handle enrollment approval/rejection
+        if action in ['approve', 'reject']:
+            if action == 'approve':
+                user = User.query.get(enrollment.user_id)
+                if user:
+                    # Generate Student ID if not exists
+                    if not user.student_id:
+                        from ..models.classes import generate_student_id_for_class
+                        user.student_id = generate_student_id_for_class('family')
+                        user.class_type = 'family'
+                    
+                    # Generate Student IDs for all family members
+                    family_members = FamilyMember.query.filter_by(enrollment_id=enrollment.id).all()
+                    for member in family_members:
+                        if member.user_id:
+                            member_user = User.query.get(member.user_id)
+                            if member_user and not member_user.student_id:
+                                member_user.student_id = generate_student_id_for_class('family')
+                                member_user.class_type = 'family'
+                    
+                    enrollment.status = 'completed'
+                    db.session.commit()
+                    flash(f'Family enrollment approved! Student IDs generated.', 'success')
+            elif action == 'reject':
+                enrollment.status = 'rejected'
+                db.session.commit()
+                flash('Family enrollment rejected.', 'warning')
+            return redirect(url_for('admin.admin_family_classes'))
         
         if action == 'suspend_family':
-            enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
             enrollment.status = 'rejected'  # Mark as rejected to suspend
             db.session.commit()
             flash('Family access has been suspended.', 'success')

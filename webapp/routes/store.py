@@ -228,14 +228,53 @@ def register_class(class_type, class_id):
                 if not user.class_type:
                     user.class_type = class_type
             
-            # Handle payment proof upload if provided
+            # Handle payment proof upload (REQUIRED - uploads to Cloudinary)
+            if not payment_proof or not payment_proof.filename:
+                flash('Payment receipt upload is required. Please upload your payment proof.', 'danger')
+                return render_template('register_class.html',
+                    class_obj=class_obj,
+                    class_type=class_type,
+                    pricing_type=class_type,
+                    pricing_name=pricing_name,
+                    pricing_color=pricing_color,
+                    pricing_icon=pricing_icon,
+                    max_students=max_students,
+                    features=features,
+                    fee_display=fee_display,
+                    amount=amount,
+                    payment_methods=payment_methods
+                )
+            
+            # Upload payment proof to Cloudinary (REQUIRED)
             payment_proof_url = None
-            if payment_proof and payment_proof.filename:
-                from ..services.cloudinary_service import upload_file
-                try:
-                    payment_proof_url = upload_file(payment_proof, folder='payment_proofs')
-                except Exception as e:
-                    current_app.logger.error(f"Payment proof upload failed: {e}")
+            from ..services.cloudinary_service import CloudinaryService
+            try:
+                success, result = CloudinaryService.upload_file(
+                    file=payment_proof, 
+                    folder='payment_proofs',
+                    resource_type='auto'
+                )
+                if success and isinstance(result, dict) and result.get('url'):
+                    payment_proof_url = result['url']
+                else:
+                    error_msg = result if isinstance(result, str) else "Cloudinary upload returned no URL"
+                    raise Exception(error_msg)
+            except Exception as e:
+                current_app.logger.error(f"Payment proof upload failed: {e}")
+                flash('Failed to upload payment receipt. Please try again.', 'danger')
+                return render_template('register_class.html',
+                    class_obj=class_obj,
+                    class_type=class_type,
+                    pricing_type=class_type,
+                    pricing_name=pricing_name,
+                    pricing_color=pricing_color,
+                    pricing_icon=pricing_icon,
+                    max_students=max_students,
+                    features=features,
+                    fee_display=fee_display,
+                    amount=amount,
+                    payment_methods=payment_methods
+                )
             
             # Create enrollment record
             enrollment = ClassEnrollment(

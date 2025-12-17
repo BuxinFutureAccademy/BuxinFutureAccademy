@@ -1179,8 +1179,7 @@
                 <a href="{{ url_for('schools.enter_classroom') }}" class="nav-cta" style="background: var(--gradient-neon);">
                     <i class="fas fa-door-open me-2"></i>Enter Classroom
                 </a>
-                <a href="{{ url_for('auth.login') }}" class="nav-cta">
-                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                {# Login removed - Students use Name + Student ID, Admin uses /class-admin #}
                 </a>
             </div>
             
@@ -1650,7 +1649,7 @@
                 <div class="col-lg-2 col-6">
                     <h5 class="footer-title">Account</h5>
                     <ul class="footer-links">
-                        <li><a href="{{ url_for('auth.login') }}">Classroom</a></li>
+                        <li><a href="{{ url_for('main.choose_class_type') }}">Register</a></li>
                         <li><a href="{{ url_for('main.choose_class_type') }}">Register</a></li>
                         <li><a href="{{ url_for('student_projects.student_projects') }}">Projects</a></li>
                     </ul>

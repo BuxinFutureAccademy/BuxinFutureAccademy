@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required, current_user, logout_user
+from flask_login import login_required, current_user, logout_user, login_user
 
 from ..extensions import db
 from ..models import (
@@ -23,6 +23,56 @@ from ..models import (
 )
 
 bp = Blueprint('admin', __name__)
+
+
+def require_admin():
+    """Helper function to check admin authentication and redirect if not admin"""
+    if not current_user.is_authenticated:
+        return redirect(url_for('admin.admin_login'))
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'danger')
+        logout_user()
+        return redirect(url_for('admin.admin_login'))
+    return None
+
+
+@bp.route('/class-admin', methods=['GET', 'POST'], endpoint='admin_login')
+def admin_login():
+    """Admin-only login page - Hidden URL, not linked anywhere on public site"""
+    # If already logged in as admin, redirect to admin dashboard
+    if current_user.is_authenticated and current_user.is_admin:
+        return redirect(url_for('admin.admin_dashboard'))
+    
+    # If logged in but not admin, logout first
+    if current_user.is_authenticated and not current_user.is_admin:
+        logout_user()
+        flash('Please use admin credentials to access this page.', 'warning')
+    
+    if request.method == 'POST':
+        identifier = request.form.get('identifier', '').strip()
+        password = request.form.get('password', '')
+        
+        if not identifier or not password:
+            flash('Please enter both username/email and password.', 'danger')
+            return render_template('admin_login.html')
+        
+        # Find user by username or email
+        user = User.query.filter(
+            (User.username == identifier) | (User.email == identifier.lower())
+        ).first()
+        
+        if user and user.check_password(password):
+            # Only allow admin users to login here
+            if user.is_admin:
+                login_user(user)
+                flash('Admin login successful!', 'success')
+                return redirect(url_for('admin.admin_dashboard'))
+            else:
+                flash('Access denied. This page is for administrators only.', 'danger')
+        else:
+            flash('Invalid credentials.', 'danger')
+    
+    return render_template('admin_login.html')
 
 
 @bp.route('/admin/setup-school-tables')
@@ -416,9 +466,9 @@ def delete_account():
 @bp.route('/admin/account-deletion-requests')
 @login_required
 def admin_account_deletion_requests():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     return render_template('admin_deletion_requests.html')
 
 
@@ -463,9 +513,11 @@ def initialize_db():
 @bp.route('/admin/dashboard', methods=['GET', 'POST'])
 @login_required
 def admin_dashboard():
+    """Admin dashboard - requires admin authentication"""
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+        logout_user()
+        return redirect(url_for('admin.admin_login'))
     
     from flask import request
     
@@ -794,9 +846,9 @@ def admin_dashboard():
 @bp.route('/admin/users')
 @login_required
 def admin_users():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     from flask import request
     search = request.args.get('search', '')
@@ -814,9 +866,9 @@ def admin_users():
 @bp.route('/admin/create-class', methods=['GET', 'POST'])
 @login_required
 def create_class():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     from flask import request
     
@@ -859,9 +911,9 @@ def create_class():
 @login_required
 def admin_classes():
     """View all classes"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     # Legacy individual classes are kept for display, but new classes use GroupClass
     individual_classes = IndividualClass.query.all()
@@ -878,9 +930,9 @@ def admin_classes():
 @login_required
 def edit_class(class_id, class_type=None):
     """Edit a class"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     from flask import request
     
@@ -913,9 +965,9 @@ def edit_class(class_id, class_type=None):
 @login_required
 def delete_class(class_id, class_type=None):
     """Delete a class"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     class_obj = GroupClass.query.get(class_id) or IndividualClass.query.get_or_404(class_id)
     
@@ -936,9 +988,9 @@ def delete_class(class_id, class_type=None):
 @login_required
 def admin_enrollments():
     """View all class enrollments"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     from flask import request
     status_filter = request.args.get('status', '')
@@ -969,9 +1021,9 @@ def admin_enrollments():
 @login_required
 def view_enrollment(enrollment_id):
     """View enrollment details"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     
@@ -992,9 +1044,9 @@ def view_enrollment(enrollment_id):
 @login_required
 def approve_enrollment(enrollment_id):
     """Approve an enrollment and generate Student ID"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     user = User.query.get(enrollment.user_id)
@@ -1044,9 +1096,9 @@ def approve_enrollment(enrollment_id):
 @login_required
 def reject_enrollment(enrollment_id):
     """Reject an enrollment"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     enrollment.status = 'rejected'
@@ -1558,9 +1610,9 @@ def register_family_member():
 @login_required
 def admin_attendance():
     """Admin view and manage attendance"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     from datetime import date, timedelta
     from calendar import monthrange
@@ -1653,9 +1705,9 @@ def admin_attendance():
 @login_required
 def admin_mark_attendance():
     """Admin marks attendance for students"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     from datetime import date
     
@@ -1716,9 +1768,9 @@ def admin_mark_attendance():
 @login_required
 def admin_registered_students():
     """Admin view all registered students and family members"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     filter_type = request.args.get('type', '')  # 'school', 'family', 'individual', 'group', or 'all'
     
@@ -1833,9 +1885,9 @@ def admin_edit_user(user_id):
 @login_required
 def admin_gallery():
     """Admin page to manage homepage gallery (images and videos)"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     media_type = request.args.get('type', '')
     source = request.args.get('source', '')
@@ -1897,9 +1949,9 @@ def admin_gallery():
 @login_required
 def admin_gallery_add():
     """Add new gallery item - supports both URL and file upload"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
@@ -1982,9 +2034,9 @@ def admin_gallery_add():
 @login_required
 def admin_gallery_edit(item_id):
     """Edit gallery item - supports both URL and file upload"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     item = HomeGallery.query.get_or_404(item_id)
     
@@ -2053,9 +2105,9 @@ def admin_gallery_edit(item_id):
 @login_required
 def admin_gallery_delete(item_id):
     """Delete gallery item"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     item = HomeGallery.query.get_or_404(item_id)
     try:
@@ -2073,9 +2125,9 @@ def admin_gallery_delete(item_id):
 @login_required
 def admin_gallery_import_project():
     """Import media from student project to gallery"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     project_id = request.form.get('project_id', type=int)
     import_type = request.form.get('import_type', 'image')  # 'image' or 'video'
@@ -2148,9 +2200,9 @@ def admin_gallery_import_project():
 @login_required
 def admin_victories():
     """Admin page to manage student victories"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     victories = []
     try:
@@ -2169,9 +2221,9 @@ def admin_victories():
 @login_required
 def admin_victory_add():
     """Add new student victory"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     students = User.query.filter_by(is_student=True).order_by(User.first_name.asc()).all()
     
@@ -2240,9 +2292,9 @@ def admin_victory_add():
 @login_required
 def admin_victory_edit(victory_id):
     """Edit student victory"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     victory = StudentVictory.query.get_or_404(victory_id)
     students = User.query.filter_by(is_student=True).order_by(User.first_name.asc()).all()
@@ -2297,9 +2349,9 @@ def admin_victory_edit(victory_id):
 @login_required
 def admin_victory_delete(victory_id):
     """Delete student victory"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     victory = StudentVictory.query.get_or_404(victory_id)
     try:
@@ -2319,9 +2371,9 @@ def admin_victory_delete(victory_id):
 @login_required
 def admin_pricing():
     """Manage class pricing"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     # Get pricing data from database or use defaults
     pricing_data = ClassPricing.get_all_pricing()
@@ -2333,9 +2385,9 @@ def admin_pricing():
 @login_required
 def update_pricing(class_type):
     """Update pricing for a class type"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     price = request.form.get('price', type=float)
     name = request.form.get('name', '').strip()
@@ -2395,9 +2447,9 @@ def update_pricing(class_type):
 @login_required
 def admin_individual_classes():
     """View and manage all individual (one-on-one) students and classes"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     # Handle POST actions (deactivate class)
     if request.method == 'POST':
@@ -2471,9 +2523,9 @@ def admin_individual_classes():
 @login_required
 def admin_group_classes():
     """View and manage group classes with multiple students"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     # Get search parameter
     search = request.args.get('search', '').strip()
@@ -2515,9 +2567,9 @@ def admin_group_classes():
 @login_required
 def admin_group_class_detail(class_id):
     """View detailed information about a specific group class"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     # Handle POST actions
     if request.method == 'POST':
@@ -2576,9 +2628,9 @@ def admin_group_class_detail(class_id):
 @login_required
 def admin_family_classes():
     """View and manage family-based registrations"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     # Get search parameter
     search = request.args.get('search', '').strip()
@@ -2625,9 +2677,9 @@ def admin_family_classes():
 @login_required
 def admin_family_class_detail(enrollment_id):
     """View detailed information about a specific family class"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     # Handle POST actions
     if request.method == 'POST':
@@ -2697,9 +2749,9 @@ def admin_family_class_detail(enrollment_id):
 @login_required
 def admin_schools():
     """View all registered schools"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     schools = School.query.order_by(School.created_at.desc()).all()
     
@@ -2714,9 +2766,9 @@ def admin_schools():
 @login_required
 def admin_school_detail(school_id):
     """View school details and students"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     school = School.query.get_or_404(school_id)
     students = RegisteredSchoolStudent.query.filter_by(school_id=school_id).order_by(RegisteredSchoolStudent.created_at.desc()).all()
@@ -2728,9 +2780,9 @@ def admin_school_detail(school_id):
 @login_required
 def approve_school(school_id):
     """Approve a school registration"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     school = School.query.get_or_404(school_id)
     
@@ -2751,9 +2803,9 @@ def approve_school(school_id):
 @login_required
 def reject_school(school_id):
     """Reject a school registration"""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.index'))
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
     
     school = School.query.get_or_404(school_id)
     reason = request.form.get('reason', '').strip()

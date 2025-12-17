@@ -170,7 +170,15 @@ def reset_password(token):
 
 @bp.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
+    """
+    General login route - NOT for admins
+    Admins must use /class-admin
+    Students use Name + Student ID (no login needed)
+    """
     if current_user.is_authenticated:
+        # If admin tries to use general login, redirect to admin login
+        if current_user.is_admin:
+            return redirect(url_for('admin.admin_login'))
         # Redirect based on user type
         return redirect(get_user_redirect_url(current_user))
     
@@ -178,7 +186,13 @@ def login():
         identifier = request.form.get('email', '').strip().lower() or request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter((User.email == identifier) | (User.username == identifier)).first() if identifier else None
+        
         if user and user.check_password(password):
+            # If admin tries to login here, redirect to admin login page
+            if user.is_admin:
+                flash('Please use /class-admin to login as administrator.', 'info')
+                return redirect(url_for('admin.admin_login'))
+            
             login_user(user)
             
             # Check for next URL first
@@ -189,6 +203,9 @@ def login():
             # Redirect based on user type and enrollment
             return redirect(get_user_redirect_url(user))
         flash('Invalid credentials.', 'danger')
+    
+    # General login page - mostly for legacy users or school admins
+    # Students should use Name + Student ID instead
     return render_template('login.html')
 
 

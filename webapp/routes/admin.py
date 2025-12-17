@@ -28,51 +28,15 @@ bp = Blueprint('admin', __name__)
 def require_admin():
     """Helper function to check admin authentication and redirect if not admin"""
     if not current_user.is_authenticated:
-        return redirect(url_for('admin.admin_login'))
+        return redirect(url_for('auth.login'))
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         logout_user()
-        return redirect(url_for('admin.admin_login'))
+        return redirect(url_for('auth.login'))
     return None
 
 
-@bp.route('/class-admin', methods=['GET', 'POST'], endpoint='admin_login')
-def admin_login():
-    """Admin-only login page - Hidden URL, not linked anywhere on public site"""
-    # If already logged in as admin, redirect to admin dashboard
-    if current_user.is_authenticated and current_user.is_admin:
-        return redirect(url_for('admin.admin_dashboard'))
-    
-    # If logged in but not admin, logout first
-    if current_user.is_authenticated and not current_user.is_admin:
-        logout_user()
-        flash('Please use admin credentials to access this page.', 'warning')
-    
-    if request.method == 'POST':
-        identifier = request.form.get('identifier', '').strip()
-        password = request.form.get('password', '')
-        
-        if not identifier or not password:
-            flash('Please enter both username/email and password.', 'danger')
-            return render_template('admin_login.html')
-        
-        # Find user by username or email
-        user = User.query.filter(
-            (User.username == identifier) | (User.email == identifier.lower())
-        ).first()
-        
-        if user and user.check_password(password):
-            # Only allow admin users to login here
-            if user.is_admin:
-                login_user(user)
-                flash('Admin login successful!', 'success')
-                return redirect(url_for('admin.admin_dashboard'))
-            else:
-                flash('Access denied. This page is for administrators only.', 'danger')
-        else:
-            flash('Invalid credentials.', 'danger')
-    
-    return render_template('admin_login.html')
+# Removed /class-admin route - using existing /login page instead
 
 
 @bp.route('/admin/setup-school-tables')
@@ -517,7 +481,7 @@ def admin_dashboard():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         logout_user()
-        return redirect(url_for('admin.admin_login'))
+        return redirect(url_for('auth.login'))
     
     from flask import request
     

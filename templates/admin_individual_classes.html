@@ -85,74 +85,150 @@
         </div>
     </div>
     
-    {% if individual_students %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Student Name</th>
-                        <th>Student ID</th>
-                        <th>Class Name / Subject</th>
-                        <th>Payment Status</th>
-                        <th>Registration Date</th>
-                        <th>Class Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in individual_students %}
-                    <tr>
-                        <td>
-                            <div><strong>{{ student.student_name }}</strong></div>
-                            <small class="text-muted">{{ student.user.email if student.user else 'N/A' }}</small>
-                        </td>
-                        <td>
-                            <code style="background: #f0f0f0; padding: 0.25rem 0.5rem; border-radius: 4px;">
-                                {{ student.student_id }}
-                            </code>
-                        </td>
-                        <td>{{ student.class_name }}</td>
-                        <td>
-                            <span class="badge bg-{% if student.payment_status == 'completed' %}success{% else %}warning{% endif %}">
-                                {{ student.payment_status|title }}
-                            </span>
-                        </td>
-                        <td>{{ student.registration_date.strftime('%Y-%m-%d') if student.registration_date else 'N/A' }}</td>
-                        <td>
-                            <span class="status-badge status-{{ student.class_status|lower }}">
-                                {{ student.class_status }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="btn-group">
-                                <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) if student.user else '#' }}" 
-                                   class="btn btn-sm btn-outline-info action-btn" 
-                                   {% if not student.user %}disabled title="User account not found"{% endif %}>
-                                    <i class="fas fa-eye"></i> View
-                                </a>
-                                <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) if student.user else '#' }}" 
-                                   class="btn btn-sm btn-outline-primary action-btn"
-                                   {% if not student.user %}disabled title="User account not found"{% endif %}>
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                {% if student.class_status == 'Active' %}
-                                <form action="{{ url_for('admin.admin_individual_classes') }}" method="POST" style="display: inline;">
-                                    <input type="hidden" name="enrollment_id" value="{{ student.enrollment.id }}">
-                                    <input type="hidden" name="action" value="deactivate">
-                                    <button type="submit" class="btn btn-sm btn-outline-warning action-btn" 
-                                            onclick="return confirm('Are you sure you want to deactivate this individual class?');">
-                                        <i class="fas fa-pause"></i> Suspend
-                                    </button>
-                                </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Pending Registrations Section -->
+    {% if pending_enrollments %}
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Registrations ({{ pending_enrollments|length }})</h5>
         </div>
-    {% else %}
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Class Name</th>
+                            <th>Payment Amount</th>
+                            <th>Payment Method</th>
+                            <th>Payment Date</th>
+                            <th>Payment Proof</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrollment in pending_enrollments %}
+                        <tr>
+                            <td>
+                                <div><strong>{{ enrollment.student_name }}</strong></div>
+                                <small class="text-muted">{{ enrollment.user.email if enrollment.user else 'N/A' }}</small>
+                            </td>
+                            <td>{{ enrollment.class_name }}</td>
+                            <td><strong>${{ enrollment.payment_amount|int }}</strong></td>
+                            <td>{{ enrollment.payment_method|title }}</td>
+                            <td>{{ enrollment.registration_date.strftime('%Y-%m-%d') if enrollment.registration_date else 'N/A' }}</td>
+                            <td>
+                                {% if enrollment.payment_proof %}
+                                    <a href="{{ enrollment.payment_proof }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-image me-1"></i>View Receipt
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Not uploaded</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <form action="{{ url_for('admin.admin_individual_classes') }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="enrollment_id" value="{{ enrollment.enrollment.id }}">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="btn btn-sm btn-success action-btn">
+                                            <i class="fas fa-check me-1"></i>Approve
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('admin.admin_individual_classes') }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="enrollment_id" value="{{ enrollment.enrollment.id }}">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="btn btn-sm btn-danger action-btn" 
+                                                onclick="return confirm('Are you sure you want to reject this registration?');">
+                                            <i class="fas fa-times me-1"></i>Reject
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Approved/Active Students Section -->
+    {% if individual_students %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Approved Individual Classes</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Student ID</th>
+                                <th>Class Name / Subject</th>
+                                <th>Payment Status</th>
+                                <th>Registration Date</th>
+                                <th>Class Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in individual_students %}
+                            <tr>
+                                <td>
+                                    <div><strong>{{ student.student_name }}</strong></div>
+                                    <small class="text-muted">{{ student.user.email if student.user else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <code style="background: #f0f0f0; padding: 0.25rem 0.5rem; border-radius: 4px;">
+                                        {{ student.student_id or 'N/A' }}
+                                    </code>
+                                </td>
+                                <td>{{ student.class_name }}</td>
+                                <td>
+                                    <span class="badge bg-{% if student.payment_status == 'completed' %}success{% elif student.payment_status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                        {{ student.payment_status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ student.registration_date.strftime('%Y-%m-%d') if student.registration_date else 'N/A' }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ student.class_status|lower }}">
+                                        {{ student.class_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                           class="btn btn-sm btn-outline-info action-btn" 
+                                           {% if not student.user %}disabled title="User account not found"{% endif %}>
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                           class="btn btn-sm btn-outline-primary action-btn"
+                                           {% if not student.user %}disabled title="User account not found"{% endif %}>
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        {% if student.class_status == 'Active' %}
+                                        <form action="{{ url_for('admin.admin_individual_classes') }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="enrollment_id" value="{{ student.enrollment.id }}">
+                                            <input type="hidden" name="action" value="deactivate">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning action-btn" 
+                                                    onclick="return confirm('Are you sure you want to deactivate this individual class?');">
+                                                <i class="fas fa-pause"></i> Suspend
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% elif not pending_enrollments %}
         <div class="card">
             <div class="card-body text-center text-muted py-5">
                 <i class="fas fa-user fa-3x mb-3" style="opacity: 0.5;"></i>

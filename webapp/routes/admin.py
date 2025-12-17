@@ -2432,8 +2432,9 @@ def admin_individual_classes():
     search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '')
     
-    # Get all individual class enrollments
-    query = ClassEnrollment.query.filter_by(class_type='individual', status='completed')
+    # Get all individual class enrollments (including pending for approval)
+    # Show both completed and pending enrollments
+    query = ClassEnrollment.query.filter_by(class_type='individual')
     
     # Apply search filter
     if search:
@@ -2449,25 +2450,35 @@ def admin_individual_classes():
     
     enrollments = query.order_by(ClassEnrollment.enrolled_at.desc()).all()
     
-    # Build list of individual class students
+    # Build list of individual class students (separate pending and completed)
+    pending_enrollments = []
     individual_students = []
+    
     for enrollment in enrollments:
         user = User.query.get(enrollment.user_id)
         if user:
             # Get the individual class
             individual_class = IndividualClass.query.get(enrollment.class_id)
             
-            individual_students.append({
+            student_data = {
                 'enrollment': enrollment,
                 'user': user,
                 'class': individual_class,
-                'student_name': f"{user.first_name} {user.last_name}",
-                'student_id': user.student_id or 'N/A',
+                'student_name': enrollment.customer_name or f"{user.first_name} {user.last_name}",
+                'student_id': user.student_id or '',
                 'class_name': individual_class.name if individual_class else 'Unknown',
                 'payment_status': enrollment.status,
+                'payment_amount': enrollment.amount,
+                'payment_method': enrollment.payment_method or 'N/A',
+                'payment_proof': enrollment.payment_proof,
                 'registration_date': enrollment.enrolled_at,
                 'class_status': 'Active' if enrollment.status == 'completed' else 'Inactive'
-            })
+            }
+            
+            if enrollment.status == 'pending':
+                pending_enrollments.append(student_data)
+            else:
+                individual_students.append(student_data)
     
     # Apply status filter
     if status_filter:
@@ -2478,6 +2489,7 @@ def admin_individual_classes():
     
     return render_template('admin_individual_classes.html',
         individual_students=individual_students,
+        pending_enrollments=pending_enrollments,
         search=search,
         status_filter=status_filter
     )
@@ -2564,7 +2576,7 @@ def admin_group_class_detail(class_id):
     
     group_class = GroupClass.query.get_or_404(class_id)
     
-    # Get all students in this group class
+    # Get all students in this group class (approved)
     students = []
     for student in group_class.students:
         enrollment = ClassEnrollment.query.filter_by(
@@ -2582,9 +2594,31 @@ def admin_group_class_detail(class_id):
             'registration_date': enrollment.enrolled_at if enrollment else None
         })
     
+    # Get pending enrollments for this group class
+    pending_enrollments = []
+    pending_enrollments_query = ClassEnrollment.query.filter_by(
+        class_id=class_id,
+        class_type='group',
+        status='pending'
+    ).all()
+    
+    for enrollment in pending_enrollments_query:
+        user = User.query.get(enrollment.user_id)
+        if user:
+            pending_enrollments.append({
+                'enrollment': enrollment,
+                'user': user,
+                'student_name': enrollment.customer_name or f"{user.first_name} {user.last_name}",
+                'payment_amount': enrollment.amount,
+                'payment_method': enrollment.payment_method or 'N/A',
+                'payment_proof': enrollment.payment_proof,
+                'registration_date': enrollment.enrolled_at
+            })
+    
     return render_template('admin_group_class_detail.html',
         group_class=group_class,
-        students=students
+        students=students,
+        pending_enrollments=pending_enrollments
     )
 
 
@@ -2599,8 +2633,8 @@ def admin_family_classes():
     # Get search parameter
     search = request.args.get('search', '').strip()
     
-    # Get all family class enrollments
-    query = ClassEnrollment.query.filter_by(class_type='family', status='completed')
+    # Get all family class enrollments (including pending for approval)
+    query = ClassEnrollment.query.filter_by(class_type='family')
     
     if search:
         from sqlalchemy import or_
@@ -2633,6 +2667,7 @@ def admin_family_classes():
     
     return render_template('admin_family_classes.html',
         families=families,
+        pending_families=pending_families,
         search=search
     )
 

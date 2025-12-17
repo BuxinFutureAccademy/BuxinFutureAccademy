@@ -66,9 +66,83 @@
         </div>
     </div>
     
+    <!-- Pending Family Registrations -->
+    {% if pending_families %}
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Family Registrations ({{ pending_families|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Family Name / Parent Name</th>
+                            <th>Total Students</th>
+                            <th>Payment Amount</th>
+                            <th>Payment Method</th>
+                            <th>Payment Date</th>
+                            <th>Payment Proof</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for family in pending_families %}
+                        <tr>
+                            <td>
+                                <div><strong>{{ family.family_name }}</strong></div>
+                                <small class="text-muted">{{ family.parent_user.email if family.parent_user else 'N/A' }}</small>
+                            </td>
+                            <td><span class="badge bg-info">{{ family.total_students }}</span></td>
+                            <td><strong>${{ family.payment_amount|int }}</strong></td>
+                            <td>{{ family.payment_method|title }}</td>
+                            <td>{{ family.registration_date.strftime('%Y-%m-%d') if family.registration_date else 'N/A' }}</td>
+                            <td>
+                                {% if family.payment_proof %}
+                                    <a href="{{ family.payment_proof }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-image me-1"></i>View Receipt
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Not uploaded</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <form action="{{ url_for('admin.admin_family_class_detail', enrollment_id=family.enrollment.id) }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="enrollment_id" value="{{ family.enrollment.id }}">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="btn btn-sm btn-success action-btn">
+                                            <i class="fas fa-check me-1"></i>Approve
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('admin.admin_family_class_detail', enrollment_id=family.enrollment.id) }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="enrollment_id" value="{{ family.enrollment.id }}">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="btn btn-sm btn-danger action-btn" 
+                                                onclick="return confirm('Are you sure you want to reject this family registration?');">
+                                            <i class="fas fa-times me-1"></i>Reject
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Approved Family Classes -->
     {% if families %}
-        <div class="row">
-            {% for family in families %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Approved Family Classes</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for family in families %}
             <div class="col-md-6 mb-3">
                 <div class="family-card card" onclick="window.location='{{ url_for('admin.admin_family_class_detail', enrollment_id=family.enrollment.id) }}'">
                     <div class="family-header">

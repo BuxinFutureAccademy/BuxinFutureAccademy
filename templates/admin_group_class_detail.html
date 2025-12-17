@@ -48,7 +48,73 @@
         </div>
     </div>
     
-    <!-- Students List -->
+    <!-- Pending Registrations Section -->
+    {% if pending_enrollments %}
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Registrations ({{ pending_enrollments|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Payment Amount</th>
+                            <th>Payment Method</th>
+                            <th>Payment Date</th>
+                            <th>Payment Proof</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrollment in pending_enrollments %}
+                        <tr>
+                            <td>
+                                <div><strong>{{ enrollment.student_name }}</strong></div>
+                                <small class="text-muted">{{ enrollment.user.email if enrollment.user else 'N/A' }}</small>
+                            </td>
+                            <td><strong>${{ enrollment.payment_amount|int }}</strong></td>
+                            <td>{{ enrollment.payment_method|title }}</td>
+                            <td>{{ enrollment.registration_date.strftime('%Y-%m-%d') if enrollment.registration_date else 'N/A' }}</td>
+                            <td>
+                                {% if enrollment.payment_proof %}
+                                    <a href="{{ enrollment.payment_proof }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-image me-1"></i>View Receipt
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Not uploaded</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <form action="{{ url_for('admin.admin_group_class_detail', class_id=group_class.id) }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="enrollment_id" value="{{ enrollment.enrollment.id }}">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="btn btn-sm btn-success action-btn">
+                                            <i class="fas fa-check me-1"></i>Approve
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('admin.admin_group_class_detail', class_id=group_class.id) }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="enrollment_id" value="{{ enrollment.enrollment.id }}">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="btn btn-sm btn-danger action-btn" 
+                                                onclick="return confirm('Are you sure you want to reject this registration?');">
+                                            <i class="fas fa-times me-1"></i>Reject
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Approved Students List -->
     <div class="card">
         <div class="card-header">
             <h5><i class="fas fa-user-graduate me-2"></i>All Students in This Group</h5>

@@ -2435,10 +2435,8 @@ def admin_individual_classes():
                         
                         # Add student to individual class
                         individual_class = IndividualClass.query.get(enrollment.class_id)
-                        if individual_class:
-                            # Check if student is already in the class
-                            if user not in individual_class.students.all():
-                                individual_class.students.append(user)
+                        if individual_class and user not in individual_class.students:
+                            individual_class.students.append(user)
                         
                         enrollment.status = 'completed'
                         db.session.commit()

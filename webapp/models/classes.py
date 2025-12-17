@@ -41,7 +41,7 @@ class IndividualClass(db.Model):
     
     # Relationship to students through association table
     students = db.relationship('User', secondary=individual_class_students, 
-                               lazy='dynamic', backref='individual_classes')
+                               lazy='select', backref='individual_classes')
 
 
 class GroupClass(db.Model):
@@ -54,7 +54,7 @@ class GroupClass(db.Model):
     
     # Relationship to students through association table
     students = db.relationship('User', secondary=group_class_students, 
-                              lazy='dynamic', backref='group_classes')
+                              lazy='select', backref='group_classes')
 
 
 class Attendance(db.Model):

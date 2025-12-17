@@ -67,7 +67,7 @@ def store():
 
 @bp.route('/available-classes', endpoint='available_classes')
 def available_classes():
-    """Browse and enroll in available classes"""
+    """Browse and enroll in available classes - Filtered by class type"""
     from ..models import ClassPricing
 
     pricing_type = request.args.get('type', 'individual')
@@ -80,17 +80,28 @@ def available_classes():
         pricing_info = {'name': pricing_type.title(), 'price': 100}
 
     classes = []
-    try:
-        classes = GroupClass.query.all()
-    except Exception:
+    
+    # Filter classes by type - each type has its own list
+    if pricing_type == 'individual':
+        try:
+            classes = IndividualClass.query.all()
+        except Exception:
+            classes = []
+    elif pricing_type == 'group':
+        try:
+            classes = GroupClass.query.all()
+        except Exception:
+            classes = []
+    elif pricing_type == 'family':
+        # Family classes can use GroupClass structure or have their own
+        # For now, we'll use GroupClass but mark them as family type
+        try:
+            classes = GroupClass.query.all()  # Can be filtered later if needed
+        except Exception:
+            classes = []
+    elif pricing_type == 'school':
+        # School classes are handled separately via school registration
         classes = []
-
-    # Include legacy individual classes if they exist
-    try:
-        legacy_individual = IndividualClass.query.all()
-        classes = classes + legacy_individual
-    except Exception:
-        pass
     
     return render_template(
         'available_classes.html',
@@ -101,26 +112,29 @@ def available_classes():
     )
 
 
-@bp.route('/enroll/<int:class_id>', methods=['GET', 'POST'])
-@bp.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])  # legacy URL with class_type
-@login_required
-def enroll_class(class_id, class_type=None):
-    """Enroll in a class"""
-    from ..models import ClassPricing
+@bp.route('/register-class/<class_type>/<int:class_id>', methods=['GET', 'POST'])
+def register_class(class_type, class_id):
+    """Register for a class - No login required"""
+    from ..models import ClassPricing, ClassEnrollment, User
+    import secrets
+    import string
     
-    # Get pricing type from URL parameter (individual, group, family, school)
-    pricing_type = request.args.get('pricing', 'individual')
-    
-    # Get the class object (unified class model uses GroupClass; keep legacy individual support)
-    class_obj = GroupClass.query.get(class_id) or IndividualClass.query.get_or_404(class_id)
+    # Get the class object
+    if class_type == 'individual':
+        class_obj = IndividualClass.query.get_or_404(class_id)
+    elif class_type in ['group', 'family']:
+        class_obj = GroupClass.query.get_or_404(class_id)
+    else:
+        flash('Invalid class type.', 'danger')
+        return redirect(url_for('store.available_classes', type=class_type))
     
     # Get pricing from database
     pricing_data = ClassPricing.get_all_pricing()
-    selected_pricing = pricing_data.get(pricing_type, pricing_data.get('individual', {}))
+    selected_pricing = pricing_data.get(class_type, pricing_data.get('individual', {}))
     
     # Get price and display info
     amount = selected_pricing.get('price', 100)
-    pricing_name = selected_pricing.get('name', pricing_type.title())
+    pricing_name = selected_pricing.get('name', class_type.title())
     pricing_color = selected_pricing.get('color', '#00d4ff')
     pricing_icon = selected_pricing.get('icon', 'fa-user')
     max_students = selected_pricing.get('max_students', 1)
@@ -153,19 +167,80 @@ def enroll_class(class_id, class_type=None):
     ]
     
     if request.method == 'POST':
-        # Handle enrollment submission
-        full_name = request.form.get('full_name', '')
-        phone = request.form.get('phone', '')
-        email = request.form.get('email', '')
-        address = request.form.get('address', '')
+        # Handle registration submission
+        full_name = request.form.get('full_name', '').strip()
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+        address = request.form.get('address', '').strip()
         payment_method = request.form.get('payment_method', '')
+        payment_proof = request.files.get('payment_proof')
+        
+        # Validate required fields
+        if not full_name or not email or not phone:
+            flash('Please fill in all required fields.', 'danger')
+            return render_template('register_class.html',
+                class_obj=class_obj,
+                class_type=class_type,
+                pricing_type=class_type,
+                pricing_name=pricing_name,
+                pricing_color=pricing_color,
+                pricing_icon=pricing_icon,
+                max_students=max_students,
+                features=features,
+                fee_display=fee_display,
+                amount=amount,
+                payment_methods=payment_methods
+            )
         
         try:
+            # Create or get user account (temporary account for enrollment)
+            # Generate a temporary username from email
+            username_base = email.split('@')[0] if email else f"user_{secrets.token_hex(4)}"
+            username = username_base
+            counter = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{username_base}_{counter}"
+                counter += 1
+            
+            # Check if user already exists by email
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                # Create new user account (no password - ID-based access only)
+                user = User(
+                    username=username,
+                    email=email,
+                    first_name=full_name.split()[0] if full_name else '',
+                    last_name=' '.join(full_name.split()[1:]) if len(full_name.split()) > 1 else '',
+                    whatsapp_number=phone,
+                    is_student=True,
+                    is_admin=False,
+                    class_type=class_type
+                )
+                # Set a random password (won't be used for login)
+                user.set_password(secrets.token_urlsafe(16))
+                db.session.add(user)
+                db.session.flush()  # Get user.id
+            else:
+                # Update existing user info
+                user.first_name = full_name.split()[0] if full_name else user.first_name
+                user.last_name = ' '.join(full_name.split()[1:]) if len(full_name.split()) > 1 else user.last_name
+                user.whatsapp_number = phone or user.whatsapp_number
+                if not user.class_type:
+                    user.class_type = class_type
+            
+            # Handle payment proof upload if provided
+            payment_proof_url = None
+            if payment_proof and payment_proof.filename:
+                from ..services.cloudinary_service import upload_file
+                try:
+                    payment_proof_url = upload_file(payment_proof, folder='payment_proofs')
+                except Exception as e:
+                    current_app.logger.error(f"Payment proof upload failed: {e}")
+            
             # Create enrollment record
-            from ..models import ClassEnrollment
             enrollment = ClassEnrollment(
-                user_id=current_user.id,
-                class_type=pricing_type,  # store selected pricing plan
+                user_id=user.id,
+                class_type=class_type,
                 class_id=class_id,
                 amount=amount,
                 customer_name=full_name,
@@ -173,21 +248,23 @@ def enroll_class(class_id, class_type=None):
                 customer_phone=phone,
                 customer_address=address,
                 payment_method=payment_method,
-                status='pending'
+                payment_proof=payment_proof_url,
+                status='pending'  # Pending until admin approval
             )
             db.session.add(enrollment)
             db.session.commit()
-            flash(f'Enrollment submitted! We will verify your payment and grant access soon.', 'success')
+            
+            flash(f'Registration submitted successfully! We will verify your payment and grant access soon. You will receive your Student ID after approval.', 'success')
             return redirect(url_for('main.index'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Enrollment failed: {str(e)}', 'danger')
+            current_app.logger.error(f"Enrollment failed: {e}")
+            flash(f'Registration failed: {str(e)}', 'danger')
     
-    return render_template(
-        'enroll_class.html',
+    return render_template('register_class.html',
         class_obj=class_obj,
         class_type=class_type,
-        pricing_type=pricing_type,
+        pricing_type=class_type,
         pricing_name=pricing_name,
         pricing_color=pricing_color,
         pricing_icon=pricing_icon,
@@ -197,6 +274,16 @@ def enroll_class(class_id, class_type=None):
         amount=amount,
         payment_methods=payment_methods
     )
+
+
+@bp.route('/enroll/<int:class_id>', methods=['GET', 'POST'])
+@bp.route('/enroll/<class_type>/<int:class_id>', methods=['GET', 'POST'])  # legacy URL with class_type
+@login_required
+def enroll_class(class_id, class_type=None):
+    """Legacy enrollment route - requires login (kept for backward compatibility)"""
+    # Redirect to new registration flow
+    pricing_type = request.args.get('pricing', class_type or 'individual')
+    return redirect(url_for('store.register_class', class_type=pricing_type, class_id=class_id))
 
 
 @bp.route('/course/<int:course_id>', endpoint='course_detail')

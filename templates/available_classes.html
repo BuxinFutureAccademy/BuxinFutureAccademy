@@ -677,13 +677,9 @@
                                     <button class="enroll-btn enroll-btn-disabled" disabled>
                                         <i class="fas fa-ban"></i> Class Full
                                     </button>
-                                {% elif current_user.is_authenticated %}
-                                    <a href="{{ url_for('store.enroll_class', class_id=class.id) }}?pricing={{ pricing_type }}" class="enroll-btn enroll-btn-group">
-                                        <i class="fas fa-rocket"></i> Enroll with {{ p_name }} Plan
-                                    </a>
                                 {% else %}
-                                    <a href="{{ url_for('auth.login') }}?next={{ url_for('store.enroll_class', class_id=class.id) }}%3Fpricing%3D{{ pricing_type }}" class="enroll-btn enroll-btn-login">
-                                        <i class="fas fa-sign-in-alt"></i> Login to Enroll
+                                    <a href="{{ url_for('store.register_class', class_type=pricing_type, class_id=class.id) }}" class="enroll-btn enroll-btn-group">
+                                        <i class="fas fa-rocket"></i> Register for {{ p_name }} Plan
                                     </a>
                                 {% endif %}
                             </div>
@@ -713,14 +709,12 @@
                     Your journey to becoming a tech innovator starts here!
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap">
-                    <a href="{{ url_for('main.index') }}" class="enroll-btn enroll-btn-primary">
+                    <a href="{{ url_for('main.choose_class_type') }}" class="enroll-btn enroll-btn-primary">
+                        <i class="fas fa-arrow-left"></i> Choose Different Class Type
+                    </a>
+                    <a href="{{ url_for('main.index') }}" class="enroll-btn enroll-btn-login">
                         <i class="fas fa-home"></i> Back to Home
                     </a>
-                    {% if not current_user.is_authenticated %}
-                    <a href="{{ url_for('auth.register') }}" class="enroll-btn enroll-btn-login">
-                        <i class="fas fa-user-plus"></i> Create Account
-                    </a>
-                    {% endif %}
                 </div>
             </div>
         </div>

@@ -792,8 +792,10 @@
 
         <!-- Main Content Area -->
         <div class="main-content">
-            <!-- Registration Buttons Section -->
+            <!-- Registration Buttons Section - SCHOOL CLASSES ONLY -->
             {% if enrolled_classes %}
+            {% set has_school_classes = enrolled_classes|selectattr('class_type', 'equalto', 'school')|list %}
+            {% if has_school_classes %}
             <div class="attendance-section">
                 <h2 class="section-title">
                     <i class="fas fa-user-plus"></i>
@@ -815,27 +817,16 @@
                             </button>
                         </div>
                     </div>
-                    {% elif cls.class_type == 'family' %}
-                    <div class="attendance-card">
-                        <div class="attendance-header">
-                            <div>
-                                <div class="student-name">{{ cls.name }}</div>
-                                <small class="text-muted">Family Class</small>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <button type="button" class="attendance-btn btn-present" data-bs-toggle="modal" data-bs-target="#registerFamilyModal{{ cls.id }}">
-                                <i class="fas fa-users"></i> REGISTER YOUR FAMILY MEMBERS
-                            </button>
-                        </div>
-                    </div>
                     {% endif %}
                 {% endfor %}
             </div>
             {% endif %}
+            {% endif %}
 
-            <!-- Attendance Section -->
+            <!-- Attendance Section - SCHOOL CLASSES ONLY -->
             {% if enrolled_classes %}
+            {% set has_school_classes = enrolled_classes|selectattr('class_type', 'equalto', 'school')|list %}
+            {% if has_school_classes %}
             <div class="attendance-section">
                 <h2 class="section-title">
                     <i class="fas fa-calendar-check"></i>
@@ -843,125 +834,126 @@
                 </h2>
                 
                 {% for cls in enrolled_classes %}
-                <!-- Self Attendance Card -->
-                <div class="attendance-card">
-                    <div class="attendance-header">
-                        <div>
-                            <div class="student-name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
-                            <small class="text-muted">{{ cls.name }}</small>
-                        </div>
-                        {% if today_attendance[cls.id] %}
-                            {% if today_attendance[cls.id].status == 'present' %}
-                                <span class="attendance-badge badge-present">PRESENT</span>
+                    {% if cls.class_type == 'school' %}
+                    <!-- Self Attendance Card for School Classes -->
+                    <div class="attendance-card">
+                        <div class="attendance-header">
+                            <div>
+                                <div class="student-name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                                <small class="text-muted">{{ cls.name }}</small>
+                            </div>
+                            {% if today_attendance[cls.id] %}
+                                {% if today_attendance[cls.id].status == 'present' %}
+                                    <span class="attendance-badge badge-present">PRESENT</span>
+                                {% else %}
+                                    <span class="attendance-badge badge-absent">ABSENT</span>
+                                {% endif %}
                             {% else %}
-                                <span class="attendance-badge badge-absent">ABSENT</span>
+                                <span class="attendance-badge badge-not-marked">NOT MARKED</span>
                             {% endif %}
-                        {% else %}
-                            <span class="attendance-badge badge-not-marked">NOT MARKED</span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mt-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted">This Month:</small>
-                            <strong style="color: var(--robotics-primary);">{{ monthly_stats[cls.id].present }}/{{ monthly_stats[cls.id].total }} days</strong>
                         </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" style="width: {{ monthly_stats[cls.id].percentage }}%;">
-                                {{ monthly_stats[cls.id].percentage }}%
+                        
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">This Month:</small>
+                                <strong style="color: var(--robotics-primary);">{{ monthly_stats[cls.id].present }}/{{ monthly_stats[cls.id].total }} days</strong>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: {{ monthly_stats[cls.id].percentage }}%;">
+                                    {{ monthly_stats[cls.id].percentage }}%
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mt-3">
-                        {% if not today_attendance[cls.id] %}
-                        <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
-                            <input type="hidden" name="student_id" value="{{ current_user.id }}">
-                            <input type="hidden" name="class_id" value="{{ cls.id }}">
-                            <input type="hidden" name="class_type" value="{{ cls.class_type }}">
-                            <input type="hidden" name="status" value="present">
-                            <button type="submit" class="attendance-btn btn-present">
-                                <i class="fas fa-check"></i> MARK PRESENT
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
-                            <input type="hidden" name="student_id" value="{{ current_user.id }}">
-                            <input type="hidden" name="class_id" value="{{ cls.id }}">
-                            <input type="hidden" name="class_type" value="{{ cls.class_type }}">
-                            <input type="hidden" name="status" value="absent">
-                            <button type="submit" class="attendance-btn btn-absent">
-                                <i class="fas fa-times"></i> MARK ABSENT
-                            </button>
-                        </form>
-                        {% else %}
-                        <p class="text-muted small">Attendance already marked for today</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- All Students Attendance (for schools, groups, and group classes) -->
-                {% if cls.class_type in ['school', 'group', 'family'] and all_students_for_attendance.get(cls.id) %}
-                <div class="attendance-card">
-                    <div class="attendance-header">
-                        <div>
-                            <div class="student-name">All Students - {{ cls.name }}</div>
-                            <small class="text-muted">Take attendance for all students in this class</small>
+                        
+                        <div class="mt-3">
+                            {% if not today_attendance[cls.id] %}
+                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
+                                <input type="hidden" name="student_id" value="{{ current_user.id }}">
+                                <input type="hidden" name="class_id" value="{{ cls.id }}">
+                                <input type="hidden" name="class_type" value="{{ cls.class_type }}">
+                                <input type="hidden" name="status" value="present">
+                                <button type="submit" class="attendance-btn btn-present">
+                                    <i class="fas fa-check"></i> MARK PRESENT
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
+                                <input type="hidden" name="student_id" value="{{ current_user.id }}">
+                                <input type="hidden" name="class_id" value="{{ cls.id }}">
+                                <input type="hidden" name="class_type" value="{{ cls.class_type }}">
+                                <input type="hidden" name="status" value="absent">
+                                <button type="submit" class="attendance-btn btn-absent">
+                                    <i class="fas fa-times"></i> MARK ABSENT
+                                </button>
+                            </form>
+                            {% else %}
+                            <p class="text-muted small">Attendance already marked for today</p>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <div class="mt-3">
-                        <div class="students-list">
-                            {% for student in all_students_for_attendance[cls.id] %}
-                            <div class="student-attendance-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-bottom: 0.5rem; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                                <div>
-                                    <strong style="color: var(--robotics-primary);">{{ student.name }}</strong>
-                                    {% if student.type == 'school_student' %}
-                                        <small class="text-muted d-block">{{ student.school_name }}</small>
-                                    {% elif student.type == 'family_member' %}
-                                        <small class="text-muted d-block">{{ student.relationship }}</small>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    {% if student.type == 'user' %}
-                                        {% set student_today_att = all_students_today_attendance.get(cls.id, {}).get(student.id) %}
-                                        {% if student_today_att %}
-                                            {% if student_today_att.status == 'present' %}
-                                                <span class="attendance-badge badge-present">PRESENT</span>
+
+                    <!-- All Students Attendance (for school classes only) -->
+                    {% if all_students_for_attendance.get(cls.id) %}
+                    <div class="attendance-card">
+                        <div class="attendance-header">
+                            <div>
+                                <div class="student-name">All Students - {{ cls.name }}</div>
+                                <small class="text-muted">Take attendance for all students in this class</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="students-list">
+                                {% for student in all_students_for_attendance[cls.id] %}
+                                <div class="student-attendance-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-bottom: 0.5rem; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                                    <div>
+                                        <strong style="color: var(--robotics-primary);">{{ student.name }}</strong>
+                                        {% if student.type == 'school_student' %}
+                                            <small class="text-muted d-block">{{ student.school_name }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if student.type == 'user' %}
+                                            {% set student_today_att = all_students_today_attendance.get(cls.id, {}).get(student.id) %}
+                                            {% if student_today_att %}
+                                                {% if student_today_att.status == 'present' %}
+                                                    <span class="attendance-badge badge-present">PRESENT</span>
+                                                {% else %}
+                                                    <span class="attendance-badge badge-absent">ABSENT</span>
+                                                {% endif %}
                                             {% else %}
-                                                <span class="attendance-badge badge-absent">ABSENT</span>
+                                                <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
+                                                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                                                    <input type="hidden" name="class_id" value="{{ cls.id }}">
+                                                    <input type="hidden" name="class_type" value="{{ cls.class_type }}">
+                                                    <input type="hidden" name="status" value="present">
+                                                    <button type="submit" class="btn btn-sm btn-success" style="margin-right: 0.25rem; background: var(--robotics-neon); color: var(--robotics-dark); border: none;">
+                                                        <i class="fas fa-check"></i> Present
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
+                                                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                                                    <input type="hidden" name="class_id" value="{{ cls.id }}">
+                                                    <input type="hidden" name="class_type" value="{{ cls.class_type }}">
+                                                    <input type="hidden" name="status" value="absent">
+                                                    <button type="submit" class="btn btn-sm btn-danger" style="background: var(--danger-gradient); border: none;">
+                                                        <i class="fas fa-times"></i> Absent
+                                                    </button>
+                                                </form>
                                             {% endif %}
                                         {% else %}
-                                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
-                                                <input type="hidden" name="student_id" value="{{ student.id }}">
-                                                <input type="hidden" name="class_id" value="{{ cls.id }}">
-                                                <input type="hidden" name="class_type" value="{{ cls.class_type }}">
-                                                <input type="hidden" name="status" value="present">
-                                                <button type="submit" class="btn btn-sm btn-success" style="margin-right: 0.25rem; background: var(--robotics-neon); color: var(--robotics-dark); border: none;">
-                                                    <i class="fas fa-check"></i> Present
-                                                </button>
-                                            </form>
-                                            <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display: inline;">
-                                                <input type="hidden" name="student_id" value="{{ student.id }}">
-                                                <input type="hidden" name="class_id" value="{{ cls.id }}">
-                                                <input type="hidden" name="class_type" value="{{ cls.class_type }}">
-                                                <input type="hidden" name="status" value="absent">
-                                                <button type="submit" class="btn btn-sm btn-danger" style="background: var(--danger-gradient); border: none;">
-                                                    <i class="fas fa-times"></i> Absent
-                                                </button>
-                                            </form>
+                                            <span class="text-muted small">Registered Student</span>
                                         {% endif %}
-                                    {% else %}
-                                        <span class="text-muted small">Registered Student</span>
-                                    {% endif %}
+                                    </div>
                                 </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
                     </div>
-                </div>
-                {% endif %}
+                    {% endif %}
+                    {% endif %}
                 {% endfor %}
             </div>
+            {% endif %}
             {% endif %}
 
             <!-- Live Classes Section -->
@@ -1242,8 +1234,9 @@
         </div>
     </div>
     {% elif cls.class_type == 'family' %}
-    <!-- Register Family Member Modal -->
-    <div class="modal fade" id="registerFamilyModal{{ cls.id }}" tabindex="-1" aria-labelledby="registerFamilyModalLabel{{ cls.id }}" aria-hidden="true">
+    {# Family registration removed - Registration only for School Classes #}
+    {% if False %}
+    <div class="modal fade" id="registerFamilyModal{{ cls.id }}" style="display: none;">
         <div class="modal-dialog modal-lg">
             <div class="modal-content" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
                 <div class="modal-header" style="border-bottom: 1px solid var(--border);">

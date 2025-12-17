@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #00d4ff;
+        --secondary: #ff6b35;
+        --accent: #39ff14;
+        --dark: #0a0a1a;
+        --darker: #050510;
+        --gradient-cyber: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
+        --gradient-fire: linear-gradient(135deg, #ff6b35 0%, #f72585 100%);
+        --gradient-neon: linear-gradient(135deg, #39ff14 0%, #00d4ff 100%);
+        --gradient-purple: linear-gradient(135deg, #9b59b6 0%, #3498db 100%);
+        --font-tech: 'Orbitron', sans-serif;
+        --font-body: 'Rajdhani', sans-serif;
+    }
+
+    body {
+        font-family: var(--font-body);
+        background: var(--darker);
+        color: white;
+        min-height: 100vh;
+        padding-top: 100px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .page-title {
+        font-family: var(--font-tech);
+        font-size: 3rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        background: var(--gradient-cyber);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.7);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .class-type-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .class-type-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 25px;
+        padding: 2.5rem;
+        text-align: center;
+        transition: all 0.4s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: white;
+        display: block;
+    }
+
+    .class-type-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--primary);
+        box-shadow: 0 20px 40px rgba(0, 212, 255, 0.3);
+        text-decoration: none;
+        color: white;
+    }
+
+    .class-type-card.individual {
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .class-type-card.individual:hover {
+        border-color: var(--primary);
+        box-shadow: 0 20px 40px rgba(0, 212, 255, 0.3);
+    }
+
+    .class-type-card.group {
+        border-color: rgba(57, 255, 20, 0.3);
+    }
+
+    .class-type-card.group:hover {
+        border-color: var(--accent);
+        box-shadow: 0 20px 40px rgba(57, 255, 20, 0.3);
+    }
+
+    .class-type-card.family {
+        border-color: rgba(255, 107, 53, 0.3);
+    }
+
+    .class-type-card.family:hover {
+        border-color: var(--secondary);
+        box-shadow: 0 20px 40px rgba(255, 107, 53, 0.3);
+    }
+
+    .class-type-card.school {
+        border-color: rgba(155, 89, 182, 0.3);
+    }
+
+    .class-type-card.school:hover {
+        border-color: #9b59b6;
+        box-shadow: 0 20px 40px rgba(155, 89, 182, 0.3);
+    }
+
+    .class-type-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 3rem;
+        color: var(--dark);
+    }
+
+    .class-type-icon.individual {
+        background: var(--gradient-cyber);
+    }
+
+    .class-type-icon.group {
+        background: var(--gradient-neon);
+    }
+
+    .class-type-icon.family {
+        background: var(--gradient-fire);
+    }
+
+    .class-type-icon.school {
+        background: var(--gradient-purple);
+    }
+
+    .class-type-title {
+        font-family: var(--font-tech);
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: white;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+    }
+
+    .class-type-desc {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .class-type-arrow {
+        font-size: 1.5rem;
+        color: var(--primary);
+        transition: transform 0.3s ease;
+    }
+
+    .class-type-card:hover .class-type-arrow {
+        transform: translateX(10px);
+    }
+</style>
+
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">Choose Your Class Type</h1>
+        <p class="page-subtitle">Select how you want to study. Each type offers different learning experiences and pricing.</p>
+    </div>
+
+    <div class="class-type-grid">
+        <!-- Individual Class -->
+        <a href="{{ url_for('store.available_classes', type='individual') }}" class="class-type-card individual">
+            <div class="class-type-icon individual">
+                <i class="fas fa-user"></i>
+            </div>
+            <h3 class="class-type-title">Individual Class</h3>
+            <p class="class-type-desc">
+                One-on-one personalized learning with dedicated instructor attention. Perfect for focused, private learning.
+            </p>
+            <div class="class-type-arrow">
+                <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- Group Class -->
+        <a href="{{ url_for('store.available_classes', type='group') }}" class="class-type-card group">
+            <div class="class-type-icon group">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3 class="class-type-title">Group Class</h3>
+            <p class="class-type-desc">
+                Learn together with other students in interactive group sessions. Collaborative learning environment.
+            </p>
+            <div class="class-type-arrow">
+                <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- Family Class -->
+        <a href="{{ url_for('store.available_classes', type='family') }}" class="class-type-card family">
+            <div class="class-type-icon family">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3 class="class-type-title">Family Class</h3>
+            <p class="class-type-desc">
+                Perfect for families! Register multiple family members under one payment. Each member gets their own Student ID.
+            </p>
+            <div class="class-type-arrow">
+                <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- School Class -->
+        <a href="{{ url_for('schools.register_school') }}" class="class-type-card school">
+            <div class="class-type-icon school">
+                <i class="fas fa-school"></i>
+            </div>
+            <h3 class="class-type-title">School Class</h3>
+            <p class="class-type-desc">
+                Designed for schools and educational institutions. Register your school and manage multiple students.
+            </p>
+            <div class="class-type-arrow">
+                <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}
+

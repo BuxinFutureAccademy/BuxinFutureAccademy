@@ -182,6 +182,12 @@ def portfolio_test():
     </html>
     """
 
+@bp.route('/choose-class-type')
+def choose_class_type():
+    """Choose Class Type page - First step in registration flow"""
+    return render_template('choose_class_type.html')
+
+
 @bp.route('/contact-support', methods=['POST'])
 def contact_support():
     data = request.get_json()

@@ -38,6 +38,10 @@ class IndividualClass(db.Model):
     description = db.Column(db.Text)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to students through association table
+    students = db.relationship('User', secondary=individual_class_students, 
+                               lazy='dynamic', backref='individual_classes')
 
 
 class GroupClass(db.Model):
@@ -47,6 +51,10 @@ class GroupClass(db.Model):
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     max_students = db.Column(db.Integer, default=10)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to students through association table
+    students = db.relationship('User', secondary=group_class_students, 
+                              lazy='dynamic', backref='group_classes')
 
 
 class Attendance(db.Model):

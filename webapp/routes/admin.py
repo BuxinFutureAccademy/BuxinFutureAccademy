@@ -800,6 +800,11 @@ def admin_dashboard():
     except Exception:
         materials = []
     
+    # Get all individual classes for the dashboard
+    classes = GroupClass.query.filter_by(class_type='individual').all()
+    legacy_classes = IndividualClass.query.all()
+    all_individual_classes = classes + legacy_classes
+
     return render_template('admin_dashboard.html',
         students=students,
         individual_students=individual_students,
@@ -898,11 +903,20 @@ def admin_classes():
     
     # Legacy individual classes are kept for display, but new classes use GroupClass
     individual_classes = IndividualClass.query.all()
-    group_classes = GroupClass.query.all()
-    all_classes = group_classes + individual_classes
+    # Explicitly show only classes categorized by type
+    group_classes = GroupClass.query.filter_by(class_type='group').all()
+    family_classes = GroupClass.query.filter_by(class_type='family').all()
+    school_classes = GroupClass.query.filter_by(class_type='school').all()
+    new_individual_classes = GroupClass.query.filter_by(class_type='individual').all()
+    
+    all_classes = group_classes + individual_classes + family_classes + school_classes + new_individual_classes
     
     return render_template('admin_classes.html',
-        classes=all_classes
+        classes=all_classes,
+        group_classes=group_classes,
+        family_classes=family_classes,
+        school_classes=school_classes,
+        individual_classes=individual_classes + new_individual_classes
     )
 
 
@@ -2536,9 +2550,15 @@ def admin_individual_classes():
         elif status_filter == 'inactive':
             individual_students = [s for s in individual_students if s['class_status'] == 'Inactive']
     
+    # Get all individual classes for the dropdown/list
+    classes = GroupClass.query.filter_by(class_type='individual').all()
+    legacy_classes = IndividualClass.query.all()
+    all_individual_classes = classes + legacy_classes
+
     return render_template('admin_individual_classes.html',
         individual_students=individual_students,
         pending_enrollments=pending_enrollments,
+        all_individual_classes=all_individual_classes,
         search=search,
         status_filter=status_filter
     )
@@ -2556,7 +2576,7 @@ def admin_group_classes():
     search = request.args.get('search', '').strip()
     
     # Get all group classes
-    query = GroupClass.query
+    query = GroupClass.query.filter_by(class_type='group')
     
     if search:
         from sqlalchemy import or_

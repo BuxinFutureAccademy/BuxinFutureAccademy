@@ -1,5 +1,6 @@
 import os
 from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request, flash
+from flask_login import login_required, current_user
 from ..services.mailer import send_bulk_email
 from ..models import HomeGallery, StudentVictory, StudentProject, ClassPricing
 
@@ -230,7 +231,6 @@ Message:
 @login_required
 def user_profile(user_id):
     """User Profile page - View student enrollments and progress"""
-    from flask_login import login_required, current_user
     from ..models import User, ClassEnrollment, GroupClass, IndividualClass, Purchase
     
     user = User.query.get_or_404(user_id)
@@ -251,16 +251,13 @@ def user_profile(user_id):
                            IndividualClass=IndividualClass)
 
 @bp.route('/group-class/dashboard')
+@login_required
 def group_class_dashboard():
     """Group Class Dashboard - Shared dashboard for all students in a group class"""
-    from flask_login import login_required, current_user
     from ..extensions import db
     from ..models.classes import ClassEnrollment, GroupClass, Attendance
     from ..models.materials import LearningMaterial
     from datetime import datetime, date
-    
-    if not current_user.is_authenticated:
-        return redirect(url_for('schools.enter_classroom'))
     
     # Verify user is in a group class
     if current_user.class_type != 'group':
@@ -319,16 +316,13 @@ def group_class_dashboard():
 
 
 @bp.route('/family/dashboard')
+@login_required
 def family_dashboard():
     """Family Dashboard - Dashboard for family members"""
-    from flask_login import login_required, current_user
     from ..extensions import db
     from ..models.classes import ClassEnrollment, Attendance, FamilyMember
     from ..models.materials import LearningMaterial
     from datetime import datetime, date
-    
-    if not current_user.is_authenticated:
-        return redirect(url_for('schools.enter_classroom'))
     
     # Verify user is in a family class
     if current_user.class_type != 'family':

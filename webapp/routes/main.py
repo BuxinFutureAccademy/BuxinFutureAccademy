@@ -226,12 +226,37 @@ Message:
         return jsonify(success=False, error="Internal error."), 500
 
 
+@bp.route('/profile/<int:user_id>')
+@login_required
+def user_profile(user_id):
+    """User Profile page - View student enrollments and progress"""
+    from flask_login import login_required, current_user
+    from ..models import User, ClassEnrollment, GroupClass, IndividualClass, Purchase
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Security: only admins or the user themselves can view the profile
+    if not current_user.is_admin and current_user.id != user.id:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.index'))
+        
+    enrollments = ClassEnrollment.query.filter_by(user_id=user.id).order_by(ClassEnrollment.enrolled_at.desc()).all()
+    purchases = Purchase.query.filter_by(user_id=user.id).order_by(Purchase.purchased_at.desc()).all()
+    
+    return render_template('user_profile.html', 
+                           user=user, 
+                           enrollments=enrollments, 
+                           purchases=purchases,
+                           GroupClass=GroupClass,
+                           IndividualClass=IndividualClass)
+
 @bp.route('/group-class/dashboard')
 def group_class_dashboard():
     """Group Class Dashboard - Shared dashboard for all students in a group class"""
     from flask_login import login_required, current_user
     from ..extensions import db
-    from ..models.classes import ClassEnrollment, GroupClass, LearningMaterial, Attendance
+    from ..models.classes import ClassEnrollment, GroupClass, Attendance
+    from ..models.materials import LearningMaterial
     from datetime import datetime, date
     
     if not current_user.is_authenticated:
@@ -298,7 +323,8 @@ def family_dashboard():
     """Family Dashboard - Dashboard for family members"""
     from flask_login import login_required, current_user
     from ..extensions import db
-    from ..models.classes import ClassEnrollment, LearningMaterial, Attendance, FamilyMember
+    from ..models.classes import ClassEnrollment, Attendance, FamilyMember
+    from ..models.materials import LearningMaterial
     from datetime import datetime, date
     
     if not current_user.is_authenticated:

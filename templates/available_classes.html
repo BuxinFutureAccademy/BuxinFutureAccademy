@@ -625,11 +625,19 @@
                 
                 <!-- Pricing Plan Selector -->
                 <div class="type-selector mt-4">
-                    <span class="text-muted me-2">Change plan:</span>
-                    <a href="?type=individual" class="type-pill {% if class_type == 'individual' %}active{% endif %}" style="--pill-color: #00d4ff;">Individual</a>
-                    <a href="?type=group" class="type-pill {% if class_type == 'group' %}active{% endif %}" style="--pill-color: #39ff14;">Group</a>
-                    <a href="?type=family" class="type-pill {% if class_type == 'family' %}active{% endif %}" style="--pill-color: #ff6b35;">Family</a>
-                    <a href="?type=school" class="type-pill {% if class_type == 'school' %}active{% endif %}" style="--pill-color: #9b59b6;">School</a>
+                    {% if not current_user.is_authenticated or not current_user.class_type %}
+                        <span class="text-muted me-2">Change plan:</span>
+                        <a href="?type=individual" class="type-pill {% if class_type == 'individual' %}active{% endif %}" style="--pill-color: #00d4ff;">Individual</a>
+                        <a href="?type=group" class="type-pill {% if class_type == 'group' %}active{% endif %}" style="--pill-color: #39ff14;">Group</a>
+                        <a href="?type=family" class="type-pill {% if class_type == 'family' %}active{% endif %}" style="--pill-color: #ff6b35;">Family</a>
+                        <a href="?type=school" class="type-pill {% if class_type == 'school' %}active{% endif %}" style="--pill-color: #9b59b6;">School</a>
+                    {% else %}
+                        <span class="text-muted me-2">Your Plan:</span>
+                        <span class="type-pill active" style="--pill-color: {% if current_user.class_type == 'individual' %}#00d4ff{% elif current_user.class_type == 'group' %}#39ff14{% elif current_user.class_type == 'family' %}#ff6b35{% else %}#9b59b6{% endif %}; cursor: default;">
+                            {{ current_user.class_type|title }}
+                        </span>
+                        <small class="d-block mt-2 text-muted">You are registered as a {{ current_user.class_type }} user. You only see classes compatible with your plan.</small>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -665,6 +673,27 @@
                             </div>
                             <div class="class-body">
                                 <p class="class-desc">{{ class.description or 'Hands-on robotics learning with our coaches.' }}</p>
+                                
+                                {% if class.price or class.duration or class.instructor_name %}
+                                <div class="mb-3">
+                                    {% if class.price %}
+                                    <span class="badge bg-success me-1 mb-1">
+                                        <i class="fas fa-tag me-1"></i>${{ "%.2f"|format(class.price) }}
+                                    </span>
+                                    {% endif %}
+                                    {% if class.duration %}
+                                    <span class="badge bg-info me-1 mb-1">
+                                        <i class="fas fa-calendar-alt me-1"></i>{{ class.duration }}
+                                    </span>
+                                    {% endif %}
+                                    {% if class.instructor_name %}
+                                    <span class="badge bg-secondary mb-1">
+                                        <i class="fas fa-user-tie me-1"></i>{{ class.instructor_name }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
                                 <div class="class-features">
                                     <span class="feature-badge badge-group">
                                         <i class="fas fa-rocket"></i> Project-Based

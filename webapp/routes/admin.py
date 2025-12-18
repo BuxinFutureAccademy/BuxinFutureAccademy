@@ -489,6 +489,7 @@ def admin_dashboard():
     if request.method == 'POST':
         recipient_type = request.form.get('recipient_type', '')  # 'individual', 'school', 'family', 'group'
         recipient_id = request.form.get('recipient_id', '')
+        title = request.form.get('title', '').strip()
         content = request.form.get('message', '').strip()
         
         # Helper function to detect YouTube URLs
@@ -583,6 +584,7 @@ def admin_dashboard():
                             class_id=f"student_{student_id}",
                             class_type='individual',
                             actual_class_id=student_id,
+                            title=title,
                             content=content,
                             created_by=current_user.id,
                             material_type=material_type,
@@ -618,6 +620,7 @@ def admin_dashboard():
                                 class_id=f"school_{enrollment.class_id}_enrollment_{enrollment_id}",
                                 class_type='school',
                                 actual_class_id=enrollment.class_id,
+                                title=title,
                                 content=content,
                                 created_by=current_user.id
                             )
@@ -630,6 +633,7 @@ def admin_dashboard():
                             class_id=f"school_{enrollment.class_id}_enrollment_{enrollment_id}",
                             class_type='school',
                             actual_class_id=enrollment.class_id,
+                            title=title,
                             content=content,
                             created_by=current_user.id,
                             material_type=material_type,
@@ -663,6 +667,7 @@ def admin_dashboard():
                             class_id=f"family_{enrollment.class_id}_enrollment_{enrollment_id}",
                             class_type='family',
                             actual_class_id=enrollment.class_id,
+                            title=title,
                             content=content,
                             created_by=current_user.id,
                             material_type=material_type,
@@ -694,6 +699,7 @@ def admin_dashboard():
                             class_id=f"group_{class_id}",
                             class_type='group',
                             actual_class_id=class_id,
+                            title=title,
                             content=content,
                             created_by=current_user.id,
                             material_type=material_type,
@@ -774,17 +780,19 @@ def admin_dashboard():
     
     # Get group classes with student counts
     group_classes_data = []
+    # Only show classes with type 'group' or default 'group'
     for class_obj in all_group_classes:
-        student_count = ClassEnrollment.query.filter_by(
-            class_id=class_obj.id,
-            class_type='group',
-            status='completed'
-        ).count()
-        group_classes_data.append({
-            'id': class_obj.id,
-            'name': class_obj.name,
-            'student_count': student_count
-        })
+        if class_obj.class_type == 'group':
+            student_count = ClassEnrollment.query.filter_by(
+                class_id=class_obj.id,
+                class_type='group',
+                status='completed'
+            ).count()
+            group_classes_data.append({
+                'id': class_obj.id,
+                'name': class_obj.name,
+                'student_count': student_count
+            })
     
     # Get materials
     try:
@@ -840,6 +848,11 @@ def create_class():
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         max_students = request.form.get('max_students', 10)
+        class_type = request.form.get('class_type', 'group')
+        price = request.form.get('price', 0.0)
+        status = request.form.get('status', 'active')
+        duration = request.form.get('duration', '')
+        instructor_name = request.form.get('instructor_name', '')
         
         if not name:
             flash('Class name is required.', 'danger')
@@ -850,13 +863,23 @@ def create_class():
                 max_students = int(max_students)
             except Exception:
                 max_students = 10
+                
+            try:
+                price = float(price)
+            except Exception:
+                price = 0.0
 
             # All classes are now a single type; we use GroupClass as the unified model
             new_class = GroupClass(
                 name=name,
                 description=description,
                 teacher_id=current_user.id,
-                max_students=max_students
+                max_students=max_students,
+                class_type=class_type,
+                price=price,
+                status=status,
+                duration=duration,
+                instructor_name=instructor_name
             )
             
             db.session.add(new_class)
@@ -912,6 +935,24 @@ def edit_class(class_id, class_type=None):
                 class_obj.max_students = int(request.form.get('max_students', 10))
             except Exception:
                 class_obj.max_students = 10
+        
+        if hasattr(class_obj, 'class_type'):
+            class_obj.class_type = request.form.get('class_type', class_obj.class_type)
+        
+        if hasattr(class_obj, 'price'):
+            try:
+                class_obj.price = float(request.form.get('price', 0.0))
+            except Exception:
+                class_obj.price = 0.0
+                
+        if hasattr(class_obj, 'status'):
+            class_obj.status = request.form.get('status', 'active')
+            
+        if hasattr(class_obj, 'duration'):
+            class_obj.duration = request.form.get('duration', '')
+            
+        if hasattr(class_obj, 'instructor_name'):
+            class_obj.instructor_name = request.form.get('instructor_name', '')
         
         try:
             db.session.commit()
@@ -1030,7 +1071,8 @@ def approve_enrollment(enrollment_id):
     # Add student to class based on class type
     if enrollment.class_type == 'individual':
         from ..models.classes import IndividualClass, individual_class_students
-        class_obj = IndividualClass.query.get(enrollment.class_id)
+        class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
+                    IndividualClass.query.get(enrollment.class_id)
         if class_obj and user not in class_obj.students:
             class_obj.students.append(user)
     elif enrollment.class_type == 'group':
@@ -2434,7 +2476,8 @@ def admin_individual_classes():
                             user.class_type = 'individual'
                         
                         # Add student to individual class
-                        individual_class = IndividualClass.query.get(enrollment.class_id)
+                        individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
+                                          IndividualClass.query.get(enrollment.class_id)
                         if individual_class and user not in individual_class.students:
                             individual_class.students.append(user)
                         
@@ -2481,7 +2524,8 @@ def admin_individual_classes():
         user = User.query.get(enrollment.user_id)
         if user:
             # Get the individual class
-            individual_class = IndividualClass.query.get(enrollment.class_id)
+            individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
+                               IndividualClass.query.get(enrollment.class_id)
             
             student_data = {
                 'enrollment': enrollment,

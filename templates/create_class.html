@@ -9,24 +9,68 @@
                     <h4 class="mb-0"><i class="fas fa-plus me-2"></i>Create New Class</h4>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Automatic Routing:</strong> After creation, the class will automatically appear in the corresponding section of the 
+                        <a href="{{ url_for('store.available_classes') }}" target="_blank" class="alert-link">Available Classes</a> page based on the selected Class Type.
+                    </div>
+                    
                     <form method="POST">
+                        <div class="mb-4">
+                            <label for="class_type" class="form-label fw-bold text-primary">1. Select Class Type <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-lg border-primary" id="class_type" name="class_type" required>
+                                <option value="" disabled selected>-- Choose Class Type --</option>
+                                <option value="individual">👤 Individual Class (One-on-One)</option>
+                                <option value="group">👥 Group Class (Multiple Students)</option>
+                                <option value="family">👨‍👩‍👧‍👦 Family Class (Shared Registration)</option>
+                                <option value="school">🏫 School Class (Institutional)</option>
+                            </select>
+                            <small class="text-muted">This determines which section the class appears in for students.</small>
+                        </div>
+
                         <div class="mb-3">
-                            <label for="name" class="form-label fw-bold">Class Name <span class="text-danger">*</span></label>
+                            <label for="name" class="form-label fw-bold">2. Class Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="name" name="name" required 
                                    placeholder="e.g., Robotics 101, Python Basics">
                         </div>
-                        
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label fw-bold">Price ($)</label>
+                                <input type="number" step="0.01" class="form-control" id="price" name="price" value="0.00">
+                                <small class="text-muted">Set to 0.00 for free classes.</small>
+                            </div>
+                            <div class="col-md-6 mb-4" id="max-students-field">
+                                <label for="max_students" class="form-label fw-bold">Maximum Students (Optional)</label>
+                                <input type="number" class="form-control" id="max_students" name="max_students" 
+                                       value="10" min="1" max="100">
+                                <small class="text-muted">Seats available. Default is 10.</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="duration" class="form-label fw-bold">Duration / Schedule</label>
+                                <input type="text" class="form-control" id="duration" name="duration" placeholder="e.g., 8 Weeks, Mon/Wed 4pm">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="instructor_name" class="form-label fw-bold">Instructor</label>
+                                <input type="text" class="form-control" id="instructor_name" name="instructor_name" placeholder="Instructor Name">
+                            </div>
+                        </div>
+
                         <div class="mb-3">
-                            <label for="description" class="form-label fw-bold">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3"
-                                      placeholder="Describe what students will learn in this class..."></textarea>
+                            <label for="status" class="form-label fw-bold">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="active" selected>Active (Visible to Students)</option>
+                                <option value="inactive">Inactive (Hidden from Students)</option>
+                            </select>
                         </div>
                         
-                        <div class="mb-4" id="max-students-field">
-                            <label for="max_students" class="form-label fw-bold">Maximum Students</label>
-                            <input type="number" class="form-control" id="max_students" name="max_students" 
-                                   value="10" min="2" max="50">
-                            <small class="text-muted">Optional: set a seat limit. Defaults to 10.</small>
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"
+                                      placeholder="Describe what students will learn in this class..."></textarea>
                         </div>
                         
                         <div class="d-flex gap-2">

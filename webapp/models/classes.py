@@ -50,6 +50,11 @@ class GroupClass(db.Model):
     description = db.Column(db.Text)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     max_students = db.Column(db.Integer, default=10)
+    class_type = db.Column(db.String(20), nullable=False, default='group')  # 'individual', 'group', 'family', 'school'
+    price = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(20), default='active')  # 'active', 'inactive'
+    duration = db.Column(db.String(100))
+    instructor_name = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship to students through association table

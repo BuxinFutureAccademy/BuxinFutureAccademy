@@ -4,6 +4,7 @@ from ..extensions import db
 
 class LearningMaterial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
     content = db.Column(db.Text, nullable=False)
     class_id = db.Column(db.String(50), nullable=False)
     class_type = db.Column(db.String(20), nullable=False)
@@ -31,7 +32,8 @@ class LearningMaterial(db.Model):
                 return f"👤 {student.first_name} {student.last_name}"
             return "Unknown Student"
         if self.class_type == 'individual':
-            cls = IndividualClass.query.get(self.actual_class_id)
+            cls = GroupClass.query.filter_by(id=self.actual_class_id, class_type='individual').first() or \
+                  IndividualClass.query.get(self.actual_class_id)
             return f"📖 {cls.name}" if cls else "Unknown Individual Class"
         if self.class_type == 'group':
             cls = GroupClass.query.get(self.actual_class_id)

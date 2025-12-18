@@ -70,7 +70,15 @@ def available_classes():
     """Browse and enroll in available classes - Filtered by class type"""
     from ..models import ClassPricing
 
-    pricing_type = request.args.get('type', 'individual')
+    pricing_type = request.args.get('type')
+    
+    # If user is logged in, force their pricing type
+    if current_user.is_authenticated and current_user.class_type:
+        pricing_type = current_user.class_type
+    
+    # Default to individual if not specified
+    if not pricing_type:
+        pricing_type = 'individual'
 
     try:
         pricing_data = ClassPricing.get_all_pricing()
@@ -84,24 +92,27 @@ def available_classes():
     # Filter classes by type - each type has its own list
     if pricing_type == 'individual':
         try:
-            classes = IndividualClass.query.all()
+            # Show legacy individual classes AND new unified classes with type 'individual'
+            legacy_classes = IndividualClass.query.all()
+            new_classes = GroupClass.query.filter_by(class_type='individual', status='active').all()
+            classes = legacy_classes + new_classes
         except Exception:
             classes = []
     elif pricing_type == 'group':
         try:
-            classes = GroupClass.query.all()
+            classes = GroupClass.query.filter_by(class_type='group', status='active').all()
         except Exception:
             classes = []
     elif pricing_type == 'family':
-        # Family classes can use GroupClass structure or have their own
-        # For now, we'll use GroupClass but mark them as family type
         try:
-            classes = GroupClass.query.all()  # Can be filtered later if needed
+            classes = GroupClass.query.filter_by(class_type='family', status='active').all()
         except Exception:
             classes = []
     elif pricing_type == 'school':
-        # School classes are handled separately via school registration
-        classes = []
+        try:
+            classes = GroupClass.query.filter_by(class_type='school', status='active').all()
+        except Exception:
+            classes = []
     
     return render_template(
         'available_classes.html',
@@ -121,9 +132,9 @@ def register_class(class_type, class_id):
     
     # Get the class object
     if class_type == 'individual':
-        class_obj = IndividualClass.query.get_or_404(class_id)
-    elif class_type in ['group', 'family']:
-        class_obj = GroupClass.query.get_or_404(class_id)
+        class_obj = GroupClass.query.filter_by(id=class_id, class_type='individual').first() or IndividualClass.query.get_or_404(class_id)
+    elif class_type in ['group', 'family', 'school']:
+        class_obj = GroupClass.query.filter_by(id=class_id, class_type=class_type).first_or_404()
     else:
         flash('Invalid class type.', 'danger')
         return redirect(url_for('store.available_classes', type=class_type))

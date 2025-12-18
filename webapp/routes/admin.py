@@ -862,6 +862,9 @@ def admin_dashboard():
         db.session.rollback()
         all_group_classes = []
     
+    # Filter school-specific classes for the dashboard
+    school_classes_latest = [c for c in all_group_classes if hasattr(c, 'class_type') and c.class_type == 'school']
+    
     try:
         all_individual_classes_legacy = IndividualClass.query.all()
     except Exception:
@@ -876,12 +879,15 @@ def admin_dashboard():
             status='completed'
         ).all()
         for enrollment in school_enrollments:
-            # Get school name from first registered student
-            first_student = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).first()
-            school_name = first_student.school_name if first_student else 'School'
+            # Get school for this enrollment
+            school = School.query.filter_by(user_id=enrollment.user_id).first()
+            school_name = school.school_name if school else 'School'
+            school_id = school.id if school else None
             student_count = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).count()
+            
             school_enrollments_data.append({
                 'id': enrollment.id,
+                'school_id': school_id,
                 'class_id': enrollment.class_id,
                 'school_name': school_name,
                 'student_count': student_count
@@ -951,6 +957,7 @@ def admin_dashboard():
         individual_students=individual_students,
         all_group_classes=all_group_classes,
         all_individual_classes=all_individual_classes,
+        school_classes_latest=school_classes_latest,
         school_enrollments_data=school_enrollments_data,
         family_enrollments_data=family_enrollments_data,
         group_classes_data=group_classes_data,
@@ -1019,6 +1026,17 @@ def create_class():
             db.session.add(new_class)
             db.session.commit()
             flash(f'Class "{name}" created successfully!', 'success')
+            
+            # Redirect to the correct management section
+            if class_type == 'school':
+                return redirect(url_for('admin.admin_schools'))
+            elif class_type == 'individual':
+                return redirect(url_for('admin.admin_individual_classes'))
+            elif class_type == 'group':
+                return redirect(url_for('admin.admin_group_classes'))
+            elif class_type == 'family':
+                return redirect(url_for('admin.admin_family_classes'))
+            
             return redirect(url_for('admin.admin_dashboard'))
         except Exception as e:
             db.session.rollback()
@@ -3070,7 +3088,7 @@ def admin_family_class_detail(enrollment_id):
 @bp.route('/admin/schools')
 @login_required
 def admin_schools():
-    """View all registered schools"""
+    """View all registered schools and school classes"""
     admin_check = require_admin()
     if admin_check:
         return admin_check
@@ -3081,13 +3099,20 @@ def admin_schools():
     for school in schools:
         school.student_count = RegisteredSchoolStudent.query.filter_by(school_id=school.id).count()
     
-    return render_template('admin_schools.html', schools=schools)
+    # Get all school-type classes
+    try:
+        school_classes = GroupClass.query.filter_by(class_type='school').all()
+    except Exception:
+        db.session.rollback()
+        school_classes = []
+        
+    return render_template('admin_schools.html', schools=schools, school_classes=school_classes)
 
 
 @bp.route('/admin/schools/<int:school_id>')
 @login_required
 def admin_school_detail(school_id):
-    """View school details and students"""
+    """View school details, students, and classes"""
     admin_check = require_admin()
     if admin_check:
         return admin_check
@@ -3095,7 +3120,29 @@ def admin_school_detail(school_id):
     school = School.query.get_or_404(school_id)
     students = RegisteredSchoolStudent.query.filter_by(school_id=school_id).order_by(RegisteredSchoolStudent.created_at.desc()).all()
     
-    return render_template('admin_school_detail.html', school=school, students=students)
+    # Get classes this school has enrolled in
+    school_classes = []
+    if school.user_id:
+        enrollments = ClassEnrollment.query.filter_by(
+            user_id=school.user_id,
+            class_type='school',
+            status='completed'
+        ).all()
+        
+        for enrollment in enrollments:
+            class_obj = GroupClass.query.get(enrollment.class_id)
+            if class_obj:
+                school_classes.append({
+                    'id': class_obj.id,
+                    'name': class_obj.name,
+                    'description': class_obj.description,
+                    'enrolled_at': enrollment.enrolled_at
+                })
+                
+    return render_template('admin_school_detail.html', 
+                         school=school, 
+                         students=students,
+                         school_classes=school_classes)
 
 
 @bp.route('/admin/schools/<int:school_id>/approve', methods=['POST'])

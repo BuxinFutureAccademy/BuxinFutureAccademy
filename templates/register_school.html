@@ -16,7 +16,10 @@
 
                 <!-- Registration Form -->
                 <div class="register-form-card">
-                    <form method="POST" class="register-form" enctype="multipart/form-data">
+                    <form method="POST" class="register-form" action="{{ url_for('schools.register_school', class_id=class_id) if class_id else url_for('schools.register_school') }}" enctype="multipart/form-data">
+                        {% if class_id %}
+                            <input type="hidden" name="class_id" value="{{ class_id }}">
+                        {% endif %}
                         <h3 class="mb-4"><i class="fas fa-building me-2"></i>School Information</h3>
                         
                         <div class="mb-3">

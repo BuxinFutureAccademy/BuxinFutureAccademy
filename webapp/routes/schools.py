@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_required, current_user, login_user
 from werkzeug.utils import secure_filename
 import cloudinary
@@ -29,9 +29,10 @@ def check_database_setup():
 
 
 @bp.route('/register-school', methods=['GET', 'POST'])
-def register_school():
+@bp.route('/register-school/<int:class_id>', methods=['GET', 'POST'])
+def register_school(class_id=None):
     """School registration form"""
-    if current_user.is_authenticated:
+    if current_user.is_authenticated and not current_user.is_admin:
         return redirect(url_for('main.index'))
     
     if request.method == 'POST':
@@ -39,7 +40,7 @@ def register_school():
         db_error = check_database_setup()
         if db_error:
             flash(db_error, 'danger')
-            return render_template('register_school.html')
+            return render_template('register_school.html', class_id=class_id)
         
         # School information
         school_name = request.form.get('school_name', '').strip()
@@ -60,33 +61,33 @@ def register_school():
         # Validation
         if not all([school_name, school_email, admin_name, admin_email, username, password]):
             flash('All required fields must be filled.', 'danger')
-            return render_template('register_school.html')
+            return render_template('register_school.html', class_id=class_id)
         
         if len(password) < 6:
             flash('Password must be at least 6 characters.', 'danger')
-            return render_template('register_school.html')
+            return render_template('register_school.html', class_id=class_id)
         
         if password != confirm_password:
             flash('Passwords do not match.', 'danger')
-            return render_template('register_school.html')
+            return render_template('register_school.html', class_id=class_id)
         
         try:
             # Check existing user
             existing_user = User.query.filter_by(username=username).first()
             if existing_user:
                 flash('Username already taken.', 'danger')
-                return render_template('register_school.html')
+                return render_template('register_school.html', class_id=class_id)
             
             existing_email = User.query.filter_by(email=admin_email).first()
             if existing_email:
                 flash('Email already registered.', 'danger')
-                return render_template('register_school.html')
+                return render_template('register_school.html', class_id=class_id)
             
             # Check if school email already exists
             existing_school = School.query.filter_by(school_email=school_email).first()
             if existing_school:
                 flash('School email already registered.', 'danger')
-                return render_template('register_school.html')
+                return render_template('register_school.html', class_id=class_id)
             
             # Create user account for school admin
             user = User(
@@ -96,7 +97,8 @@ def register_school():
                 last_name=' '.join(admin_name.split()[1:]) if len(admin_name.split()) > 1 else '',
                 is_student=False,
                 is_admin=False,
-                is_school_admin=True
+                is_school_admin=True,
+                class_type='school'
             )
             user.set_password(password)
             db.session.add(user)
@@ -123,9 +125,11 @@ def register_school():
             db.session.add(school)
             db.session.commit()
             
-            # Store school_id in session for payment flow
+            # Store data in session for payment flow
             session['pending_school_id'] = school.id
             session['school_system_id'] = school_system_id
+            if class_id:
+                session['pending_school_class_id'] = class_id
             
             flash(f'School registration submitted! Your School System ID is: {school_system_id}', 'success')
             return redirect(url_for('schools.school_payment'))
@@ -133,16 +137,19 @@ def register_school():
         except Exception as e:
             db.session.rollback()
             flash(f'Registration failed: {str(e)}', 'danger')
-            return render_template('register_school.html')
+            return render_template('register_school.html', class_id=class_id)
     
-    return render_template('register_school.html')
+    return render_template('register_school.html', class_id=class_id)
 
 
 @bp.route('/school/payment', methods=['GET', 'POST'])
 def school_payment():
     """School payment page"""
+    from ..models.classes import ClassEnrollment, GroupClass, ClassPricing
+    
     school_id = session.get('pending_school_id')
     school_system_id = session.get('school_system_id')
+    class_id = session.get('pending_school_class_id')
     
     if not school_id:
         flash('No pending school registration found.', 'danger')
@@ -153,23 +160,50 @@ def school_payment():
         flash('School registration not found.', 'danger')
         return redirect(url_for('schools.register_school'))
     
+    # Get pricing for school plan
+    pricing_data = ClassPricing.get_all_pricing()
+    school_pricing = pricing_data.get('school', {'price': 500, 'name': 'School Plan'})
+    amount = school_pricing.get('price', 500)
+    
     if request.method == 'POST':
         # Handle payment proof upload
         payment_method = request.form.get('payment_method', '')
-        payment_proof = None
+        payment_proof_url = None
         
         if 'payment_proof' in request.files:
             file = request.files['payment_proof']
             if file and file.filename:
+                from ..services.cloudinary_service import CloudinaryService
                 try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    payment_proof = upload_result.get('secure_url')
+                    success, result = CloudinaryService.upload_file(
+                        file=file, 
+                        folder='payment_proofs',
+                        resource_type='auto'
+                    )
+                    if success and isinstance(result, dict) and result.get('url'):
+                        payment_proof_url = result['url']
                 except Exception as e:
                     flash(f'Error uploading payment proof: {str(e)}', 'warning')
         
         # Update school payment status
-        school.payment_status = 'completed' if payment_proof else 'pending'
-        school.payment_proof = payment_proof
+        school.payment_status = 'completed' if payment_proof_url else 'pending'
+        school.payment_proof = payment_proof_url
+        
+        # If class_id was provided, create enrollment
+        if class_id:
+            enrollment = ClassEnrollment(
+                user_id=school.user_id,
+                class_type='school',
+                class_id=class_id,
+                amount=amount,
+                customer_name=school.school_name,
+                customer_email=school.school_email,
+                customer_phone=school.contact_phone,
+                payment_method=payment_method,
+                payment_proof=payment_proof_url,
+                status='pending'
+            )
+            db.session.add(enrollment)
         
         db.session.commit()
         
@@ -182,7 +216,10 @@ def school_payment():
         flash('Payment information submitted! Your school is pending admin approval.', 'success')
         return redirect(url_for('schools.school_pending_approval'))
     
-    return render_template('school_payment.html', school=school, school_system_id=school_system_id)
+    return render_template('school_payment.html', 
+                         school=school, 
+                         school_system_id=school_system_id,
+                         amount=amount)
 
 
 @bp.route('/school/pending-approval')
@@ -211,64 +248,10 @@ def school_pending_approval():
 @bp.route('/school/dashboard')
 @login_required
 def school_dashboard():
-    """School classroom dashboard"""
-    # Get school for current user
-    school = School.query.filter_by(user_id=current_user.id).first()
-    
-    if not school:
-        flash('No school registration found for your account.', 'danger')
-        return redirect(url_for('main.index'))
-    
-    if school.status != 'active':
-        return redirect(url_for('schools.school_pending_approval'))
-    
-    # Get all registered students
-    students = RegisteredSchoolStudent.query.filter_by(school_id=school.id).order_by(RegisteredSchoolStudent.created_at.desc()).all()
-    
-    # Get attendance data for today
-    from datetime import date
-    from ..models import Attendance
-    
-    today = date.today()
-    today_attendance = {}
-    monthly_attendance = {}  # For monthly stats
-    
-    for student in students:
-        if student.user_id:
-            # Today's attendance
-            att = Attendance.query.filter_by(
-                student_id=student.user_id,
-                attendance_date=today
-            ).first()
-            if att:
-                today_attendance[student.id] = att
-            
-            # Monthly attendance stats
-            from calendar import monthrange
-            month_start = date(today.year, today.month, 1)
-            month_end = date(today.year, today.month, monthrange(today.year, today.month)[1])
-            
-            monthly_att = Attendance.query.filter(
-                Attendance.student_id == student.user_id,
-                Attendance.attendance_date >= month_start,
-                Attendance.attendance_date <= month_end,
-                Attendance.status == 'present'
-            ).count()
-            
-            total_days = monthrange(today.year, today.month)[1]
-            monthly_attendance[student.id] = {
-                'present': monthly_att,
-                'total': total_days,
-                'percentage': round((monthly_att / total_days * 100) if total_days > 0 else 0, 1)
-            }
-    
-    return render_template('school_dashboard.html', 
-                         school=school, 
-                         students=students,
-                         today_attendance=today_attendance,
-                         monthly_attendance=monthly_attendance,
-                         today=today,
-                         Attendance=Attendance)
+    """School classroom dashboard - Unified with student dashboard design"""
+    # Use the unified student dashboard logic for everyone (students and school admins)
+    from .admin import student_dashboard
+    return student_dashboard()
 
 
 @bp.route('/school/register-student', methods=['POST'])
@@ -303,9 +286,15 @@ def register_student_in_school():
         if 'student_image' in request.files:
             image_file = request.files['student_image']
             if image_file and image_file.filename:
+                from ..services.cloudinary_service import CloudinaryService
                 try:
-                    upload_result = cloudinary.uploader.upload(image_file)
-                    student_image_url = upload_result.get('secure_url')
+                    success, result = CloudinaryService.upload_file(
+                        file=image_file, 
+                        folder='student_photos',
+                        resource_type='auto'
+                    )
+                    if success and isinstance(result, dict) and result.get('url'):
+                        student_image_url = result['url']
                 except Exception as e:
                     flash(f'Error uploading image: {str(e)}', 'warning')
         
@@ -380,6 +369,8 @@ def enter_classroom():
                         return redirect(url_for('admin.student_dashboard'))
                     elif user.is_school_student:
                         return redirect(url_for('schools.school_dashboard'))
+                    elif user.is_school_admin:
+                        return redirect(url_for('schools.school_dashboard'))
                     else:
                         return redirect(url_for('admin.student_dashboard'))
                 else:
@@ -406,8 +397,17 @@ def enter_classroom():
                         flash('Full name does not match the Student ID.', 'danger')
                 else:
                     flash('Student ID not found.', 'danger')
+        elif student_id.startswith('SCH-'):
+            # School System ID check for school admins
+            school = School.query.filter_by(school_system_id=student_id).first()
+            if school and school.status == 'active' and school.admin_name.lower() == full_name.lower():
+                user = User.query.get(school.user_id)
+                if user:
+                    login_user(user)
+                    return redirect(url_for('schools.school_dashboard'))
+            flash('Invalid School ID or name.', 'danger')
         else:
-            flash('Invalid Student ID format. Must start with STU-.', 'danger')
+            flash('Invalid ID format. Use STU-XXXXX or SCH-XXXXXX.', 'danger')
     
     return render_template('enter_classroom.html')
 
@@ -486,4 +486,3 @@ def student_create_account():
             return render_template('student_create_account.html', student=student)
     
     return render_template('student_create_account.html', student=student)
-

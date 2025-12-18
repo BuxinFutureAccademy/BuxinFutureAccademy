@@ -9,7 +9,7 @@
         </a>
     </div>
 
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-header bg-primary text-white">
             <h3 class="mb-0"><i class="fas fa-list me-2"></i>All Registered Schools</h3>
         </div>
@@ -69,6 +69,42 @@
             <div class="text-center py-5">
                 <i class="fas fa-school" style="font-size: 4rem; color: #ccc;"></i>
                 <p class="text-muted mt-3">No schools registered yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- School Classes Section -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i>School Classes</h3>
+        </div>
+        <div class="card-body">
+            {% if school_classes %}
+            <div class="row">
+                {% for class in school_classes %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 border-primary">
+                        <div class="card-header bg-light border-primary">
+                            <h5 class="mb-0">{{ class.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">{{ class.description|truncate(100) }}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="badge bg-info">{{ class.students|length if class.students else 0 }} Enrolled</span>
+                                <a href="{{ url_for('admin.edit_class', class_id=class.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted italic">No school classes created yet.</p>
+                <a href="{{ url_for('admin.create_class') }}" class="btn btn-sm btn-primary">Create School Class</a>
             </div>
             {% endif %}
         </div>

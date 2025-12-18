@@ -145,7 +145,8 @@ def register_school(class_id=None):
 @bp.route('/school/payment', methods=['GET', 'POST'])
 def school_payment():
     """School payment page"""
-    from ..models.classes import ClassEnrollment, GroupClass, ClassPricing
+    from ..models.classes import ClassEnrollment, GroupClass
+    from ..models.gallery import ClassPricing
     
     school_id = session.get('pending_school_id')
     school_system_id = session.get('school_system_id')
@@ -400,14 +401,35 @@ def enter_classroom():
         elif student_id.startswith('SCH-'):
             # School System ID check for school admins
             school = School.query.filter_by(school_system_id=student_id).first()
-            if school and school.status == 'active' and school.admin_name.lower() == full_name.lower():
+            if school:
+                # Verify name match (case-insensitive)
+                # Check both school admin_name and the associated User's name
+                full_name_lower = full_name.lower()
                 user = User.query.get(school.user_id)
-                if user:
-                    login_user(user)
-                    return redirect(url_for('schools.school_dashboard'))
-            flash('Invalid School ID or name.', 'danger')
+                user_full_name = f"{user.first_name} {user.last_name}".lower() if user else ""
+                
+                name_matches = (
+                    school.admin_name.lower() == full_name_lower or
+                    user_full_name == full_name_lower or
+                    (user and user.username.lower() == full_name_lower)
+                )
+                
+                if name_matches:
+                    if user:
+                        login_user(user)
+                        if school.status == 'active':
+                            return redirect(url_for('schools.school_dashboard'))
+                        else:
+                            # Redirect to pending page for non-active schools
+                            return redirect(url_for('schools.school_pending_approval'))
+                    else:
+                        flash('School administrator account not found.', 'danger')
+                else:
+                    flash(f'The name "{full_name}" does not match our records for this School ID.', 'danger')
+            else:
+                flash(f'School ID "{student_id}" not found.', 'danger')
         else:
-            flash('Invalid ID format. Use STU-XXXXX or SCH-XXXXXX.', 'danger')
+            flash('Invalid ID format. Use STU-XXXXX for students or SCH-XXXXXX for schools.', 'danger')
     
     return render_template('enter_classroom.html')
 

@@ -12,60 +12,35 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
+                        <div class="mb-4">
+                            <label for="class_type" class="form-label fw-bold text-primary">Class Type</label>
+                            {% if class_obj.class_type is defined %}
+                            <select class="form-select" id="class_type" name="class_type">
+                                <option value="individual" {% if class_obj.class_type == 'individual' %}selected{% endif %}>Individual Class</option>
+                                <option value="group" {% if class_obj.class_type == 'group' %}selected{% endif %}>Group Class</option>
+                                <option value="family" {% if class_obj.class_type == 'family' %}selected{% endif %}>Family Class</option>
+                                <option value="school" {% if class_obj.class_type == 'school' %}selected{% endif %}>School Class</option>
+                            </select>
+                            {% else %}
+                            <input type="text" class="form-control" value="Individual (Legacy)" disabled>
+                            {% endif %}
+                        </div>
+
                         <div class="mb-3">
                             <label for="name" class="form-label fw-bold">Class Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="name" name="name" 
                                    value="{{ class_obj.name }}" required>
                         </div>
 
-                        {% if class_obj.class_type is defined %}
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="class_type" class="form-label fw-bold">Class Type</label>
-                                <select class="form-select" id="class_type" name="class_type">
-                                    <option value="individual" {% if class_obj.class_type == 'individual' %}selected{% endif %}>Individual Class</option>
-                                    <option value="group" {% if class_obj.class_type == 'group' %}selected{% endif %}>Group Class</option>
-                                    <option value="family" {% if class_obj.class_type == 'family' %}selected{% endif %}>Family Class</option>
-                                    <option value="school" {% if class_obj.class_type == 'school' %}selected{% endif %}>School Class</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="price" class="form-label fw-bold">Price ($)</label>
-                                <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ "%.2f"|format(class_obj.price or 0) }}">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="duration" class="form-label fw-bold">Duration / Schedule</label>
-                                <input type="text" class="form-control" id="duration" name="duration" value="{{ class_obj.duration or '' }}" placeholder="e.g., 8 Weeks, Mon/Wed 4pm">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="instructor_name" class="form-label fw-bold">Instructor</label>
-                                <input type="text" class="form-control" id="instructor_name" name="instructor_name" value="{{ class_obj.instructor_name or '' }}" placeholder="Instructor Name">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="status" class="form-label fw-bold">Status</label>
-                                <select class="form-select" id="status" name="status">
-                                    <option value="active" {% if class_obj.status == 'active' %}selected{% endif %}>Active</option>
-                                    <option value="inactive" {% if class_obj.status == 'inactive' %}selected{% endif %}>Inactive</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <label for="max_students" class="form-label fw-bold">Maximum Students</label>
-                                <input type="number" class="form-control" id="max_students" name="max_students" 
-                                       value="{{ class_obj.max_students }}" min="1" max="100">
-                                <small class="text-muted">Current enrollment: {{ class_obj.students|length if class_obj.students else 0 }} students</small>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
                         <div class="mb-3">
-                            <label for="description" class="form-label fw-bold">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3">{{ class_obj.description or '' }}</textarea>
+                            <label for="instructor_name" class="form-label fw-bold">Instructor Name</label>
+                            <input type="text" class="form-control" id="instructor_name" name="instructor_name" 
+                                   value="{{ class_obj.instructor_name if class_obj.instructor_name is defined else '' }}">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">Description <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required>{{ class_obj.description or '' }}</textarea>
                         </div>
                         
                         <div class="d-flex gap-2">

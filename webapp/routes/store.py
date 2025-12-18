@@ -94,23 +94,23 @@ def available_classes():
         try:
             # Show legacy individual classes AND new unified classes with type 'individual'
             legacy_classes = IndividualClass.query.all()
-            new_classes = GroupClass.query.filter_by(class_type='individual', status='active').all()
+            new_classes = GroupClass.query.filter_by(class_type='individual').all()
             classes = legacy_classes + new_classes
         except Exception:
             classes = []
     elif pricing_type == 'group':
         try:
-            classes = GroupClass.query.filter_by(class_type='group', status='active').all()
+            classes = GroupClass.query.filter_by(class_type='group').all()
         except Exception:
             classes = []
     elif pricing_type == 'family':
         try:
-            classes = GroupClass.query.filter_by(class_type='family', status='active').all()
+            classes = GroupClass.query.filter_by(class_type='family').all()
         except Exception:
             classes = []
     elif pricing_type == 'school':
         try:
-            classes = GroupClass.query.filter_by(class_type='school', status='active').all()
+            classes = GroupClass.query.filter_by(class_type='school').all()
         except Exception:
             classes = []
     

@@ -847,39 +847,22 @@ def create_class():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
-        max_students = request.form.get('max_students', 10)
         class_type = request.form.get('class_type', 'group')
-        price = request.form.get('price', 0.0)
-        status = request.form.get('status', 'active')
-        duration = request.form.get('duration', '')
-        instructor_name = request.form.get('instructor_name', '')
+        instructor_name = request.form.get('instructor_name', '').strip()
         
-        if not name:
-            flash('Class name is required.', 'danger')
+        if not name or not description or not class_type:
+            flash('Name, Description, and Class Type are required.', 'danger')
             return render_template('create_class.html')
         
         try:
-            try:
-                max_students = int(max_students)
-            except Exception:
-                max_students = 10
-                
-            try:
-                price = float(price)
-            except Exception:
-                price = 0.0
-
-            # All classes are now a single type; we use GroupClass as the unified model
+            # Create the class using GroupClass as the unified model
             new_class = GroupClass(
                 name=name,
                 description=description,
                 teacher_id=current_user.id,
-                max_students=max_students,
                 class_type=class_type,
-                price=price,
-                status=status,
-                duration=duration,
-                instructor_name=instructor_name
+                instructor_name=instructor_name,
+                max_students=100 # High default as limits are managed elsewhere
             )
             
             db.session.add(new_class)
@@ -888,7 +871,18 @@ def create_class():
             return redirect(url_for('admin.admin_dashboard'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Error creating class: {str(e)}', 'danger')
+            # If the error is about missing columns, try to fix it automatically
+            if 'column "class_type" of relation "group_class" does not exist' in str(e):
+                try:
+                    from sqlalchemy import text
+                    db.session.execute(text('ALTER TABLE group_class ADD COLUMN IF NOT EXISTS class_type VARCHAR(20) DEFAULT \'group\''))
+                    db.session.execute(text('ALTER TABLE group_class ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)'))
+                    db.session.commit()
+                    flash('Database structure updated. Please try creating the class again.', 'info')
+                except Exception as db_e:
+                    flash(f'Database update failed: {str(db_e)}', 'danger')
+            else:
+                flash(f'Error creating class: {str(e)}', 'danger')
             return render_template('create_class.html')
     
     return render_template('create_class.html')
@@ -930,27 +924,9 @@ def edit_class(class_id, class_type=None):
         class_obj.name = request.form.get('name', class_obj.name).strip()
         class_obj.description = request.form.get('description', class_obj.description).strip()
         
-        if hasattr(class_obj, 'max_students'):
-            try:
-                class_obj.max_students = int(request.form.get('max_students', 10))
-            except Exception:
-                class_obj.max_students = 10
-        
         if hasattr(class_obj, 'class_type'):
             class_obj.class_type = request.form.get('class_type', class_obj.class_type)
         
-        if hasattr(class_obj, 'price'):
-            try:
-                class_obj.price = float(request.form.get('price', 0.0))
-            except Exception:
-                class_obj.price = 0.0
-                
-        if hasattr(class_obj, 'status'):
-            class_obj.status = request.form.get('status', 'active')
-            
-        if hasattr(class_obj, 'duration'):
-            class_obj.duration = request.form.get('duration', '')
-            
         if hasattr(class_obj, 'instructor_name'):
             class_obj.instructor_name = request.form.get('instructor_name', '')
         

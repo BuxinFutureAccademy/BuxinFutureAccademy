@@ -107,6 +107,7 @@ def setup_school_tables():
                 <p>School system tables:</p>
                 <ul>{messages_html}</ul>
                 <p><a href="/admin/setup-learning-material-columns">Update Learning Material Columns</a></p>
+                <p><a href="/admin/setup-group-class-columns">Update Group Class Columns</a></p>
                 <p><a href="/">Go to Homepage</a></p>
             </div>
         </body>
@@ -213,6 +214,38 @@ def setup_learning_material_columns():
         except Exception as e:
             db.session.rollback()
             messages.append(f"file_name error: {str(e)}")
+
+        # Check and add title column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='learning_material' AND column_name='title'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE learning_material ADD COLUMN title VARCHAR(200)"))
+                db.session.commit()
+                messages.append("Added title column")
+            else:
+                messages.append("title column already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"title error: {str(e)}")
+
+        # Check and add actual_class_id column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='learning_material' AND column_name='actual_class_id'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE learning_material ADD COLUMN actual_class_id INTEGER"))
+                db.session.commit()
+                messages.append("Added actual_class_id column")
+            else:
+                messages.append("actual_class_id column already exists")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"actual_class_id error: {str(e)}")
         
         messages_html = "".join([f"<li>{m}</li>" for m in messages])
         
@@ -474,10 +507,85 @@ def initialize_db():
         return f"Initialization failed: {e}", 500
 
 
+@bp.route('/admin/setup-group-class-columns')
+def setup_group_class_columns():
+    """Add new columns to group_class table - accessible without login for initial setup"""
+    from sqlalchemy import text
+    messages = []
+    
+    try:
+        # Check and add class_type column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='group_class' AND column_name='class_type'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE group_class ADD COLUMN class_type VARCHAR(20) DEFAULT 'group'"))
+                db.session.commit()
+                messages.append("Added class_type column to group_class")
+            else:
+                messages.append("class_type column already exists in group_class")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"class_type column error: {str(e)}")
+            
+        # Check and add instructor_name column
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='group_class' AND column_name='instructor_name'
+            """))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE group_class ADD COLUMN instructor_name VARCHAR(100)"))
+                db.session.commit()
+                messages.append("Added instructor_name column to group_class")
+            else:
+                messages.append("instructor_name column already exists in group_class")
+        except Exception as e:
+            db.session.rollback()
+            messages.append(f"instructor_name column error: {str(e)}")
+            
+        messages_html = "".join([f"<li>{m}</li>" for m in messages])
+        
+        return f"""
+        <html>
+        <head><title>Group Class Columns Updated</title>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }}
+        .card {{ background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
+        h1 {{ color: #28a745; }} a {{ color: #667eea; }} ul {{ text-align: left; }}</style></head>
+        <body>
+            <div class="card">
+                <h1>✅ Group Class Table Updated!</h1>
+                <ul>{messages_html}</ul>
+                <p><a href="/admin/dashboard">Go to Admin Dashboard</a></p>
+                <p><a href="/">Go to Homepage</a></p>
+            </div>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Error</title>
+        <style>body {{ font-family: Arial; padding: 40px; text-align: center; }}
+        .error {{ color: #dc3545; }}</style></head>
+        <body>
+            <h1 class="error">❌ Error</h1>
+            <p>{str(e)}</p>
+            <p><a href="/">Go to Homepage</a></p>
+        </body>
+        </html>
+        """, 500
+
+
 @bp.route('/admin/dashboard', methods=['GET', 'POST'])
 @login_required
 def admin_dashboard():
     """Admin dashboard - requires admin authentication"""
+    from ..extensions import db
+    db.session.rollback()  # Ensure clean transaction state at start
+    
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'danger')
         logout_user()
@@ -719,91 +827,124 @@ def admin_dashboard():
                 flash(f'Error sharing material: {str(e)}', 'danger')
     
     # Get all data for the dashboard
-    students = User.query.filter_by(is_student=True).all()
+    try:
+        students = User.query.filter_by(is_student=True).all()
+    except Exception:
+        db.session.rollback()
+        students = []
     individual_students = students
     
     # Get course orders
-    course_orders = Purchase.query.order_by(Purchase.purchased_at.desc()).limit(50).all()
+    try:
+        course_orders = Purchase.query.order_by(Purchase.purchased_at.desc()).limit(50).all()
+    except Exception:
+        db.session.rollback()
+        course_orders = []
     
     # Get enrollments
-    enrollments = ClassEnrollment.query.order_by(ClassEnrollment.enrolled_at.desc()).limit(50).all()
+    try:
+        enrollments = ClassEnrollment.query.order_by(ClassEnrollment.enrolled_at.desc()).limit(50).all()
+    except Exception:
+        db.session.rollback()
+        enrollments = []
     
     # Get robotics count
-    robotics_count = RoboticsProjectSubmission.query.count()
+    try:
+        robotics_count = RoboticsProjectSubmission.query.count()
+    except Exception:
+        db.session.rollback()
+        robotics_count = 0
     
     # Get all classes
     try:
         all_group_classes = GroupClass.query.all()
     except Exception:
+        db.session.rollback()
         all_group_classes = []
     
     try:
-        all_individual_classes = IndividualClass.query.all()
+        all_individual_classes_legacy = IndividualClass.query.all()
     except Exception:
-        all_individual_classes = []
+        db.session.rollback()
+        all_individual_classes_legacy = []
     
     # Get school enrollments (for school type) with school names
     school_enrollments_data = []
-    school_enrollments = ClassEnrollment.query.filter_by(
-        class_type='school',
-        status='completed'
-    ).all()
-    for enrollment in school_enrollments:
-        # Get school name from first registered student
-        first_student = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).first()
-        school_name = first_student.school_name if first_student else 'School'
-        student_count = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).count()
-        school_enrollments_data.append({
-            'id': enrollment.id,
-            'class_id': enrollment.class_id,
-            'school_name': school_name,
-            'student_count': student_count
-        })
+    try:
+        school_enrollments = ClassEnrollment.query.filter_by(
+            class_type='school',
+            status='completed'
+        ).all()
+        for enrollment in school_enrollments:
+            # Get school name from first registered student
+            first_student = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).first()
+            school_name = first_student.school_name if first_student else 'School'
+            student_count = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).count()
+            school_enrollments_data.append({
+                'id': enrollment.id,
+                'class_id': enrollment.class_id,
+                'school_name': school_name,
+                'student_count': student_count
+            })
+    except Exception:
+        db.session.rollback()
     
     # Get family enrollments (for family type) with member counts
     family_enrollments_data = []
-    family_enrollments = ClassEnrollment.query.filter_by(
-        class_type='family',
-        status='completed'
-    ).all()
-    for enrollment in family_enrollments:
-        member_count = FamilyMember.query.filter_by(enrollment_id=enrollment.id).count()
-        # Get main user name
-        main_user = User.query.get(enrollment.user_id)
-        family_name = f"{main_user.first_name} {main_user.last_name}'s Family" if main_user else 'Family'
-        family_enrollments_data.append({
-            'id': enrollment.id,
-            'class_id': enrollment.class_id,
-            'member_count': member_count,
-            'family_name': family_name
-        })
+    try:
+        family_enrollments = ClassEnrollment.query.filter_by(
+            class_type='family',
+            status='completed'
+        ).all()
+        for enrollment in family_enrollments:
+            member_count = FamilyMember.query.filter_by(enrollment_id=enrollment.id).count()
+            # Get main user name
+            main_user = User.query.get(enrollment.user_id)
+            family_name = f"{main_user.first_name} {main_user.last_name}'s Family" if main_user else 'Family'
+            family_enrollments_data.append({
+                'id': enrollment.id,
+                'class_id': enrollment.class_id,
+                'member_count': member_count,
+                'family_name': family_name
+            })
+    except Exception:
+        db.session.rollback()
     
     # Get group classes with student counts
     group_classes_data = []
-    # Only show classes with type 'group' or default 'group'
-    for class_obj in all_group_classes:
-        if class_obj.class_type == 'group':
-            student_count = ClassEnrollment.query.filter_by(
-                class_id=class_obj.id,
-                class_type='group',
-                status='completed'
-            ).count()
-            group_classes_data.append({
-                'id': class_obj.id,
-                'name': class_obj.name,
-                'student_count': student_count
-            })
+    try:
+        # Only show classes with type 'group' or default 'group'
+        for class_obj in all_group_classes:
+            if hasattr(class_obj, 'class_type') and class_obj.class_type == 'group':
+                student_count = ClassEnrollment.query.filter_by(
+                    class_id=class_obj.id,
+                    class_type='group',
+                    status='completed'
+                ).count()
+                group_classes_data.append({
+                    'id': class_obj.id,
+                    'name': class_obj.name,
+                    'student_count': student_count
+                })
+    except Exception:
+        db.session.rollback()
     
     # Get materials
     try:
         materials = LearningMaterial.query.order_by(LearningMaterial.created_at.desc()).limit(50).all()
     except Exception:
+        db.session.rollback()
         materials = []
     
     # Get all individual classes for the dashboard
-    classes = GroupClass.query.filter_by(class_type='individual').all()
-    legacy_classes = IndividualClass.query.all()
-    all_individual_classes = classes + legacy_classes
+    all_individual_classes = []
+    try:
+        # Check if class_type column exists
+        individual_classes_new = GroupClass.query.filter_by(class_type='individual').all()
+        all_individual_classes = individual_classes_new + all_individual_classes_legacy
+    except Exception:
+        db.session.rollback()
+        all_individual_classes = all_individual_classes_legacy
 
     return render_template('admin_dashboard.html',
         students=students,
@@ -827,16 +968,21 @@ def admin_users():
     if admin_check:
         return admin_check
     
+    db.session.rollback()  # Ensure clean transaction state
     from flask import request
     search = request.args.get('search', '')
-    query = User.query
-    if search:
-        query = query.filter(
-            User.email.contains(search) | 
-            User.first_name.contains(search) | 
-            User.last_name.contains(search)
-        )
-    users = query.order_by(User.id.desc()).all()
+    try:
+        query = User.query
+        if search:
+            query = query.filter(
+                User.email.contains(search) | 
+                User.first_name.contains(search) | 
+                User.last_name.contains(search)
+            )
+        users = query.order_by(User.id.desc()).all()
+    except Exception:
+        db.session.rollback()
+        users = []
     return render_template('admin_users.html', users=users, search_term=search)
 
 
@@ -902,12 +1048,36 @@ def admin_classes():
         return admin_check
     
     # Legacy individual classes are kept for display, but new classes use GroupClass
-    individual_classes = IndividualClass.query.all()
+    try:
+        individual_classes = IndividualClass.query.all()
+    except Exception:
+        db.session.rollback()
+        individual_classes = []
+        
     # Explicitly show only classes categorized by type
-    group_classes = GroupClass.query.filter_by(class_type='group').all()
-    family_classes = GroupClass.query.filter_by(class_type='family').all()
-    school_classes = GroupClass.query.filter_by(class_type='school').all()
-    new_individual_classes = GroupClass.query.filter_by(class_type='individual').all()
+    try:
+        group_classes = GroupClass.query.filter_by(class_type='group').all()
+    except Exception:
+        db.session.rollback()
+        group_classes = []
+        
+    try:
+        family_classes = GroupClass.query.filter_by(class_type='family').all()
+    except Exception:
+        db.session.rollback()
+        family_classes = []
+        
+    try:
+        school_classes = GroupClass.query.filter_by(class_type='school').all()
+    except Exception:
+        db.session.rollback()
+        school_classes = []
+        
+    try:
+        new_individual_classes = GroupClass.query.filter_by(class_type='individual').all()
+    except Exception:
+        db.session.rollback()
+        new_individual_classes = []
     
     all_classes = group_classes + individual_classes + family_classes + school_classes + new_individual_classes
     
@@ -1869,7 +2039,7 @@ def admin_edit_user(user_id):
             user.is_student = request.form.get('is_student') != 'off' if request.form.get('is_student') else user.is_student
             db.session.commit()
             flash('User updated successfully.', 'success')
-            return redirect(url_for('admin_edit_user', user_id=user.id))
+            return redirect(url_for('admin.admin_edit_user', user_id=user.id))
         except Exception as e:
             db.session.rollback()
             flash(f'Failed to update user: {e}', 'danger')
@@ -2520,8 +2690,12 @@ def admin_individual_classes():
         user = User.query.get(enrollment.user_id)
         if user:
             # Get the individual class
-            individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
-                               IndividualClass.query.get(enrollment.class_id)
+            try:
+                individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
+                                   IndividualClass.query.get(enrollment.class_id)
+            except Exception:
+                db.session.rollback()
+                individual_class = None
             
             student_data = {
                 'enrollment': enrollment,

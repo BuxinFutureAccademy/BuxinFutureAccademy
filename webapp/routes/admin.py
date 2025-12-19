@@ -708,87 +708,82 @@ def admin_dashboard():
                         flash('Student not found.', 'danger')
                 
                 elif recipient_type == 'school':
-                    # Share to all students in a school class
-                    enrollment_id = int(recipient_id)
-                    enrollment = ClassEnrollment.query.get(enrollment_id)
-                    if enrollment and enrollment.class_type == 'school':
-                        # Get all registered students for this school
-                        school_students = SchoolStudent.query.filter_by(
-                            enrollment_id=enrollment_id,
-                            class_id=enrollment.class_id
+                    # Share to a school (entity) - material goes to all classes this school has joined
+                    school_id = int(recipient_id)
+                    school = School.query.get(school_id)
+                    if school and school.status == 'active':
+                        # Get all classes this school has joined
+                        enrollments = ClassEnrollment.query.filter_by(
+                            user_id=school.user_id,
+                            class_type='school',
+                            status='completed'
                         ).all()
                         
-                        # Also get the main enrolled user
-                        main_user = User.query.get(enrollment.user_id)
-                        
-                        shared_count = 0
-                        # Share to main enrolled user
-                        if main_user:
-                            material = LearningMaterial(
-                                class_id=f"school_{enrollment.class_id}_enrollment_{enrollment_id}",
-                                class_type='school',
-                                actual_class_id=enrollment.class_id,
-                                title=title,
-                                content=content,
-                                created_by=current_user.id
-                            )
-                            db.session.add(material)
-                            shared_count += 1
-                        
-                        # Share to all registered students (they see it through their enrollment)
-                        # We create one material record for the school class, and all students see it
-                        material = LearningMaterial(
-                            class_id=f"school_{enrollment.class_id}_enrollment_{enrollment_id}",
-                            class_type='school',
-                            actual_class_id=enrollment.class_id,
-                            title=title,
-                            content=content,
-                            created_by=current_user.id,
-                            material_type=material_type,
-                            file_url=file_url,
-                            file_type=file_type,
-                            file_name=file_name,
-                            youtube_url=youtube_url
-                        )
-                        db.session.add(material)
-                        db.session.commit()
-                        flash(f'Material shared with school class! All {len(school_students) + 1} members will see it.', 'success')
+                        if not enrollments:
+                            flash(f'School "{school.school_name}" has not joined any classes yet.', 'warning')
+                        else:
+                            shared_count = 0
+                            # Share material to each class this school has joined
+                            for enrollment in enrollments:
+                                material = LearningMaterial(
+                                    class_id=f"school_{enrollment.class_id}",
+                                    class_type='school',
+                                    actual_class_id=enrollment.class_id,
+                                    title=title,
+                                    content=content,
+                                    created_by=current_user.id,
+                                    material_type=material_type,
+                                    file_url=file_url,
+                                    file_type=file_type,
+                                    file_name=file_name,
+                                    youtube_url=youtube_url
+                                )
+                                db.session.add(material)
+                                shared_count += 1
+                            
+                            db.session.commit()
+                            flash(f'Material shared with school "{school.school_name}"! It will appear in all {shared_count} class(es) this school has joined.', 'success')
                     else:
-                        flash('Invalid school enrollment.', 'danger')
+                        flash('School not found or not active.', 'danger')
                 
                 elif recipient_type == 'family':
-                    # Share to all family members
-                    enrollment_id = int(recipient_id)
-                    enrollment = ClassEnrollment.query.get(enrollment_id)
-                    if enrollment and enrollment.class_type == 'family':
-                        # Get all registered family members
-                        family_members = FamilyMember.query.filter_by(
-                            enrollment_id=enrollment_id,
-                            class_id=enrollment.class_id
+                    # Share to a family (entity) - material goes to all classes this family has joined
+                    family_user_id = int(recipient_id)  # family ID is the main user_id
+                    family_user = User.query.get(family_user_id)
+                    if family_user:
+                        # Get all classes this family has joined
+                        enrollments = ClassEnrollment.query.filter_by(
+                            user_id=family_user_id,
+                            class_type='family',
+                            status='completed'
                         ).all()
                         
-                        # Get main enrolled user
-                        main_user = User.query.get(enrollment.user_id)
-                        
-                        # Create material for the family class - all members see it
-                        material = LearningMaterial(
-                            class_id=f"family_{enrollment.class_id}_enrollment_{enrollment_id}",
-                            class_type='family',
-                            actual_class_id=enrollment.class_id,
-                            title=title,
-                            content=content,
-                            created_by=current_user.id,
-                            material_type=material_type,
-                            file_url=file_url,
-                            file_type=file_type,
-                            file_name=file_name,
-                            youtube_url=youtube_url
-                        )
-                        db.session.add(material)
-                        db.session.commit()
-                        flash(f'Material shared with family class! All {len(family_members) + 1} members will see it.', 'success')
+                        if not enrollments:
+                            flash(f'Family "{family_user.first_name} {family_user.last_name}\'s Family" has not joined any classes yet.', 'warning')
+                        else:
+                            shared_count = 0
+                            # Share material to each class this family has joined
+                            for enrollment in enrollments:
+                                material = LearningMaterial(
+                                    class_id=f"family_{enrollment.class_id}",
+                                    class_type='family',
+                                    actual_class_id=enrollment.class_id,
+                                    title=title,
+                                    content=content,
+                                    created_by=current_user.id,
+                                    material_type=material_type,
+                                    file_url=file_url,
+                                    file_type=file_type,
+                                    file_name=file_name,
+                                    youtube_url=youtube_url
+                                )
+                                db.session.add(material)
+                                shared_count += 1
+                            
+                            db.session.commit()
+                            flash(f'Material shared with family! It will appear in all {shared_count} class(es) this family has joined.', 'success')
                     else:
-                        flash('Invalid family enrollment.', 'danger')
+                        flash('Family not found.', 'danger')
                 
                 elif recipient_type == 'group':
                     # Share to all students in a group class
@@ -871,48 +866,58 @@ def admin_dashboard():
         db.session.rollback()
         all_individual_classes_legacy = []
     
-    # Get school enrollments (for school type) with school names
-    school_enrollments_data = []
+    # Get Schools (entities) for school type - NOT enrollments
+    schools_data = []
     try:
-        school_enrollments = ClassEnrollment.query.filter_by(
-            class_type='school',
-            status='completed'
-        ).all()
-        for enrollment in school_enrollments:
-            # Get school for this enrollment
-            school = School.query.filter_by(user_id=enrollment.user_id).first()
-            school_name = school.school_name if school else 'School'
-            school_id = school.id if school else None
-            student_count = SchoolStudent.query.filter_by(enrollment_id=enrollment.id).count()
+        schools = School.query.filter_by(status='active').order_by(School.school_name).all()
+        for school in schools:
+            # Count registered students for this school
+            student_count = RegisteredSchoolStudent.query.filter_by(school_id=school.id).count()
             
-            school_enrollments_data.append({
-                'id': enrollment.id,
-                'school_id': school_id,
-                'class_id': enrollment.class_id,
-                'school_name': school_name,
-                'student_count': student_count
+            # Get classes this school has joined
+            school_classes = []
+            if school.user_id:
+                enrollments = ClassEnrollment.query.filter_by(
+                    user_id=school.user_id,
+                    class_type='school',
+                    status='completed'
+                ).all()
+                school_classes = [e.class_id for e in enrollments]
+            
+            schools_data.append({
+                'id': school.id,
+                'school_name': school.school_name,
+                'school_system_id': school.school_system_id,
+                'student_count': student_count,
+                'class_ids': school_classes
             })
     except Exception:
         db.session.rollback()
     
-    # Get family enrollments (for family type) with member counts
-    family_enrollments_data = []
+    # Get Families (entities) for family type - NOT enrollments
+    families_data = []
     try:
         family_enrollments = ClassEnrollment.query.filter_by(
             class_type='family',
             status='completed'
         ).all()
+        # Group by main user to create family entities
+        families_dict = {}
         for enrollment in family_enrollments:
-            member_count = FamilyMember.query.filter_by(enrollment_id=enrollment.id).count()
-            # Get main user name
             main_user = User.query.get(enrollment.user_id)
-            family_name = f"{main_user.first_name} {main_user.last_name}'s Family" if main_user else 'Family'
-            family_enrollments_data.append({
-                'id': enrollment.id,
-                'class_id': enrollment.class_id,
-                'member_count': member_count,
-                'family_name': family_name
-            })
+            if main_user:
+                # Use user_id as family identifier
+                if enrollment.user_id not in families_dict:
+                    member_count = FamilyMember.query.filter_by(enrollment_id=enrollment.id).count()
+                    families_dict[enrollment.user_id] = {
+                        'id': enrollment.user_id,  # Use user_id as family ID
+                        'family_name': f"{main_user.first_name} {main_user.last_name}'s Family",
+                        'member_count': member_count,
+                        'class_ids': []
+                    }
+                families_dict[enrollment.user_id]['class_ids'].append(enrollment.class_id)
+        
+        families_data = list(families_dict.values())
     except Exception:
         db.session.rollback()
     
@@ -958,8 +963,8 @@ def admin_dashboard():
         all_group_classes=all_group_classes,
         all_individual_classes=all_individual_classes,
         school_classes_latest=school_classes_latest,
-        school_enrollments_data=school_enrollments_data,
-        family_enrollments_data=family_enrollments_data,
+        schools_data=schools_data,  # Changed from school_enrollments_data
+        families_data=families_data,  # Changed from family_enrollments_data
         group_classes_data=group_classes_data,
         materials=materials,
         course_orders=course_orders,

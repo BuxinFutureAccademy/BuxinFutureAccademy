@@ -446,28 +446,32 @@ Or upload a file below (Image, Video, or PDF)."></textarea>
                         {% endfor %}
                     ];
                     
-                    const schoolEnrollments = [
-                        {% for enrollment in school_enrollments_data %}
+                    // Schools (entities) - NOT enrollments
+                    const schools = [
+                        {% for school in schools_data %}
                         {
-                            id: {{ enrollment.id }},
-                            class_id: {{ enrollment.class_id }},
-                            school_name: "{{ enrollment.school_name|e }}",
-                            student_count: {{ enrollment.student_count }}
+                            id: {{ school.id }},
+                            school_name: "{{ school.school_name|e }}",
+                            school_system_id: "{{ school.school_system_id|e }}",
+                            student_count: {{ school.student_count }},
+                            class_count: {{ school.class_ids|length }}
                         }{% if not loop.last %},{% endif %}
                         {% endfor %}
                     ];
                     
-                    const familyEnrollments = [
-                        {% for enrollment in family_enrollments_data %}
+                    // Families (entities) - NOT enrollments
+                    const families = [
+                        {% for family in families_data %}
                         {
-                            id: {{ enrollment.id }},
-                            class_id: {{ enrollment.class_id }},
-                            member_count: {{ enrollment.member_count }},
-                            family_name: "{{ enrollment.family_name|e }}"
+                            id: {{ family.id }},
+                            family_name: "{{ family.family_name|e }}",
+                            member_count: {{ family.member_count }},
+                            class_count: {{ family.class_ids|length }}
                         }{% if not loop.last %},{% endif %}
                         {% endfor %}
                     ];
                     
+                    // Groups (entities)
                     const groupClasses = [
                         {% for class in group_classes_data %}
                         {
@@ -486,6 +490,7 @@ Or upload a file below (Image, Video, or PDF)."></textarea>
                         recipientSelect.innerHTML = '<option value="">Select recipient...</option>';
                         
                         if (recipientType === 'individual') {
+                            // Show individual students
                             individualStudents.forEach(student => {
                                 const option = document.createElement('option');
                                 option.value = student.id;
@@ -493,26 +498,53 @@ Or upload a file below (Image, Video, or PDF)."></textarea>
                                 recipientSelect.appendChild(option);
                             });
                         } else if (recipientType === 'school') {
-                            schoolEnrollments.forEach(enrollment => {
+                            // Show Schools (entities) - NOT enrollments, NOT students
+                            if (schools.length === 0) {
                                 const option = document.createElement('option');
-                                option.value = enrollment.id;
-                                option.textContent = `🏫 ${enrollment.school_name} (${enrollment.student_count + 1} members)`;
+                                option.value = "";
+                                option.textContent = "No active schools found";
+                                option.disabled = true;
                                 recipientSelect.appendChild(option);
-                            });
+                            } else {
+                                schools.forEach(school => {
+                                    const option = document.createElement('option');
+                                    option.value = school.id;
+                                    option.textContent = `🏫 ${school.school_name} (${school.school_system_id}) - ${school.class_count} class(es), ${school.student_count} students`;
+                                    recipientSelect.appendChild(option);
+                                });
+                            }
                         } else if (recipientType === 'family') {
-                            familyEnrollments.forEach(enrollment => {
+                            // Show Families (entities) - NOT enrollments, NOT individuals
+                            if (families.length === 0) {
                                 const option = document.createElement('option');
-                                option.value = enrollment.id;
-                                option.textContent = `👨‍👩‍👧‍👦 ${enrollment.family_name} (${enrollment.member_count + 1} members)`;
+                                option.value = "";
+                                option.textContent = "No families found";
+                                option.disabled = true;
                                 recipientSelect.appendChild(option);
-                            });
+                            } else {
+                                families.forEach(family => {
+                                    const option = document.createElement('option');
+                                    option.value = family.id;
+                                    option.textContent = `👨‍👩‍👧‍👦 ${family.family_name} (${family.member_count + 1} members) - ${family.class_count} class(es)`;
+                                    recipientSelect.appendChild(option);
+                                });
+                            }
                         } else if (recipientType === 'group') {
-                            groupClasses.forEach(classItem => {
+                            // Show Groups (entities)
+                            if (groupClasses.length === 0) {
                                 const option = document.createElement('option');
-                                option.value = classItem.id;
-                                option.textContent = `👥 ${classItem.name} (${classItem.student_count} students)`;
+                                option.value = "";
+                                option.textContent = "No group classes found";
+                                option.disabled = true;
                                 recipientSelect.appendChild(option);
-                            });
+                            } else {
+                                groupClasses.forEach(classItem => {
+                                    const option = document.createElement('option');
+                                    option.value = classItem.id;
+                                    option.textContent = `👥 ${classItem.name} (${classItem.student_count} students)`;
+                                    recipientSelect.appendChild(option);
+                                });
+                            }
                         }
                     }
                     </script>

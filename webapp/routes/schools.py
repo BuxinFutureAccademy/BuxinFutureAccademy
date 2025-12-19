@@ -416,11 +416,16 @@ def enter_classroom():
                 
                 if name_matches:
                     if user:
-                        login_user(user)
-                        if school.status == 'active':
+                        # Check if school is approved and payment is completed
+                        if school.status == 'active' and school.payment_status == 'completed':
+                            login_user(user)
                             return redirect(url_for('schools.school_dashboard'))
+                        elif school.status == 'active' and school.payment_status != 'completed':
+                            flash('Your school payment is still pending. Please complete payment to access the classroom.', 'warning')
+                            return redirect(url_for('schools.school_pending_approval'))
                         else:
-                            # Redirect to pending page for non-active schools
+                            # School not yet approved
+                            login_user(user)
                             return redirect(url_for('schools.school_pending_approval'))
                     else:
                         flash('School administrator account not found.', 'danger')

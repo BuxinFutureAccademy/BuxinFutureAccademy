@@ -1311,7 +1311,14 @@ def student_dashboard():
         status='completed'
     ).first() is not None
     
-    if not has_confirmed_enrollment and not current_user.is_admin:
+    # Check if user is a school admin with active status and completed payment
+    is_approved_school = False
+    if current_user.is_school_admin or getattr(current_user, 'is_school_student', False):
+        school = School.query.filter_by(user_id=current_user.id).first()
+        if school and school.status == 'active' and school.payment_status == 'completed':
+            is_approved_school = True
+    
+    if not has_confirmed_enrollment and not current_user.is_admin and not is_approved_school:
         # Check if they have pending enrollment
         has_pending = ClassEnrollment.query.filter_by(
             user_id=current_user.id,

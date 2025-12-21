@@ -169,8 +169,34 @@
                                 </div>
                                 <p class="mb-1 text-muted small">{{ cls.description|truncate(100) }}</p>
                                 <div class="mt-2">
+                                    <span class="badge bg-info me-2">{{ cls.student_count }} student(s)</span>
                                     <a href="{{ url_for('admin.edit_class', class_id=cls.id) }}" class="btn btn-sm btn-outline-primary">View Class</a>
+                                    {% if students_by_class and students_by_class.get(cls.id) %}
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#students-class-{{ cls.id }}" aria-expanded="false">
+                                        View Students
+                                    </button>
+                                    {% endif %}
                                 </div>
+                                {% if students_by_class and students_by_class.get(cls.id) %}
+                                <div class="collapse mt-3" id="students-class-{{ cls.id }}">
+                                    <div class="card card-body bg-light">
+                                        <h6 class="mb-2">Students in this class:</h6>
+                                        <ul class="list-unstyled mb-0">
+                                            {% for student in students_by_class[cls.id] %}
+                                            <li class="py-1 border-bottom">
+                                                <strong>{{ student.student_name }}</strong>
+                                                {% if student.student_age %}
+                                                <span class="text-muted">(Age: {{ student.student_age }})</span>
+                                                {% endif %}
+                                                {% if student.student_email %}
+                                                <br><small class="text-muted">Email: {{ student.student_email }}</small>
+                                                {% endif %}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         </div>

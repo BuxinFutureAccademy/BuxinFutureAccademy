@@ -250,7 +250,22 @@ def school_pending_approval():
 @login_required
 def school_dashboard():
     """School classroom dashboard - Unified with student dashboard design"""
-    # Use the unified student dashboard logic for everyone (students and school admins)
+    # Verify user is a school admin
+    if not current_user.is_school_admin:
+        flash('Access denied. School admin privileges required.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get school for current user
+    school = School.query.filter_by(user_id=current_user.id).first()
+    if not school:
+        flash('No school registration found for your account.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    if school.status != 'active':
+        # School not approved yet
+        return redirect(url_for('schools.school_pending_approval'))
+    
+    # Use the unified student dashboard logic which handles school classes
     from .admin import student_dashboard
     return student_dashboard()
 

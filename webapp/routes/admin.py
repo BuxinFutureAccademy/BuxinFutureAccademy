@@ -1267,6 +1267,13 @@ def approve_enrollment(enrollment_id):
                 return redirect(url_for('admin.admin_enrollments'))
             if user not in class_obj.students:
                 class_obj.students.append(user)
+    elif enrollment.class_type == 'school':
+        # For school enrollments, just mark as completed - don't add to group_class.students
+        # Schools manage their own students through SchoolStudent model
+        pass
+    elif enrollment.class_type == 'family':
+        # Family classes also use enrollment-based approach
+        pass
     
     enrollment.status = 'completed'
     
@@ -1382,10 +1389,12 @@ def student_dashboard():
             attendance_students = list(students)  # Start with enrolled users
             
             if cls['class_type'] == 'school':
-                # Add registered school students
+                # Add registered school students for THIS specific school and class
+                # Only show students registered by the current school admin in this class
                 registered_school_students = SchoolStudent.query.filter_by(
                     class_id=cls['id'],
-                    enrollment_id=cls['enrollment'].id
+                    enrollment_id=cls['enrollment'].id,
+                    registered_by=current_user.id  # Only students registered by this school
                 ).all()
                 for reg_student in registered_school_students:
                     attendance_students.append({
@@ -1486,10 +1495,11 @@ def student_dashboard():
     
     for cls in enrolled_classes:
         if cls['class_type'] == 'school':
-            # Get all registered students for this school class
+            # Get all registered students for this school class (only for this school)
             students = SchoolStudent.query.filter_by(
                 class_id=cls['id'],
-                enrollment_id=cls['enrollment'].id
+                enrollment_id=cls['enrollment'].id,
+                registered_by=current_user.id  # Only students registered by this school admin
             ).all()
             registered_students[cls['id']] = students
         elif cls['class_type'] == 'family':
@@ -1523,10 +1533,11 @@ def student_dashboard():
                 ).all()
                 materials.extend(class_materials)
             elif cls['class_type'] == 'school':
-                # Materials shared to this school enrollment
-                enrollment_id = cls['enrollment'].id
+                # Materials shared to this school class
+                # Format: "school_{class_id}" (as set in material sharing)
                 class_materials = LearningMaterial.query.filter(
-                    LearningMaterial.class_id.like(f"%school_{cls['id']}_enrollment_{enrollment_id}%")
+                    LearningMaterial.class_type == 'school',
+                    LearningMaterial.actual_class_id == cls['id']
                 ).all()
                 materials.extend(class_materials)
             elif cls['class_type'] == 'family':
@@ -1664,7 +1675,6 @@ def register_student():
     
     enrollment_id = request.form.get('enrollment_id', type=int)
     class_id = request.form.get('class_id', type=int)
-    school_name = request.form.get('school_name', '').strip()
     student_name = request.form.get('student_name', '').strip()
     student_age = request.form.get('student_age', type=int)
     student_email = request.form.get('student_email', '').strip()
@@ -1685,10 +1695,25 @@ def register_student():
     
     if not enrollment:
         flash('Invalid enrollment or you do not have permission.', 'danger')
+        if current_user.is_school_admin:
+            return redirect(url_for('schools.school_dashboard'))
         return redirect(url_for('admin.student_dashboard'))
     
-    if not school_name or not student_name:
-        flash('School name and student name are required.', 'danger')
+    # Get school name from School model
+    from ..models.schools import School
+    school = School.query.filter_by(user_id=current_user.id).first()
+    if not school:
+        flash('School not found.', 'danger')
+        if current_user.is_school_admin:
+            return redirect(url_for('schools.school_dashboard'))
+        return redirect(url_for('admin.student_dashboard'))
+    
+    school_name = school.school_name
+    
+    if not student_name:
+        flash('Student name is required.', 'danger')
+        if current_user.is_school_admin:
+            return redirect(url_for('schools.school_dashboard'))
         return redirect(url_for('admin.student_dashboard'))
     
     # Handle image upload
@@ -1725,6 +1750,8 @@ def register_student():
         db.session.rollback()
         flash(f'Error registering student: {str(e)}', 'danger')
     
+    if current_user.is_school_admin:
+        return redirect(url_for('schools.school_dashboard'))
     return redirect(url_for('admin.student_dashboard'))
 
 
@@ -3132,8 +3159,9 @@ def admin_school_detail(school_id):
     school = School.query.get_or_404(school_id)
     students = RegisteredSchoolStudent.query.filter_by(school_id=school_id).order_by(RegisteredSchoolStudent.created_at.desc()).all()
     
-    # Get classes this school has enrolled in
+    # Get classes this school has enrolled in with students per class
     school_classes = []
+    students_by_class = {}  # {class_id: [list of SchoolStudent]}
     if school.user_id:
         enrollments = ClassEnrollment.query.filter_by(
             user_id=school.user_id,
@@ -3144,17 +3172,28 @@ def admin_school_detail(school_id):
         for enrollment in enrollments:
             class_obj = GroupClass.query.get(enrollment.class_id)
             if class_obj:
+                # Get students registered for this specific class
+                from ..models.classes import SchoolStudent
+                class_students = SchoolStudent.query.filter_by(
+                    class_id=enrollment.class_id,
+                    enrollment_id=enrollment.id
+                ).all()
+                students_by_class[enrollment.class_id] = class_students
+                
                 school_classes.append({
                     'id': class_obj.id,
                     'name': class_obj.name,
                     'description': class_obj.description,
-                    'enrolled_at': enrollment.enrolled_at
+                    'enrolled_at': enrollment.enrolled_at,
+                    'enrollment_id': enrollment.id,
+                    'student_count': len(class_students)
                 })
                 
     return render_template('admin_school_detail.html', 
                          school=school, 
                          students=students,
-                         school_classes=school_classes)
+                         school_classes=school_classes,
+                         students_by_class=students_by_class)
 
 
 @bp.route('/admin/schools/<int:school_id>/approve', methods=['POST'])

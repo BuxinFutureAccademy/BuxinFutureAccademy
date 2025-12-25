@@ -28,6 +28,7 @@ def check_database_setup():
         return f"Database error: {str(e)}"
 
 
+@bp.route('/school/register', methods=['GET', 'POST'])
 @bp.route('/register-school', methods=['GET', 'POST'])
 @bp.route('/register-school/<int:class_id>', methods=['GET', 'POST'])
 def register_school(class_id=None):
@@ -579,12 +580,16 @@ def school_student_logout():
 @bp.route('/enter-classroom', methods=['GET', 'POST'])
 def enter_classroom():
     """
-    Classroom entry system - validate Name and System ID for Individual, Group, and Family classes.
-    School classes must use /school-student/login (School Name + School Student System ID).
+    Unified classroom entry point - shows all classroom type options
+    For POST requests, handles legacy login flow for backward compatibility
     """
-    from ..models.classes import ClassEnrollment, FamilyMember
+    if request.method == 'GET':
+        return render_template('enter_classroom.html')
     
-    if request.method == 'POST':
+    # POST request - legacy login flow (backward compatibility)
+    # Classroom entry system - validate Name and System ID for Individual, Group, and Family classes.
+    # School classes must use /school-student/login (School Name + School Student System ID).
+    from ..models.classes import ClassEnrollment, FamilyMember
         full_name = request.form.get('full_name', '').strip()
         system_id = request.form.get('student_id', '').strip().upper()
         

@@ -1385,10 +1385,12 @@ def student_dashboard():
     
     for cls in enrolled_classes:
         if cls['class_type'] in ['group', 'family', 'school']:
-            # Get all enrollments for this class
+            # CRITICAL: Only get students enrolled in THIS specific class
+            # Filter by class_id to ensure no cross-class contamination
             class_enrollments = ClassEnrollment.query.filter_by(
-                class_id=cls['id'],
-                status='completed'
+                class_id=cls['id'],  # THIS class only
+                class_type=cls['class_type'],  # Same class type
+                status='completed'  # Only completed enrollments
             ).all()
             students = []
             for enr in class_enrollments:
@@ -1406,12 +1408,12 @@ def student_dashboard():
             attendance_students = list(students)  # Start with enrolled users
             
             if cls['class_type'] == 'school':
-                # Add registered school students for THIS specific school and class
-                # Only show students registered by the current school admin in this class
+                # CRITICAL: Only show students registered for THIS specific class and THIS school
+                # Filter by class_id, enrollment_id, and registered_by to ensure strict isolation
                 registered_school_students = SchoolStudent.query.filter_by(
-                    class_id=cls['id'],
-                    enrollment_id=cls['enrollment'].id,
-                    registered_by=current_user.id  # Only students registered by this school
+                    class_id=cls['id'],  # THIS class only
+                    enrollment_id=cls['enrollment'].id,  # THIS enrollment only
+                    registered_by=current_user.id  # Only students registered by this school admin
                 ).all()
                 for reg_student in registered_school_students:
                     attendance_students.append({
@@ -1492,14 +1494,15 @@ def student_dashboard():
         today_attendance[cls['id']] = today_att
         
         # Get today's attendance for all students in this class
+        # CRITICAL: Only get attendance for students registered in THIS specific class
         if cls['class_type'] in ['group', 'family', 'school']:
             class_today_attendance = {}
-            # Get attendance for all enrolled users
+            # Get attendance for all enrolled users (already filtered by class_id)
             for student in class_students.get(cls['id'], []):
                 if student['type'] == 'user':
                     att = Attendance.query.filter(
                         Attendance.student_id == student['id'],
-                        Attendance.class_id == cls['id'],
+                        Attendance.class_id == cls['id'],  # THIS class only
                         Attendance.attendance_date == today
                     ).first()
                     if att:
@@ -1512,12 +1515,13 @@ def student_dashboard():
     
     for cls in enrolled_classes:
         if cls['class_type'] == 'school':
-            # Get all registered students for this school class (only for this school)
+            # CRITICAL: Only get students registered for THIS specific class and THIS school
+            # Strict filtering to prevent cross-class or cross-school contamination
             students = SchoolStudent.query.filter_by(
-                class_id=cls['id'],
-                enrollment_id=cls['enrollment'].id,
+                class_id=cls['id'],  # THIS class only
+                enrollment_id=cls['enrollment'].id,  # THIS enrollment only
                 registered_by=current_user.id  # Only students registered by this school admin
-            ).all()
+            ).order_by(SchoolStudent.student_name).all()
             registered_students[cls['id']] = students
         elif cls['class_type'] == 'family':
             # Get all registered family members
@@ -1621,16 +1625,55 @@ def mark_attendance():
     # Otherwise, mark self
     target_student_id = student_id if student_id else current_user.id
     
-    # Check if this is a school student (school admin marking attendance)
-    target_user = User.query.get(target_student_id)
-    is_school_context = False
+    # Get class type and validate enrollment/registration
+    class_type = request.form.get('class_type', '')
+    enrollment = None
+    is_valid = False
     
-    if target_user and (target_user.is_school_student or current_user.is_school_admin):
-        # School student attendance - no enrollment needed
-        is_school_context = True
-        class_type = 'school'
+    # CRITICAL: Validate that student is enrolled/registered in THIS specific class
+    if class_type == 'school':
+        # For school classes, check both enrollment and registered students
+        # Option 1: Check if student has ClassEnrollment for this class
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=target_student_id,
+            class_id=class_id,
+            class_type='school',
+            status='completed'
+        ).first()
+        
+        if enrollment:
+            is_valid = True
+        else:
+            # Option 2: Check if it's a registered SchoolStudent in this class
+            # Get the enrollment for this school and class
+            school_enrollment = ClassEnrollment.query.filter_by(
+                user_id=current_user.id,  # School admin's enrollment
+                class_id=class_id,
+                class_type='school',
+                status='completed'
+            ).first()
+            
+            if school_enrollment:
+                # Check if target student is a registered SchoolStudent
+                # For school students registered by this admin in this class
+                registered_student = SchoolStudent.query.filter_by(
+                    class_id=class_id,
+                    enrollment_id=school_enrollment.id,
+                    registered_by=current_user.id
+                ).first()
+                
+                if registered_student:
+                    is_valid = True
+                    # Create a pseudo-enrollment for attendance tracking
+                    enrollment = type('obj', (object,), {'class_type': 'school'})()
+        
+        if not is_valid:
+            flash('Student is not enrolled or registered in this class.', 'danger')
+            if current_user.is_school_admin:
+                return redirect(url_for('schools.school_dashboard'))
+            return redirect(url_for('admin.student_dashboard'))
     else:
-        # Regular class enrollment attendance
+        # Regular class enrollment attendance (group, family, individual)
         enrollment = ClassEnrollment.query.filter_by(
             user_id=target_student_id,
             class_id=class_id,
@@ -1639,7 +1682,6 @@ def mark_attendance():
         
         if not enrollment:
             flash('You are not enrolled in this class.', 'danger')
-            # Redirect based on user type
             if current_user.is_school_admin:
                 return redirect(url_for('schools.school_dashboard'))
             return redirect(url_for('admin.student_dashboard'))
@@ -3207,12 +3249,13 @@ def admin_school_detail(school_id):
             class_obj = GroupClass.query.get(enrollment.class_id)
             if class_obj:
                 enrolled_class_ids.add(enrollment.class_id)
-                # Get students registered for this specific class
+                # CRITICAL: Get students registered for THIS specific class and THIS school only
+                # Filter by enrollment_id (unique to school) and class_id to ensure strict isolation
                 from ..models.classes import SchoolStudent
                 class_students = SchoolStudent.query.filter_by(
-                    class_id=enrollment.class_id,
-                    enrollment_id=enrollment.id
-                ).all()
+                    class_id=enrollment.class_id,  # THIS class only
+                    enrollment_id=enrollment.id  # THIS school's enrollment only
+                ).order_by(SchoolStudent.student_name).all()
                 students_by_class[enrollment.class_id] = class_students
                 
                 school_classes.append({

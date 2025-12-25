@@ -811,10 +811,15 @@
                                 <small class="text-muted">School Class</small>
                             </div>
                         </div>
-                        <div class="mt-3">
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
                             <button type="button" class="attendance-btn btn-present" data-bs-toggle="modal" data-bs-target="#registerStudentModal{{ cls.id }}">
                                 <i class="fas fa-user-graduate"></i> REGISTER YOUR STUDENTS
                             </button>
+                            {% if registered_students.get(cls.id) %}
+                            <button type="button" class="attendance-btn" style="background: var(--robotics-primary);" data-bs-toggle="modal" data-bs-target="#viewStudentsModal{{ cls.id }}">
+                                <i class="fas fa-users"></i> VIEW REGISTERED STUDENTS ({{ registered_students[cls.id]|length }})
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
@@ -1311,6 +1316,72 @@
         </div>
     </div>
     {% endif %}
+    {% endif %}
+    
+    <!-- View Registered Students Modal for School Classes -->
+    {% if cls.class_type == 'school' and registered_students.get(cls.id) %}
+    <div class="modal fade" id="viewStudentsModal{{ cls.id }}" tabindex="-1" aria-labelledby="viewStudentsModalLabel{{ cls.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: var(--surface-solid); border: 1px solid var(--border); color: var(--on-surface);">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                    <h5 class="modal-title" id="viewStudentsModalLabel{{ cls.id }}" style="color: var(--robotics-primary);">
+                        <i class="fas fa-users me-2"></i>Registered Students - {{ cls.name }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info" style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--robotics-primary); color: var(--on-surface);">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Total Students:</strong> {{ registered_students[cls.id]|length }} registered in this class
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" style="color: var(--on-surface);">
+                            <thead style="background: var(--surface);">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student Name</th>
+                                    <th>Age</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in registered_students[cls.id] %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <strong>{{ student.student_name }}</strong>
+                                        {% if student.student_image_url %}
+                                        <br><img src="{{ student.student_image_url }}" alt="{{ student.student_name }}" style="width: 40px; height: 40px; border-radius: 50%; margin-top: 5px; object-fit: cover;">
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ student.student_age or 'N/A' }}</td>
+                                    <td>{{ student.student_email or 'N/A' }}</td>
+                                    <td>{{ student.student_phone or 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if registered_students[cls.id]|length == 0 %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-slash fa-3x mb-3" style="color: var(--border);"></i>
+                        <p class="text-muted">No students registered in this class yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background: var(--surface); border: 1px solid var(--border);">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     {% endif %}
 {% endfor %}
 

@@ -241,9 +241,9 @@
             <h3 class="option-title">Individual Class</h3>
             <p class="option-description">For solo learners pursuing personalized education</p>
             <div class="option-actions">
-                <a href="{{ url_for('auth.login') }}" class="action-btn primary">
+                <a href="{{ url_for('schools.individual_enter') }}" class="action-btn primary">
                     <i class="fas fa-sign-in-alt"></i>
-                    Sign In
+                    Enter Classroom
                 </a>
                 <a href="{{ url_for('store.available_classes', type='individual') }}" class="action-btn secondary">
                     <i class="fas fa-user-plus"></i>
@@ -260,9 +260,9 @@
             <h3 class="option-title">Group Class</h3>
             <p class="option-description">For friends or community-based learning</p>
             <div class="option-actions">
-                <a href="{{ url_for('auth.login') }}" class="action-btn primary">
+                <a href="{{ url_for('schools.group_enter') }}" class="action-btn primary">
                     <i class="fas fa-sign-in-alt"></i>
-                    Sign In
+                    Enter Classroom
                 </a>
                 <a href="{{ url_for('store.available_classes', type='group') }}" class="action-btn secondary">
                     <i class="fas fa-user-plus"></i>
@@ -279,9 +279,9 @@
             <h3 class="option-title">Family Class</h3>
             <p class="option-description">For parents and family-based learning together</p>
             <div class="option-actions">
-                <a href="{{ url_for('auth.login') }}" class="action-btn primary">
+                <a href="{{ url_for('schools.family_enter') }}" class="action-btn primary">
                     <i class="fas fa-sign-in-alt"></i>
-                    Sign In
+                    Enter Classroom
                 </a>
                 <a href="{{ url_for('store.available_classes', type='family') }}" class="action-btn secondary">
                     <i class="fas fa-user-plus"></i>
@@ -316,9 +316,9 @@
             <h3 class="option-title">School Mentor</h3>
             <p class="option-description">For school-appointed mentors managing students</p>
             <div class="option-actions">
-                <a href="{{ url_for('auth.login') }}" class="action-btn primary">
+                <a href="{{ url_for('schools.school_mentor_enter') }}" class="action-btn primary">
                     <i class="fas fa-sign-in-alt"></i>
-                    Mentor Sign In
+                    Enter Classroom
                 </a>
                 <a href="{{ url_for('schools.register_school') }}" class="action-btn secondary">
                     <i class="fas fa-school"></i>

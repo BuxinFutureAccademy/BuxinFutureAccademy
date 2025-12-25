@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --robotics-primary: #9d4edd;
+        --robotics-dark: #001a23;
+        --robotics-accent: #5a189a;
+        --surface: #0a1929;
+        --surface-solid: #132f4c;
+        --on-surface: #e0e0e0;
+        --border: #1e4976;
+    }
+    
+    body {
+        background: linear-gradient(135deg, var(--robotics-dark) 0%, var(--surface) 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--on-surface);
+    }
+    
+    .login-container {
+        background: var(--surface-solid);
+        border-radius: 20px;
+        padding: 3rem;
+        box-shadow: 0 20px 60px rgba(157, 78, 221, 0.3);
+        border: 2px solid var(--robotics-primary);
+        max-width: 500px;
+        width: 100%;
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .login-header h1 {
+        color: var(--robotics-primary);
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .login-header p {
+        color: var(--on-surface);
+        opacity: 0.8;
+    }
+    
+    .form-label {
+        color: var(--on-surface);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        background: var(--surface);
+        border: 2px solid var(--border);
+        color: var(--on-surface);
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+    }
+    
+    .form-control:focus {
+        background: var(--surface);
+        border-color: var(--robotics-primary);
+        color: var(--on-surface);
+        box-shadow: 0 0 0 0.2rem rgba(157, 78, 221, 0.25);
+    }
+    
+    .btn-login {
+        background: linear-gradient(135deg, var(--robotics-primary) 0%, var(--robotics-accent) 100%);
+        border: none;
+        color: white;
+        font-weight: 700;
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        width: 100%;
+        font-size: 1.1rem;
+        transition: all 0.3s;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(157, 78, 221, 0.4);
+    }
+    
+    .info-box {
+        background: rgba(157, 78, 221, 0.1);
+        border: 1px solid var(--robotics-primary);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .info-box i {
+        color: var(--robotics-primary);
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-header">
+        <h1><i class="fas fa-chalkboard-teacher me-2"></i>School Mentor Entry</h1>
+        <p>Enter your School Name and School System ID</p>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" action="{{ url_for('schools.school_mentor_enter') }}">
+        <div class="mb-3">
+            <label for="school_name" class="form-label">
+                <i class="fas fa-school me-2"></i>School Name
+            </label>
+            <input type="text" class="form-control" id="school_name" name="school_name" 
+                   placeholder="Enter your school name" required autofocus>
+        </div>
+        
+        <div class="mb-3">
+            <label for="school_system_id" class="form-label">
+                <i class="fas fa-id-card me-2"></i>School System ID
+            </label>
+            <input type="text" class="form-control" id="school_system_id" name="school_system_id" 
+                   placeholder="e.g., SCH-XXXXXX" required style="text-transform: uppercase;">
+        </div>
+        
+        <button type="submit" class="btn btn-login">
+            <i class="fas fa-sign-in-alt me-2"></i>Enter Classroom
+        </button>
+    </form>
+    
+    <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        <small>
+            <strong>Note:</strong> Use your School Name and School System ID (SCH-XXXXXX) provided during school registration.
+        </small>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Auto-uppercase system ID
+    document.getElementById('school_system_id').addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+    });
+</script>
+{% endblock %}
+

@@ -397,6 +397,212 @@ def register_student_in_school():
     return redirect(url_for('schools.school_dashboard'))
 
 
+@bp.route('/individual/enter', methods=['GET', 'POST'])
+def individual_enter():
+    """Individual class entry using Student Name + Student System ID"""
+    from flask_login import login_user
+    from ..models.classes import ClassEnrollment
+    
+    if request.method == 'POST':
+        student_name = request.form.get('student_name', '').strip()
+        student_system_id = request.form.get('student_system_id', '').strip().upper()
+        
+        if not student_name or not student_system_id:
+            flash('Please provide both Student Name and Student System ID.', 'danger')
+            return render_template('individual_enter.html')
+        
+        # Find user by student_id
+        user = User.query.filter_by(student_id=student_system_id).first()
+        
+        if not user:
+            flash('Student System ID not found.', 'danger')
+            return render_template('individual_enter.html')
+        
+        # Verify name matches
+        full_name_lower = student_name.lower()
+        user_full_name = f"{user.first_name} {user.last_name}".lower()
+        
+        # Check enrollment
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=user.id,
+            class_type='individual',
+            status='completed'
+        ).first()
+        
+        name_matches = (
+            user_full_name == full_name_lower or
+            (enrollment and enrollment.customer_name and enrollment.customer_name.lower() == full_name_lower)
+        )
+        
+        if not name_matches:
+            flash('Student Name does not match the Student System ID.', 'danger')
+            return render_template('individual_enter.html')
+        
+        if not enrollment:
+            flash('You are not enrolled in any Individual class.', 'danger')
+            return render_template('individual_enter.html')
+        
+        login_user(user)
+        flash(f'Welcome, {user.first_name}!', 'success')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    return render_template('individual_enter.html')
+
+
+@bp.route('/group/enter', methods=['GET', 'POST'])
+def group_enter():
+    """Group class entry using Group Class Name + Student System ID"""
+    from flask_login import login_user
+    from ..models.classes import ClassEnrollment, GroupClass
+    
+    if request.method == 'POST':
+        group_name = request.form.get('group_name', '').strip()
+        student_system_id = request.form.get('student_system_id', '').strip().upper()
+        
+        if not group_name or not student_system_id:
+            flash('Please provide both Group Class Name and Student System ID.', 'danger')
+            return render_template('group_enter.html')
+        
+        # Find user by student_id
+        user = User.query.filter_by(student_id=student_system_id).first()
+        
+        if not user:
+            flash('Student System ID not found.', 'danger')
+            return render_template('group_enter.html')
+        
+        # Find group class by name
+        group_class = GroupClass.query.filter_by(name=group_name, class_type='group').first()
+        
+        if not group_class:
+            flash('Group Class not found.', 'danger')
+            return render_template('group_enter.html')
+        
+        # Check enrollment
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=user.id,
+            class_id=group_class.id,
+            class_type='group',
+            status='completed'
+        ).first()
+        
+        if not enrollment:
+            flash('You are not enrolled in this Group Class.', 'danger')
+            return render_template('group_enter.html')
+        
+        login_user(user)
+        flash(f'Welcome, {user.first_name}!', 'success')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    return render_template('group_enter.html')
+
+
+@bp.route('/family/enter', methods=['GET', 'POST'])
+def family_enter():
+    """Family class entry using Family Name + Family System ID"""
+    from flask_login import login_user
+    from ..models.classes import ClassEnrollment
+    
+    if request.method == 'POST':
+        family_name = request.form.get('family_name', '').strip()
+        family_system_id = request.form.get('family_system_id', '').strip().upper()
+        
+        if not family_name or not family_system_id:
+            flash('Please provide both Family Name and Family System ID.', 'danger')
+            return render_template('family_enter.html')
+        
+        # Find enrollment by family_system_id
+        try:
+            enrollment = ClassEnrollment.query.filter_by(
+                family_system_id=family_system_id,
+                class_type='family',
+                status='completed'
+            ).first()
+        except Exception as e:
+            if 'family_system_id' in str(e).lower() or 'column' in str(e).lower():
+                flash('Database migration required. Please contact administrator.', 'warning')
+                return render_template('family_enter.html')
+            raise
+        
+        if not enrollment:
+            flash('Family System ID not found.', 'danger')
+            return render_template('family_enter.html')
+        
+        # Verify family name matches
+        user = User.query.get(enrollment.user_id)
+        if not user:
+            flash('Family account not found.', 'danger')
+            return render_template('family_enter.html')
+        
+        family_name_lower = family_name.lower()
+        user_full_name = f"{user.first_name} {user.last_name}".lower()
+        
+        name_matches = (
+            user_full_name == family_name_lower or
+            (enrollment.customer_name and enrollment.customer_name.lower() == family_name_lower)
+        )
+        
+        if not name_matches:
+            flash('Family Name does not match the Family System ID.', 'danger')
+            return render_template('family_enter.html')
+        
+        login_user(user)
+        flash(f'Welcome, {user.first_name}!', 'success')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    return render_template('family_enter.html')
+
+
+@bp.route('/school-mentor/enter', methods=['GET', 'POST'])
+def school_mentor_enter():
+    """School mentor entry using School Name + School System ID"""
+    from flask_login import login_user
+    
+    if request.method == 'POST':
+        school_name = request.form.get('school_name', '').strip()
+        school_system_id = request.form.get('school_system_id', '').strip().upper()
+        
+        if not school_name or not school_system_id:
+            flash('Please provide both School Name and School System ID.', 'danger')
+            return render_template('school_mentor_enter.html')
+        
+        # Find school by system ID
+        school = School.query.filter_by(school_system_id=school_system_id).first()
+        
+        if not school:
+            flash('School System ID not found.', 'danger')
+            return render_template('school_mentor_enter.html')
+        
+        # Verify school name matches
+        if school.school_name.lower() != school_name.lower():
+            flash('School Name does not match the School System ID.', 'danger')
+            return render_template('school_mentor_enter.html')
+        
+        # Get school admin user
+        user = User.query.get(school.user_id)
+        
+        if not user:
+            flash('School administrator account not found.', 'danger')
+            return render_template('school_mentor_enter.html')
+        
+        if not user.is_school_admin:
+            flash('This account is not authorized as a school mentor.', 'danger')
+            return render_template('school_mentor_enter.html')
+        
+        # Check school status
+        if school.status == 'active' and school.payment_status == 'completed':
+            login_user(user)
+            flash(f'Welcome, {user.first_name}!', 'success')
+            return redirect(url_for('schools.school_dashboard'))
+        elif school.status == 'active' and school.payment_status != 'completed':
+            flash('Your school payment is still pending. Please complete payment to access the classroom.', 'warning')
+            return redirect(url_for('schools.school_pending_approval'))
+        else:
+            login_user(user)
+            return redirect(url_for('schools.school_pending_approval'))
+    
+    return render_template('school_mentor_enter.html')
+
+
 @bp.route('/school-student/login', methods=['GET', 'POST'])
 def school_student_login():
     """School student login using School Name + Student System ID"""
@@ -607,82 +813,82 @@ def enter_classroom():
     # 1. INDIVIDUAL CLASS LOGIN: Student Name + Student System ID
     # 2. GROUP CLASS LOGIN: Student Name + Student System ID
     if system_id.startswith('STU-'):
-            user = User.query.filter_by(student_id=system_id).first()
+        user = User.query.filter_by(student_id=system_id).first()
+        
+        if user:
+            full_name_lower = full_name.lower()
+            user_full_name = f"{user.first_name} {user.last_name}".lower()
             
-            if user:
-                full_name_lower = full_name.lower()
-                user_full_name = f"{user.first_name} {user.last_name}".lower()
+            # Check enrollment for additional name verification
+            enrollment = ClassEnrollment.query.filter_by(
+                user_id=user.id,
+                status='completed'
+            ).first()
+            
+            name_matches = (
+                user_full_name == full_name_lower or
+                (enrollment and enrollment.customer_name and enrollment.customer_name.lower() == full_name_lower)
+            )
+            
+            if name_matches:
+                # Verify class type is Individual or Group (NOT school)
+                if enrollment and enrollment.class_type == 'school':
+                    flash('School students must use the School Student Login page.', 'warning')
+                    return redirect(url_for('schools.school_student_login'))
                 
-                # Check enrollment for additional name verification
-                enrollment = ClassEnrollment.query.filter_by(
-                    user_id=user.id,
-                    status='completed'
-                ).first()
+                login_user(user)
                 
-                name_matches = (
-                    user_full_name == full_name_lower or
-                    (enrollment and enrollment.customer_name and enrollment.customer_name.lower() == full_name_lower)
-                )
+                # Redirect based on class type
+                if enrollment:
+                    if enrollment.class_type == 'individual':
+                        return redirect(url_for('admin.student_dashboard'))
+                    elif enrollment.class_type == 'group':
+                        return redirect(url_for('admin.student_dashboard'))
+                    elif enrollment.class_type == 'family':
+                        return redirect(url_for('admin.student_dashboard'))
                 
-                if name_matches:
-                    # Verify class type is Individual or Group (NOT school)
-                    if enrollment and enrollment.class_type == 'school':
-                        flash('School students must use the School Student Login page.', 'warning')
-                        return redirect(url_for('schools.school_student_login'))
-                    
-                    login_user(user)
-                    
-                    # Redirect based on class type
-                    if enrollment:
-                        if enrollment.class_type == 'individual':
-                            return redirect(url_for('admin.student_dashboard'))
-                        elif enrollment.class_type == 'group':
-                            return redirect(url_for('admin.student_dashboard'))
-                        elif enrollment.class_type == 'family':
-                            return redirect(url_for('admin.student_dashboard'))
-                    
-                    return redirect(url_for('admin.student_dashboard'))
-                else:
-                    flash('Name does not match the Student System ID.', 'danger')
+                return redirect(url_for('admin.student_dashboard'))
             else:
-                flash('Student System ID not found.', 'danger')
+                flash('Name does not match the Student System ID.', 'danger')
+        else:
+            flash('Student System ID not found.', 'danger')
     
     # 3. FAMILY CLASS LOGIN: Family Name + Family System ID (FAM-XXXXX format)
     elif system_id.startswith('FAM-'):
-            try:
-                enrollment = ClassEnrollment.query.filter_by(
-                    family_system_id=system_id,
-                    class_type='family',
-                    status='completed'
-                ).first()
-            except Exception as e:
+        try:
+            enrollment = ClassEnrollment.query.filter_by(
+                family_system_id=system_id,
+                class_type='family',
+                status='completed'
+            ).first()
+        except Exception as e:
                 # Handle case where family_system_id column doesn't exist yet
                 if 'family_system_id' in str(e).lower() or 'column' in str(e).lower():
                     flash('Database migration required. Please contact administrator to run migration at /admin/add-family-system-id-column', 'warning')
                     return render_template('enter_classroom.html')
                 raise
+        
+        if enrollment:
+            # Verify family name matches (check customer_name or user's name)
+            full_name_lower = full_name.lower()
+            user = User.query.get(enrollment.user_id)
             
-            if enrollment:
-                # Verify family name matches (check customer_name or user's name)
-                full_name_lower = full_name.lower()
-                user = User.query.get(enrollment.user_id)
+            if user:
+                user_full_name = f"{user.first_name} {user.last_name}".lower()
+                name_matches = (
+                    user_full_name == full_name_lower or
+                    (enrollment.customer_name and enrollment.customer_name.lower() == full_name_lower)
+                )
                 
-                if user:
-                    user_full_name = f"{user.first_name} {user.last_name}".lower()
-                    name_matches = (
-                        user_full_name == full_name_lower or
-                        (enrollment.customer_name and enrollment.customer_name.lower() == full_name_lower)
-                    )
-                    
-                    if name_matches:
-                        login_user(user)
-                        return redirect(url_for('admin.student_dashboard'))
-                    else:
-                        flash('Family Name does not match the Family System ID.', 'danger')
+                if name_matches:
+                    login_user(user)
+                    return redirect(url_for('admin.student_dashboard'))
                 else:
-                    flash('Family account not found.', 'danger')
+                    flash('Family Name does not match the Family System ID.', 'danger')
             else:
-                flash('Family System ID not found.', 'danger')
+                flash('Family account not found.', 'danger')
+        else:
+            flash('Family System ID not found.', 'danger')
     
     # 4. SCHOOL ADMIN LOGIN: Admin Name + School System ID (SCH-XXXXXX format)
     elif system_id.startswith('SCH-'):

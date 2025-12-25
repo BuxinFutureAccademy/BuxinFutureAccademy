@@ -224,12 +224,12 @@ def get_user_redirect_url(user):
             else:
                 return url_for('schools.school_pending_approval')
     
-    # School Student - go to school dashboard
+    # School Student - go to school student dashboard (NOT mentor dashboard)
     if user.is_school_student and user.school_id:
         from ..models import School
         school = School.query.get(user.school_id)
         if school and school.status == 'active':
-            return url_for('schools.school_dashboard')
+            return url_for('schools.school_student_dashboard')
     
     # Check if user has any CONFIRMED class enrollments (status = 'completed')
     try:

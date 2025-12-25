@@ -1854,6 +1854,11 @@ def student_dashboard():
     def now():
         return datetime.now()
     
+    # Get school information if user is a school mentor
+    school = None
+    if current_user.is_school_admin:
+        school = School.query.filter_by(user_id=current_user.id).first()
+    
     return render_template('student_dashboard.html', 
                           purchases=purchases, 
                           projects=projects,
@@ -1869,6 +1874,7 @@ def student_dashboard():
                           registered_students=registered_students,
                           registered_family=registered_family,
                           materials=materials,
+                          school=school,
                           now=now,
                           today=today,
                           Attendance=Attendance)

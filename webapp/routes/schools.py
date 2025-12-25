@@ -303,10 +303,10 @@ def school_pending_approval():
 @bp.route('/school/dashboard')
 @login_required
 def school_dashboard():
-    """School classroom dashboard - Unified with student dashboard design"""
-    # Verify user is a school admin
+    """School Mentor Dashboard - For school mentors to manage students and attendance"""
+    # Verify user is a school admin (mentor)
     if not current_user.is_school_admin:
-        flash('Access denied. School admin privileges required.', 'danger')
+        flash('Access denied. School mentor privileges required.', 'danger')
         return redirect(url_for('main.index'))
     
     # Get school for current user
@@ -320,6 +320,7 @@ def school_dashboard():
         return redirect(url_for('schools.school_pending_approval'))
     
     # Use the unified student dashboard logic which handles school classes
+    # But we'll customize the profile section in the template to show mentor info
     from .admin import student_dashboard
     return student_dashboard()
 

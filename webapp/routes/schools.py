@@ -572,7 +572,7 @@ def school_student_logout():
     session.pop('school_student_class_id', None)
     session.pop('school_student_enrollment_id', None)
     flash('You have been logged out.', 'info')
-    return redirect(url_for('schools.school_student_login'))
+    return redirect(url_for('main.index'))
 
 
 @bp.route('/enter-classroom', methods=['GET', 'POST'])

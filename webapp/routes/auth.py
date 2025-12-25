@@ -255,7 +255,7 @@ def get_user_redirect_url(user):
 def logout():
     logout_user()
     flash('Logged out successfully.', 'success')
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('main.index'))
 
 
 @bp.route('/register', methods=['GET', 'POST'])

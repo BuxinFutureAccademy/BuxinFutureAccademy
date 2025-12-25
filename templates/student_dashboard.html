@@ -1,5 +1,25 @@
 {% extends "base.html" %}
 
+{% block navbar %}
+<!-- Simplified Navigation for Student Dashboard - Logo + Sign Out Only -->
+<nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container">
+        <a class="navbar-brand" href="javascript:void(0);" onclick="window.location.reload(); return false;">
+            <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" alt="Logo" width="30" height="30" class="d-inline-block align-text-top me-2">
+            BuXin Academy
+        </a>
+        
+        <div class="ms-auto">
+            {% if current_user.is_authenticated %}
+                <a class="nav-link d-inline-block" href="{{ url_for('auth.logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Sign Out
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
 {% block content %}
 <style>
     :root {
@@ -770,24 +790,66 @@
             </a>
 
             <a href="{{ url_for('store.store') }}" class="action-btn">
-                <i class="fas fa-graduation-cap"></i>
-                <span>Browse Courses</span>
+                <i class="fas fa-store"></i>
+                <span>Browse Classes</span>
             </a>
+            
+            {% if not current_user.is_admin %}
+            <a href="{{ url_for('store.my_courses') }}" class="action-btn">
+                <i class="fas fa-book-open"></i>
+                <span>My Classes</span>
+            </a>
+            {% endif %}
             
             <a href="{{ url_for('store.available_classes') }}" class="action-btn">
                 <i class="fas fa-chalkboard-teacher"></i>
-                <span>Join Classes</span>
+                <span>Available Classes</span>
             </a>
+            
+            {% if not current_user.is_admin %}
+            <a href="{{ url_for('store.my_course_orders') }}" class="action-btn">
+                <i class="fas fa-receipt"></i>
+                <span>Class Order</span>
+            </a>
+            {% endif %}
             
             <a href="{{ url_for('student_projects.student_projects') }}" class="action-btn">
-                <i class="fas fa-project-diagram"></i>
-                <span>Student Projects</span>
+                <i class="fas fa-eye"></i>
+                <span>View All Projects</span>
             </a>
             
+            {% if not current_user.is_admin %}
             <a href="{{ url_for('student_projects.create_project') }}" class="action-btn">
                 <i class="fas fa-plus-circle"></i>
-                <span>Submit Assignments</span>
+                <span>Create Project</span>
             </a>
+            
+            <a href="{{ url_for('student_projects.my_projects') }}" class="action-btn">
+                <i class="fas fa-user"></i>
+                <span>My Projects</span>
+            </a>
+            {% endif %}
+            
+            <a href="{{ url_for('integrations.ai_assistant') }}" class="action-btn">
+                <i class="fas fa-brain"></i>
+                <span>AI Assistant</span>
+            </a>
+            
+            <a href="{{ url_for('projects.robotics_projects') }}" class="action-btn">
+                <i class="fas fa-robot"></i>
+                <span>Submit Project</span>
+            </a>
+            
+            {% if not current_user.is_admin %}
+            {% set cart_count = current_user.cart_items|length if current_user.cart_items else 0 %}
+            <a href="{{ url_for('store.cart') }}" class="action-btn">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
+                {% if cart_count > 0 %}
+                    <span class="badge bg-danger">{{ cart_count }}</span>
+                {% endif %}
+            </a>
+            {% endif %}
         </div>
 
         <!-- Main Content Area -->

@@ -3151,9 +3151,25 @@ def admin_schools():
     
     schools = School.query.order_by(School.created_at.desc()).all()
     
-    # Get counts for each school
+    # Get counts and enrollment info for each school
+    from ..models.classes import ClassEnrollment
     for school in schools:
         school.student_count = RegisteredSchoolStudent.query.filter_by(school_id=school.id).count()
+        # Get enrollment count (classes this school has joined)
+        if school.user_id:
+            school.enrollment_count = ClassEnrollment.query.filter_by(
+                user_id=school.user_id,
+                class_type='school',
+                status='completed'
+            ).count()
+            school.pending_enrollment_count = ClassEnrollment.query.filter_by(
+                user_id=school.user_id,
+                class_type='school',
+                status='pending'
+            ).count()
+        else:
+            school.enrollment_count = 0
+            school.pending_enrollment_count = 0
     
     # Get all school-type classes
     try:
@@ -3179,6 +3195,7 @@ def admin_school_detail(school_id):
     # Get classes this school has enrolled in with students per class
     school_classes = []
     students_by_class = {}  # {class_id: [list of SchoolStudent]}
+    enrolled_class_ids = set()
     if school.user_id:
         enrollments = ClassEnrollment.query.filter_by(
             user_id=school.user_id,
@@ -3189,6 +3206,7 @@ def admin_school_detail(school_id):
         for enrollment in enrollments:
             class_obj = GroupClass.query.get(enrollment.class_id)
             if class_obj:
+                enrolled_class_ids.add(enrollment.class_id)
                 # Get students registered for this specific class
                 from ..models.classes import SchoolStudent
                 class_students = SchoolStudent.query.filter_by(
@@ -3205,12 +3223,18 @@ def admin_school_detail(school_id):
                     'enrollment_id': enrollment.id,
                     'student_count': len(class_students)
                 })
+    
+    # Get all available school classes (for enrollment dropdown)
+    available_school_classes = GroupClass.query.filter_by(class_type='school').all()
+    # Filter out already enrolled classes
+    available_school_classes = [c for c in available_school_classes if c.id not in enrolled_class_ids]
                 
     return render_template('admin_school_detail.html', 
                          school=school, 
                          students=students,
                          school_classes=school_classes,
-                         students_by_class=students_by_class)
+                         students_by_class=students_by_class,
+                         available_school_classes=available_school_classes)
 
 
 @bp.route('/admin/schools/<int:school_id>/approve', methods=['POST'])
@@ -3313,6 +3337,86 @@ def repair_school_enrollments():
         flash(f'Error repairing enrollments: {str(e)}', 'danger')
     
     return redirect(url_for('admin.admin_schools'))
+
+
+@bp.route('/admin/schools/<int:school_id>/enroll-class', methods=['POST'])
+@login_required
+def enroll_school_in_class(school_id):
+    """Manually enroll a school in a class"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    school = School.query.get_or_404(school_id)
+    class_id = request.form.get('class_id', type=int)
+    
+    if not class_id:
+        flash('Please select a class.', 'danger')
+        return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+    
+    if not school.user_id:
+        flash('School does not have a user account. Cannot create enrollment.', 'danger')
+        return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+    
+    from ..models.classes import ClassEnrollment, GroupClass
+    from ..models.gallery import ClassPricing
+    import uuid
+    
+    # Check if class exists and is a school class
+    class_obj = GroupClass.query.get(class_id)
+    if not class_obj:
+        flash('Class not found.', 'danger')
+        return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+    
+    if getattr(class_obj, 'class_type', None) != 'school':
+        flash('Selected class is not a school class.', 'danger')
+        return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+    
+    # Check if enrollment already exists
+    existing = ClassEnrollment.query.filter_by(
+        user_id=school.user_id,
+        class_type='school',
+        class_id=class_id
+    ).first()
+    
+    if existing:
+        if existing.status == 'completed':
+            flash(f'School is already enrolled in "{class_obj.name}".', 'info')
+        else:
+            # Activate pending enrollment
+            existing.status = 'completed'
+            db.session.commit()
+            flash(f'School enrollment in "{class_obj.name}" has been activated!', 'success')
+        return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+    
+    # Get pricing
+    pricing_data = ClassPricing.get_all_pricing()
+    school_pricing = pricing_data.get('school', {'price': 500, 'name': 'School Plan'})
+    amount = school_pricing.get('price', 500)
+    
+    try:
+        # Create new enrollment
+        enrollment = ClassEnrollment(
+            user_id=school.user_id,
+            class_type='school',
+            class_id=class_id,
+            amount=amount,
+            customer_name=school.school_name,
+            customer_email=school.school_email,
+            customer_phone=school.contact_phone,
+            customer_address=school.contact_address,
+            payment_method='admin_manual',
+            transaction_id=f"ADMIN-{str(uuid.uuid4())[:8].upper()}",
+            status='completed'  # Auto-complete since admin is enrolling manually
+        )
+        db.session.add(enrollment)
+        db.session.commit()
+        flash(f'School "{school.school_name}" has been enrolled in "{class_obj.name}"!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error enrolling school: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_school_detail', school_id=school_id))
 
 
 @bp.route('/admin/schools/<int:school_id>/reject', methods=['POST'])

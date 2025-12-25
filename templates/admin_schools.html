@@ -24,6 +24,7 @@
                             <th>Admin Name</th>
                             <th>Email</th>
                             <th>Students</th>
+                            <th>Classes</th>
                             <th>Status</th>
                             <th>Payment</th>
                             <th>Registered</th>
@@ -38,6 +39,15 @@
                             <td>{{ school.admin_name }}</td>
                             <td>{{ school.admin_email }}</td>
                             <td><span class="badge bg-info">{{ school.student_count }}</span></td>
+                            <td>
+                                {% if school.enrollment_count > 0 %}
+                                    <span class="badge bg-success">{{ school.enrollment_count }} Joined</span>
+                                {% elif school.pending_enrollment_count > 0 %}
+                                    <span class="badge bg-warning">{{ school.pending_enrollment_count }} Pending</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Not Enrolled</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if school.status == 'active' %}
                                     <span class="badge bg-success">Active</span>

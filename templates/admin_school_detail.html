@@ -153,6 +153,32 @@
                 </div>
             </div>
 
+            <!-- Enroll in Class Section -->
+            {% if school.status == 'active' and available_school_classes %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Enroll in Class</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.enroll_school_in_class', school_id=school.id) }}">
+                        <div class="mb-3">
+                            <label for="class_id" class="form-label">Select a Class</label>
+                            <select class="form-select" id="class_id" name="class_id" required>
+                                <option value="">-- Choose a class --</option>
+                                {% for cls in available_school_classes %}
+                                <option value="{{ cls.id }}">{{ cls.name }} - {{ cls.description|truncate(50) }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Enroll this school in a class to enable material sharing.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-2"></i>Enroll School in Class
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- School Classes Section -->
             <div class="card">
                 <div class="card-header bg-dark text-white">
@@ -201,7 +227,12 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted text-center py-3">This school hasn't joined any classes yet.</p>
+                        <p class="text-muted text-center py-3">
+                            This school hasn't joined any classes yet.
+                            {% if school.status == 'active' and available_school_classes %}
+                            <br><small>Use the "Enroll in Class" form above to enroll this school.</small>
+                            {% endif %}
+                        </p>
                     {% endif %}
                 </div>
             </div>

@@ -1385,36 +1385,40 @@ def student_dashboard():
     
     for cls in enrolled_classes:
         if cls['class_type'] in ['group', 'family', 'school']:
-            # CRITICAL: Only get students enrolled in THIS specific class
-            # Filter by class_id to ensure no cross-class contamination
-            class_enrollments = ClassEnrollment.query.filter_by(
-                class_id=cls['id'],  # THIS class only
-                class_type=cls['class_type'],  # Same class type
-                status='completed'  # Only completed enrollments
-            ).all()
             students = []
-            for enr in class_enrollments:
-                student = User.query.get(enr.user_id)
-                if student:
-                    students.append({
-                        'id': student.id,
-                        'name': f"{student.first_name} {student.last_name}",
-                        'username': student.username,
-                        'type': 'user'  # Regular enrolled user
-                    })
-            class_students[cls['id']] = students
-            
-            # For attendance, also include registered students (for schools) or family members (for families)
-            attendance_students = list(students)  # Start with enrolled users
+            attendance_students = []
             
             if cls['class_type'] == 'school':
+                # CRITICAL FIX: For school classes, ONLY show students from THIS school's enrollment
+                # Do NOT get all enrollments for the class - that would include other schools!
+                # Only include the current school's enrollment
+                current_school_enrollment = cls['enrollment']
+                
+                # Only add the school admin user if they're enrolled (usually they are)
+                if current_school_enrollment and current_school_enrollment.user_id == current_user.id:
+                    student = User.query.get(current_school_enrollment.user_id)
+                    if student:
+                        students.append({
+                            'id': student.id,
+                            'name': f"{student.first_name} {student.last_name}",
+                            'username': student.username,
+                            'type': 'user'  # School admin user
+                        })
+                        attendance_students.append({
+                            'id': student.id,
+                            'name': f"{student.first_name} {student.last_name}",
+                            'username': student.username,
+                            'type': 'user'
+                        })
+                
                 # CRITICAL: Only show students registered for THIS specific class and THIS school
-                # Filter by class_id, enrollment_id, and registered_by to ensure strict isolation
+                # Filter by class_id, enrollment_id, and registered_by to ensure strict school isolation
                 registered_school_students = SchoolStudent.query.filter_by(
                     class_id=cls['id'],  # THIS class only
-                    enrollment_id=cls['enrollment'].id,  # THIS enrollment only
+                    enrollment_id=current_school_enrollment.id,  # THIS school's enrollment only
                     registered_by=current_user.id  # Only students registered by this school admin
                 ).all()
+                
                 for reg_student in registered_school_students:
                     attendance_students.append({
                         'id': f"school_student_{reg_student.id}",  # Unique identifier
@@ -1424,21 +1428,45 @@ def student_dashboard():
                         'school_student_id': reg_student.id,
                         'school_name': reg_student.school_name
                     })
-            elif cls['class_type'] == 'family':
-                # Add registered family members
-                registered_family_members = FamilyMember.query.filter_by(
-                    class_id=cls['id'],
-                    enrollment_id=cls['enrollment'].id
+                
+                class_students[cls['id']] = students
+            else:
+                # For group and family classes, get all enrollments (they're not school-specific)
+                class_enrollments = ClassEnrollment.query.filter_by(
+                    class_id=cls['id'],  # THIS class only
+                    class_type=cls['class_type'],  # Same class type
+                    status='completed'  # Only completed enrollments
                 ).all()
-                for member in registered_family_members:
-                    attendance_students.append({
-                        'id': f"family_member_{member.id}",  # Unique identifier
-                        'name': member.member_name,
-                        'username': None,
-                        'type': 'family_member',
-                        'family_member_id': member.id,
-                        'relationship': member.relationship
-                    })
+                
+                for enr in class_enrollments:
+                    student = User.query.get(enr.user_id)
+                    if student:
+                        students.append({
+                            'id': student.id,
+                            'name': f"{student.first_name} {student.last_name}",
+                            'username': student.username,
+                            'type': 'user'  # Regular enrolled user
+                        })
+                
+                attendance_students = list(students)  # Start with enrolled users
+                
+                if cls['class_type'] == 'family':
+                    # Add registered family members
+                    registered_family_members = FamilyMember.query.filter_by(
+                        class_id=cls['id'],
+                        enrollment_id=cls['enrollment'].id
+                    ).all()
+                    for member in registered_family_members:
+                        attendance_students.append({
+                            'id': f"family_member_{member.id}",  # Unique identifier
+                            'name': member.member_name,
+                            'username': None,
+                            'type': 'family_member',
+                            'family_member_id': member.id,
+                            'relationship': member.relationship
+                        })
+                
+                class_students[cls['id']] = students
             
             all_students_for_attendance[cls['id']] = attendance_students
     
@@ -1462,14 +1490,46 @@ def student_dashboard():
         
         attendance_records[cls['id']] = attendance
         
-        # For group classes, get all students' attendance
+        # For group/family/school classes, get all students' attendance
         if cls['class_type'] in ['group', 'family', 'school']:
-            all_students_attendance = Attendance.query.filter(
-                Attendance.class_id == cls['id'],
-                Attendance.attendance_date >= month_start,
-                Attendance.attendance_date <= month_end
-            ).order_by(Attendance.attendance_date.desc()).all()
-            all_class_attendance[cls['id']] = all_students_attendance
+            if cls['class_type'] == 'school':
+                # CRITICAL: For school classes, only get attendance for students from THIS school
+                # Get list of valid student IDs (school admin + registered school students)
+                valid_student_ids = [current_user.id]  # School admin
+                
+                # Add registered school students for this class
+                registered_students = SchoolStudent.query.filter_by(
+                    class_id=cls['id'],
+                    enrollment_id=cls['enrollment'].id,
+                    registered_by=current_user.id
+                ).all()
+                
+                # For school students, we can't directly query by student_id since they're not Users
+                # Instead, filter attendance by class_id and then filter results
+                all_attendance = Attendance.query.filter(
+                    Attendance.class_id == cls['id'],
+                    Attendance.class_type == 'school',
+                    Attendance.attendance_date >= month_start,
+                    Attendance.attendance_date <= month_end
+                ).order_by(Attendance.attendance_date.desc()).all()
+                
+                # Filter to only include attendance for valid students
+                # For User-based attendance, check if student_id is in valid_student_ids
+                # For SchoolStudent attendance, we'd need a different approach (they don't have user_id)
+                # For now, only include attendance for the school admin user
+                filtered_attendance = [
+                    att for att in all_attendance 
+                    if att.student_id in valid_student_ids
+                ]
+                all_class_attendance[cls['id']] = filtered_attendance
+            else:
+                # For group and family classes, get all attendance (not school-specific)
+                all_students_attendance = Attendance.query.filter(
+                    Attendance.class_id == cls['id'],
+                    Attendance.attendance_date >= month_start,
+                    Attendance.attendance_date <= month_end
+                ).order_by(Attendance.attendance_date.desc()).all()
+                all_class_attendance[cls['id']] = all_students_attendance
         
         # Calculate monthly percentage
         total_days = monthrange(today.year, today.month)[1]
@@ -1497,16 +1557,35 @@ def student_dashboard():
         # CRITICAL: Only get attendance for students registered in THIS specific class
         if cls['class_type'] in ['group', 'family', 'school']:
             class_today_attendance = {}
-            # Get attendance for all enrolled users (already filtered by class_id)
-            for student in class_students.get(cls['id'], []):
-                if student['type'] == 'user':
-                    att = Attendance.query.filter(
-                        Attendance.student_id == student['id'],
-                        Attendance.class_id == cls['id'],  # THIS class only
-                        Attendance.attendance_date == today
-                    ).first()
-                    if att:
-                        class_today_attendance[student['id']] = att
+            
+            if cls['class_type'] == 'school':
+                # CRITICAL: For school classes, only get attendance for students from THIS school
+                # Use the attendance_students list which is already filtered by school
+                for student in all_students_for_attendance.get(cls['id'], []):
+                    if student['type'] == 'user':
+                        # User-based attendance (school admin)
+                        att = Attendance.query.filter(
+                            Attendance.student_id == student['id'],
+                            Attendance.class_id == cls['id'],  # THIS class only
+                            Attendance.class_type == 'school',  # School class type
+                            Attendance.attendance_date == today
+                        ).first()
+                        if att:
+                            class_today_attendance[student['id']] = att
+                    # Note: SchoolStudent type students don't have user_id, so they can't have Attendance records
+                    # They are view-only in the attendance list
+            else:
+                # For group and family classes, get attendance for all enrolled users
+                for student in class_students.get(cls['id'], []):
+                    if student['type'] == 'user':
+                        att = Attendance.query.filter(
+                            Attendance.student_id == student['id'],
+                            Attendance.class_id == cls['id'],  # THIS class only
+                            Attendance.attendance_date == today
+                        ).first()
+                        if att:
+                            class_today_attendance[student['id']] = att
+            
             all_students_today_attendance[cls['id']] = class_today_attendance
     
     # Get registered students/family members for school/family classes

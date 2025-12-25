@@ -1,158 +1,239 @@
-{% extends "base.html" %}
-
-{% block content %}
-<style>
-    :root {
-        --robotics-primary: #ff6b35;
-        --robotics-dark: #001a23;
-        --robotics-accent: #f72585;
-        --surface: #0a1929;
-        --surface-solid: #132f4c;
-        --on-surface: #e0e0e0;
-        --border: #1e4976;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Class Entry - Buxin Future Academy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --robotics-primary: #ff6b35;
+            --robotics-dark: #001a23;
+            --robotics-accent: #f72585;
+            --surface: #0a1929;
+            --surface-solid: #132f4c;
+            --on-surface: #e0e0e0;
+            --border: #1e4976;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--robotics-dark) 0%, var(--surface) 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--on-surface);
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Top Navigation Bar */
+        .top-nav {
+            background: rgba(10, 10, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 107, 53, 0.3);
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--robotics-primary);
+            font-weight: 700;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        
+        .nav-brand:hover {
+            color: var(--robotics-primary);
+            text-decoration: none;
+        }
+        
+        .nav-brand img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid var(--robotics-primary);
+        }
+        
+        .nav-signout {
+            color: var(--on-surface);
+            text-decoration: none;
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav-signout:hover {
+            background: rgba(255, 107, 53, 0.1);
+            color: var(--robotics-primary);
+        }
+        
+        .login-container {
+            background: var(--surface-solid);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
+            border: 2px solid var(--robotics-primary);
+            max-width: 500px;
+            width: 100%;
+            margin: 2rem auto;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header h1 {
+            color: var(--robotics-primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-header p {
+            color: var(--on-surface);
+            opacity: 0.8;
+        }
+        
+        .form-label {
+            color: var(--on-surface);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            color: var(--on-surface);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+        }
+        
+        .form-control:focus {
+            background: var(--surface);
+            border-color: var(--robotics-primary);
+            color: var(--on-surface);
+            box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, var(--robotics-primary) 0%, var(--robotics-accent) 100%);
+            border: none;
+            color: white;
+            font-weight: 700;
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
+        }
+        
+        .info-box {
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid var(--robotics-primary);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .info-box i {
+            color: var(--robotics-primary);
+            margin-right: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .top-nav {
+                padding: 0.75rem 1rem;
+            }
+            
+            .login-container {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <a class="nav-brand" href="javascript:void(0);" onclick="window.location.reload(); return false;">
+            <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" alt="Logo">
+            <span>BuXin Academy</span>
+        </a>
+        <a class="nav-signout" href="{{ url_for('main.index') }}">
+            <i class="fas fa-home me-1"></i>Home
+        </a>
+    </nav>
     
-    body {
-        background: linear-gradient(135deg, var(--robotics-dark) 0%, var(--surface) 100%);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: var(--on-surface);
-    }
-    
-    .login-container {
-        background: var(--surface-solid);
-        border-radius: 20px;
-        padding: 3rem;
-        box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
-        border: 2px solid var(--robotics-primary);
-        max-width: 500px;
-        width: 100%;
-    }
-    
-    .login-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .login-header h1 {
-        color: var(--robotics-primary);
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .login-header p {
-        color: var(--on-surface);
-        opacity: 0.8;
-    }
-    
-    .form-label {
-        color: var(--on-surface);
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
-    
-    .form-control {
-        background: var(--surface);
-        border: 2px solid var(--border);
-        color: var(--on-surface);
-        padding: 0.75rem 1rem;
-        border-radius: 10px;
-    }
-    
-    .form-control:focus {
-        background: var(--surface);
-        border-color: var(--robotics-primary);
-        color: var(--on-surface);
-        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
-    }
-    
-    .btn-login {
-        background: linear-gradient(135deg, var(--robotics-primary) 0%, var(--robotics-accent) 100%);
-        border: none;
-        color: white;
-        font-weight: 700;
-        padding: 0.75rem 2rem;
-        border-radius: 10px;
-        width: 100%;
-        font-size: 1.1rem;
-        transition: all 0.3s;
-    }
-    
-    .btn-login:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
-    }
-    
-    .info-box {
-        background: rgba(255, 107, 53, 0.1);
-        border: 1px solid var(--robotics-primary);
-        border-radius: 10px;
-        padding: 1rem;
-        margin-top: 1.5rem;
-    }
-    
-    .info-box i {
-        color: var(--robotics-primary);
-        margin-right: 0.5rem;
-    }
-</style>
-
-<div class="login-container">
-    <div class="login-header">
-        <h1><i class="fas fa-home me-2"></i>Family Class Entry</h1>
-        <p>Enter your Family Name and Family System ID</p>
-    </div>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div style="display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 70px);">
+        <div class="login-container">
+            <div class="login-header">
+                <h1><i class="fas fa-home me-2"></i>Family Class Entry</h1>
+                <p>Enter your Family Name and Family System ID</p>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="{{ url_for('schools.family_enter') }}">
+                <div class="mb-3">
+                    <label for="family_name" class="form-label">
+                        <i class="fas fa-home me-2"></i>Family Name
+                    </label>
+                    <input type="text" class="form-control" id="family_name" name="family_name" 
+                           placeholder="Enter your family name" required autofocus>
                 </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    
-    <form method="POST" action="{{ url_for('schools.family_enter') }}">
-        <div class="mb-3">
-            <label for="family_name" class="form-label">
-                <i class="fas fa-home me-2"></i>Family Name
-            </label>
-            <input type="text" class="form-control" id="family_name" name="family_name" 
-                   placeholder="Enter your family name" required autofocus>
+                
+                <div class="mb-3">
+                    <label for="family_system_id" class="form-label">
+                        <i class="fas fa-id-card me-2"></i>Family System ID
+                    </label>
+                    <input type="text" class="form-control" id="family_system_id" name="family_system_id" 
+                           placeholder="e.g., FAM-00001" required style="text-transform: uppercase;">
+                </div>
+                
+                <button type="submit" class="btn btn-login">
+                    <i class="fas fa-sign-in-alt me-2"></i>Enter Classroom
+                </button>
+            </form>
+            
+            <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                <small>
+                    <strong>Note:</strong> Use your Family Name and Family System ID (FAM-XXXXX) provided during registration.
+                </small>
+            </div>
         </div>
-        
-        <div class="mb-3">
-            <label for="family_system_id" class="form-label">
-                <i class="fas fa-id-card me-2"></i>Family System ID
-            </label>
-            <input type="text" class="form-control" id="family_system_id" name="family_system_id" 
-                   placeholder="e.g., FAM-00001" required style="text-transform: uppercase;">
-        </div>
-        
-        <button type="submit" class="btn btn-login">
-            <i class="fas fa-sign-in-alt me-2"></i>Enter Classroom
-        </button>
-    </form>
-    
-    <div class="info-box">
-        <i class="fas fa-info-circle"></i>
-        <small>
-            <strong>Note:</strong> Use your Family Name and Family System ID (FAM-XXXXX) provided during registration.
-        </small>
     </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Auto-uppercase system ID
-    document.getElementById('family_system_id').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
-    });
-</script>
-{% endblock %}
-
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-uppercase system ID
+        document.getElementById('family_system_id').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
+</body>
+</html>

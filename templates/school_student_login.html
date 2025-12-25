@@ -20,11 +20,61 @@
         body {
             background: linear-gradient(135deg, var(--robotics-dark) 0%, var(--surface) 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: var(--on-surface);
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Top Navigation Bar */
+        .top-nav {
+            background: rgba(10, 10, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--robotics-primary);
+            font-weight: 700;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        
+        .nav-brand:hover {
+            color: var(--robotics-primary);
+            text-decoration: none;
+        }
+        
+        .nav-brand img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid var(--robotics-primary);
+        }
+        
+        .nav-signout {
+            color: var(--on-surface);
+            text-decoration: none;
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav-signout:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--robotics-primary);
         }
         
         .login-container {
@@ -35,6 +85,18 @@
             border: 2px solid var(--robotics-primary);
             max-width: 500px;
             width: 100%;
+            margin: 2rem auto;
+        }
+        
+        @media (max-width: 768px) {
+            .top-nav {
+                padding: 0.75rem 1rem;
+            }
+            
+            .login-container {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+            }
         }
         
         .login-header {
@@ -106,7 +168,19 @@
     </style>
 </head>
 <body>
-    <div class="login-container">
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <a class="nav-brand" href="javascript:void(0);" onclick="window.location.reload(); return false;">
+            <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" alt="Logo">
+            <span>BuXin Academy</span>
+        </a>
+        <a class="nav-signout" href="{{ url_for('main.index') }}">
+            <i class="fas fa-home me-1"></i>Home
+        </a>
+    </nav>
+    
+    <div style="display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 70px);">
+        <div class="login-container">
         <div class="login-header">
             <h1><i class="fas fa-graduation-cap me-2"></i>Student Login</h1>
             <p>Enter your School Name and Student System ID</p>
@@ -152,6 +226,7 @@
                 Do not use your personal name or email.
             </small>
         </div>
+    </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

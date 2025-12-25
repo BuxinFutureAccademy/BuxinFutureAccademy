@@ -713,11 +713,28 @@ def admin_dashboard():
                     school = School.query.get(school_id)
                     if school and school.status == 'active':
                         # Get all classes this school has joined
+                        # First check for completed enrollments
                         enrollments = ClassEnrollment.query.filter_by(
                             user_id=school.user_id,
                             class_type='school',
                             status='completed'
                         ).all()
+                        
+                        # If no completed enrollments, check for pending ones and auto-activate them
+                        if not enrollments:
+                            pending_enrollments = ClassEnrollment.query.filter_by(
+                                user_id=school.user_id,
+                                class_type='school',
+                                status='pending'
+                            ).all()
+                            
+                            if pending_enrollments:
+                                # Auto-activate pending enrollments for active schools
+                                for enrollment in pending_enrollments:
+                                    enrollment.status = 'completed'
+                                db.session.commit()
+                                enrollments = pending_enrollments
+                                flash(f'Auto-activated {len(enrollments)} pending enrollment(s) for "{school.school_name}".', 'info')
                         
                         if not enrollments:
                             flash(f'School "{school.school_name}" has not joined any classes yet.', 'warning')
@@ -3207,35 +3224,95 @@ def approve_school(school_id):
     school = School.query.get_or_404(school_id)
     
     try:
+        is_reapproval = school.status == 'active'
         school.status = 'active'
-        school.approved_at = datetime.utcnow()
+        if not school.approved_at:
+            school.approved_at = datetime.utcnow()
         school.approved_by = current_user.id
         
         # CRITICAL FIX: Update all school enrollments to 'completed' status
         # This is required for admin material sharing to work correctly
+        # Also handles schools that were approved before this fix was applied
         from ..models.classes import ClassEnrollment
         enrollments = ClassEnrollment.query.filter_by(
             user_id=school.user_id,
-            class_type='school',
-            status='pending'
+            class_type='school'
+        ).filter(
+            ClassEnrollment.status.in_(['pending', 'completed'])
         ).all()
         
         enrollment_count = 0
         for enrollment in enrollments:
-            enrollment.status = 'completed'
-            enrollment_count += 1
+            if enrollment.status != 'completed':
+                enrollment.status = 'completed'
+                enrollment_count += 1
         
         db.session.commit()
         
-        if enrollment_count > 0:
-            flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated.', 'success')
+        if is_reapproval:
+            if enrollment_count > 0:
+                flash(f'School "{school.school_name}" re-approved! {enrollment_count} class enrollment(s) activated.', 'success')
+            else:
+                flash(f'School "{school.school_name}" is already approved with active enrollments.', 'info')
         else:
-            flash(f'School "{school.school_name}" has been approved!', 'success')
+            if enrollment_count > 0:
+                flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated.', 'success')
+            else:
+                flash(f'School "{school.school_name}" has been approved!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error approving school: {str(e)}', 'danger')
     
     return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+
+
+@bp.route('/admin/schools/repair-enrollments', methods=['POST'])
+@login_required
+def repair_school_enrollments():
+    """Repair enrollments for all active schools that don't have completed enrollments"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    from ..models.classes import ClassEnrollment
+    
+    try:
+        # Get all active schools
+        active_schools = School.query.filter_by(status='active').all()
+        repaired_count = 0
+        total_enrollments_activated = 0
+        
+        for school in active_schools:
+            if not school.user_id:
+                continue
+                
+            # Get all enrollments for this school
+            enrollments = ClassEnrollment.query.filter_by(
+                user_id=school.user_id,
+                class_type='school'
+            ).filter(
+                ClassEnrollment.status.in_(['pending'])
+            ).all()
+            
+            # Activate pending enrollments
+            for enrollment in enrollments:
+                enrollment.status = 'completed'
+                total_enrollments_activated += 1
+            
+            if enrollments:
+                repaired_count += 1
+        
+        db.session.commit()
+        
+        if repaired_count > 0:
+            flash(f'Repaired {repaired_count} school(s)! Activated {total_enrollments_activated} enrollment(s).', 'success')
+        else:
+            flash('All active schools already have completed enrollments.', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error repairing enrollments: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_schools'))
 
 
 @bp.route('/admin/schools/<int:school_id>/reject', methods=['POST'])

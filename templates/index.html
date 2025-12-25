@@ -1512,10 +1512,12 @@
                         {% endif %}
                         <h4 class="victory-title">{{ victory.title }}</h4>
                         <p class="victory-desc">{{ victory.description[:150] }}{% if victory.description|length > 150 %}...{% endif %}</p>
-                        {% if not getattr(victory, '_student_load_error', False) and victory.student %}
-                        <p class="victory-student"><i class="fas fa-user me-1"></i>{{ victory.student.first_name }} {{ victory.student.last_name }}</p>
-                        {% elif victory.student_name %}
+                        {% if victory.student_name %}
                         <p class="victory-student"><i class="fas fa-user me-1"></i>{{ victory.student_name }}</p>
+                        {% elif not getattr(victory, '_student_load_error', False) %}
+                            {% if victory.student_id and victory.student %}
+                            <p class="victory-student"><i class="fas fa-user me-1"></i>{{ victory.student.first_name }} {{ victory.student.last_name }}</p>
+                            {% endif %}
                         {% endif %}
                         {% if victory.achievement_date %}
                         <p class="victory-date"><i class="fas fa-calendar me-1"></i>{{ victory.achievement_date.strftime('%B %d, %Y') }}</p>

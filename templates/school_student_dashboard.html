@@ -155,57 +155,6 @@
         letter-spacing: 1px;
     }
 
-    /* School Identity Panel */
-    .school-identity-panel {
-        background: var(--surface-solid);
-        border-radius: var(--radius);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow);
-        border: 2px solid var(--robotics-primary);
-        backdrop-filter: blur(10px);
-    }
-
-    .school-identity-panel h3 {
-        font-family: var(--font-tech);
-        color: var(--robotics-primary);
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .identity-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.75rem;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 0.75rem 1.5rem;
-        margin-right: 1rem;
-        margin-bottom: 0.5rem;
-        font-family: var(--font-body);
-    }
-
-    .identity-badge i {
-        color: var(--robotics-primary);
-        font-size: 1.2rem;
-    }
-
-    .identity-badge strong {
-        color: var(--robotics-primary);
-        margin-right: 0.5rem;
-    }
-
-    .identity-badge code {
-        background: rgba(0, 212, 255, 0.2);
-        color: var(--robotics-accent);
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
-    }
-
     /* Main Layout */
     .classroom-container {
         display: grid;
@@ -775,26 +724,6 @@
                         <span style="color: var(--on-surface); margin-left: 1rem;">{{ student.school_name }}</span>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- School Identity Panel -->
-    <div class="school-identity-panel">
-        <h3>
-            <i class="fas fa-school me-2"></i>
-            School Identity
-        </h3>
-        <div>
-            <div class="identity-badge">
-                <i class="fas fa-university"></i>
-                <strong>School:</strong>
-                <span>{{ student.school_name }}</span>
-            </div>
-            <div class="identity-badge">
-                <i class="fas fa-id-card"></i>
-                <strong>Student ID:</strong>
-                <code>{{ student.student_system_id }}</code>
             </div>
         </div>
     </div>

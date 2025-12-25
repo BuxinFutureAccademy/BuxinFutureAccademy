@@ -727,6 +727,58 @@
 </div>
 
 <div class="container">
+    <!-- Profile Section -->
+    <div class="profile-section" style="background: var(--surface-solid); border-radius: var(--radius); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow); border: 1px solid var(--border);">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="profile-picture-container" style="position: relative; display: inline-block;">
+                    {% if student.student_image_url %}
+                        <img src="{{ student.student_image_url }}" alt="Profile Picture" 
+                             style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--robotics-primary);">
+                    {% else %}
+                        <div style="width: 150px; height: 150px; border-radius: 50%; background: var(--robotics-gradient); display: flex; align-items: center; justify-content: center; border: 3px solid var(--robotics-primary); margin: 0 auto;">
+                            <i class="fas fa-user" style="font-size: 4rem; color: white;"></i>
+                        </div>
+                    {% endif %}
+                    <div class="profile-actions mt-3">
+                        <form method="POST" action="{{ url_for('admin.upload_school_student_profile_picture') }}" enctype="multipart/form-data" style="display: inline;">
+                            <input type="file" name="profile_picture" accept="image/*" id="profile-upload-school" style="display: none;" onchange="this.form.submit()">
+                            <label for="profile-upload-school" class="btn btn-sm" style="background: var(--robotics-primary); color: var(--robotics-dark); border: none; margin-right: 0.5rem; cursor: pointer;">
+                                <i class="fas fa-upload me-1"></i>{{ 'Change' if student.student_image_url else 'Upload' }}
+                            </label>
+                        </form>
+                        {% if student.student_image_url %}
+                        <form method="POST" action="{{ url_for('admin.delete_school_student_profile_picture') }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete your profile picture?');">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash me-1"></i>Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <h2 style="color: var(--robotics-primary); font-family: var(--font-tech); margin-bottom: 1rem;">
+                    <i class="fas fa-user-circle me-2"></i>Profile Information
+                </h2>
+                <div class="profile-info">
+                    <div class="info-row mb-2">
+                        <strong style="color: var(--text-secondary);">Student Name:</strong>
+                        <span style="color: var(--on-surface); margin-left: 1rem;">{{ student.student_name }}</span>
+                    </div>
+                    <div class="info-row mb-2">
+                        <strong style="color: var(--text-secondary);">School Student ID:</strong>
+                        <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">{{ student.student_system_id }}</code>
+                    </div>
+                    <div class="info-row mb-2">
+                        <strong style="color: var(--text-secondary);">School Name:</strong>
+                        <span style="color: var(--on-surface); margin-left: 1rem;">{{ student.school_name }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- School Identity Panel -->
     <div class="school-identity-panel">
         <h3>

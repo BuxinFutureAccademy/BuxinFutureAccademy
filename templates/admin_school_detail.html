@@ -186,48 +186,38 @@
                 </div>
                 <div class="card-body">
                     {% if school_classes %}
-                        <div class="list-group">
-                            {% for cls in school_classes %}
-                            <div class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">{{ cls.name }}</h5>
-                                    <small class="text-muted">Joined: {{ cls.enrolled_at.strftime('%b %d, %Y') }}</small>
-                                </div>
-                                <p class="mb-1 text-muted small">{{ cls.description|truncate(100) }}</p>
-                                <div class="mt-2">
-                                    <span class="badge bg-info me-2">{{ cls.student_count }} student(s)</span>
-                                    <a href="{{ url_for('admin.edit_class', class_id=cls.id) }}" class="btn btn-sm btn-outline-primary">View Class</a>
-                                    {% if students_by_class and students_by_class.get(cls.id) %}
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#students-class-{{ cls.id }}" aria-expanded="false">
-                                        View Students
-                                    </button>
-                                    {% endif %}
-                                </div>
-                                {% if students_by_class and students_by_class.get(cls.id) %}
-                                <div class="collapse mt-3" id="students-class-{{ cls.id }}">
-                                    <div class="card card-body bg-light">
-                                        <h6 class="mb-2">Students in this class:</h6>
-                                        <ul class="list-unstyled mb-0">
-                                            {% for student in students_by_class[cls.id] %}
-                                            <li class="py-1 border-bottom">
-                                                <strong>{{ student.student_name }}</strong>
-                                                {% if student.student_system_id %}
-                                                <br><code class="text-primary">{{ student.student_system_id }}</code>
-                                                {% endif %}
-                                                {% if student.student_age %}
-                                                <span class="text-muted">(Age: {{ student.student_age }})</span>
-                                                {% endif %}
-                                                {% if student.student_email %}
-                                                <br><small class="text-muted">Email: {{ student.student_email }}</small>
-                                                {% endif %}
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Class Name</th>
+                                        <th>Date Joined</th>
+                                        <th>Students</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cls in school_classes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ cls.name }}</strong>
+                                            {% if cls.description %}
+                                            <br><small class="text-muted">{{ cls.description|truncate(50) }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ cls.enrolled_at.strftime('%b %d, %Y') }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ cls.student_count }} student(s)</span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#viewStudentsModal{{ cls.id }}">
+                                                <i class="fas fa-users me-1"></i>View Students
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     {% else %}
                         <p class="text-muted text-center py-3">
@@ -239,6 +229,299 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Admin Attendance Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Admin Attendance Section</h3>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin.admin_school_detail', school_id=school.id) }}" class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="attendance_class_id" class="form-label">Select Class</label>
+                            <select class="form-select" id="attendance_class_id" name="attendance_class_id">
+                                <option value="">-- All Classes --</option>
+                                {% for cls in school_classes %}
+                                <option value="{{ cls.id }}" {% if request.args.get('attendance_class_id')|int == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="attendance_date" class="form-label">Select Date</label>
+                            <input type="date" class="form-control" id="attendance_date" name="attendance_date" value="{{ request.args.get('attendance_date', '') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-2"></i>View Attendance
+                            </button>
+                        </div>
+                    </form>
+                    
+                    {% if request.args.get('attendance_class_id') and request.args.get('attendance_date') %}
+                        {% set selected_class_id = request.args.get('attendance_class_id')|int %}
+                        {% set selected_date = request.args.get('attendance_date') %}
+                        {% set selected_class = school_classes|selectattr('id', 'equalto', selected_class_id)|first %}
+                        {% set class_students = students_by_class.get(selected_class_id, []) %}
+                        
+                        <div class="alert alert-info">
+                            <strong>Showing attendance for:</strong> {{ selected_class.name if selected_class else 'Unknown Class' }} on {{ selected_date }}
+                        </div>
+                        
+                        {% if class_students %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>School Student ID</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in class_students %}
+                                    <tr>
+                                        <td>
+                                            {% if student.student_image_url %}
+                                            <img src="{{ student.student_image_url }}" alt="{{ student.student_name }}" 
+                                                 style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 0.5rem;">
+                                            {% endif %}
+                                            <strong>{{ student.student_name }}</strong>
+                                        </td>
+                                        <td><code>{{ student.student_system_id }}</code></td>
+                                        <td>
+                                            {% set student_att = daily_attendance.get(student.id) if daily_attendance else None %}
+                                            {% if student_att %}
+                                                {% if student_att.status == 'present' %}
+                                                    <span class="badge bg-success">Present</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Absent</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary">Not Marked</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center py-4">No students registered in this class.</p>
+                        {% endif %}
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Select a class and date above to view daily attendance.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Students Modals for Each Class -->
+{% for cls in school_classes %}
+<div class="modal fade" id="viewStudentsModal{{ cls.id }}" tabindex="-1" aria-labelledby="viewStudentsModalLabel{{ cls.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewStudentsModalLabel{{ cls.id }}">
+                    <i class="fas fa-users me-2"></i>Students in {{ cls.name }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if students_by_class and students_by_class.get(cls.id) %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>School Student ID</th>
+                                <th>Class Name</th>
+                                <th>Registration Date</th>
+                                <th>Attendance Summary</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students_by_class[cls.id] %}
+                            <tr>
+                                <td>
+                                    {% if student.student_image_url %}
+                                    <img src="{{ student.student_image_url }}" alt="{{ student.student_name }}" 
+                                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 0.5rem;">
+                                    {% endif %}
+                                    <strong>{{ student.student_name }}</strong>
+                                </td>
+                                <td><code>{{ student.student_system_id }}</code></td>
+                                <td>{{ cls.name }}</td>
+                                <td>{{ student.created_at.strftime('%b %d, %Y') }}</td>
+                                <td>
+                                    {% set attendance_count = attendance_summary.get(student.id, {}).get('present', 0) if attendance_summary else 0 %}
+                                    {% set total_days = attendance_summary.get(student.id, {}).get('total', 0) if attendance_summary else 0 %}
+                                    <span class="badge bg-success">{{ attendance_count }}/{{ total_days }} days</span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#studentProfileModal{{ student.id }}">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No students registered in this class yet.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Student Profile Modals -->
+{% for cls in school_classes %}
+    {% if students_by_class and students_by_class.get(cls.id) %}
+        {% for student in students_by_class[cls.id] %}
+        <div class="modal fade" id="studentProfileModal{{ student.id }}" tabindex="-1" aria-labelledby="studentProfileModalLabel{{ student.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title" id="studentProfileModalLabel{{ student.id }}">
+                            <i class="fas fa-user-graduate me-2"></i>{{ student.student_name }} - Profile
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                {% if student.student_image_url %}
+                                    <img src="{{ student.student_image_url }}" alt="{{ student.student_name }}" 
+                                         style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--bs-info);">
+                                {% else %}
+                                    <div style="width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                        <i class="fas fa-user" style="font-size: 4rem; color: white;"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <h4>Student Personal Info</h4>
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th>Student Name:</th>
+                                        <td><strong>{{ student.student_name }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <th>School Name:</th>
+                                        <td>{{ student.school_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>School Student ID:</th>
+                                        <td><code>{{ student.student_system_id }}</code></td>
+                                    </tr>
+                                    {% if student.student_age %}
+                                    <tr>
+                                        <th>Student Age:</th>
+                                        <td>{{ student.student_age }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if student.student_email %}
+                                    <tr>
+                                        <th>Student Email:</th>
+                                        <td>{{ student.student_email }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if student.student_phone %}
+                                    <tr>
+                                        <th>Student Phone:</th>
+                                        <td>{{ student.student_phone }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                                
+                                {% if student.parent_name or student.parent_phone or student.parent_email %}
+                                <h5 class="mt-3">Parent / Guardian Info</h5>
+                                <table class="table table-borderless">
+                                    {% if student.parent_name %}
+                                    <tr>
+                                        <th>Parent Name:</th>
+                                        <td>{{ student.parent_name }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if student.parent_phone %}
+                                    <tr>
+                                        <th>Parent Phone:</th>
+                                        <td>{{ student.parent_phone }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if student.parent_email %}
+                                    <tr>
+                                        <th>Parent Email:</th>
+                                        <td>{{ student.parent_email }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h5>Attendance History</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Class</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set student_attendance = attendance_history.get(student.id, []) if attendance_history else [] %}
+                                    {% if student_attendance %}
+                                        {% for att in student_attendance %}
+                                        <tr>
+                                            <td>{{ att.class_name }}</td>
+                                            <td>{{ att.date.strftime('%b %d, %Y') }}</td>
+                                            <td>
+                                                {% if att.status == 'present' %}
+                                                    <span class="badge bg-success">Present</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Absent</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-muted text-center">No attendance records yet.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endfor %}
         </div>
     </div>
 </div>

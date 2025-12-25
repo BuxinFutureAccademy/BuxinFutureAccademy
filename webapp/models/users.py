@@ -25,6 +25,9 @@ class User(UserMixin, db.Model):
     # General Student ID for ID-based access (Group, Family, Individual classes)
     student_id = db.Column(db.String(20), unique=True, nullable=True)  # Auto-generated Student ID for class access
     class_type = db.Column(db.String(20), nullable=True)  # 'individual', 'group', 'family', 'school' - tracks enrollment type
+    
+    # Profile Picture
+    profile_picture = db.Column(db.String(500), nullable=True)  # URL to profile picture stored in Cloudinary
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

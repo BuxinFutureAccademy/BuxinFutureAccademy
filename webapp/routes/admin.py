@@ -100,6 +100,59 @@ def add_family_system_id_column():
         """, 500
 
 
+@bp.route('/admin/add-profile-picture-column')
+def add_profile_picture_column():
+    """Add profile_picture column to user table - accessible without login for initial setup"""
+    from sqlalchemy import inspect, text
+    
+    try:
+        # Check if column already exists
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('user')]
+        
+        if 'profile_picture' in columns:
+            return """
+            <html>
+            <head><title>Migration Complete</title>
+            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+            <body>
+                <h1>✅ Column Already Exists</h1>
+                <p><strong>profile_picture</strong> column already exists in user table.</p>
+                <p>No action needed.</p>
+            </body>
+            </html>
+            """
+        
+        # Add the column
+        with db.engine.connect() as conn:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_picture VARCHAR(500)'))
+            conn.commit()
+        
+        return """
+        <html>
+        <head><title>Migration Complete</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Migration Successful!</h1>
+            <p><strong>profile_picture</strong> column added to user table.</p>
+            <p>Profile picture functionality is now ready to use.</p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Error</h1>
+            <p>Error: {str(e)}</p>
+        </body>
+        </html>
+        """, 500
+
+
 @bp.route('/admin/add-school-student-system-id-column')
 def add_school_student_system_id_column():
     """Add student_system_id column to school_student table - ADMIN ONLY"""
@@ -3591,13 +3644,83 @@ def admin_school_detail(school_id):
     available_school_classes = GroupClass.query.filter_by(class_type='school').all()
     # Filter out already enrolled classes
     available_school_classes = [c for c in available_school_classes if c.id not in enrolled_class_ids]
+    
+    # Calculate attendance summary for each student
+    attendance_summary = {}  # {student_id: {'present': count, 'total': count}}
+    attendance_history = {}  # {student_id: [{'date': date, 'status': 'present'/'absent', 'class_name': name}]}
+    
+    from datetime import date, timedelta
+    from ..models.classes import Attendance
+    
+    # Get attendance for last 30 days
+    thirty_days_ago = date.today() - timedelta(days=30)
+    
+    for cls in school_classes:
+        class_students = students_by_class.get(cls['id'], [])
+        for student in class_students:
+            if student.id not in attendance_summary:
+                attendance_summary[student.id] = {'present': 0, 'total': 0}
+                attendance_history[student.id] = []
+            
+            # Get attendance records for this student in this class
+            # Note: Attendance uses school admin's user_id, but we check notes field
+            school_admin = User.query.get(student.registered_by)
+            if school_admin:
+                attendance_records = Attendance.query.filter(
+                    Attendance.student_id == school_admin.id,
+                    Attendance.class_id == cls['id'],
+                    Attendance.class_type == 'school',
+                    Attendance.attendance_date >= thirty_days_ago,
+                    Attendance.notes.like(f'%school_student_{student.id}%')
+                ).order_by(Attendance.attendance_date.desc()).all()
+                
+                for att in attendance_records:
+                    attendance_summary[student.id]['total'] += 1
+                    if att.status == 'present':
+                        attendance_summary[student.id]['present'] += 1
+                    
+                    attendance_history[student.id].append({
+                        'date': att.attendance_date,
+                        'status': att.status,
+                        'class_name': cls['name']
+                    })
+    
+    # Get daily attendance if filters are provided
+    daily_attendance = {}  # {student_id: {'status': 'present'/'absent'}}
+    attendance_class_id = request.args.get('attendance_class_id', type=int)
+    attendance_date_str = request.args.get('attendance_date', '')
+    
+    if attendance_class_id and attendance_date_str:
+        try:
+            from datetime import datetime
+            attendance_date = datetime.strptime(attendance_date_str, '%Y-%m-%d').date()
+            
+            class_students = students_by_class.get(attendance_class_id, [])
+            for student in class_students:
+                school_admin = User.query.get(student.registered_by)
+                if school_admin:
+                    att = Attendance.query.filter(
+                        Attendance.student_id == school_admin.id,
+                        Attendance.class_id == attendance_class_id,
+                        Attendance.class_type == 'school',
+                        Attendance.attendance_date == attendance_date,
+                        Attendance.notes.like(f'%school_student_{student.id}%')
+                    ).first()
+                    
+                    if att:
+                        daily_attendance[student.id] = {'status': att.status}
+        except:
+            pass  # Ignore date parsing errors
                 
     return render_template('admin_school_detail.html', 
                          school=school, 
                          students=students,
                          school_classes=school_classes,
                          students_by_class=students_by_class,
-                         available_school_classes=available_school_classes)
+                         available_school_classes=available_school_classes,
+                         attendance_summary=attendance_summary,
+                         attendance_history=attendance_history,
+                         daily_attendance=daily_attendance)
 
 
 @bp.route('/admin/schools/<int:school_id>/approve', methods=['POST'])
@@ -3846,3 +3969,193 @@ def reject_school(school_id):
         flash(f'Error rejecting school: {str(e)}', 'danger')
     
     return redirect(url_for('admin.admin_school_detail', school_id=school_id))
+
+
+@bp.route('/profile/upload', methods=['POST'])
+@login_required
+def upload_profile_picture():
+    """Upload profile picture for current user"""
+    if 'profile_picture' not in request.files:
+        flash('No file selected.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    file = request.files['profile_picture']
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    try:
+        from ..services.cloudinary_service import CloudinaryService
+        from datetime import datetime
+        
+        # Upload to Cloudinary
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        public_id = f"profile_{current_user.id}_{timestamp}"
+        
+        success, result = CloudinaryService.upload_file(
+            file=file,
+            folder='profile_pictures',
+            resource_type='image',
+            public_id=public_id
+        )
+        
+        if success:
+            # Delete old profile picture if exists
+            if current_user.profile_picture:
+                try:
+                    old_url = current_user.profile_picture
+                    if 'cloudinary.com' in old_url:
+                        parts = old_url.split('/')
+                        if len(parts) > 0:
+                            old_public_id = parts[-1].split('.')[0]
+                            CloudinaryService.delete_file(old_public_id, resource_type='image')
+                except:
+                    pass
+            
+            current_user.profile_picture = result['url']
+            db.session.commit()
+            flash('Profile picture uploaded successfully!', 'success')
+        else:
+            flash(f'Failed to upload profile picture: {result}', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error uploading profile picture: {str(e)}', 'danger')
+    
+    return redirect(request.referrer or url_for('admin.student_dashboard'))
+
+
+@bp.route('/profile/delete', methods=['POST'])
+@login_required
+def delete_profile_picture():
+    """Delete profile picture for current user"""
+    try:
+        from ..services.cloudinary_service import CloudinaryService
+        
+        if current_user.profile_picture:
+            try:
+                old_url = current_user.profile_picture
+                if 'cloudinary.com' in old_url:
+                    parts = old_url.split('/')
+                    if len(parts) > 0:
+                        public_id = parts[-1].split('.')[0]
+                        CloudinaryService.delete_file(public_id, resource_type='image')
+            except:
+                pass
+            
+            current_user.profile_picture = None
+            db.session.commit()
+            flash('Profile picture deleted successfully!', 'success')
+        else:
+            flash('No profile picture to delete.', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting profile picture: {str(e)}', 'danger')
+    
+    return redirect(request.referrer or url_for('admin.student_dashboard'))
+
+
+@bp.route('/school-student/profile/upload', methods=['POST'])
+def upload_school_student_profile_picture():
+    """Upload profile picture for school student"""
+    from flask import session
+    from ..models.classes import SchoolStudent
+    
+    if 'school_student_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('schools.school_student_login'))
+    
+    student_id = session['school_student_id']
+    student = SchoolStudent.query.get(student_id)
+    
+    if not student:
+        flash('Student record not found.', 'danger')
+        return redirect(url_for('schools.school_student_login'))
+    
+    if 'profile_picture' not in request.files:
+        flash('No file selected.', 'danger')
+        return redirect(request.referrer or url_for('schools.school_student_dashboard'))
+    
+    file = request.files['profile_picture']
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(request.referrer or url_for('schools.school_student_dashboard'))
+    
+    try:
+        from ..services.cloudinary_service import CloudinaryService
+        from datetime import datetime
+        
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        public_id = f"school_student_{student.id}_{timestamp}"
+        
+        success, result = CloudinaryService.upload_file(
+            file=file,
+            folder='profile_pictures',
+            resource_type='image',
+            public_id=public_id
+        )
+        
+        if success:
+            if student.student_image_url:
+                try:
+                    old_url = student.student_image_url
+                    if 'cloudinary.com' in old_url:
+                        parts = old_url.split('/')
+                        if len(parts) > 0:
+                            old_public_id = parts[-1].split('.')[0]
+                            CloudinaryService.delete_file(old_public_id, resource_type='image')
+                except:
+                    pass
+            
+            student.student_image_url = result['url']
+            db.session.commit()
+            flash('Profile picture uploaded successfully!', 'success')
+        else:
+            flash(f'Failed to upload profile picture: {result}', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error uploading profile picture: {str(e)}', 'danger')
+    
+    return redirect(request.referrer or url_for('schools.school_student_dashboard'))
+
+
+@bp.route('/school-student/profile/delete', methods=['POST'])
+def delete_school_student_profile_picture():
+    """Delete profile picture for school student"""
+    from flask import session
+    from ..models.classes import SchoolStudent
+    
+    if 'school_student_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('schools.school_student_login'))
+    
+    student_id = session['school_student_id']
+    student = SchoolStudent.query.get(student_id)
+    
+    if not student:
+        flash('Student record not found.', 'danger')
+        return redirect(url_for('schools.school_student_login'))
+    
+    try:
+        from ..services.cloudinary_service import CloudinaryService
+        
+        if student.student_image_url:
+            try:
+                old_url = student.student_image_url
+                if 'cloudinary.com' in old_url:
+                    parts = old_url.split('/')
+                    if len(parts) > 0:
+                        public_id = parts[-1].split('.')[0]
+                        CloudinaryService.delete_file(public_id, resource_type='image')
+            except:
+                pass
+            
+            student.student_image_url = None
+            db.session.commit()
+            flash('Profile picture deleted successfully!', 'success')
+        else:
+            flash('No profile picture to delete.', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting profile picture: {str(e)}', 'danger')
+    
+    return redirect(request.referrer or url_for('schools.school_student_dashboard'))

@@ -1556,19 +1556,31 @@ def student_dashboard():
             class_today_attendance = {}
             
             if cls['class_type'] == 'school':
-                # CRITICAL: For school classes, only get attendance for students from THIS school
-                # Use the attendance_students list which is already filtered by school
-                for student in all_students_for_attendance.get(cls['id'], []):
-                    if student['type'] == 'user':
-                        # User-based attendance (school admin)
+                # CRITICAL: For school classes, get attendance for registered school students
+                # Get the school enrollment
+                school_enrollment = cls['enrollment']
+                if school_enrollment:
+                    # Get all registered school students for this class
+                    registered_students = SchoolStudent.query.filter_by(
+                        class_id=cls['id'],
+                        enrollment_id=school_enrollment.id,
+                        registered_by=current_user.id
+                    ).all()
+                    
+                    # Get attendance for each registered school student
+                    for reg_student in registered_students:
+                        # Find attendance record with school_student_id in notes
                         att = Attendance.query.filter(
-                            Attendance.student_id == student['id'],
-                            Attendance.class_id == cls['id'],  # THIS class only
-                            Attendance.class_type == 'school',  # School class type
-                            Attendance.attendance_date == today
+                            Attendance.student_id == current_user.id,  # School admin as proxy
+                            Attendance.class_id == cls['id'],
+                            Attendance.class_type == 'school',
+                            Attendance.attendance_date == today,
+                            Attendance.notes.like(f'%school_student_{reg_student.id}%')
                         ).first()
+                        
                         if att:
-                            class_today_attendance[student['id']] = att
+                            # Use special key format for school students
+                            class_today_attendance[f'school_student_{reg_student.id}'] = att
                     # Note: SchoolStudent type students don't have user_id, so they can't have Attendance records
                     # They are view-only in the attendance list
             else:
@@ -1693,23 +1705,86 @@ def mark_attendance():
     """Student marks their own attendance or school admin marks student attendance"""
     from datetime import date
     
-    class_id = request.form.get('class_id', type=int) or 0  # Can be 0 for school students
+    class_id = request.form.get('class_id', type=int) or 0
     status = request.form.get('status', 'present')  # present, absent
-    student_id = request.form.get('student_id', type=int)  # For group/family classes or school students
-    
-    # If student_id is provided, it's for marking another student (in group/family/school)
-    # Otherwise, mark self
-    target_student_id = student_id if student_id else current_user.id
-    
-    # Get class type and validate enrollment/registration
+    student_id = request.form.get('student_id', type=int)  # For group/family classes
+    school_student_id = request.form.get('school_student_id', type=int)  # For school students
     class_type = request.form.get('class_type', '')
+    
+    # CRITICAL: Handle school student attendance (NEW - attendance in popup only)
+    if school_student_id and class_type == 'school':
+        # Validate that this is a registered school student for this school and class
+        school_enrollment = ClassEnrollment.query.filter_by(
+            user_id=current_user.id,  # School admin's enrollment
+            class_id=class_id,
+            class_type='school',
+            status='completed'
+        ).first()
+        
+        if not school_enrollment:
+            flash('School is not enrolled in this class.', 'danger')
+            return redirect(url_for('schools.school_dashboard'))
+        
+        # Verify the school student belongs to this school and class
+        registered_student = SchoolStudent.query.filter_by(
+            id=school_student_id,
+            class_id=class_id,
+            enrollment_id=school_enrollment.id,
+            registered_by=current_user.id
+        ).first()
+        
+        if not registered_student:
+            flash('Student is not registered in this class.', 'danger')
+            return redirect(url_for('schools.school_dashboard'))
+        
+        # For school students, we use the school admin's user_id as a proxy
+        # but store the school_student_id in the notes field for tracking
+        target_student_id = current_user.id  # Use school admin as proxy
+        today = date.today()
+        
+        # Check if attendance already exists for this school student today
+        # We'll use a special format in notes: "school_student_{id}"
+        existing = Attendance.query.filter(
+            Attendance.student_id == target_student_id,
+            Attendance.class_id == class_id,
+            Attendance.class_type == 'school',
+            Attendance.attendance_date == today,
+            Attendance.notes.like(f'%school_student_{school_student_id}%')
+        ).first()
+        
+        if existing:
+            existing.status = status
+            existing.marked_by = current_user.id
+            existing.notes = f'school_student_{school_student_id}'
+            flash('Attendance updated successfully!', 'success')
+        else:
+            new_attendance = Attendance(
+                student_id=target_student_id,
+                class_id=class_id,
+                class_type='school',
+                attendance_date=today,
+                status=status,
+                marked_by=current_user.id,
+                notes=f'school_student_{school_student_id}'  # Store school student ID in notes
+            )
+            db.session.add(new_attendance)
+            flash('Attendance marked successfully!', 'success')
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error marking attendance: {str(e)}', 'danger')
+        
+        return redirect(url_for('schools.school_dashboard'))
+    
+    # Original logic for regular students (group, family, individual)
+    target_student_id = student_id if student_id else current_user.id
     enrollment = None
     is_valid = False
     
-    # CRITICAL: Validate that student is enrolled/registered in THIS specific class
     if class_type == 'school':
-        # For school classes, check both enrollment and registered students
-        # Option 1: Check if student has ClassEnrollment for this class
+        # For school classes (non-school-student case)
         enrollment = ClassEnrollment.query.filter_by(
             user_id=target_student_id,
             class_id=class_id,
@@ -1720,18 +1795,14 @@ def mark_attendance():
         if enrollment:
             is_valid = True
         else:
-            # Option 2: Check if it's a registered SchoolStudent in this class
-            # Get the enrollment for this school and class
             school_enrollment = ClassEnrollment.query.filter_by(
-                user_id=current_user.id,  # School admin's enrollment
+                user_id=current_user.id,
                 class_id=class_id,
                 class_type='school',
                 status='completed'
             ).first()
             
             if school_enrollment:
-                # Check if target student is a registered SchoolStudent
-                # For school students registered by this admin in this class
                 registered_student = SchoolStudent.query.filter_by(
                     class_id=class_id,
                     enrollment_id=school_enrollment.id,
@@ -1740,7 +1811,6 @@ def mark_attendance():
                 
                 if registered_student:
                     is_valid = True
-                    # Create a pseudo-enrollment for attendance tracking
                     enrollment = type('obj', (object,), {'class_type': 'school'})()
         
         if not is_valid:

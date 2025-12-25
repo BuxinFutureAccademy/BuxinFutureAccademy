@@ -100,6 +100,67 @@ def add_family_system_id_column():
         """, 500
 
 
+@bp.route('/admin/add-school-student-system-id-column')
+def add_school_student_system_id_column():
+    """Add student_system_id column to school_student table - ADMIN ONLY"""
+    from sqlalchemy import text, inspect
+    
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        # Check if column already exists
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('school_student')]
+        
+        if 'student_system_id' in columns:
+            return """
+            <html>
+            <head><title>Migration Complete</title>
+            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+            <body>
+                <h1>✅ Column Already Exists</h1>
+                <p><strong>student_system_id</strong> column already exists in school_student table.</p>
+                <p>No action needed.</p>
+                <p><a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Admin</a></p>
+            </body>
+            </html>
+            """
+        
+        # Add the column
+        with db.engine.connect() as conn:
+            conn.execute(text('ALTER TABLE school_student ADD COLUMN student_system_id VARCHAR(20)'))
+            conn.commit()
+        
+        return """
+        <html>
+        <head><title>Migration Complete</title>
+        <style>body { font-family: Arial; padding: 20px; text-align: center; }</style></head>
+        <body>
+            <h1>✅ Migration Successful!</h1>
+            <p><strong>student_system_id</strong> column added to school_student table.</p>
+            <p>School student login system is now ready to use.</p>
+            <p><a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Admin</a></p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Failed</h1>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <p>Contact support if this persists.</p>
+            <p><a href="/admin/dashboard">← Back to Admin</a></p>
+        </body>
+        </html>
+        """, 500
+
+
 @bp.route('/admin/setup-school-tables')
 def setup_school_tables():
     """Create school and registered_school_student tables - accessible without login for initial setup"""

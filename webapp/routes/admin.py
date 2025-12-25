@@ -3210,8 +3210,27 @@ def approve_school(school_id):
         school.status = 'active'
         school.approved_at = datetime.utcnow()
         school.approved_by = current_user.id
+        
+        # CRITICAL FIX: Update all school enrollments to 'completed' status
+        # This is required for admin material sharing to work correctly
+        from ..models.classes import ClassEnrollment
+        enrollments = ClassEnrollment.query.filter_by(
+            user_id=school.user_id,
+            class_type='school',
+            status='pending'
+        ).all()
+        
+        enrollment_count = 0
+        for enrollment in enrollments:
+            enrollment.status = 'completed'
+            enrollment_count += 1
+        
         db.session.commit()
-        flash(f'School "{school.school_name}" has been approved!', 'success')
+        
+        if enrollment_count > 0:
+            flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated.', 'success')
+        else:
+            flash(f'School "{school.school_name}" has been approved!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error approving school: {str(e)}', 'danger')

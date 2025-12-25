@@ -152,6 +152,12 @@ def school_payment():
     school_system_id = session.get('school_system_id')
     class_id = session.get('pending_school_class_id')
     
+    # Also try to get class_id from form if not in session (fallback)
+    if not class_id and request.method == 'POST':
+        class_id = request.form.get('class_id', type=int)
+        if class_id:
+            session['pending_school_class_id'] = class_id
+    
     if not school_id:
         flash('No pending school registration found.', 'danger')
         return redirect(url_for('schools.register_school'))
@@ -190,21 +196,38 @@ def school_payment():
         school.payment_status = 'completed' if payment_proof_url else 'pending'
         school.payment_proof = payment_proof_url
         
-        # If class_id was provided, create enrollment
+        # CRITICAL: Always create enrollment if class_id was provided during registration
+        # This enrollment links the school to the class and is required for admin material sharing
         if class_id:
-            enrollment = ClassEnrollment(
+            # Check if enrollment already exists (avoid duplicates)
+            existing_enrollment = ClassEnrollment.query.filter_by(
                 user_id=school.user_id,
                 class_type='school',
-                class_id=class_id,
-                amount=amount,
-                customer_name=school.school_name,
-                customer_email=school.school_email,
-                customer_phone=school.contact_phone,
-                payment_method=payment_method,
-                payment_proof=payment_proof_url,
-                status='pending'
-            )
-            db.session.add(enrollment)
+                class_id=class_id
+            ).first()
+            
+            if not existing_enrollment:
+                import uuid
+                enrollment = ClassEnrollment(
+                    user_id=school.user_id,
+                    class_type='school',
+                    class_id=class_id,
+                    amount=amount,
+                    customer_name=school.school_name,
+                    customer_email=school.school_email,
+                    customer_phone=school.contact_phone,
+                    customer_address=school.contact_address,
+                    payment_method=payment_method,
+                    payment_proof=payment_proof_url,
+                    transaction_id=str(uuid.uuid4())[:8].upper(),
+                    status='pending'  # Will be set to 'completed' when admin approves the school
+                )
+                db.session.add(enrollment)
+            else:
+                # Update existing enrollment with payment info
+                existing_enrollment.payment_method = payment_method
+                existing_enrollment.payment_proof = payment_proof_url
+                existing_enrollment.amount = amount
         
         db.session.commit()
         

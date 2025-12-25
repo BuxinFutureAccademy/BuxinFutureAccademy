@@ -449,7 +449,8 @@ def school_student_dashboard():
     from flask import session
     from datetime import date
     from calendar import monthrange
-    from ..models.classes import SchoolStudent, ClassEnrollment, GroupClass, LearningMaterial, Attendance
+    from ..models.classes import SchoolStudent, ClassEnrollment, GroupClass, Attendance
+    from ..models.materials import LearningMaterial
     
     # Check if student is logged in via session
     if 'school_student_id' not in session:

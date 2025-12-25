@@ -1933,11 +1933,51 @@ def register_student():
                 flash(f'Error uploading image: {str(e)}', 'warning')
     
     try:
+        # Generate unique Student System ID for this school
+        from ..models.schools import School
+        school = School.query.filter_by(user_id=current_user.id).first()
+        if not school:
+            flash('School not found.', 'danger')
+            if current_user.is_school_admin:
+                return redirect(url_for('schools.school_dashboard'))
+            return redirect(url_for('admin.student_dashboard'))
+        
+        # Generate system_id based on school and existing students
+        # Format: STU-{school_id}-{sequential_number}
+        existing_students = SchoolStudent.query.filter_by(
+            school_name=school_name
+        ).order_by(SchoolStudent.id.desc()).all()
+        
+        if existing_students:
+            # Extract highest number from existing system_ids
+            max_num = 0
+            for stu in existing_students:
+                if stu.student_system_id and stu.student_system_id.startswith('STU-'):
+                    try:
+                        parts = stu.student_system_id.split('-')
+                        if len(parts) >= 3:
+                            num = int(parts[-1])
+                            max_num = max(max_num, num)
+                    except:
+                        pass
+            next_num = max_num + 1
+        else:
+            next_num = 1
+        
+        # Format: STU-{school_id:03d}-{student_number:05d}
+        student_system_id = f"STU-{school.id:03d}-{next_num:05d}"
+        
+        # Ensure uniqueness
+        while SchoolStudent.query.filter_by(student_system_id=student_system_id).first():
+            next_num += 1
+            student_system_id = f"STU-{school.id:03d}-{next_num:05d}"
+        
         new_student = SchoolStudent(
             enrollment_id=enrollment_id,
             class_id=class_id,
             school_name=school_name,
             student_name=student_name,
+            student_system_id=student_system_id,
             student_age=student_age,
             student_image_url=student_image_url,
             student_email=student_email,
@@ -1950,7 +1990,7 @@ def register_student():
         )
         db.session.add(new_student)
         db.session.commit()
-        flash(f'Student "{student_name}" registered successfully!', 'success')
+        flash(f'Student "{student_name}" registered successfully! Student System ID: {student_system_id}', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error registering student: {str(e)}', 'danger')

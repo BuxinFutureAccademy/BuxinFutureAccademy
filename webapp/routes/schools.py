@@ -395,6 +395,180 @@ def register_student_in_school():
     return redirect(url_for('schools.school_dashboard'))
 
 
+@bp.route('/school-student/login', methods=['GET', 'POST'])
+def school_student_login():
+    """School student login using School Name + Student System ID"""
+    from flask import session
+    from ..models.classes import SchoolStudent, ClassEnrollment
+    
+    if request.method == 'POST':
+        school_name = request.form.get('school_name', '').strip()
+        student_system_id = request.form.get('student_system_id', '').strip().upper()
+        
+        if not school_name or not student_system_id:
+            flash('Please provide both School Name and Student System ID.', 'danger')
+            return render_template('school_student_login.html')
+        
+        # Find the student by school name and system ID
+        student = SchoolStudent.query.filter_by(
+            school_name=school_name,
+            student_system_id=student_system_id
+        ).first()
+        
+        if not student:
+            flash('Invalid School Name or Student System ID.', 'danger')
+            return render_template('school_student_login.html')
+        
+        # Verify the student is registered in at least one active class
+        enrollment = ClassEnrollment.query.filter_by(
+            id=student.enrollment_id,
+            status='completed'
+        ).first()
+        
+        if not enrollment:
+            flash('Student is not enrolled in any active class.', 'danger')
+            return render_template('school_student_login.html')
+        
+        # Store student info in session (not using User login, but session-based)
+        session['school_student_id'] = student.id
+        session['school_student_name'] = student.student_name
+        session['school_student_system_id'] = student.student_system_id
+        session['school_name'] = student.school_name
+        session['school_student_class_id'] = student.class_id
+        session['school_student_enrollment_id'] = student.enrollment_id
+        
+        flash(f'Welcome, {student.student_name}!', 'success')
+        return redirect(url_for('schools.school_student_dashboard'))
+    
+    return render_template('school_student_login.html')
+
+
+@bp.route('/school-student/dashboard')
+def school_student_dashboard():
+    """School student dashboard - shows only their classes and materials"""
+    from flask import session
+    from datetime import date
+    from calendar import monthrange
+    from ..models.classes import SchoolStudent, ClassEnrollment, GroupClass, LearningMaterial, Attendance
+    
+    # Check if student is logged in via session
+    if 'school_student_id' not in session:
+        flash('Please log in to access your dashboard.', 'warning')
+        return redirect(url_for('schools.school_student_login'))
+    
+    student_id = session['school_student_id']
+    student = SchoolStudent.query.get(student_id)
+    
+    if not student:
+        session.clear()
+        flash('Student record not found.', 'danger')
+        return redirect(url_for('schools.school_student_login'))
+    
+    # Get all classes this student is registered in
+    student_classes = SchoolStudent.query.filter_by(
+        student_system_id=student.student_system_id,
+        school_name=student.school_name
+    ).all()
+    
+    enrolled_classes = []
+    for stu_class in student_classes:
+        enrollment = ClassEnrollment.query.get(stu_class.enrollment_id)
+        if enrollment and enrollment.status == 'completed':
+            # Get class details
+            class_obj = GroupClass.query.get(stu_class.class_id)
+            if class_obj:
+                enrolled_classes.append({
+                    'id': class_obj.id,
+                    'name': class_obj.name,
+                    'description': class_obj.description,
+                    'class_type': 'school',
+                    'enrollment': enrollment,
+                    'student_record': stu_class
+                })
+    
+    # Get learning materials for student's classes
+    materials = []
+    for cls in enrolled_classes:
+        class_materials = LearningMaterial.query.filter_by(
+            actual_class_id=cls['id'],
+            class_type='school'
+        ).order_by(LearningMaterial.created_at.desc()).all()
+        materials.extend(class_materials)
+    
+    # Get attendance records for current month
+    today = date.today()
+    month_start = date(today.year, today.month, 1)
+    month_end = date(today.year, today.month, monthrange(today.year, today.month)[1])
+    
+    attendance_records = {}
+    monthly_stats = {}
+    
+    for cls in enrolled_classes:
+        # Get attendance for this student in this class
+        # Note: Attendance uses school admin's user_id as proxy, but we check notes field
+        from ..models.users import User
+        school = User.query.get(student.registered_by)
+        if school:
+            attendance = Attendance.query.filter(
+                Attendance.student_id == school.id,
+                Attendance.class_id == cls['id'],
+                Attendance.class_type == 'school',
+                Attendance.attendance_date >= month_start,
+                Attendance.attendance_date <= month_end,
+                Attendance.notes.like(f'%school_student_{student.id}%')
+            ).order_by(Attendance.attendance_date.desc()).all()
+            
+            attendance_records[cls['id']] = attendance
+            
+            # Calculate monthly stats
+            total_days = monthrange(today.year, today.month)[1]
+            present_days = len([a for a in attendance if a.status == 'present'])
+            percentage = (present_days / total_days * 100) if total_days > 0 else 0
+            monthly_stats[cls['id']] = {
+                'present': present_days,
+                'total': total_days,
+                'percentage': round(percentage, 1)
+            }
+    
+    # Get today's attendance
+    today_attendance = {}
+    for cls in enrolled_classes:
+        from ..models.users import User
+        school = User.query.get(student.registered_by)
+        if school:
+            att = Attendance.query.filter(
+                Attendance.student_id == school.id,
+                Attendance.class_id == cls['id'],
+                Attendance.class_type == 'school',
+                Attendance.attendance_date == today,
+                Attendance.notes.like(f'%school_student_{student.id}%')
+            ).first()
+            today_attendance[cls['id']] = att
+    
+    return render_template('school_student_dashboard.html',
+                         student=student,
+                         enrolled_classes=enrolled_classes,
+                         materials=materials,
+                         attendance_records=attendance_records,
+                         monthly_stats=monthly_stats,
+                         today_attendance=today_attendance,
+                         today=today)
+
+
+@bp.route('/school-student/logout')
+def school_student_logout():
+    """Logout school student"""
+    from flask import session
+    session.pop('school_student_id', None)
+    session.pop('school_student_name', None)
+    session.pop('school_student_system_id', None)
+    session.pop('school_name', None)
+    session.pop('school_student_class_id', None)
+    session.pop('school_student_enrollment_id', None)
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('schools.school_student_login'))
+
+
 @bp.route('/enter-classroom', methods=['GET', 'POST'])
 def enter_classroom():
     """Classroom entry system - validate Full Name and Student ID (ID-based access)"""

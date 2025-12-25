@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Student Login - Buxin Future Academy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --robotics-primary: #00d4ff;
+            --robotics-dark: #001a23;
+            --robotics-accent: #ff6b35;
+            --surface: #0a1929;
+            --surface-solid: #132f4c;
+            --on-surface: #e0e0e0;
+            --border: #1e4976;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--robotics-dark) 0%, var(--surface) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--on-surface);
+        }
+        
+        .login-container {
+            background: var(--surface-solid);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.3);
+            border: 2px solid var(--robotics-primary);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header h1 {
+            color: var(--robotics-primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-header p {
+            color: var(--on-surface);
+            opacity: 0.8;
+        }
+        
+        .form-label {
+            color: var(--on-surface);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            color: var(--on-surface);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+        }
+        
+        .form-control:focus {
+            background: var(--surface);
+            border-color: var(--robotics-primary);
+            color: var(--on-surface);
+            box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, var(--robotics-primary) 0%, #00a8cc 100%);
+            border: none;
+            color: var(--robotics-dark);
+            font-weight: 700;
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+        }
+        
+        .info-box {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--robotics-primary);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .info-box i {
+            color: var(--robotics-primary);
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fas fa-graduation-cap me-2"></i>Student Login</h1>
+            <p>Enter your School Name and Student System ID</p>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('schools.school_student_login') }}">
+            <div class="mb-3">
+                <label for="school_name" class="form-label">
+                    <i class="fas fa-school me-2"></i>School Name
+                </label>
+                <input type="text" class="form-control" id="school_name" name="school_name" 
+                       placeholder="Enter your school name" required autofocus>
+            </div>
+            
+            <div class="mb-3">
+                <label for="student_system_id" class="form-label">
+                    <i class="fas fa-id-card me-2"></i>Student System ID
+                </label>
+                <input type="text" class="form-control" id="student_system_id" name="student_system_id" 
+                       placeholder="e.g., STU-001-00001" required style="text-transform: uppercase;">
+            </div>
+            
+            <button type="submit" class="btn btn-login">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+            </button>
+        </form>
+        
+        <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <small>
+                <strong>Note:</strong> Use your School Name and Student System ID provided by your school administrator. 
+                Do not use your personal name or email.
+            </small>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-uppercase system ID
+        document.getElementById('student_system_id').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
+</body>
+</html>
+

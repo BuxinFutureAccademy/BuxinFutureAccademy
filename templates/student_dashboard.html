@@ -1227,7 +1227,11 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">ID: {{ student.id }}</span>
+                                        {% if student.student_system_id %}
+                                            <span class="badge bg-info"><code>{{ student.student_system_id }}</code></span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">ID: {{ student.id }}</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if today_att %}

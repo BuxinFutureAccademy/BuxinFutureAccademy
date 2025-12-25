@@ -86,6 +86,7 @@ class SchoolStudent(db.Model):
     class_id = db.Column(db.Integer, nullable=False)
     school_name = db.Column(db.String(200), nullable=False)
     student_name = db.Column(db.String(100), nullable=False)
+    student_system_id = db.Column(db.String(20), nullable=True)  # Student System ID for login (e.g., STU-00452)
     student_age = db.Column(db.Integer)
     student_image_url = db.Column(db.String(500))
     student_email = db.Column(db.String(120))

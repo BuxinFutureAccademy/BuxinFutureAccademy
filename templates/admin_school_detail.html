@@ -211,6 +211,9 @@
                                             {% for student in students_by_class[cls.id] %}
                                             <li class="py-1 border-bottom">
                                                 <strong>{{ student.student_name }}</strong>
+                                                {% if student.student_system_id %}
+                                                <br><code class="text-primary">{{ student.student_system_id }}</code>
+                                                {% endif %}
                                                 {% if student.student_age %}
                                                 <span class="text-muted">(Age: {{ student.student_age }})</span>
                                                 {% endif %}

@@ -30,6 +30,7 @@ class ClassEnrollment(db.Model):
     customer_email = db.Column(db.String(120))
     customer_address = db.Column(db.Text)
     payment_proof = db.Column(db.String(255))
+    family_system_id = db.Column(db.String(20), nullable=True)  # Family System ID for family classes (e.g., FAM-XXXXX)
 
 
 class IndividualClass(db.Model):
@@ -168,3 +169,41 @@ def generate_student_id_for_class(class_type='individual'):
         student_id = f"STU-{next_number:05d}"
     
     return student_id
+
+
+def generate_family_system_id():
+    """
+    Generate a unique Family System ID for family class enrollments
+    Format: FAM-XXXXX (5-digit number)
+    """
+    # Get all existing family system IDs
+    existing_ids = [e.family_system_id for e in ClassEnrollment.query.filter(
+        ClassEnrollment.family_system_id.isnot(None)
+    ).all() if e.family_system_id and e.family_system_id.startswith('FAM-')]
+    
+    if existing_ids:
+        # Extract numbers from existing IDs and find the max
+        numbers = []
+        for fid in existing_ids:
+            try:
+                num = int(fid.split('-')[1])
+                numbers.append(num)
+            except (ValueError, IndexError):
+                continue
+        
+        if numbers:
+            next_number = max(numbers) + 1
+        else:
+            next_number = 1
+    else:
+        next_number = 1
+    
+    # Format as 5-digit number with leading zeros
+    family_id = f"FAM-{next_number:05d}"
+    
+    # Double-check uniqueness
+    while ClassEnrollment.query.filter_by(family_system_id=family_id).first():
+        next_number += 1
+        family_id = f"FAM-{next_number:05d}"
+    
+    return family_id

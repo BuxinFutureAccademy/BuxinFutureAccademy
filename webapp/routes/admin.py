@@ -3286,6 +3286,11 @@ def admin_family_class_detail(enrollment_id):
             if action == 'approve':
                 user = User.query.get(enrollment.user_id)
                 if user:
+                    # Generate Family System ID for the enrollment if not exists
+                    if not enrollment.family_system_id:
+                        from ..models.classes import generate_family_system_id
+                        enrollment.family_system_id = generate_family_system_id()
+                    
                     # Generate Student ID if not exists
                     if not user.student_id:
                         from ..models.classes import generate_student_id_for_class
@@ -3303,7 +3308,7 @@ def admin_family_class_detail(enrollment_id):
                     
                     enrollment.status = 'completed'
                     db.session.commit()
-                    flash(f'Family enrollment approved! Student IDs generated.', 'success')
+                    flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. Student IDs generated.', 'success')
             elif action == 'reject':
                 enrollment.status = 'rejected'
                 db.session.commit()

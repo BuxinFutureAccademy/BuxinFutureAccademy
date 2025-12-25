@@ -10,36 +10,48 @@
                         <i class="fas fa-door-open"></i>
                     </div>
                     <h1 class="login-title">Enter <span class="text-gradient">Classroom</span></h1>
-                    <p class="login-subtitle">Provide your Full Name and Student ID to access your classroom</p>
+                    <p class="login-subtitle">Login for Individual, Group, and Family Classes</p>
+                </div>
+
+                <div class="alert alert-warning mb-3">
+                    <i class="fas fa-school me-2"></i>
+                    <strong>School Students:</strong> Please use the <a href="{{ url_for('schools.school_student_login') }}" class="alert-link">School Student Login</a> with your School Name and Student System ID.
                 </div>
 
                 <div class="login-form-card">
                     <form method="POST" class="login-form">
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="fas fa-user me-2"></i>Full Name *
+                                <i class="fas fa-user me-2"></i>Name *
                             </label>
                             <input type="text" class="form-control" name="full_name" required 
-                                   placeholder="Enter your full name">
-                            <small class="form-text text-muted">The name you used during registration</small>
+                                   placeholder="Enter your name or family name">
+                            <small class="form-text text-muted">
+                                Individual/Group: Your full name | Family: Family head's name
+                            </small>
                         </div>
 
                         <div class="mb-4">
                             <label class="form-label">
-                                <i class="fas fa-id-card me-2"></i>Student ID *
+                                <i class="fas fa-id-card me-2"></i>System ID *
                             </label>
                             <input type="text" class="form-control" name="student_id" required 
-                                   placeholder="STU-XXXXX or SCH-XXXXXX" style="text-transform: uppercase;">
+                                   placeholder="STU-XXXXX or FAM-XXXXX" style="text-transform: uppercase;">
                             <small class="form-text text-muted">
-                                Enter your Student ID (STU-XXXXX) or School ID (SCH-XXXXXX)
+                                Individual/Group: Student System ID (STU-XXXXX)<br>
+                                Family: Family System ID (FAM-XXXXX)
                             </small>
                         </div>
 
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Don't have a Student ID?</strong><br>
-                            <small>Your Student ID is generated automatically after successful payment verification.<br>
-                            For school students: Contact your school administrator for your Student System ID</small>
+                            <strong>Class Types:</strong><br>
+                            <small>
+                                • <strong>Individual Class:</strong> Student Name + Student System ID (STU-XXXXX)<br>
+                                • <strong>Group Class:</strong> Student Name + Student System ID (STU-XXXXX)<br>
+                                • <strong>Family Class:</strong> Family Name + Family System ID (FAM-XXXXX)<br>
+                                • <strong>School Class:</strong> Use <a href="{{ url_for('schools.school_student_login') }}">School Student Login</a>
+                            </small>
                         </div>
 
                         <button type="submit" class="btn btn-login w-100">

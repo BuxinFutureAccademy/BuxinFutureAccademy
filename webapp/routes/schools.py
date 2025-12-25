@@ -590,22 +590,23 @@ def enter_classroom():
     # Classroom entry system - validate Name and System ID for Individual, Group, and Family classes.
     # School classes must use /school-student/login (School Name + School Student System ID).
     from ..models.classes import ClassEnrollment, FamilyMember
-        full_name = request.form.get('full_name', '').strip()
-        system_id = request.form.get('student_id', '').strip().upper()
-        
-        if not full_name or not system_id:
-            flash('Please provide both Name and System ID.', 'danger')
-            return render_template('enter_classroom.html')
-        
-        # CRITICAL: Block School Student System IDs (STU-XXX-XXXXX format)
-        # School students must use /school-student/login with School Name + System ID
-        if system_id.startswith('STU-') and '-' in system_id[4:]:  # Format: STU-XXX-XXXXX
-            flash('School students must use the School Student Login page with School Name and Student System ID.', 'warning')
-            return redirect(url_for('schools.school_student_login'))
-        
-        # 1. INDIVIDUAL CLASS LOGIN: Student Name + Student System ID
-        # 2. GROUP CLASS LOGIN: Student Name + Student System ID
-        if system_id.startswith('STU-'):
+    
+    full_name = request.form.get('full_name', '').strip()
+    system_id = request.form.get('student_id', '').strip().upper()
+    
+    if not full_name or not system_id:
+        flash('Please provide both Name and System ID.', 'danger')
+        return render_template('enter_classroom.html')
+    
+    # CRITICAL: Block School Student System IDs (STU-XXX-XXXXX format)
+    # School students must use /school-student/login with School Name + System ID
+    if system_id.startswith('STU-') and '-' in system_id[4:]:  # Format: STU-XXX-XXXXX
+        flash('School students must use the School Student Login page with School Name and Student System ID.', 'warning')
+        return redirect(url_for('schools.school_student_login'))
+    
+    # 1. INDIVIDUAL CLASS LOGIN: Student Name + Student System ID
+    # 2. GROUP CLASS LOGIN: Student Name + Student System ID
+    if system_id.startswith('STU-'):
             user = User.query.filter_by(student_id=system_id).first()
             
             if user:
@@ -645,9 +646,9 @@ def enter_classroom():
                     flash('Name does not match the Student System ID.', 'danger')
             else:
                 flash('Student System ID not found.', 'danger')
-        
-        # 3. FAMILY CLASS LOGIN: Family Name + Family System ID (FAM-XXXXX format)
-        elif system_id.startswith('FAM-'):
+    
+    # 3. FAMILY CLASS LOGIN: Family Name + Family System ID (FAM-XXXXX format)
+    elif system_id.startswith('FAM-'):
             try:
                 enrollment = ClassEnrollment.query.filter_by(
                     family_system_id=system_id,
@@ -682,40 +683,40 @@ def enter_classroom():
                     flash('Family account not found.', 'danger')
             else:
                 flash('Family System ID not found.', 'danger')
-        
-        # 4. SCHOOL ADMIN LOGIN: Admin Name + School System ID (SCH-XXXXXX format)
-        elif system_id.startswith('SCH-'):
-            school = School.query.filter_by(school_system_id=system_id).first()
-            if school:
-                full_name_lower = full_name.lower()
-                user = User.query.get(school.user_id)
-                user_full_name = f"{user.first_name} {user.last_name}".lower() if user else ""
-                
-                name_matches = (
-                    school.admin_name.lower() == full_name_lower or
-                    user_full_name == full_name_lower or
-                    (user and user.username.lower() == full_name_lower)
-                )
-                
-                if name_matches:
-                    if user:
-                        if school.status == 'active' and school.payment_status == 'completed':
-                            login_user(user)
-                            return redirect(url_for('schools.school_dashboard'))
-                        elif school.status == 'active' and school.payment_status != 'completed':
-                            flash('Your school payment is still pending. Please complete payment to access the classroom.', 'warning')
-                            return redirect(url_for('schools.school_pending_approval'))
-                        else:
-                            login_user(user)
-                            return redirect(url_for('schools.school_pending_approval'))
+    
+    # 4. SCHOOL ADMIN LOGIN: Admin Name + School System ID (SCH-XXXXXX format)
+    elif system_id.startswith('SCH-'):
+        school = School.query.filter_by(school_system_id=system_id).first()
+        if school:
+            full_name_lower = full_name.lower()
+            user = User.query.get(school.user_id)
+            user_full_name = f"{user.first_name} {user.last_name}".lower() if user else ""
+            
+            name_matches = (
+                school.admin_name.lower() == full_name_lower or
+                user_full_name == full_name_lower or
+                (user and user.username.lower() == full_name_lower)
+            )
+            
+            if name_matches:
+                if user:
+                    if school.status == 'active' and school.payment_status == 'completed':
+                        login_user(user)
+                        return redirect(url_for('schools.school_dashboard'))
+                    elif school.status == 'active' and school.payment_status != 'completed':
+                        flash('Your school payment is still pending. Please complete payment to access the classroom.', 'warning')
+                        return redirect(url_for('schools.school_pending_approval'))
                     else:
-                        flash('School administrator account not found.', 'danger')
+                        login_user(user)
+                        return redirect(url_for('schools.school_pending_approval'))
                 else:
-                    flash(f'The name "{full_name}" does not match our records for this School ID.', 'danger')
+                    flash('School administrator account not found.', 'danger')
             else:
-                flash(f'School ID "{system_id}" not found.', 'danger')
+                flash(f'The name "{full_name}" does not match our records for this School ID.', 'danger')
         else:
-            flash('Invalid System ID format. Use STU-XXXXX for Individual/Group, FAM-XXXXX for Family, or SCH-XXXXXX for School Admin.', 'danger')
+            flash(f'School ID "{system_id}" not found.', 'danger')
+    else:
+        flash('Invalid System ID format. Use STU-XXXXX for Individual/Group, FAM-XXXXX for Family, or SCH-XXXXXX for School Admin.', 'danger')
     
     return render_template('enter_classroom.html')
 

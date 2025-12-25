@@ -52,21 +52,47 @@ def index():
         db.session.rollback()
         current_app.logger.warning(f"HomeGallery table may not exist: {e}")
     
+    victories = []
+    featured_victories = []
     try:
-        # Get student victories
-        victories = StudentVictory.query.filter_by(is_active=True).order_by(
-            StudentVictory.display_order.asc(),
-            StudentVictory.achievement_date.desc()
-        ).limit(6).all()
-        
-        featured_victories = StudentVictory.query.filter_by(
-            is_active=True,
-            is_featured=True
-        ).limit(3).all()
+        # Get student victories - handle missing profile_picture column gracefully
+        from sqlalchemy.exc import ProgrammingError
+        try:
+            victories = StudentVictory.query.filter_by(is_active=True).order_by(
+                StudentVictory.display_order.asc(),
+                StudentVictory.achievement_date.desc()
+            ).limit(6).all()
+            
+            featured_victories = StudentVictory.query.filter_by(
+                is_active=True,
+                is_featured=True
+            ).limit(3).all()
+            
+            # Pre-load student relationships to catch errors early, but handle gracefully
+            for victory in victories + featured_victories:
+                try:
+                    # Try to access student to trigger lazy load and catch error early
+                    if hasattr(victory, 'student_id') and victory.student_id:
+                        _ = victory.student  # Trigger lazy load
+                except ProgrammingError as pe:
+                    if 'profile_picture' in str(pe):
+                        # Mark that student can't be loaded due to missing column
+                        victory._student_load_error = True
+                        current_app.logger.warning(f"profile_picture column missing for victory {victory.id}. Please run migration: /admin/add-profile-picture-column")
+        except ProgrammingError as pe:
+            # Check if it's the profile_picture column error
+            if 'profile_picture' in str(pe):
+                current_app.logger.warning("profile_picture column missing. Please run migration: /admin/add-profile-picture-column")
+                victories = []
+                featured_victories = []
+            else:
+                raise  # Re-raise if it's a different error
     except Exception as e:
-        # Table doesn't exist yet, rollback and continue with empty lists
+        # Table doesn't exist yet, or other error, rollback and continue with empty lists
         db.session.rollback()
-        current_app.logger.warning(f"StudentVictory table may not exist: {e}")
+        current_app.logger.warning(f"StudentVictory query error: {e}")
+        victories = []
+        featured_victories = []
     
     try:
         # Also get projects with images/videos that aren't in gallery yet (fallback)

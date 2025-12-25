@@ -196,38 +196,69 @@ def school_payment():
         school.payment_status = 'completed' if payment_proof_url else 'pending'
         school.payment_proof = payment_proof_url
         
-        # CRITICAL: Always create enrollment if class_id was provided during registration
-        # This enrollment links the school to the class and is required for admin material sharing
-        if class_id:
-            # Check if enrollment already exists (avoid duplicates)
-            existing_enrollment = ClassEnrollment.query.filter_by(
+        # CRITICAL FIX: Always create enrollment record to link school to class
+        # This is required for admin material sharing and school dashboard to work
+        import uuid
+        
+        # Try multiple sources for class_id (session, form, or check existing enrollments)
+        if not class_id:
+            # Check if school already has any enrollments (might have been created elsewhere)
+            existing_enrollments = ClassEnrollment.query.filter_by(
                 user_id=school.user_id,
-                class_type='school',
-                class_id=class_id
-            ).first()
-            
-            if not existing_enrollment:
-                import uuid
-                enrollment = ClassEnrollment(
+                class_type='school'
+            ).all()
+            if existing_enrollments:
+                # School already has enrollments, just update payment info
+                for enrollment in existing_enrollments:
+                    enrollment.payment_method = payment_method
+                    enrollment.payment_proof = payment_proof_url
+                    enrollment.amount = amount
+                class_id = None  # Don't create new enrollment
+            else:
+                # No enrollments exist - try to get class_id from form or URL
+                class_id = request.form.get('class_id', type=int)
+                if not class_id:
+                    # Last resort: if no class_id available, we can't create enrollment
+                    # But we'll log this for admin to fix manually
+                    flash('Warning: No class selected. Please contact admin to enroll this school in a class.', 'warning')
+        
+        # Create enrollment if class_id is available
+        if class_id:
+            # Verify class exists and is a school class
+            class_obj = GroupClass.query.get(class_id)
+            if not class_obj:
+                flash(f'Error: Class ID {class_id} not found.', 'danger')
+            elif getattr(class_obj, 'class_type', None) != 'school':
+                flash(f'Error: Class ID {class_id} is not a school class.', 'danger')
+            else:
+                # Check if enrollment already exists (avoid duplicates)
+                existing_enrollment = ClassEnrollment.query.filter_by(
                     user_id=school.user_id,
                     class_type='school',
-                    class_id=class_id,
-                    amount=amount,
-                    customer_name=school.school_name,
-                    customer_email=school.school_email,
-                    customer_phone=school.contact_phone,
-                    customer_address=school.contact_address,
-                    payment_method=payment_method,
-                    payment_proof=payment_proof_url,
-                    transaction_id=str(uuid.uuid4())[:8].upper(),
-                    status='pending'  # Will be set to 'completed' when admin approves the school
-                )
-                db.session.add(enrollment)
-            else:
-                # Update existing enrollment with payment info
-                existing_enrollment.payment_method = payment_method
-                existing_enrollment.payment_proof = payment_proof_url
-                existing_enrollment.amount = amount
+                    class_id=class_id
+                ).first()
+                
+                if not existing_enrollment:
+                    enrollment = ClassEnrollment(
+                        user_id=school.user_id,
+                        class_type='school',
+                        class_id=class_id,
+                        amount=amount,
+                        customer_name=school.school_name,
+                        customer_email=school.school_email,
+                        customer_phone=school.contact_phone,
+                        customer_address=school.contact_address,
+                        payment_method=payment_method,
+                        payment_proof=payment_proof_url,
+                        transaction_id=str(uuid.uuid4())[:8].upper(),
+                        status='pending'  # Will be set to 'completed' when admin approves the school
+                    )
+                    db.session.add(enrollment)
+                else:
+                    # Update existing enrollment with payment info
+                    existing_enrollment.payment_method = payment_method
+                    existing_enrollment.payment_proof = payment_proof_url
+                    existing_enrollment.amount = amount
         
         db.session.commit()
         

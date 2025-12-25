@@ -3293,45 +3293,89 @@ def approve_school(school_id):
 @bp.route('/admin/schools/repair-enrollments', methods=['POST'])
 @login_required
 def repair_school_enrollments():
-    """Repair enrollments for all active schools that don't have completed enrollments"""
+    """Repair enrollments for all schools - activate pending and create missing enrollments"""
     admin_check = require_admin()
     if admin_check:
         return admin_check
     
-    from ..models.classes import ClassEnrollment
+    from ..models.classes import ClassEnrollment, GroupClass
+    from ..models.gallery import ClassPricing
+    import uuid
     
     try:
-        # Get all active schools
-        active_schools = School.query.filter_by(status='active').all()
+        # Get all schools (active and pending)
+        all_schools = School.query.all()
         repaired_count = 0
-        total_enrollments_activated = 0
+        activated_count = 0
+        created_count = 0
         
-        for school in active_schools:
+        # Get pricing
+        pricing_data = ClassPricing.get_all_pricing()
+        school_pricing = pricing_data.get('school', {'price': 500, 'name': 'School Plan'})
+        amount = school_pricing.get('price', 500)
+        
+        # Get all school classes
+        school_classes = GroupClass.query.filter_by(class_type='school').all()
+        
+        for school in all_schools:
             if not school.user_id:
                 continue
-                
-            # Get all enrollments for this school
-            enrollments = ClassEnrollment.query.filter_by(
+            
+            school_repaired = False
+            
+            # Step 1: Activate any pending enrollments
+            pending_enrollments = ClassEnrollment.query.filter_by(
                 user_id=school.user_id,
-                class_type='school'
-            ).filter(
-                ClassEnrollment.status.in_(['pending'])
+                class_type='school',
+                status='pending'
             ).all()
             
-            # Activate pending enrollments
-            for enrollment in enrollments:
+            for enrollment in pending_enrollments:
                 enrollment.status = 'completed'
-                total_enrollments_activated += 1
+                activated_count += 1
+                school_repaired = True
             
-            if enrollments:
+            # Step 2: If school has NO enrollments at all, create one for the first available school class
+            existing_enrollments = ClassEnrollment.query.filter_by(
+                user_id=school.user_id,
+                class_type='school'
+            ).all()
+            
+            if not existing_enrollments and school_classes:
+                # Create enrollment for the first school class (admin can change this later)
+                first_class = school_classes[0]
+                enrollment = ClassEnrollment(
+                    user_id=school.user_id,
+                    class_type='school',
+                    class_id=first_class.id,
+                    amount=amount,
+                    customer_name=school.school_name,
+                    customer_email=school.school_email,
+                    customer_phone=school.contact_phone,
+                    customer_address=school.contact_address,
+                    payment_method='admin_repair',
+                    transaction_id=f"REPAIR-{str(uuid.uuid4())[:8].upper()}",
+                    status='completed' if school.status == 'active' else 'pending'
+                )
+                db.session.add(enrollment)
+                created_count += 1
+                school_repaired = True
+            
+            if school_repaired:
                 repaired_count += 1
         
         db.session.commit()
         
+        message_parts = []
+        if activated_count > 0:
+            message_parts.append(f"activated {activated_count} pending enrollment(s)")
+        if created_count > 0:
+            message_parts.append(f"created {created_count} new enrollment(s)")
+        
         if repaired_count > 0:
-            flash(f'Repaired {repaired_count} school(s)! Activated {total_enrollments_activated} enrollment(s).', 'success')
+            flash(f'Repaired {repaired_count} school(s)! {", ".join(message_parts)}.', 'success')
         else:
-            flash('All active schools already have completed enrollments.', 'info')
+            flash('All schools already have proper enrollments.', 'info')
     except Exception as e:
         db.session.rollback()
         flash(f'Error repairing enrollments: {str(e)}', 'danger')

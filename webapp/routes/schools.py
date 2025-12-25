@@ -546,6 +546,10 @@ def school_student_dashboard():
             ).first()
             today_attendance[cls['id']] = att
     
+    # Get projects count (school students don't have User accounts, so count is 0 for now)
+    # In the future, if projects are linked to school students, update this logic
+    projects_count = 0
+    
     return render_template('school_student_dashboard.html',
                          student=student,
                          enrolled_classes=enrolled_classes,
@@ -553,7 +557,8 @@ def school_student_dashboard():
                          attendance_records=attendance_records,
                          monthly_stats=monthly_stats,
                          today_attendance=today_attendance,
-                         today=today)
+                         today=today,
+                         projects_count=projects_count)
 
 
 @bp.route('/school-student/logout')

@@ -1,251 +1,1205 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - {{ student.student_name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --robotics-primary: #00d4ff;
-            --robotics-dark: #001a23;
-            --robotics-accent: #ff6b35;
-            --surface: #0a1929;
-            --surface-solid: #132f4c;
-            --on-surface: #e0e0e0;
-            --border: #1e4976;
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --robotics-primary: #00d4ff;
+        --robotics-secondary: #ff6b35;
+        --robotics-accent: #39ff14;
+        --robotics-dark: #0a0a1a;
+        --robotics-darker: #050510;
+        --robotics-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
+        --robotics-neon: linear-gradient(135deg, #39ff14 0%, #00d4ff 100%);
+        --surface: rgba(255, 255, 255, 0.05);
+        --surface-solid: rgba(5, 5, 16, 0.9);
+        --background: var(--robotics-darker);
+        --on-surface: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --border: rgba(0, 212, 255, 0.3);
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        --shadow-lg: 0 20px 25px -5px rgba(0, 212, 255, 0.2), 0 10px 10px -5px rgba(0, 212, 255, 0.1);
+        --shadow-neon: 0 0 30px rgba(0, 212, 255, 0.3);
+        --radius: 16px;
+        --radius-sm: 8px;
+        --font-tech: 'Orbitron', sans-serif;
+        --font-body: 'Rajdhani', sans-serif;
+    }
+
+    body {
+        background: var(--background);
+        background-image: 
+            radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+            linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+        font-family: var(--font-body);
+        color: var(--on-surface);
+        min-height: 100vh;
+    }
+
+    /* Modern Header */
+    .classroom-header {
+        background: var(--surface-solid);
+        border-bottom: 2px solid var(--border);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .classroom-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--robotics-gradient);
+        opacity: 0.1;
+    }
+
+    .welcome-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .welcome-content h1 {
+        font-family: var(--font-tech);
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--on-surface);
+        margin: 0;
+        background: var(--robotics-neon);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .welcome-subtitle {
+        color: var(--text-secondary);
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+        font-family: var(--font-body);
+    }
+
+    .quick-stats {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .stat-card {
+        background: var(--surface-solid);
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        text-align: center;
+        min-width: 100px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-neon);
+        border-color: var(--robotics-primary);
+    }
+
+    .stat-number {
+        font-family: var(--font-tech);
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--robotics-neon);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* School Identity Panel */
+    .school-identity-panel {
+        background: var(--surface-solid);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        border: 2px solid var(--robotics-primary);
+        backdrop-filter: blur(10px);
+    }
+
+    .school-identity-panel h3 {
+        font-family: var(--font-tech);
+        color: var(--robotics-primary);
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .identity-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0.75rem 1.5rem;
+        margin-right: 1rem;
+        margin-bottom: 0.5rem;
+        font-family: var(--font-body);
+    }
+
+    .identity-badge i {
+        color: var(--robotics-primary);
+        font-size: 1.2rem;
+    }
+
+    .identity-badge strong {
+        color: var(--robotics-primary);
+        margin-right: 0.5rem;
+    }
+
+    .identity-badge code {
+        background: rgba(0, 212, 255, 0.2);
+        color: var(--robotics-accent);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+
+    /* Main Layout */
+    .classroom-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Quick Actions Sidebar */
+    .quick-actions {
+        background: var(--surface-solid);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        height: fit-content;
+        position: sticky;
+        top: 2rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .section-title {
+        font-family: var(--font-tech);
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--robotics-primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--on-surface);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        font-family: var(--font-body);
+    }
+
+    .action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: var(--robotics-gradient);
+        transition: left 0.3s ease;
+        z-index: 0;
+    }
+
+    .action-btn:hover::before {
+        left: 0;
+    }
+
+    .action-btn:hover {
+        color: var(--robotics-dark);
+        border-color: var(--robotics-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-neon);
+    }
+
+    .action-btn i,
+    .action-btn span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .action-btn .badge {
+        margin-left: auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Main Content Area */
+    .main-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    /* Live Classes Section */
+    .live-class-section {
+        background: var(--surface-solid);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(10px);
+        margin-bottom: 2rem;
+    }
+
+    .live-class-card {
+        background: var(--surface);
+        border: 2px solid var(--robotics-accent);
+        border-radius: var(--radius-sm);
+        padding: 1.5rem;
+    }
+
+    .live-class-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .live-class-title {
+        font-family: var(--font-tech);
+        font-size: 1.5rem;
+        color: var(--robotics-accent);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .live-class-title .pulse-dot {
+        color: #ff0000;
+        animation: pulse 2s infinite;
+    }
+
+    /* Learning Materials Feed */
+    .materials-feed {
+        background: var(--surface-solid);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .feed-header {
+        background: var(--robotics-gradient);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .feed-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .feed-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: var(--font-body);
+    }
+
+    .feed-btn:hover,
+    .feed-btn.active {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
+
+    .materials-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    .material-item {
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        background: var(--surface);
+    }
+
+    .material-item:hover {
+        background: rgba(0, 212, 255, 0.05);
+    }
+
+    .material-item:last-child {
+        border-bottom: none;
+    }
+
+    .material-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .class-badge {
+        background: var(--robotics-gradient);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-family: var(--font-tech);
+    }
+
+    .material-time {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .material-content {
+        color: var(--on-surface);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 1rem;
+        transition: all 0.2s;
+        position: relative;
+        word-break: break-word;
+    }
+
+    .material-content.expanded {
+        background: rgba(57, 255, 20, 0.1);
+        border: 1px solid var(--robotics-accent);
+    }
+
+    .material-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .material-action {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: var(--font-body);
+    }
+
+    .material-action:hover {
+        background: var(--robotics-gradient);
+        color: white;
+        border-color: var(--robotics-primary);
+    }
+
+    /* Tools Sidebar */
+    .tools-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .tool-widget {
+        background: var(--surface-solid);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        position: sticky;
+        top: 2rem;
+        backdrop-filter: blur(10px);
+    }
+
+    /* Clock Widget */
+    .clock-widget {
+        text-align: center;
+        background: var(--robotics-gradient);
+        color: white;
+    }
+
+    .current-time {
+        font-family: var(--font-tech);
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .current-date {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Calendar Widget */
+    .calendar-widget {
+        background: var(--success-gradient);
+        color: white;
+    }
+
+    .calendar-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        font-family: var(--font-tech);
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .calendar-day:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .calendar-day.today {
+        background: rgba(255, 255, 255, 0.3);
+        font-weight: 700;
+    }
+
+    /* Notes Widget */
+    .notes-widget textarea {
+        width: 100%;
+        min-height: 120px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        font-family: var(--font-body);
+        resize: vertical;
+        transition: all 0.3s ease;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .notes-widget textarea:focus {
+        outline: none;
+        border-color: var(--robotics-primary);
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+
+    /* Progress Widget */
+    .progress-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .progress-label {
+        font-size: 0.875rem;
+        color: var(--on-surface);
+        font-weight: 500;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--robotics-neon);
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+        background: var(--robotics-neon);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Custom Scrollbar */
+    .materials-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .materials-container::-webkit-scrollbar-track {
+        background: var(--surface);
+    }
+
+    .materials-container::-webkit-scrollbar-thumb {
+        background: var(--robotics-gradient);
+        border-radius: 4px;
+    }
+
+    .materials-container::-webkit-scrollbar-thumb:hover {
+        background: var(--robotics-primary);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .classroom-container {
+            grid-template-columns: 1fr 2fr;
         }
         
-        body {
-            background: linear-gradient(135deg, var(--robotics-dark) 0%, var(--surface) 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--on-surface);
+        .tools-sidebar {
+            grid-column: 1 / -1;
+            grid-row: 3;
+            flex-direction: row;
+            overflow-x: auto;
         }
         
-        .navbar {
-            background: var(--surface-solid);
-            border-bottom: 2px solid var(--robotics-primary);
-            padding: 1rem 0;
+        .tool-widget {
+            min-width: 280px;
+            position: static;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .classroom-container {
+            grid-template-columns: 1fr;
+            gap: 1rem;
         }
         
-        .navbar-brand {
-            color: var(--robotics-primary);
-            font-weight: 700;
-            font-size: 1.5rem;
+        .welcome-section {
+            flex-direction: column;
+            align-items: flex-start;
         }
         
-        .student-info {
-            background: var(--surface-solid);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 2px solid var(--border);
+        .quick-stats {
+            width: 100%;
+            justify-content: space-between;
         }
         
-        .student-info h2 {
-            color: var(--robotics-primary);
-            margin-bottom: 1rem;
+        .tools-sidebar {
+            flex-direction: column;
         }
         
-        .info-badge {
-            background: rgba(0, 212, 255, 0.2);
-            border: 1px solid var(--robotics-primary);
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            display: inline-block;
-            margin: 0.25rem;
+        .tool-widget {
+            min-width: auto;
         }
         
-        .class-card {
-            background: var(--surface-solid);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 2px solid var(--border);
-            transition: all 0.3s;
+        .quick-actions {
+            position: static;
         }
         
-        .class-card:hover {
-            border-color: var(--robotics-primary);
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        .materials-container {
+            max-height: 400px;
         }
-        
-        .class-card h3 {
-            color: var(--robotics-primary);
-            margin-bottom: 1rem;
-        }
-        
-        .material-item {
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid var(--robotics-primary);
-        }
-        
-        .attendance-card {
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .attendance-badge {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-weight: 600;
-            margin: 0.25rem;
-        }
-        
-        .badge-present {
-            background: rgba(57, 255, 20, 0.2);
-            color: #39ff14;
-            border: 1px solid #39ff14;
-        }
-        
-        .badge-absent {
-            background: rgba(255, 107, 53, 0.2);
-            color: var(--robotics-accent);
-            border: 1px solid var(--robotics-accent);
-        }
-        
-        .btn-logout {
-            background: var(--robotics-accent);
-            border: none;
-            color: white;
-            padding: 0.5rem 1.5rem;
-            border-radius: 8px;
-        }
-        
-        .btn-logout:hover {
-            background: #e55a2b;
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-graduation-cap me-2"></i>Buxin Future Academy
-            </a>
-            <div class="ms-auto">
-                <a href="{{ url_for('schools.school_student_logout') }}" class="btn btn-logout">
-                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </a>
+    }
+</style>
+
+<!-- Modern Classroom Header -->
+<div class="classroom-header">
+    <div class="container">
+        <div class="welcome-section">
+            <div class="welcome-content">
+                <h1>SCHOOL CLASSROOM</h1>
+                <p class="welcome-subtitle">Welcome back, {{ student.student_name }}! Ready to build the future?</p>
+            </div>
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ enrolled_classes|length }}</div>
+                    <div class="stat-label">Active Classes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ projects_count if projects_count else 0 }}</div>
+                    <div class="stat-label">My Projects</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ materials|length if materials else 0 }}</div>
+                    <div class="stat-label">Materials</div>
+                </div>
             </div>
         </div>
-    </nav>
-    
-    <div class="container my-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="student-info">
-            <h2><i class="fas fa-user me-2"></i>Welcome, {{ student.student_name }}!</h2>
-            <div>
-                <span class="info-badge">
-                    <i class="fas fa-id-card me-2"></i><strong>System ID:</strong> {{ student.student_system_id }}
-                </span>
-                <span class="info-badge">
-                    <i class="fas fa-school me-2"></i><strong>School:</strong> {{ student.school_name }}
-                </span>
+    </div>
+</div>
+
+<div class="container">
+    <!-- School Identity Panel -->
+    <div class="school-identity-panel">
+        <h3>
+            <i class="fas fa-school me-2"></i>
+            School Identity
+        </h3>
+        <div>
+            <div class="identity-badge">
+                <i class="fas fa-university"></i>
+                <strong>School:</strong>
+                <span>{{ student.school_name }}</span>
+            </div>
+            <div class="identity-badge">
+                <i class="fas fa-id-card"></i>
+                <strong>Student ID:</strong>
+                <code>{{ student.student_system_id }}</code>
             </div>
         </div>
-        
-        {% if enrolled_classes %}
-            <h3 class="mb-3" style="color: var(--robotics-primary);">
-                <i class="fas fa-book me-2"></i>My Classes
+    </div>
+
+    <!-- Main Classroom Layout -->
+    <div class="classroom-container">
+        <!-- Quick Actions Sidebar -->
+        <div class="quick-actions">
+            <h3 class="section-title">
+                <i class="fas fa-bolt"></i>
+                Quick Actions
             </h3>
             
-            {% for cls in enrolled_classes %}
-            <div class="class-card">
-                <h3>{{ cls.name }}</h3>
-                {% if cls.description %}
-                    <p class="text-muted">{{ cls.description }}</p>
-                {% endif %}
-                
-                <!-- Attendance Status -->
-                {% if monthly_stats.get(cls.id) %}
-                <div class="attendance-card">
-                    <h5 style="color: var(--robotics-primary);">
-                        <i class="fas fa-calendar-check me-2"></i>Attendance This Month
-                    </h5>
-                    <div>
-                        <span class="attendance-badge badge-present">
-                            Present: {{ monthly_stats[cls.id].present }} days
-                        </span>
-                        <span class="attendance-badge">
-                            Total: {{ monthly_stats[cls.id].total }} days
-                        </span>
-                        <span class="attendance-badge" style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-primary); border: 1px solid var(--robotics-primary);">
-                            {{ monthly_stats[cls.id].percentage }}%
-                        </span>
+            <a href="https://www.tinkercad.com/joinclass/SCT4QKX8A" class="action-btn" target="_blank">
+                <i class="fas fa-robot"></i>
+                <span>Tinkercad</span>
+                <span class="badge bg-primary">Join</span>
+            </a>
+
+            <a href="{{ url_for('store.store') }}" class="action-btn">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Browse Courses</span>
+            </a>
+            
+            <a href="{{ url_for('store.available_classes') }}" class="action-btn">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>Join Classes</span>
+            </a>
+            
+            <a href="{{ url_for('student_projects.student_projects') }}" class="action-btn">
+                <i class="fas fa-project-diagram"></i>
+                <span>Student Projects</span>
+            </a>
+            
+            <a href="{{ url_for('student_projects.create_project') }}" class="action-btn">
+                <i class="fas fa-plus-circle"></i>
+                <span>Submit Assignments</span>
+            </a>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Live Classes Section -->
+            {% if enrolled_classes %}
+            <div class="live-class-section">
+                <h2 class="section-title" style="color: var(--robotics-accent);">
+                    <i class="fas fa-video"></i>
+                    LIVE CLASSES
+                </h2>
+                <div class="live-class-card">
+                    <div class="live-class-header">
+                        <div>
+                            <div class="live-class-title">
+                                <i class="fas fa-circle pulse-dot"></i>
+                                LIVE CLASS IN SESSION
+                            </div>
+                            <small class="text-muted">Join the live class meeting now</small>
+                        </div>
                     </div>
-                    {% if today_attendance.get(cls.id) %}
-                        {% if today_attendance[cls.id].status == 'present' %}
-                            <p class="mt-2"><strong style="color: #39ff14;">Today: PRESENT ✅</strong></p>
-                        {% else %}
-                            <p class="mt-2"><strong style="color: var(--robotics-accent);">Today: ABSENT ❌</strong></p>
-                        {% endif %}
+                    
+                    <div class="mt-3" style="border-radius: var(--radius-sm); overflow: hidden; background: #000; min-height: 500px;">
+                        <iframe 
+                            allow="camera; microphone; fullscreen; display-capture; autoplay" 
+                            src="https://meet.jit.si/SportingDimensionsEmphasizeGenerally" 
+                            style="height: 600px; width: 100%; border: 0px; display: block;">
+                        </iframe>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="alert" style="background: rgba(57, 255, 20, 0.1); border: 1px solid var(--robotics-accent); color: var(--on-surface);">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Instructions:</strong> Click "Allow" when prompted to enable your camera and microphone for the live class.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Learning Materials Feed -->
+            <div class="materials-feed">
+                <div class="feed-header">
+                    <div>
+                        <h3 style="margin: 0; font-weight: 600;">
+                            <i class="fas fa-stream me-2"></i>
+                            LEARNING MATERIALS
+                        </h3>
+                        <small style="opacity: 0.9;">Latest updates from your classes</small>
+                    </div>
+                    <div class="feed-controls">
+                        <button class="feed-btn active" onclick="filterMaterials('all')">All</button>
+                        <button class="feed-btn" onclick="filterMaterials('today')">Today</button>
+                        <button class="feed-btn" onclick="filterMaterials('week')">This Week</button>
+                    </div>
+                </div>
+                
+                <div class="materials-container" id="materials-container">
+                    {% if materials %}
+                        {% for material in materials %}
+                            <div class="material-item" data-date="{{ material.created_at.strftime('%Y-%m-%d') }}">
+                                <div class="material-header">
+                                    <span class="class-badge">{{ material.class_name() }}</span>
+                                    <div class="material-time">
+                                        <i class="fas fa-clock"></i>
+                                        {{ material.created_at.strftime('%b %d, %Y') }}
+                                    </div>
+                                </div>
+                                
+                                <div class="material-content" id="material-{{ material.id }}">
+                                    <!-- YouTube Video -->
+                                    {% if material.material_type == 'youtube' and material.youtube_url %}
+                                        {% set youtube_id = material.youtube_url.split('v=')[1].split('&')[0] if 'v=' in material.youtube_url else (material.youtube_url.split('youtu.be/')[1].split('?')[0] if 'youtu.be/' in material.youtube_url else material.youtube_url.split('/')[-1]) %}
+                                        <div class="youtube-embed-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-bottom: 1rem; border-radius: var(--radius-sm); overflow: hidden; background: #000;">
+                                            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+                                                    src="https://www.youtube.com/embed/{{ youtube_id }}?rel=0" 
+                                                    frameborder="0" 
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                                    allowfullscreen></iframe>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Uploaded Image -->
+                                    {% if material.material_type == 'image' and material.file_url %}
+                                        <div class="material-image-container" style="margin-bottom: 1rem;">
+                                            <img src="{{ material.file_url }}" 
+                                                 alt="{{ material.file_name or 'Learning Material Image' }}" 
+                                                 style="max-width: 100%; height: auto; border-radius: var(--radius-sm); cursor: pointer;"
+                                                 onclick="openImageModal('{{ material.file_url }}', '{{ material.file_name or 'Image' }}')">
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Uploaded Video -->
+                                    {% if material.material_type == 'video' and material.file_url %}
+                                        <div class="material-video-container" style="margin-bottom: 1rem;">
+                                            <video controls style="width: 100%; max-height: 500px; border-radius: var(--radius-sm);">
+                                                <source src="{{ material.file_url }}" type="video/{{ material.file_type or 'mp4' }}">
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- PDF Viewer -->
+                                    {% if material.material_type == 'pdf' and material.file_url %}
+                                        <div class="material-pdf-container" style="margin-bottom: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+                                            <iframe src="{{ material.file_url }}#toolbar=1" 
+                                                    style="width: 100%; height: 600px; border: none;"
+                                                    type="application/pdf">
+                                            </iframe>
+                                            <div style="padding: 0.5rem; background: var(--surface); text-align: center;">
+                                                <a href="{{ material.file_url }}" target="_blank" style="color: var(--robotics-primary); text-decoration: none;">
+                                                    <i class="fas fa-download me-2"></i>Download PDF: {{ material.file_name or 'Document' }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Text Content -->
+                                    <div onclick="toggleExpand({{ material.id }})" style="cursor: pointer;">
+                                        {{ material.content|urlize(target='_blank')|safe }}
+                                    </div>
+                                </div>
+                                
+                                <div class="material-actions">
+                                    <button class="material-action" onclick="bookmarkMaterial({{ material.id }})">
+                                        <i class="fas fa-bookmark"></i>
+                                        Bookmark
+                                    </button>
+                                    <button class="material-action" onclick="shareMaterial({{ material.id }})">
+                                        <i class="fas fa-share"></i>
+                                        Share
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
                     {% else %}
-                        <p class="mt-2 text-muted">Today: Not marked</p>
+                        <div class="empty-state">
+                            <i class="fas fa-book-open"></i>
+                            <h4>No learning materials yet</h4>
+                            <p>Materials shared by your instructors will appear here.</p>
+                        </div>
                     {% endif %}
                 </div>
-                {% endif %}
-                
-                <!-- Learning Materials -->
-                {% set class_materials = materials|selectattr('actual_class_id', 'equalto', cls.id)|list %}
-                {% if class_materials %}
-                <div class="mt-3">
-                    <h5 style="color: var(--robotics-primary);">
-                        <i class="fas fa-book-open me-2"></i>Learning Materials
-                    </h5>
-                    {% for material in class_materials %}
-                    <div class="material-item">
-                        <h6 style="color: var(--on-surface);">{{ material.title or 'Untitled Material' }}</h6>
-                        {% if material.content %}
-                            <p class="text-muted small">{{ material.content[:200] }}{% if material.content|length > 200 %}...{% endif %}</p>
-                        {% endif %}
-                        {% if material.file_url %}
-                            <a href="{{ material.file_url }}" target="_blank" class="btn btn-sm" style="background: var(--robotics-primary); color: var(--robotics-dark); margin-top: 0.5rem;">
-                                <i class="fas fa-download me-2"></i>Download
-                            </a>
-                        {% endif %}
-                        {% if material.youtube_url %}
-                            <a href="{{ material.youtube_url }}" target="_blank" class="btn btn-sm" style="background: var(--robotics-accent); color: white; margin-top: 0.5rem;">
-                                <i class="fab fa-youtube me-2"></i>Watch Video
-                            </a>
-                        {% endif %}
-                        <small class="text-muted d-block mt-2">
-                            <i class="fas fa-clock me-1"></i>{{ material.created_at.strftime('%B %d, %Y') }}
-                        </small>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted mt-3">No learning materials available for this class yet.</p>
-                {% endif %}
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>You are not enrolled in any classes yet. Please contact your school administrator.
-            </div>
-        {% endif %}
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        </div>
 
+        <!-- Tools & Widgets Sidebar -->
+        <div class="tools-sidebar">
+            <!-- Live Clock Widget -->
+            <div class="tool-widget clock-widget">
+                <div class="current-time" id="current-time">--:--</div>
+                <div class="current-date" id="current-date">--</div>
+            </div>
+
+            <!-- Quick Calendar -->
+            <div class="tool-widget calendar-widget">
+                <h4 class="section-title" style="color: white; margin-bottom: 1rem;">
+                    <i class="fas fa-calendar-alt"></i>
+                    Calendar
+                </h4>
+                <div class="calendar-header" id="calendar-month">-- 2024</div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Quick Notes -->
+            <div class="tool-widget notes-widget">
+                <h4 class="section-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Quick Notes
+                </h4>
+                <textarea placeholder="Jot down your thoughts..." id="quick-notes"></textarea>
+                <button class="btn btn-sm mt-2" style="background: var(--robotics-gradient); color: white; border: none; border-radius: 20px; padding: 0.5rem 1rem;" onclick="saveNotes()">
+                    <i class="fas fa-save me-1"></i>Save
+                </button>
+            </div>
+
+            <!-- Learning Progress -->
+            {% if enrolled_classes %}
+            <div class="tool-widget">
+                <h4 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Progress
+                </h4>
+                
+                {% for cls in enrolled_classes %}
+                <div class="progress-item">
+                    <span class="progress-label">{{ cls.name }}</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-fill" style="width: {{ monthly_stats[cls.id].percentage if monthly_stats.get(cls.id) else 0 }}%;"></div>
+                    </div>
+                    <small class="text-muted">{{ monthly_stats[cls.id].percentage if monthly_stats.get(cls.id) else 0 }}%</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize the modern classroom
+document.addEventListener('DOMContentLoaded', function() {
+    updateClock();
+    generateCalendar();
+    loadSavedNotes();
+    processYouTubeLinksInContent();
+    
+    setInterval(updateClock, 1000);
+});
+
+// Process YouTube links in material content (for backward compatibility)
+function processYouTubeLinksInContent() {
+    const materialContents = document.querySelectorAll('.material-content');
+    materialContents.forEach(function(contentDiv) {
+        // Skip if already has YouTube embed
+        if (contentDiv.querySelector('.youtube-embed-container')) {
+            return;
+        }
+        
+        const text = contentDiv.innerHTML;
+        // Match YouTube URLs
+        const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/g;
+        let match;
+        let hasYouTube = false;
+        
+        while ((match = youtubeRegex.exec(text)) !== null) {
+            hasYouTube = true;
+            const videoId = match[1];
+            const youtubeUrl = match[0];
+            
+            // Create embed container
+            const embedContainer = document.createElement('div');
+            embedContainer.className = 'youtube-embed-container';
+            embedContainer.style.cssText = 'position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-bottom: 1rem; border-radius: var(--radius-sm); overflow: hidden; background: #000;';
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed/${videoId}?rel=0`;
+            iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
+            iframe.frameBorder = '0';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            iframe.allowFullscreen = true;
+            
+            embedContainer.appendChild(iframe);
+            
+            // Replace the YouTube link in content with embed
+            contentDiv.innerHTML = contentDiv.innerHTML.replace(youtubeUrl, '');
+            contentDiv.insertBefore(embedContainer, contentDiv.firstChild);
+        }
+    });
+}
+
+// Real-time clock
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const dateString = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    document.getElementById('current-time').textContent = timeString;
+    document.getElementById('current-date').textContent = dateString;
+}
+
+// Generate calendar
+function generateCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+    
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    document.getElementById('calendar-month').textContent = `${monthNames[month]} ${year}`;
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const calendarGrid = document.getElementById('calendar-grid');
+    calendarGrid.innerHTML = '';
+
+    // Day headers
+    const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day';
+        header.textContent = day;
+        header.style.fontWeight = '600';
+        header.style.opacity = '0.7';
+        calendarGrid.appendChild(header);
+    });
+
+    // Fill empty days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day';
+        emptyCell.style.visibility = 'hidden';
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    // Fill days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day';
+        if (day === today) {
+            dayCell.classList.add('today');
+        }
+        dayCell.textContent = day;
+        calendarGrid.appendChild(dayCell);
+    }
+}
+
+// Filter materials by time frame
+function filterMaterials(timeFrame) {
+    const allMaterials = document.querySelectorAll('.material-item');
+    const buttons = document.querySelectorAll('.feed-btn');
+    
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    allMaterials.forEach(material => {
+        material.style.display = 'block';
+        
+        const materialDate = new Date(material.getAttribute('data-date'));
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        
+        if (timeFrame === 'today' && materialDate.toDateString() !== today.toDateString()) {
+            material.style.display = 'none';
+        } else if (timeFrame === 'week' && materialDate < oneWeekAgo) {
+            material.style.display = 'none';
+        }
+    });
+}
+
+// Toggle material expansion
+function toggleExpand(materialId) {
+    const content = document.getElementById('material-' + materialId);
+    content.classList.toggle('expanded');
+}
+
+// Save notes to local storage
+function saveNotes() {
+    const notesContent = document.getElementById('quick-notes').value;
+    localStorage.setItem('quickNotes', notesContent);
+    alert('Notes saved!');
+}
+
+// Load saved notes from local storage
+function loadSavedNotes() {
+    const savedNotes = localStorage.getItem('quickNotes');
+    if (savedNotes) {
+        document.getElementById('quick-notes').value = savedNotes;
+    }
+}
+
+// Bookmark material: copy content to clipboard
+function bookmarkMaterial(materialId) {
+    const content = document.getElementById('material-' + materialId).innerText;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(content).then(function() {
+            alert('Material content copied to clipboard!');
+        }, function() {
+            alert('Failed to copy content.');
+        });
+    } else {
+        alert('Clipboard not supported.');
+    }
+}
+
+// Share material: use Web Share API or fallback to copy
+function shareMaterial(materialId) {
+    const materialElement = document.getElementById('material-' + materialId);
+    const content = materialElement.innerText;
+    const materialUrl = window.location.href + '#material-' + materialId;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Learning Material',
+            text: content,
+            url: materialUrl
+        }).catch(() => {
+            // User cancelled or not supported
+        });
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(materialUrl).then(function() {
+            alert('Material link copied! You can now share it.');
+        });
+    } else {
+        // Fallback: show share dialog
+        const shareText = `Check out this learning material:\n\n${content}\n\n${materialUrl}`;
+        prompt('Copy this link to share:', materialUrl);
+    }
+}
+
+// Open image in modal for full-size viewing
+function openImageModal(imageUrl, imageTitle) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('imageModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'imageModal';
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="background: var(--surface-solid); border: 1px solid var(--border);">
+                    <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                        <h5 class="modal-title" style="color: var(--robotics-primary);" id="imageModalTitle"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                    </div>
+                    <div class="modal-body text-center" style="padding: 0;">
+                        <img id="modalImage" src="" alt="" style="max-width: 100%; height: auto; border-radius: 0;">
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('modalImage').alt = imageTitle;
+    document.getElementById('imageModalTitle').textContent = imageTitle;
+    
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
+</script>
+{% endblock %}

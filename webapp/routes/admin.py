@@ -3348,9 +3348,16 @@ def admin_family_class_detail(enrollment_id):
                 user = User.query.get(enrollment.user_id)
                 if user:
                     # Generate Family System ID for the enrollment if not exists
-                    if not enrollment.family_system_id:
-                        from ..models.classes import generate_family_system_id
-                        enrollment.family_system_id = generate_family_system_id()
+                    try:
+                        if not enrollment.family_system_id:
+                            from ..models.classes import generate_family_system_id
+                            enrollment.family_system_id = generate_family_system_id()
+                    except Exception as e:
+                        # Handle case where family_system_id column doesn't exist yet
+                        if 'family_system_id' in str(e).lower() or 'column' in str(e).lower():
+                            flash('Database migration required. Please visit /admin/add-family-system-id-column first.', 'warning')
+                            return redirect(url_for('admin.admin_family_class_detail', enrollment_id=enrollment_id))
+                        raise
                     
                     # Generate Student ID if not exists
                     if not user.student_id:

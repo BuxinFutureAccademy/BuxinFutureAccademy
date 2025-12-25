@@ -636,11 +636,18 @@ def enter_classroom():
         
         # 3. FAMILY CLASS LOGIN: Family Name + Family System ID (FAM-XXXXX format)
         elif system_id.startswith('FAM-'):
-            enrollment = ClassEnrollment.query.filter_by(
-                family_system_id=system_id,
-                class_type='family',
-                status='completed'
-            ).first()
+            try:
+                enrollment = ClassEnrollment.query.filter_by(
+                    family_system_id=system_id,
+                    class_type='family',
+                    status='completed'
+                ).first()
+            except Exception as e:
+                # Handle case where family_system_id column doesn't exist yet
+                if 'family_system_id' in str(e).lower() or 'column' in str(e).lower():
+                    flash('Database migration required. Please contact administrator to run migration at /admin/add-family-system-id-column', 'warning')
+                    return render_template('enter_classroom.html')
+                raise
             
             if enrollment:
                 # Verify family name matches (check customer_name or user's name)

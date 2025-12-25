@@ -1389,12 +1389,13 @@ def student_dashboard():
             attendance_students = []
             
             if cls['class_type'] == 'school':
-                # CRITICAL FIX: For school classes, ONLY show students from THIS school's enrollment
-                # Do NOT get all enrollments for the class - that would include other schools!
-                # Only include the current school's enrollment
+                # CRITICAL FIX: For school classes, ONLY show registered SchoolStudent records
+                # Do NOT include the school admin user in attendance - only registered students
                 current_school_enrollment = cls['enrollment']
                 
-                # Only add the school admin user if they're enrolled (usually they are)
+                # For class_students, we can include the admin user (for other purposes)
+                # But for attendance, we ONLY want registered school students
+                students = []
                 if current_school_enrollment and current_school_enrollment.user_id == current_user.id:
                     student = User.query.get(current_school_enrollment.user_id)
                     if student:
@@ -1402,23 +1403,19 @@ def student_dashboard():
                             'id': student.id,
                             'name': f"{student.first_name} {student.last_name}",
                             'username': student.username,
-                            'type': 'user'  # School admin user
-                        })
-                        attendance_students.append({
-                            'id': student.id,
-                            'name': f"{student.first_name} {student.last_name}",
-                            'username': student.username,
-                            'type': 'user'
+                            'type': 'user'  # School admin user (for class_students only, not attendance)
                         })
                 
-                # CRITICAL: Only show students registered for THIS specific class and THIS school
+                # CRITICAL: Attendance should ONLY show registered SchoolStudent records
                 # Filter by class_id, enrollment_id, and registered_by to ensure strict school isolation
                 registered_school_students = SchoolStudent.query.filter_by(
                     class_id=cls['id'],  # THIS class only
                     enrollment_id=current_school_enrollment.id,  # THIS school's enrollment only
                     registered_by=current_user.id  # Only students registered by this school admin
-                ).all()
+                ).order_by(SchoolStudent.student_name).all()
                 
+                # Attendance list: ONLY registered school students (no admin user)
+                attendance_students = []
                 for reg_student in registered_school_students:
                     attendance_students.append({
                         'id': f"school_student_{reg_student.id}",  # Unique identifier

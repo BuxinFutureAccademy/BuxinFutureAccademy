@@ -4478,20 +4478,26 @@ def admin_class_time_settings():
             if time_id:
                 class_time = ClassTime.query.get(time_id)
                 if class_time:
-                    # Check if there are any student selections using this time
-                    selections = StudentClassTimeSelection.query.filter_by(class_time_id=time_id).all()
-                    if selections:
-                        # Delete all selections first
+                    try:
+                        # Check if there are any student selections using this time
+                        selections = StudentClassTimeSelection.query.filter_by(class_time_id=time_id).all()
+                        selection_count = len(selections)
+                        
+                        # Delete all selections first (if any)
                         for selection in selections:
                             db.session.delete(selection)
+                        
+                        # Now delete the time slot
+                        db.session.delete(class_time)
                         db.session.commit()
-                        flash(f'Time slot deleted successfully. {len(selections)} student selection(s) were also removed.', 'success')
-                    else:
-                        flash('Time slot deleted successfully.', 'success')
-                    
-                    # Now delete the time slot
-                    db.session.delete(class_time)
-                    db.session.commit()
+                        
+                        if selection_count > 0:
+                            flash(f'Time slot deleted successfully. {selection_count} student selection(s) were also removed.', 'success')
+                        else:
+                            flash('Time slot deleted successfully.', 'success')
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Error deleting time slot: {str(e)}', 'danger')
                 else:
                     flash('Time slot not found.', 'danger')
         

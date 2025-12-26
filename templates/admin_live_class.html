@@ -162,37 +162,45 @@
 <script>
 // Class data from server
 const classData = {
-    individual: {{ individual_classes|map(attribute='id')|list|tojson }},
-    individualNames: {{ individual_classes|map(attribute='name')|list|tojson }},
-    group: {{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='id')|list|tojson }},
-    groupNames: {{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='name')|list|tojson }},
-    family: {{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='id')|list|tojson }},
-    familyNames: {{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='name')|list|tojson }},
-    school: {{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='id')|list|tojson }},
-    schoolNames: {{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='name')|list|tojson }}
+    individual: {{ (individual_classes|map(attribute='id')|list) if individual_classes else []|tojson }},
+    individualNames: {{ (individual_classes|map(attribute='name')|list) if individual_classes else []|tojson }},
+    group: {{ (group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='id')|list) if group_classes else []|tojson }},
+    groupNames: {{ (group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='name')|list) if group_classes else []|tojson }},
+    family: {{ (family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='id')|list) if family_classes else []|tojson }},
+    familyNames: {{ (family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='name')|list) if family_classes else []|tojson }},
+    school: {{ (school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='id')|list) if school_classes else []|tojson }},
+    schoolNames: {{ (school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='name')|list) if school_classes else []|tojson }}
 };
 
 // Time data from server
 const timeData = {
     individual: [
+        {% if class_times_by_type.individual %}
         {% for time in class_times_by_type.individual %}
         {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
+        {% endif %}
     ],
     family: [
+        {% if class_times_by_type.family %}
         {% for time in class_times_by_type.family %}
         {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
+        {% endif %}
     ],
     group: [
+        {% if class_times_by_type.group %}
         {% for time in class_times_by_type.group %}
         {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
+        {% endif %}
     ],
     school: [
+        {% if class_times_by_type.school %}
         {% for time in class_times_by_type.school %}
         {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
+        {% endif %}
     ]
 };
 

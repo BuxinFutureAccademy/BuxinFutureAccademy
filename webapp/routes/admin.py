@@ -4634,14 +4634,15 @@ def admin_live_class():
                             
                             if selection:
                                 user = enrollment.user
-                                eligible_students.append({
-                                    'id': user.id,
-                                    'name': f"{user.first_name} {user.last_name}",
-                                    'system_id': user.student_id or 'N/A',
-                                    'class_type': 'Individual',
-                                    'enrollment': enrollment,
-                                    'user': user
-                                })
+                                if user:  # Check if user exists
+                                    eligible_students.append({
+                                        'id': user.id,
+                                        'name': f"{user.first_name} {user.last_name}",
+                                        'system_id': user.student_id or 'N/A',
+                                        'class_type': 'Individual',
+                                        'enrollment': enrollment,
+                                        'user': user
+                                    })
                     
                     elif selected_class_type == 'family':
                         # Get families who selected this time
@@ -4665,14 +4666,24 @@ def admin_live_class():
                                     class_id=selected_class_obj.id
                                 ).all()
                                 
-                                for member in family_members:
+                                if family_members:
+                                    for member in family_members:
+                                        eligible_students.append({
+                                            'id': f"family_{member.id}",
+                                            'name': member.member_name,
+                                            'system_id': enrollment.family_system_id or 'N/A',
+                                            'class_type': 'Family',
+                                            'enrollment': enrollment,
+                                            'member': member
+                                        })
+                                elif user:  # If no family members, add the main user
                                     eligible_students.append({
-                                        'id': f"family_{member.id}",
-                                        'name': member.member_name,
+                                        'id': user.id,
+                                        'name': f"{user.first_name} {user.last_name}",
                                         'system_id': enrollment.family_system_id or 'N/A',
                                         'class_type': 'Family',
                                         'enrollment': enrollment,
-                                        'member': member
+                                        'user': user
                                     })
                     
                     elif selected_class_type == 'group':
@@ -4685,14 +4696,15 @@ def admin_live_class():
                         
                         for enrollment in enrollments:
                             user = enrollment.user
-                            eligible_students.append({
-                                'id': user.id,
-                                'name': f"{user.first_name} {user.last_name}",
-                                'system_id': user.student_id or enrollment.group_system_id or 'N/A',
-                                'class_type': 'Group',
-                                'enrollment': enrollment,
-                                'user': user
-                            })
+                            if user:  # Check if user exists
+                                eligible_students.append({
+                                    'id': user.id,
+                                    'name': f"{user.first_name} {user.last_name}",
+                                    'system_id': user.student_id or enrollment.group_system_id or 'N/A',
+                                    'class_type': 'Group',
+                                    'enrollment': enrollment,
+                                    'user': user
+                                })
                     
                     elif selected_class_type == 'school':
                         # Get all school students registered in this class

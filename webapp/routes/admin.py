@@ -2038,12 +2038,20 @@ def student_dashboard():
                     # Check if current day and time match
                     if (current_day == student_day and 
                         student_start_time <= current_time <= student_end_time):
-                        active_live_class = {
-                            'enrollment': enrollment,
-                            'class_time': class_time,
-                            'class': enrollment.get_class()
-                        }
-                        break  # Only one live class at a time
+                        # Get the class object based on class_type
+                        class_obj = None
+                        if class_type == 'individual':
+                            class_obj = IndividualClass.query.get(enrollment.class_id)
+                        elif class_type == 'family':
+                            class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='family').first()
+                        
+                        if class_obj:
+                            active_live_class = {
+                                'enrollment': enrollment,
+                                'class_time': class_time,
+                                'class': class_obj
+                            }
+                            break  # Only one live class at a time
                 except Exception:
                     pass  # If conversion fails, skip
                     
@@ -2067,12 +2075,20 @@ def student_dashboard():
                     # Check if current day and time match
                     if (current_day == student_day and 
                         student_start_time <= current_time <= student_end_time):
-                        active_live_class = {
-                            'enrollment': enrollment,
-                            'class_time': class_time,
-                            'class': enrollment.get_class()
-                        }
-                        break  # Only one live class at a time
+                        # Get the class object based on class_type
+                        class_obj = None
+                        if class_type == 'group':
+                            class_obj = GroupClass.query.get(enrollment.class_id)
+                        elif class_type == 'school':
+                            class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='school').first()
+                        
+                        if class_obj:
+                            active_live_class = {
+                                'enrollment': enrollment,
+                                'class_time': class_time,
+                                'class': class_obj
+                            }
+                            break  # Only one live class at a time
                 except Exception:
                     pass  # If conversion fails, skip
     

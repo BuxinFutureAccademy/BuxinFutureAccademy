@@ -212,6 +212,32 @@ def add_profile_picture_column():
         """, 500
 
 
+@bp.route('/admin/add-timezone-columns')
+def add_timezone_columns():
+    """Add timezone columns to ClassTime and User tables - accessible without login for initial setup"""
+    from sqlalchemy import text
+    from flask import jsonify
+    
+    try:
+        # Add timezone column to class_time table
+        db.session.execute(text("""
+            ALTER TABLE class_time 
+            ADD COLUMN IF NOT EXISTS timezone VARCHAR(50) NOT NULL DEFAULT 'Asia/Kolkata'
+        """))
+        
+        # Add timezone column to user table
+        db.session.execute(text("""
+            ALTER TABLE "user" 
+            ADD COLUMN IF NOT EXISTS timezone VARCHAR(50)
+        """))
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Timezone columns added successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @bp.route('/admin/add-school-student-system-id-column')
 def add_school_student_system_id_column():
     """Add student_system_id column to school_student table - ADMIN ONLY"""
@@ -1963,6 +1989,15 @@ def student_dashboard():
     # Get class times for each enrolled class type
     class_times_by_type = {}
     student_time_selections = {}
+    active_live_class = None  # Will contain the enrollment and class time if live class is active
+    
+    # Get current time in student's timezone
+    import pytz
+    from datetime import datetime, time as dt_time
+    student_tz = pytz.timezone(student_timezone)
+    current_datetime = datetime.now(student_tz)
+    current_time = current_datetime.time()
+    current_day = current_datetime.strftime('%A')  # Monday, Tuesday, etc.
     
     for enrollment in enrollments:
         class_type = enrollment.class_type
@@ -1980,6 +2015,66 @@ def student_dashboard():
         ).first()
         if selection:
             student_time_selections[enrollment.id] = selection
+        
+        # Check if Live Class should be active for this enrollment
+        if class_type in ['individual', 'family']:
+            # For Individual/Family: Check if student has selected a time and it matches current time
+            if selection and selection.class_time:
+                class_time = selection.class_time
+                # Convert class time to student's timezone
+                try:
+                    admin_tz = pytz.timezone(class_time.timezone)
+                    today = current_datetime.date()
+                    start_dt = admin_tz.localize(datetime.combine(today, class_time.start_time))
+                    end_dt = admin_tz.localize(datetime.combine(today, class_time.end_time))
+                    
+                    start_dt_student = start_dt.astimezone(student_tz)
+                    end_dt_student = end_dt.astimezone(student_tz)
+                    
+                    student_start_time = start_dt_student.time()
+                    student_end_time = end_dt_student.time()
+                    student_day = start_dt_student.strftime('%A')
+                    
+                    # Check if current day and time match
+                    if (current_day == student_day and 
+                        student_start_time <= current_time <= student_end_time):
+                        active_live_class = {
+                            'enrollment': enrollment,
+                            'class_time': class_time,
+                            'class': enrollment.get_class()
+                        }
+                        break  # Only one live class at a time
+                except Exception:
+                    pass  # If conversion fails, skip
+                    
+        elif class_type in ['group', 'school']:
+            # For Group/School: Check if there's a fixed time that matches current time
+            fixed_times = class_times_by_type.get(class_type, [])
+            for class_time in fixed_times:
+                try:
+                    admin_tz = pytz.timezone(class_time.timezone)
+                    today = current_datetime.date()
+                    start_dt = admin_tz.localize(datetime.combine(today, class_time.start_time))
+                    end_dt = admin_tz.localize(datetime.combine(today, class_time.end_time))
+                    
+                    start_dt_student = start_dt.astimezone(student_tz)
+                    end_dt_student = end_dt.astimezone(student_tz)
+                    
+                    student_start_time = start_dt_student.time()
+                    student_end_time = end_dt_student.time()
+                    student_day = start_dt_student.strftime('%A')
+                    
+                    # Check if current day and time match
+                    if (current_day == student_day and 
+                        student_start_time <= current_time <= student_end_time):
+                        active_live_class = {
+                            'enrollment': enrollment,
+                            'class_time': class_time,
+                            'class': enrollment.get_class()
+                        }
+                        break  # Only one live class at a time
+                except Exception:
+                    pass  # If conversion fails, skip
     
     return render_template('student_dashboard.html', 
                           purchases=purchases, 
@@ -2000,6 +2095,7 @@ def student_dashboard():
                           class_times_by_type=class_times_by_type,
                           student_time_selections=student_time_selections,
                           student_timezone=student_timezone,
+                          active_live_class=active_live_class,
                           now=now,
                           today=today,
                           Attendance=Attendance)

@@ -999,7 +999,8 @@
             {% endif %}
 
 
-            <!-- Live Classes Section -->
+            <!-- Live Classes Section - Only visible when current time matches student's class time -->
+            {% if active_live_class %}
             <div class="attendance-section" style="margin-bottom: 2rem;">
                 <h2 class="section-title" style="color: var(--robotics-accent);">
                     <i class="fas fa-video"></i>
@@ -1013,6 +1014,13 @@
                                 LIVE CLASS IN SESSION
                             </div>
                             <small class="text-muted">Join the live class meeting now</small>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-day me-1"></i>{{ active_live_class.class_time.day }}
+                                    <i class="fas fa-clock me-1 ms-2"></i>{{ active_live_class.class_time.get_display_time(student_timezone) }}
+                                    <i class="fas fa-book me-1 ms-2"></i>{{ active_live_class.class.name if active_live_class.class else 'Class' }}
+                                </small>
+                            </div>
                         </div>
                     </div>
                     
@@ -1032,6 +1040,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Learning Materials Feed -->
             <div class="materials-feed">

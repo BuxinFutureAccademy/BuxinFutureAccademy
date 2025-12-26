@@ -451,57 +451,50 @@ def individual_enter():
 
 @bp.route('/group/enter', methods=['GET', 'POST'])
 def group_enter():
-    """Group class entry using Group Class Name + Group System ID (GRO-XXXXXX)"""
+    """Group class entry using Group Class Name + Student System ID (STU-XXXXX)"""
     from flask_login import login_user
     from ..models.classes import ClassEnrollment, GroupClass
     
     if request.method == 'POST':
         group_name = request.form.get('group_name', '').strip()
-        group_system_id = request.form.get('group_system_id', '').strip().upper()
+        student_system_id = request.form.get('student_system_id', '').strip().upper()
         
-        if not group_name or not group_system_id:
-            flash('Please provide both Group Class Name and Group System ID.', 'danger')
+        if not group_name or not student_system_id:
+            flash('Please provide both Group Class Name and Student System ID.', 'danger')
             return render_template('group_enter.html')
         
-        # Find enrollment by group_system_id
-        try:
-            enrollment = ClassEnrollment.query.filter_by(
-                group_system_id=group_system_id,
-                class_type='group',
-                status='completed'
-            ).first()
-        except Exception as e:
-            if 'group_system_id' in str(e).lower() or 'column' in str(e).lower():
-                flash('Database migration required. Please contact administrator.', 'warning')
-                return render_template('group_enter.html')
-            raise
+        # Find user by Student System ID
+        user = User.query.filter_by(student_id=student_system_id).first()
         
-        if not enrollment:
-            flash('Group System ID not found.', 'danger')
+        if not user:
+            flash('Student System ID not found.', 'danger')
             return render_template('group_enter.html')
         
-        # Find group class by ID from enrollment (more reliable than name)
+        # Find group class by name
         group_class = GroupClass.query.filter_by(
-            id=enrollment.class_id,
+            name=group_name,
             class_type='group'
         ).first()
         
         if not group_class:
-            flash('Group Class not found for this enrollment.', 'danger')
+            flash('Group Class not found. Please check the Group Class Name.', 'danger')
             return render_template('group_enter.html')
         
-        # Verify group name matches (case-insensitive, trimmed)
-        group_name_normalized = group_name.strip().lower()
-        actual_class_name_normalized = group_class.name.strip().lower() if group_class.name else ''
+        # Check if student is enrolled and approved for this group class
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=user.id,
+            class_id=group_class.id,
+            class_type='group',
+            status='completed'  # Must be approved
+        ).first()
         
-        if group_name_normalized != actual_class_name_normalized:
-            flash(f'Group Class Name does not match. Expected: "{group_class.name}", but you entered: "{group_name}".', 'danger')
+        if not enrollment:
+            flash('You are not enrolled in this Group Class or your enrollment is pending approval.', 'danger')
             return render_template('group_enter.html')
         
-        # Get user from enrollment
-        user = User.query.get(enrollment.user_id)
-        if not user:
-            flash('User account not found.', 'danger')
+        # Verify student is actually in the group class students list
+        if user not in group_class.students:
+            flash('Your enrollment is not active in this Group Class. Please contact administrator.', 'danger')
             return render_template('group_enter.html')
         
         login_user(user)

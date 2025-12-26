@@ -1033,301 +1033,6 @@
                 </div>
             </div>
 
-            <!-- Class Time Sections -->
-            {% if enrolled_classes %}
-                {% for cls in enrolled_classes %}
-                    {% if cls.class_type == 'individual' %}
-                        <!-- Individual Class Time Selection -->
-                        <div class="attendance-section" style="margin-bottom: 2rem;">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h2 class="section-title mb-0" style="color: var(--robotics-accent);">
-                                    <i class="fas fa-clock me-2"></i>
-                                    Available Class Times - {{ cls.name }}
-                                </h2>
-                                <!-- Timezone Selector -->
-                                <div class="d-flex align-items-center gap-2">
-                                    <label class="text-muted small mb-0">Country:</label>
-                                    <form method="POST" action="{{ url_for('main.update_timezone') }}" class="d-inline" id="timezone-form-individual">
-                                        <select name="timezone" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()">
-                                            <option value="Asia/Kolkata" {% if student_timezone == 'Asia/Kolkata' %}selected{% endif %}>India (IST)</option>
-                                            <option value="Africa/Banjul" {% if student_timezone == 'Africa/Banjul' %}selected{% endif %}>Gambia (GMT)</option>
-                                            <option value="Africa/Lagos" {% if student_timezone == 'Africa/Lagos' %}selected{% endif %}>Nigeria (WAT)</option>
-                                            <option value="Africa/Cairo" {% if student_timezone == 'Africa/Cairo' %}selected{% endif %}>Egypt (EET)</option>
-                                            <option value="Africa/Johannesburg" {% if student_timezone == 'Africa/Johannesburg' %}selected{% endif %}>South Africa (SAST)</option>
-                                            <option value="Europe/London" {% if student_timezone == 'Europe/London' %}selected{% endif %}>UK (GMT/BST)</option>
-                                            <option value="Europe/Paris" {% if student_timezone == 'Europe/Paris' %}selected{% endif %}>France (CET/CEST)</option>
-                                            <option value="Europe/Berlin" {% if student_timezone == 'Europe/Berlin' %}selected{% endif %}>Germany (CET/CEST)</option>
-                                            <option value="America/New_York" {% if student_timezone == 'America/New_York' %}selected{% endif %}>USA - Eastern</option>
-                                            <option value="America/Los_Angeles" {% if student_timezone == 'America/Los_Angeles' %}selected{% endif %}>USA - Pacific</option>
-                                            <option value="Asia/Dubai" {% if student_timezone == 'Asia/Dubai' %}selected{% endif %}>UAE (GST)</option>
-                                            <option value="Asia/Singapore" {% if student_timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore (SGT)</option>
-                                            <option value="Asia/Tokyo" {% if student_timezone == 'Asia/Tokyo' %}selected{% endif %}>Japan (JST)</option>
-                                            <option value="Australia/Sydney" {% if student_timezone == 'Australia/Sydney' %}selected{% endif %}>Australia - Sydney</option>
-                                        </select>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="attendance-card" style="background: var(--surface-solid); border: 2px solid var(--robotics-accent);">
-                                {% set available_times = class_times_by_type.get('individual', []) %}
-                                {% set current_selection = student_time_selections.get(cls.enrollment.id) %}
-                                
-                                <div class="alert alert-info mb-3" style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--robotics-accent);">
-                                    <i class="fas fa-globe me-2"></i>
-                                    <strong>🕒 Times are automatically converted to your local country time.</strong>
-                                    <small class="d-block mt-1">(You can change your country above if needed.)</small>
-                                </div>
-                                
-                                {% if current_selection %}
-                                    <div class="alert alert-success mb-3">
-                                        <i class="fas fa-check-circle me-2"></i>
-                                        <strong>Selected Time:</strong> {{ current_selection.class_time.get_full_display(student_timezone) if current_selection.class_time else 'N/A' }}
-                                    </div>
-                                {% endif %}
-                                
-                                {% if available_times %}
-                                    <div class="row g-3">
-                                        {% for time_slot in available_times %}
-                                        <div class="col-md-6 col-lg-4">
-                                            <div class="card {% if current_selection and current_selection.class_time_id == time_slot.id %}border-success{% else %}border-secondary{% endif %}" 
-                                                 style="background: var(--surface); border-width: 2px;">
-                                                <div class="card-body text-center">
-                                                    <h5 class="card-title">{{ time_slot.get_full_display(student_timezone) }}</h5>
-                                                    <small class="text-muted d-block mb-2">Original: {{ time_slot.get_full_display() }} ({{ time_slot.get_timezone_name() }})</small>
-                                                    {% if current_selection and current_selection.class_time_id == time_slot.id %}
-                                                        <span class="badge bg-success mb-2">Selected</span>
-                                                    {% else %}
-                                                        <form method="POST" action="{{ url_for('main.select_class_time') }}" style="display: inline;">
-                                                            <input type="hidden" name="time_id" value="{{ time_slot.id }}">
-                                                            <button type="submit" class="btn btn-sm btn-primary">
-                                                                <i class="fas fa-check me-1"></i>Select This Time
-                                                            </button>
-                                                        </form>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        No class times available yet. Please check back later.
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% elif cls.class_type == 'family' %}
-                        <!-- Family Class Time Selection -->
-                        <div class="attendance-section" style="margin-bottom: 2rem;">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h2 class="section-title mb-0" style="color: var(--robotics-accent);">
-                                    <i class="fas fa-clock me-2"></i>
-                                    Available Family Class Times - {{ cls.name }}
-                                </h2>
-                                <!-- Timezone Selector -->
-                                <div class="d-flex align-items-center gap-2">
-                                    <label class="text-muted small mb-0">Country:</label>
-                                    <form method="POST" action="{{ url_for('main.update_timezone') }}" class="d-inline" id="timezone-form-family">
-                                        <select name="timezone" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()">
-                                            <option value="Asia/Kolkata" {% if student_timezone == 'Asia/Kolkata' %}selected{% endif %}>India (IST)</option>
-                                            <option value="Africa/Banjul" {% if student_timezone == 'Africa/Banjul' %}selected{% endif %}>Gambia (GMT)</option>
-                                            <option value="Africa/Lagos" {% if student_timezone == 'Africa/Lagos' %}selected{% endif %}>Nigeria (WAT)</option>
-                                            <option value="Africa/Cairo" {% if student_timezone == 'Africa/Cairo' %}selected{% endif %}>Egypt (EET)</option>
-                                            <option value="Africa/Johannesburg" {% if student_timezone == 'Africa/Johannesburg' %}selected{% endif %}>South Africa (SAST)</option>
-                                            <option value="Europe/London" {% if student_timezone == 'Europe/London' %}selected{% endif %}>UK (GMT/BST)</option>
-                                            <option value="Europe/Paris" {% if student_timezone == 'Europe/Paris' %}selected{% endif %}>France (CET/CEST)</option>
-                                            <option value="Europe/Berlin" {% if student_timezone == 'Europe/Berlin' %}selected{% endif %}>Germany (CET/CEST)</option>
-                                            <option value="America/New_York" {% if student_timezone == 'America/New_York' %}selected{% endif %}>USA - Eastern</option>
-                                            <option value="America/Los_Angeles" {% if student_timezone == 'America/Los_Angeles' %}selected{% endif %}>USA - Pacific</option>
-                                            <option value="Asia/Dubai" {% if student_timezone == 'Asia/Dubai' %}selected{% endif %}>UAE (GST)</option>
-                                            <option value="Asia/Singapore" {% if student_timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore (SGT)</option>
-                                            <option value="Asia/Tokyo" {% if student_timezone == 'Asia/Tokyo' %}selected{% endif %}>Japan (JST)</option>
-                                            <option value="Australia/Sydney" {% if student_timezone == 'Australia/Sydney' %}selected{% endif %}>Australia - Sydney</option>
-                                        </select>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="attendance-card" style="background: var(--surface-solid); border: 2px solid var(--robotics-accent);">
-                                {% set available_times = class_times_by_type.get('family', []) %}
-                                {% set current_selection = student_time_selections.get(cls.enrollment.id) %}
-                                
-                                <div class="alert alert-info mb-3" style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--robotics-accent);">
-                                    <i class="fas fa-globe me-2"></i>
-                                    <strong>🕒 Times are automatically converted to your local country time.</strong>
-                                    <small class="d-block mt-1">(You can change your country above if needed.)</small>
-                                </div>
-                                
-                                {% if current_selection %}
-                                    <div class="alert alert-success mb-3">
-                                        <i class="fas fa-check-circle me-2"></i>
-                                        <strong>Selected Time:</strong> {{ current_selection.class_time.get_full_display(student_timezone) if current_selection.class_time else 'N/A' }}
-                                    </div>
-                                {% endif %}
-                                
-                                {% if available_times %}
-                                    <div class="row g-3">
-                                        {% for time_slot in available_times %}
-                                        <div class="col-md-6 col-lg-4">
-                                            <div class="card {% if current_selection and current_selection.class_time_id == time_slot.id %}border-success{% else %}border-secondary{% endif %}" 
-                                                 style="background: var(--surface); border-width: 2px;">
-                                                <div class="card-body text-center">
-                                                    <h5 class="card-title">{{ time_slot.get_full_display(student_timezone) }}</h5>
-                                                    <small class="text-muted d-block mb-2">Original: {{ time_slot.get_full_display() }} ({{ time_slot.get_timezone_name() }})</small>
-                                                    {% if current_selection and current_selection.class_time_id == time_slot.id %}
-                                                        <span class="badge bg-success mb-2">Selected</span>
-                                                    {% else %}
-                                                        <form method="POST" action="{{ url_for('main.select_class_time') }}" style="display: inline;">
-                                                            <input type="hidden" name="time_id" value="{{ time_slot.id }}">
-                                                            <button type="submit" class="btn btn-sm btn-primary">
-                                                                <i class="fas fa-check me-1"></i>Select This Time
-                                                            </button>
-                                                        </form>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        No class times available yet. Please check back later.
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% elif cls.class_type == 'group' %}
-                        <!-- Group Class Fixed Time (View Only) -->
-                        <div class="attendance-section" style="margin-bottom: 2rem;">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h2 class="section-title mb-0" style="color: var(--robotics-accent);">
-                                    <i class="fas fa-calendar me-2"></i>
-                                    Class Schedule - {{ cls.name }}
-                                </h2>
-                                <!-- Timezone Selector -->
-                                <div class="d-flex align-items-center gap-2">
-                                    <label class="text-muted small mb-0">Country:</label>
-                                    <form method="POST" action="{{ url_for('main.update_timezone') }}" class="d-inline">
-                                        <select name="timezone" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()">
-                                            <option value="Asia/Kolkata" {% if student_timezone == 'Asia/Kolkata' %}selected{% endif %}>India (IST)</option>
-                                            <option value="Africa/Banjul" {% if student_timezone == 'Africa/Banjul' %}selected{% endif %}>Gambia (GMT)</option>
-                                            <option value="Africa/Lagos" {% if student_timezone == 'Africa/Lagos' %}selected{% endif %}>Nigeria (WAT)</option>
-                                            <option value="Africa/Cairo" {% if student_timezone == 'Africa/Cairo' %}selected{% endif %}>Egypt (EET)</option>
-                                            <option value="Africa/Johannesburg" {% if student_timezone == 'Africa/Johannesburg' %}selected{% endif %}>South Africa (SAST)</option>
-                                            <option value="Europe/London" {% if student_timezone == 'Europe/London' %}selected{% endif %}>UK (GMT/BST)</option>
-                                            <option value="Europe/Paris" {% if student_timezone == 'Europe/Paris' %}selected{% endif %}>France (CET/CEST)</option>
-                                            <option value="Europe/Berlin" {% if student_timezone == 'Europe/Berlin' %}selected{% endif %}>Germany (CET/CEST)</option>
-                                            <option value="America/New_York" {% if student_timezone == 'America/New_York' %}selected{% endif %}>USA - Eastern</option>
-                                            <option value="America/Los_Angeles" {% if student_timezone == 'America/Los_Angeles' %}selected{% endif %}>USA - Pacific</option>
-                                            <option value="Asia/Dubai" {% if student_timezone == 'Asia/Dubai' %}selected{% endif %}>UAE (GST)</option>
-                                            <option value="Asia/Singapore" {% if student_timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore (SGT)</option>
-                                            <option value="Asia/Tokyo" {% if student_timezone == 'Asia/Tokyo' %}selected{% endif %}>Japan (JST)</option>
-                                            <option value="Australia/Sydney" {% if student_timezone == 'Australia/Sydney' %}selected{% endif %}>Australia - Sydney</option>
-                                        </select>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="attendance-card" style="background: var(--surface-solid); border: 2px solid var(--robotics-accent);">
-                                {% set fixed_times = class_times_by_type.get('group', []) %}
-                                <div class="alert alert-info mb-3" style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--robotics-accent);">
-                                    <i class="fas fa-globe me-2"></i>
-                                    <strong>🕒 Times are automatically converted to your local country time.</strong>
-                                    <small class="d-block mt-1">(You can change your country above if needed.)</small>
-                                </div>
-                                {% if fixed_times %}
-                                    <div class="row g-3">
-                                        {% for time_slot in fixed_times %}
-                                        <div class="col-md-6">
-                                            <div class="card border-info" style="background: var(--surface); border-width: 2px;">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">
-                                                        <i class="fas fa-calendar-day me-2"></i>{{ time_slot.get_full_display(student_timezone) }}
-                                                    </h5>
-                                                    <small class="text-muted d-block mb-2">Original: {{ time_slot.get_full_display() }} ({{ time_slot.get_timezone_name() }})</small>
-                                                    <p class="text-muted mb-0">
-                                                        <i class="fas fa-info-circle me-1"></i>Fixed schedule - view only
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        Class schedule will be announced soon.
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% elif cls.class_type == 'school' %}
-                        <!-- School Class Fixed Time (View Only) -->
-                        <div class="attendance-section" style="margin-bottom: 2rem;">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h2 class="section-title mb-0" style="color: var(--robotics-accent);">
-                                    <i class="fas fa-calendar me-2"></i>
-                                    School Class Schedule - {{ cls.name }}
-                                </h2>
-                                <!-- Timezone Selector -->
-                                <div class="d-flex align-items-center gap-2">
-                                    <label class="text-muted small mb-0">Country:</label>
-                                    <form method="POST" action="{{ url_for('main.update_timezone') }}" class="d-inline">
-                                        <select name="timezone" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()">
-                                            <option value="Asia/Kolkata" {% if student_timezone == 'Asia/Kolkata' %}selected{% endif %}>India (IST)</option>
-                                            <option value="Africa/Banjul" {% if student_timezone == 'Africa/Banjul' %}selected{% endif %}>Gambia (GMT)</option>
-                                            <option value="Africa/Lagos" {% if student_timezone == 'Africa/Lagos' %}selected{% endif %}>Nigeria (WAT)</option>
-                                            <option value="Africa/Cairo" {% if student_timezone == 'Africa/Cairo' %}selected{% endif %}>Egypt (EET)</option>
-                                            <option value="Africa/Johannesburg" {% if student_timezone == 'Africa/Johannesburg' %}selected{% endif %}>South Africa (SAST)</option>
-                                            <option value="Europe/London" {% if student_timezone == 'Europe/London' %}selected{% endif %}>UK (GMT/BST)</option>
-                                            <option value="Europe/Paris" {% if student_timezone == 'Europe/Paris' %}selected{% endif %}>France (CET/CEST)</option>
-                                            <option value="Europe/Berlin" {% if student_timezone == 'Europe/Berlin' %}selected{% endif %}>Germany (CET/CEST)</option>
-                                            <option value="America/New_York" {% if student_timezone == 'America/New_York' %}selected{% endif %}>USA - Eastern</option>
-                                            <option value="America/Los_Angeles" {% if student_timezone == 'America/Los_Angeles' %}selected{% endif %}>USA - Pacific</option>
-                                            <option value="Asia/Dubai" {% if student_timezone == 'Asia/Dubai' %}selected{% endif %}>UAE (GST)</option>
-                                            <option value="Asia/Singapore" {% if student_timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore (SGT)</option>
-                                            <option value="Asia/Tokyo" {% if student_timezone == 'Asia/Tokyo' %}selected{% endif %}>Japan (JST)</option>
-                                            <option value="Australia/Sydney" {% if student_timezone == 'Australia/Sydney' %}selected{% endif %}>Australia - Sydney</option>
-                                        </select>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="attendance-card" style="background: var(--surface-solid); border: 2px solid var(--robotics-accent);">
-                                {% set fixed_times = class_times_by_type.get('school', []) %}
-                                <div class="alert alert-info mb-3" style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--robotics-accent);">
-                                    <i class="fas fa-globe me-2"></i>
-                                    <strong>🕒 Times are automatically converted to your local country time.</strong>
-                                    <small class="d-block mt-1">(You can change your country above if needed.)</small>
-                                </div>
-                                {% if fixed_times %}
-                                    <div class="row g-3">
-                                        {% for time_slot in fixed_times %}
-                                        <div class="col-md-6">
-                                            <div class="card border-secondary" style="background: var(--surface); border-width: 2px;">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">
-                                                        <i class="fas fa-calendar-day me-2"></i>{{ time_slot.get_full_display(student_timezone) }}
-                                                    </h5>
-                                                    <small class="text-muted d-block mb-2">Original: {{ time_slot.get_full_display() }} ({{ time_slot.get_timezone_name() }})</small>
-                                                    <p class="text-muted mb-0">
-                                                        <i class="fas fa-info-circle me-1"></i>Fixed schedule - view only
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        Class schedule will be announced soon.
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-
             <!-- Learning Materials Feed -->
             <div class="materials-feed">
                 <div class="feed-header">
@@ -1436,6 +1141,131 @@
 
         <!-- Tools & Widgets Sidebar -->
         <div class="tools-sidebar">
+            <!-- Class Schedule Card (TOP PRIORITY) -->
+            {% if enrolled_classes %}
+            <div class="tool-widget" style="background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h4 class="section-title" style="color: var(--robotics-primary); margin-bottom: 1rem;">
+                    <i class="fas fa-clock me-2"></i>
+                    Class Schedule
+                </h4>
+                
+                <!-- Timezone Selector (Small) -->
+                <div class="mb-3">
+                    <form method="POST" action="{{ url_for('main.update_timezone') }}" class="d-inline" style="width: 100%;">
+                        <select name="timezone" class="form-select form-select-sm" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);" onchange="this.form.submit()">
+                            <option value="Asia/Kolkata" {% if student_timezone == 'Asia/Kolkata' %}selected{% endif %}>India (IST)</option>
+                            <option value="Africa/Banjul" {% if student_timezone == 'Africa/Banjul' %}selected{% endif %}>Gambia (GMT)</option>
+                            <option value="Africa/Lagos" {% if student_timezone == 'Africa/Lagos' %}selected{% endif %}>Nigeria (WAT)</option>
+                            <option value="Africa/Cairo" {% if student_timezone == 'Africa/Cairo' %}selected{% endif %}>Egypt (EET)</option>
+                            <option value="Africa/Johannesburg" {% if student_timezone == 'Africa/Johannesburg' %}selected{% endif %}>South Africa (SAST)</option>
+                            <option value="Europe/London" {% if student_timezone == 'Europe/London' %}selected{% endif %}>UK (GMT/BST)</option>
+                            <option value="Europe/Paris" {% if student_timezone == 'Europe/Paris' %}selected{% endif %}>France (CET/CEST)</option>
+                            <option value="Europe/Berlin" {% if student_timezone == 'Europe/Berlin' %}selected{% endif %}>Germany (CET/CEST)</option>
+                            <option value="America/New_York" {% if student_timezone == 'America/New_York' %}selected{% endif %}>USA - Eastern</option>
+                            <option value="America/Los_Angeles" {% if student_timezone == 'America/Los_Angeles' %}selected{% endif %}>USA - Pacific</option>
+                            <option value="Asia/Dubai" {% if student_timezone == 'Asia/Dubai' %}selected{% endif %}>UAE (GST)</option>
+                            <option value="Asia/Singapore" {% if student_timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore (SGT)</option>
+                            <option value="Asia/Tokyo" {% if student_timezone == 'Asia/Tokyo' %}selected{% endif %}>Japan (JST)</option>
+                            <option value="Australia/Sydney" {% if student_timezone == 'Australia/Sydney' %}selected{% endif %}>Australia - Sydney</option>
+                        </select>
+                    </form>
+                    <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                        <i class="fas fa-globe me-1"></i>Times are automatically converted to your local country time.
+                    </small>
+                </div>
+                
+                <!-- Class Time Display for Each Enrolled Class -->
+                {% for cls in enrolled_classes %}
+                    <div class="mb-3" style="padding: 1rem; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        <div style="font-weight: 600; color: var(--robotics-primary); margin-bottom: 0.5rem;">
+                            {{ cls.name }}
+                        </div>
+                        
+                        {% if cls.class_type == 'individual' or cls.class_type == 'family' %}
+                            {% set available_times = class_times_by_type.get(cls.class_type, []) %}
+                            {% set current_selection = student_time_selections.get(cls.enrollment.id) %}
+                            
+                            {% if current_selection and current_selection.class_time %}
+                                <div style="margin-bottom: 0.5rem;">
+                                    <div style="color: var(--on-surface);">
+                                        <i class="fas fa-calendar-day me-1"></i><strong>{{ current_selection.class_time.day }}</strong>
+                                    </div>
+                                    <div style="color: var(--robotics-accent); font-size: 1.1rem; font-weight: 600;">
+                                        <i class="fas fa-clock me-1"></i>{{ current_selection.class_time.get_display_time(student_timezone) }}
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="fas fa-globe me-1"></i>{{ student_timezone|replace('_', ' ')|replace('/', ' - ') }}
+                                    </small>
+                                </div>
+                                
+                                {% if available_times|length > 1 %}
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm" style="background: var(--robotics-gradient); color: white; border: none; width: 100%;" type="button" data-bs-toggle="collapse" data-bs-target="#timeOptions{{ cls.id }}" aria-expanded="false">
+                                            <i class="fas fa-chevron-down me-1"></i>Change Time
+                                        </button>
+                                        <div class="collapse mt-2" id="timeOptions{{ cls.id }}">
+                                            {% for time_slot in available_times %}
+                                                {% if current_selection.class_time_id != time_slot.id %}
+                                                    <form method="POST" action="{{ url_for('main.select_class_time') }}" style="margin-bottom: 0.5rem;">
+                                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary" style="width: 100%; text-align: left;">
+                                                            <i class="fas fa-calendar-day me-1"></i>{{ time_slot.day }} {{ time_slot.get_display_time(student_timezone) }}
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% elif available_times %}
+                                <div class="alert alert-warning" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 0.75rem; font-size: 0.875rem;">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Please select a time:
+                                </div>
+                                {% for time_slot in available_times %}
+                                    <form method="POST" action="{{ url_for('main.select_class_time') }}" style="margin-bottom: 0.5rem;">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-primary" style="width: 100%; text-align: left;">
+                                            <i class="fas fa-calendar-day me-1"></i>{{ time_slot.day }} {{ time_slot.get_display_time(student_timezone) }}
+                                        </button>
+                                    </form>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-muted" style="font-size: 0.875rem;">
+                                    <i class="fas fa-info-circle me-1"></i>No times available yet
+                                </div>
+                            {% endif %}
+                            
+                        {% elif cls.class_type == 'group' or cls.class_type == 'school' %}
+                            {% set fixed_times = class_times_by_type.get(cls.class_type, []) %}
+                            
+                            {% if fixed_times %}
+                                {% for time_slot in fixed_times %}
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <div style="color: var(--on-surface);">
+                                            <i class="fas fa-calendar-day me-1"></i><strong>{{ time_slot.day }}</strong>
+                                        </div>
+                                        <div style="color: var(--robotics-accent); font-size: 1.1rem; font-weight: 600;">
+                                            <i class="fas fa-clock me-1"></i>{{ time_slot.get_display_time(student_timezone) }}
+                                        </div>
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="fas fa-globe me-1"></i>{{ student_timezone|replace('_', ' ')|replace('/', ' - ') }}
+                                        </small>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: 0.25rem;">
+                                            <i class="fas fa-info-circle me-1"></i>Fixed schedule
+                                        </small>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-muted" style="font-size: 0.875rem;">
+                                    <i class="fas fa-info-circle me-1"></i>Schedule will be announced soon
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
             <!-- Live Clock Widget -->
             <div class="tool-widget clock-widget">
                 <div class="current-time" id="current-time">--:--</div>

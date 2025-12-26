@@ -28,6 +28,9 @@ class User(UserMixin, db.Model):
     
     # Profile Picture
     profile_picture = db.Column(db.String(500), nullable=True)  # URL to profile picture stored in Cloudinary
+    
+    # Timezone preference for class time display
+    timezone = db.Column(db.String(50), nullable=True)  # Student's timezone (e.g., 'Africa/Banjul', 'Europe/London')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

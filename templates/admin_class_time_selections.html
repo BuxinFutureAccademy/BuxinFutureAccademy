@@ -24,8 +24,10 @@
                     <tr>
                         <th>Student Name</th>
                         <th>Student ID</th>
+                        <th>Country</th>
                         <th>Class Type</th>
-                        <th>Selected Time</th>
+                        <th>Admin Time (Original)</th>
+                        <th>Student Time (Converted)</th>
                         <th>Selected At</th>
                     </tr>
                 </thead>
@@ -44,12 +46,34 @@
                             </code>
                         </td>
                         <td>
+                            {% if selection.student_country and selection.student_country != 'Not set' %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-globe me-1"></i>{{ selection.student_country }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <span class="badge bg-{% if selection.class_type == 'individual' %}success{% else %}warning{% endif %}">
                                 {{ selection.class_type|title }}
                             </span>
                         </td>
                         <td>
-                            <strong>{{ selection.class_time_display }}</strong>
+                            <strong>{{ selection.original_time }}</strong>
+                            <br><small class="text-muted">
+                                <i class="fas fa-globe me-1"></i>{{ selection.admin_timezone }}
+                            </small>
+                        </td>
+                        <td>
+                            {% if selection.converted_time %}
+                                <strong style="color: #28a745;">{{ selection.converted_time }}</strong>
+                                <br><small class="text-muted">
+                                    <i class="fas fa-globe me-1"></i>{{ selection.student_timezone }}
+                                </small>
+                            {% else %}
+                                <span class="text-muted">Same as admin time</span>
+                            {% endif %}
                         </td>
                         <td>
                             {{ selection.selected_at.strftime('%Y-%m-%d %H:%M') if selection.selected_at else 'N/A' }}

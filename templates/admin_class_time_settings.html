@@ -92,6 +92,28 @@
                         <label class="form-label">End Time *</label>
                         <input type="time" name="end_time" class="form-control" required>
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Country / Time Zone *</label>
+                        <select name="timezone" class="form-select" required>
+                            <option value="Asia/Kolkata" selected>India (IST)</option>
+                            <option value="Africa/Banjul">Gambia (GMT)</option>
+                            <option value="Africa/Lagos">Nigeria (WAT)</option>
+                            <option value="Africa/Cairo">Egypt (EET)</option>
+                            <option value="Africa/Johannesburg">South Africa (SAST)</option>
+                            <option value="Europe/London">United Kingdom (GMT/BST)</option>
+                            <option value="Europe/Paris">France (CET/CEST)</option>
+                            <option value="Europe/Berlin">Germany (CET/CEST)</option>
+                            <option value="America/New_York">USA - Eastern (EST/EDT)</option>
+                            <option value="America/Chicago">USA - Central (CST/CDT)</option>
+                            <option value="America/Denver">USA - Mountain (MST/MDT)</option>
+                            <option value="America/Los_Angeles">USA - Pacific (PST/PDT)</option>
+                            <option value="Asia/Dubai">UAE (GST)</option>
+                            <option value="Asia/Singapore">Singapore (SGT)</option>
+                            <option value="Asia/Tokyo">Japan (JST)</option>
+                            <option value="Australia/Sydney">Australia - Sydney (AEST/AEDT)</option>
+                        </select>
+                        <small class="text-muted">Select the country where this class time is set</small>
+                    </div>
                     <div class="col-md-2">
                         <label class="form-label">Max Capacity (Optional)</label>
                         <input type="number" name="max_capacity" class="form-control" min="1" placeholder="Unlimited">
@@ -121,6 +143,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <small class="text-muted d-block mb-1"><i class="fas fa-globe me-1"></i>{{ time_slot.get_timezone_name() }}</small>
                                     <span class="selectable-badge">Selectable</span>
                                     {% if time_slot.max_capacity %}
                                     <span class="badge bg-info ms-2">Max: {{ time_slot.max_capacity }}</span>
@@ -168,6 +191,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <small class="text-muted d-block mb-1"><i class="fas fa-globe me-1"></i>{{ time_slot.get_timezone_name() }}</small>
                                     <span class="selectable-badge">Selectable</span>
                                     {% if time_slot.max_capacity %}
                                     <span class="badge bg-info ms-2">Max: {{ time_slot.max_capacity }}</span>
@@ -215,6 +239,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <small class="text-muted d-block mb-1"><i class="fas fa-globe me-1"></i>{{ time_slot.get_timezone_name() }}</small>
                                     <span class="fixed-badge">Fixed (View Only)</span>
                                     {% if not time_slot.is_active %}
                                     <span class="badge bg-secondary ms-2">Inactive</span>
@@ -259,6 +284,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <small class="text-muted d-block mb-1"><i class="fas fa-globe me-1"></i>{{ time_slot.get_timezone_name() }}</small>
                                     <span class="fixed-badge">Fixed (View Only)</span>
                                     {% if not time_slot.is_active %}
                                     <span class="badge bg-secondary ms-2">Inactive</span>

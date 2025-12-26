@@ -1957,6 +1957,9 @@ def student_dashboard():
     if current_user.is_school_admin:
         school = School.query.filter_by(user_id=current_user.id).first()
     
+    # Get student's timezone (default to browser timezone or India if not set)
+    student_timezone = current_user.timezone or 'Asia/Kolkata'
+    
     # Get class times for each enrolled class type
     class_times_by_type = {}
     student_time_selections = {}
@@ -1996,6 +1999,7 @@ def student_dashboard():
                           school=school,
                           class_times_by_type=class_times_by_type,
                           student_time_selections=student_time_selections,
+                          student_timezone=student_timezone,
                           now=now,
                           today=today,
                           Attendance=Attendance)
@@ -4323,9 +4327,10 @@ def admin_class_time_settings():
             day = request.form.get('day', '').strip()
             start_time_str = request.form.get('start_time', '').strip()
             end_time_str = request.form.get('end_time', '').strip()
+            timezone = request.form.get('timezone', 'Asia/Kolkata').strip()  # Default to India timezone
             max_capacity = request.form.get('max_capacity', type=int) or None
             
-            if not all([class_type, day, start_time_str, end_time_str]):
+            if not all([class_type, day, start_time_str, end_time_str, timezone]):
                 flash('Please fill in all required fields.', 'danger')
                 return redirect(url_for('admin.admin_class_time_settings'))
             
@@ -4344,13 +4349,14 @@ def admin_class_time_settings():
                     day=day,
                     start_time=start_time,
                     end_time=end_time,
+                    timezone=timezone,
                     is_selectable=is_selectable,
                     max_capacity=max_capacity,
                     created_by=current_user.id
                 )
                 db.session.add(class_time)
                 db.session.commit()
-                flash(f'Time slot added successfully: {day} {class_time.get_display_time()}', 'success')
+                flash(f'Time slot added successfully: {day} {class_time.get_display_time()} ({class_time.get_timezone_name()})', 'success')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Error adding time slot: {str(e)}', 'danger')
@@ -4417,10 +4423,29 @@ def admin_class_time_selections():
         StudentClassTimeSelection.selected_at.desc()
     ).all()
     
-    # Get class times for display
+    # Get class times for display with timezone info
     for selection in selections:
-        selection.class_time_display = selection.class_time.get_full_display() if selection.class_time else 'N/A'
+        if selection.class_time:
+            # Original admin time
+            selection.original_time = selection.class_time.get_full_display()
+            selection.admin_timezone = selection.class_time.get_timezone_name()
+            
+            # Converted time (if student has timezone set)
+            student_timezone = selection.user.timezone if selection.user and selection.user.timezone else None
+            if student_timezone:
+                selection.converted_time = selection.class_time.get_full_display(student_timezone)
+                selection.student_timezone = selection.user.timezone
+            else:
+                selection.converted_time = None
+                selection.student_timezone = None
+        else:
+            selection.original_time = 'N/A'
+            selection.admin_timezone = 'N/A'
+            selection.converted_time = None
+            selection.student_timezone = None
+        
         selection.student_name = f"{selection.user.first_name} {selection.user.last_name}" if selection.user else 'Unknown'
         selection.student_id = selection.user.student_id if selection.user else 'N/A'
+        selection.student_country = selection.user.timezone if selection.user and selection.user.timezone else 'Not set'
     
     return render_template('admin_class_time_selections.html', selections=selections)

@@ -331,6 +331,9 @@ def select_class_time():
         flash('You must be enrolled and approved in a class before selecting a time.', 'danger')
         return redirect(request.referrer or url_for('admin.student_dashboard'))
     
+    # Get student's timezone for display
+    student_timezone = current_user.timezone or 'Asia/Kolkata'
+    
     # Check if student already has a selection for this enrollment
     existing_selection = StudentClassTimeSelection.query.filter_by(
         enrollment_id=enrollment.id
@@ -341,7 +344,7 @@ def select_class_time():
         existing_selection.class_time_id = time_id
         existing_selection.selected_at = datetime.utcnow()
         db.session.commit()
-        flash(f'Time updated to: {class_time.get_full_display()}', 'success')
+        flash(f'Time updated to: {class_time.get_full_display(student_timezone)}', 'success')
     else:
         # Create new selection
         selection = StudentClassTimeSelection(
@@ -352,6 +355,34 @@ def select_class_time():
         )
         db.session.add(selection)
         db.session.commit()
-        flash(f'Time selected: {class_time.get_full_display()}', 'success')
+        flash(f'Time selected: {class_time.get_full_display(student_timezone)}', 'success')
     
+    return redirect(request.referrer or url_for('admin.student_dashboard'))
+
+
+@bp.route('/update-timezone', methods=['POST'])
+@login_required
+def update_timezone():
+    """Student route for updating their timezone preference"""
+    from ..extensions import db
+    
+    timezone = request.form.get('timezone', '').strip()
+    
+    if not timezone:
+        flash('Please select a timezone.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Validate timezone
+    try:
+        import pytz
+        pytz.timezone(timezone)  # Will raise exception if invalid
+    except Exception:
+        flash('Invalid timezone selected.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Update user's timezone
+    current_user.timezone = timezone
+    db.session.commit()
+    
+    flash('Timezone updated successfully. Class times are now shown in your local time.', 'success')
     return redirect(request.referrer or url_for('admin.student_dashboard'))

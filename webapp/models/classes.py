@@ -218,6 +218,7 @@ class ClassTime(db.Model):
     day = db.Column(db.String(20), nullable=False)  # Monday, Tuesday, etc.
     start_time = db.Column(db.Time, nullable=False)  # e.g., 16:00
     end_time = db.Column(db.Time, nullable=False)  # e.g., 17:30
+    timezone = db.Column(db.String(50), nullable=False, default='Asia/Kolkata')  # Admin's timezone (e.g., 'Asia/Kolkata', 'Africa/Banjul', 'Europe/London')
     is_selectable = db.Column(db.Boolean, default=True)  # True for Individual/Family, False for Group/School
     is_active = db.Column(db.Boolean, default=True)
     max_capacity = db.Column(db.Integer, nullable=True)  # Optional: max students for this time slot
@@ -227,24 +228,69 @@ class ClassTime(db.Model):
     def __repr__(self):
         return f'<ClassTime {self.day} {self.start_time}-{self.end_time} ({self.class_type})>'
     
-    def get_display_time(self):
-        """Format time as HH:MM - HH:MM"""
+    def get_display_time(self, target_timezone=None):
+        """Format time as HH:MM - HH:MM, optionally converted to target timezone"""
         from datetime import time as dt_time
-        if isinstance(self.start_time, dt_time):
-            start_str = self.start_time.strftime('%H:%M')
-        else:
-            start_str = str(self.start_time) if self.start_time else 'N/A'
+        import pytz
         
-        if isinstance(self.end_time, dt_time):
-            end_str = self.end_time.strftime('%H:%M')
+        start_time = self.start_time
+        end_time = self.end_time
+        
+        # Convert to target timezone if provided
+        if target_timezone and self.timezone:
+            try:
+                # Create datetime objects for conversion (using today's date)
+                from datetime import datetime, date
+                today = date.today()
+                admin_tz = pytz.timezone(self.timezone)
+                target_tz = pytz.timezone(target_timezone)
+                
+                # Combine date and time
+                start_dt = admin_tz.localize(datetime.combine(today, start_time))
+                end_dt = admin_tz.localize(datetime.combine(today, end_time))
+                
+                # Convert to target timezone
+                start_dt_target = start_dt.astimezone(target_tz)
+                end_dt_target = end_dt.astimezone(target_tz)
+                
+                start_time = start_dt_target.time()
+                end_time = end_dt_target.time()
+            except Exception:
+                # If conversion fails, use original time
+                pass
+        
+        if isinstance(start_time, dt_time):
+            start_str = start_time.strftime('%H:%M')
         else:
-            end_str = str(self.end_time) if self.end_time else 'N/A'
+            start_str = str(start_time) if start_time else 'N/A'
+        
+        if isinstance(end_time, dt_time):
+            end_str = end_time.strftime('%H:%M')
+        else:
+            end_str = str(end_time) if end_time else 'N/A'
         
         return f"{start_str} – {end_str}"
     
-    def get_full_display(self):
-        """Format as 'Day HH:MM – HH:MM'"""
-        return f"{self.day} {self.get_display_time()}"
+    def get_full_display(self, target_timezone=None):
+        """Format as 'Day HH:MM – HH:MM', optionally converted to target timezone"""
+        return f"{self.day} {self.get_display_time(target_timezone)}"
+    
+    def get_timezone_name(self):
+        """Get human-readable timezone name"""
+        import pytz
+        try:
+            tz = pytz.timezone(self.timezone)
+            # Get common timezone names
+            tz_names = {
+                'Asia/Kolkata': 'India (IST)',
+                'Africa/Banjul': 'Gambia (GMT)',
+                'Europe/London': 'UK (GMT/BST)',
+                'America/New_York': 'USA Eastern (EST/EDT)',
+                'America/Los_Angeles': 'USA Pacific (PST/PDT)',
+            }
+            return tz_names.get(self.timezone, self.timezone.replace('_', ' '))
+        except Exception:
+            return self.timezone
 
 
 class StudentClassTimeSelection(db.Model):

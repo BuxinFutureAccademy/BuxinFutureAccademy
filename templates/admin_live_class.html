@@ -162,54 +162,36 @@
 <script>
 // Class data from server
 const classData = {
-    individual: [
-        {% for cls in individual_classes %}
-        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ],
-    group: [
-        {% for cls in group_classes %}
-        {% if cls.class_type == 'group' %}
-        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
-        {% endif %}
-        {% endfor %}
-    ],
-    family: [
-        {% for cls in family_classes %}
-        {% if cls.class_type == 'family' %}
-        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
-        {% endif %}
-        {% endfor %}
-    ],
-    school: [
-        {% for cls in school_classes %}
-        {% if cls.class_type == 'school' %}
-        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
-        {% endif %}
-        {% endfor %}
-    ]
+    individual: {{ individual_classes|map(attribute='id')|list|tojson }},
+    individualNames: {{ individual_classes|map(attribute='name')|list|tojson }},
+    group: {{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='id')|list|tojson }},
+    groupNames: {{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='name')|list|tojson }},
+    family: {{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='id')|list|tojson }},
+    familyNames: {{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='name')|list|tojson }},
+    school: {{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='id')|list|tojson }},
+    schoolNames: {{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='name')|list|tojson }}
 };
 
 // Time data from server
 const timeData = {
     individual: [
         {% for time in class_times_by_type.individual %}
-        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
     ],
     family: [
         {% for time in class_times_by_type.family %}
-        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
     ],
     group: [
         {% for time in class_times_by_type.group %}
-        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
     ],
     school: [
         {% for time in class_times_by_type.school %}
-        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {% if time.class_id %}{{ time.class_id }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
         {% endfor %}
     ]
 };
@@ -220,14 +202,31 @@ function updateClassDropdown() {
     const classSelect = document.getElementById('classSelect');
     classSelect.innerHTML = '<option value="">Select Class...</option>';
     
-    if (!classType || !classData[classType]) return;
+    if (!classType) return;
     
-    classData[classType].forEach(cls => {
+    let classes = [];
+    let classNames = [];
+    
+    if (classType === 'individual' && classData.individual) {
+        classes = classData.individual;
+        classNames = classData.individualNames;
+    } else if (classType === 'group' && classData.group) {
+        classes = classData.group;
+        classNames = classData.groupNames;
+    } else if (classType === 'family' && classData.family) {
+        classes = classData.family;
+        classNames = classData.familyNames;
+    } else if (classType === 'school' && classData.school) {
+        classes = classData.school;
+        classNames = classData.schoolNames;
+    }
+    
+    classes.forEach((id, index) => {
         const option = document.createElement('option');
-        option.value = cls.id;
-        option.textContent = cls.name;
+        option.value = id;
+        option.textContent = classNames[index];
         {% if selected_class_id %}
-        if (cls.id === {{ selected_class_id }}) option.selected = true;
+        if (id === {{ selected_class_id }}) option.selected = true;
         {% endif %}
         classSelect.appendChild(option);
     });

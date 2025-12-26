@@ -210,6 +210,55 @@ def generate_family_system_id():
     return family_id
 
 
+class ClassTime(db.Model):
+    """Model for storing class time slots for different class types"""
+    id = db.Column(db.Integer, primary_key=True)
+    class_type = db.Column(db.String(20), nullable=False)  # 'individual', 'family', 'group', 'school'
+    class_id = db.Column(db.Integer, nullable=True)  # Specific class ID (optional, can be None for general slots)
+    day = db.Column(db.String(20), nullable=False)  # Monday, Tuesday, etc.
+    start_time = db.Column(db.Time, nullable=False)  # e.g., 16:00
+    end_time = db.Column(db.Time, nullable=False)  # e.g., 17:30
+    is_selectable = db.Column(db.Boolean, default=True)  # True for Individual/Family, False for Group/School
+    is_active = db.Column(db.Boolean, default=True)
+    max_capacity = db.Column(db.Integer, nullable=True)  # Optional: max students for this time slot
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    def __repr__(self):
+        return f'<ClassTime {self.day} {self.start_time}-{self.end_time} ({self.class_type})>'
+    
+    def get_display_time(self):
+        """Format time as HH:MM - HH:MM"""
+        start_str = self.start_time.strftime('%H:%M') if isinstance(self.start_time, datetime.time) else str(self.start_time)
+        end_str = self.end_time.strftime('%H:%M') if isinstance(self.end_time, datetime.time) else str(self.end_time)
+        return f"{start_str} – {end_str}"
+    
+    def get_full_display(self):
+        """Format as 'Day HH:MM – HH:MM'"""
+        return f"{self.day} {self.get_display_time()}"
+
+
+class StudentClassTimeSelection(db.Model):
+    """Model for storing student time selections (Individual and Family only)"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('class_enrollment.id'), nullable=False)
+    class_time_id = db.Column(db.Integer, db.ForeignKey('class_time.id'), nullable=False)
+    class_type = db.Column(db.String(20), nullable=False)  # 'individual' or 'family'
+    selected_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', lazy='select')
+    enrollment = db.relationship('ClassEnrollment', lazy='select')
+    class_time = db.relationship('ClassTime', lazy='select')
+    
+    # Unique constraint: one selection per enrollment
+    __table_args__ = (db.UniqueConstraint('enrollment_id', name='unique_enrollment_time_selection'),)
+    
+    def __repr__(self):
+        return f'<StudentClassTimeSelection user_id={self.user_id} time_id={self.class_time_id}>'
+
+
 def generate_group_system_id():
     """
     Generate a unique Group System ID for group class enrollments

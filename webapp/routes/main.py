@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request, flash
 from flask_login import login_required, current_user
 from ..services.mailer import send_bulk_email
-from ..models import HomeGallery, StudentVictory, StudentProject, ClassPricing
+from ..models import HomeGallery, StudentVictory, StudentProject, ClassPricing, ClassTime, StudentClassTimeSelection, ClassEnrollment
 
 bp = Blueprint('main', __name__)
 
@@ -290,3 +290,68 @@ def family_dashboard():
     """Family Dashboard - Unified with student dashboard design"""
     from .admin import student_dashboard
     return student_dashboard()
+
+
+@bp.route('/select-class-time', methods=['POST'])
+@login_required
+def select_class_time():
+    """Student route for selecting class time (Individual and Family only)"""
+    from ..extensions import db
+    
+    time_id = request.form.get('time_id', type=int)
+    
+    if not time_id:
+        flash('Please select a time slot.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Get the class time
+    class_time = ClassTime.query.get(time_id)
+    if not class_time:
+        flash('Time slot not found.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Verify it's selectable
+    if not class_time.is_selectable:
+        flash('This time slot is not selectable.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Verify class type matches
+    if class_time.class_type not in ['individual', 'family']:
+        flash('Time selection is only available for Individual and Family classes.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Find the student's enrollment for this class type
+    enrollment = ClassEnrollment.query.filter_by(
+        user_id=current_user.id,
+        class_type=class_time.class_type,
+        status='completed'
+    ).first()
+    
+    if not enrollment:
+        flash('You must be enrolled and approved in a class before selecting a time.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Check if student already has a selection for this enrollment
+    existing_selection = StudentClassTimeSelection.query.filter_by(
+        enrollment_id=enrollment.id
+    ).first()
+    
+    if existing_selection:
+        # Update existing selection
+        existing_selection.class_time_id = time_id
+        existing_selection.selected_at = datetime.utcnow()
+        db.session.commit()
+        flash(f'Time updated to: {class_time.get_full_display()}', 'success')
+    else:
+        # Create new selection
+        selection = StudentClassTimeSelection(
+            user_id=current_user.id,
+            enrollment_id=enrollment.id,
+            class_time_id=time_id,
+            class_type=class_time.class_type
+        )
+        db.session.add(selection)
+        db.session.commit()
+        flash(f'Time selected: {class_time.get_full_display()}', 'success')
+    
+    return redirect(request.referrer or url_for('admin.student_dashboard'))

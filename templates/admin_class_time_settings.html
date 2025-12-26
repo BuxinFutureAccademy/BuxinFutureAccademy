@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .time-slot-card {
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: white;
+    }
+    .time-slot-card.inactive {
+        opacity: 0.6;
+        background: #f8f9fa;
+    }
+    .selectable-badge {
+        background: #28a745;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    .fixed-badge {
+        background: #6c757d;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-clock me-2" style="color: #667eea;"></i>Class Time Settings</h2>
+            <p class="text-muted mb-0">Manage available class times for each class type</p>
+        </div>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Add New Time Slot Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Time Slot</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.admin_class_time_settings') }}">
+                <input type="hidden" name="action" value="add">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Class Type *</label>
+                        <select name="class_type" class="form-select" required>
+                            <option value="">Select Class Type</option>
+                            <option value="individual">Individual</option>
+                            <option value="family">Family</option>
+                            <option value="group">Group</option>
+                            <option value="school">School</option>
+                        </select>
+                        <small class="text-muted">Individual & Family: Selectable | Group & School: Fixed</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Day *</label>
+                        <select name="day" class="form-select" required>
+                            <option value="">Select Day</option>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Start Time *</label>
+                        <input type="time" name="start_time" class="form-control" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">End Time *</label>
+                        <input type="time" name="end_time" class="form-control" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Max Capacity (Optional)</label>
+                        <input type="number" name="max_capacity" class="form-control" min="1" placeholder="Unlimited">
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Time Slot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Time Slots by Class Type -->
+    <div class="row">
+        <!-- Individual Classes -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Individual Classes (Selectable)</h5>
+                </div>
+                <div class="card-body">
+                    {% if times_by_type.individual %}
+                        {% for time_slot in times_by_type.individual %}
+                        <div class="time-slot-card {% if not time_slot.is_active %}inactive{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <span class="selectable-badge">Selectable</span>
+                                    {% if time_slot.max_capacity %}
+                                    <span class="badge bg-info ms-2">Max: {{ time_slot.max_capacity }}</span>
+                                    {% endif %}
+                                    {% if not time_slot.is_active %}
+                                    <span class="badge bg-secondary ms-2">Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group">
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Toggle active status?');">
+                                        <input type="hidden" name="action" value="toggle">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-{% if time_slot.is_active %}warning{% else %}success{% endif %}">
+                                            <i class="fas fa-{% if time_slot.is_active %}pause{% else %}play{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this time slot?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No time slots added yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Family Classes -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-home me-2"></i>Family Classes (Selectable)</h5>
+                </div>
+                <div class="card-body">
+                    {% if times_by_type.family %}
+                        {% for time_slot in times_by_type.family %}
+                        <div class="time-slot-card {% if not time_slot.is_active %}inactive{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <span class="selectable-badge">Selectable</span>
+                                    {% if time_slot.max_capacity %}
+                                    <span class="badge bg-info ms-2">Max: {{ time_slot.max_capacity }}</span>
+                                    {% endif %}
+                                    {% if not time_slot.is_active %}
+                                    <span class="badge bg-secondary ms-2">Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group">
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Toggle active status?');">
+                                        <input type="hidden" name="action" value="toggle">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-{% if time_slot.is_active %}warning{% else %}success{% endif %}">
+                                            <i class="fas fa-{% if time_slot.is_active %}pause{% else %}play{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this time slot?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No time slots added yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Group Classes -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Group Classes (Fixed - View Only)</h5>
+                </div>
+                <div class="card-body">
+                    {% if times_by_type.group %}
+                        {% for time_slot in times_by_type.group %}
+                        <div class="time-slot-card {% if not time_slot.is_active %}inactive{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <span class="fixed-badge">Fixed (View Only)</span>
+                                    {% if not time_slot.is_active %}
+                                    <span class="badge bg-secondary ms-2">Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group">
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Toggle active status?');">
+                                        <input type="hidden" name="action" value="toggle">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-{% if time_slot.is_active %}warning{% else %}success{% endif %}">
+                                            <i class="fas fa-{% if time_slot.is_active %}pause{% else %}play{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this time slot?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No time slots added yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- School Classes -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-school me-2"></i>School Classes (Fixed - View Only)</h5>
+                </div>
+                <div class="card-body">
+                    {% if times_by_type.school %}
+                        {% for time_slot in times_by_type.school %}
+                        <div class="time-slot-card {% if not time_slot.is_active %}inactive{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ time_slot.get_full_display() }}</h6>
+                                    <span class="fixed-badge">Fixed (View Only)</span>
+                                    {% if not time_slot.is_active %}
+                                    <span class="badge bg-secondary ms-2">Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group">
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Toggle active status?');">
+                                        <input type="hidden" name="action" value="toggle">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-{% if time_slot.is_active %}warning{% else %}success{% endif %}">
+                                            <i class="fas fa-{% if time_slot.is_active %}pause{% else %}play{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this time slot?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No time slots added yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Student Selections Link -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('admin.admin_class_time_selections') }}" class="btn btn-outline-primary">
+            <i class="fas fa-list me-2"></i>View Student Time Selections
+        </a>
+    </div>
+</div>
+{% endblock %}
+

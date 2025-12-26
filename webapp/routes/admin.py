@@ -20,6 +20,8 @@ from ..models import (
     LearningMaterial,
     School,
     RegisteredSchoolStudent,
+    ClassTime,
+    StudentClassTimeSelection,
 )
 
 bp = Blueprint('admin', __name__)
@@ -1955,6 +1957,27 @@ def student_dashboard():
     if current_user.is_school_admin:
         school = School.query.filter_by(user_id=current_user.id).first()
     
+    # Get class times for each enrolled class type
+    class_times_by_type = {}
+    student_time_selections = {}
+    
+    for enrollment in enrollments:
+        class_type = enrollment.class_type
+        if class_type not in class_times_by_type:
+            # Get active time slots for this class type
+            times = ClassTime.query.filter_by(
+                class_type=class_type,
+                is_active=True
+            ).order_by(ClassTime.day, ClassTime.start_time).all()
+            class_times_by_type[class_type] = times
+        
+        # Get student's time selection for this enrollment
+        selection = StudentClassTimeSelection.query.filter_by(
+            enrollment_id=enrollment.id
+        ).first()
+        if selection:
+            student_time_selections[enrollment.id] = selection
+    
     return render_template('student_dashboard.html', 
                           purchases=purchases, 
                           projects=projects,
@@ -1971,6 +1994,8 @@ def student_dashboard():
                           registered_family=registered_family,
                           materials=materials,
                           school=school,
+                          class_times_by_type=class_times_by_type,
+                          student_time_selections=student_time_selections,
                           now=now,
                           today=today,
                           Attendance=Attendance)
@@ -4274,3 +4299,128 @@ def delete_school_student_profile_picture():
         flash(f'Error deleting profile picture: {str(e)}', 'danger')
     
     return redirect(request.referrer or url_for('schools.school_student_dashboard'))
+
+
+# ========================================
+# CLASS TIME MANAGEMENT ROUTES
+# ========================================
+
+@bp.route('/admin/class-time-settings', methods=['GET', 'POST'])
+@login_required
+def admin_class_time_settings():
+    """Admin page for managing class time slots"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add':
+            # Add new time slot
+            class_type = request.form.get('class_type', '').strip()
+            class_id = request.form.get('class_id', type=int) or None
+            day = request.form.get('day', '').strip()
+            start_time_str = request.form.get('start_time', '').strip()
+            end_time_str = request.form.get('end_time', '').strip()
+            max_capacity = request.form.get('max_capacity', type=int) or None
+            
+            if not all([class_type, day, start_time_str, end_time_str]):
+                flash('Please fill in all required fields.', 'danger')
+                return redirect(url_for('admin.admin_class_time_settings'))
+            
+            # Determine if selectable based on class type
+            is_selectable = class_type in ['individual', 'family']
+            
+            try:
+                # Parse time strings
+                from datetime import time as dt_time
+                start_time = dt_time.fromisoformat(start_time_str)
+                end_time = dt_time.fromisoformat(end_time_str)
+                
+                class_time = ClassTime(
+                    class_type=class_type,
+                    class_id=class_id,
+                    day=day,
+                    start_time=start_time,
+                    end_time=end_time,
+                    is_selectable=is_selectable,
+                    max_capacity=max_capacity,
+                    created_by=current_user.id
+                )
+                db.session.add(class_time)
+                db.session.commit()
+                flash(f'Time slot added successfully: {day} {class_time.get_display_time()}', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error adding time slot: {str(e)}', 'danger')
+        
+        elif action == 'delete':
+            time_id = request.form.get('time_id', type=int)
+            if time_id:
+                class_time = ClassTime.query.get(time_id)
+                if class_time:
+                    db.session.delete(class_time)
+                    db.session.commit()
+                    flash('Time slot deleted successfully.', 'success')
+                else:
+                    flash('Time slot not found.', 'danger')
+        
+        elif action == 'toggle':
+            time_id = request.form.get('time_id', type=int)
+            if time_id:
+                class_time = ClassTime.query.get(time_id)
+                if class_time:
+                    class_time.is_active = not class_time.is_active
+                    db.session.commit()
+                    status = 'activated' if class_time.is_active else 'deactivated'
+                    flash(f'Time slot {status} successfully.', 'success')
+        
+        return redirect(url_for('admin.admin_class_time_settings'))
+    
+    # Get all class times grouped by class type
+    all_times = ClassTime.query.order_by(ClassTime.class_type, ClassTime.day, ClassTime.start_time).all()
+    
+    # Group by class type
+    times_by_type = {
+        'individual': [],
+        'family': [],
+        'group': [],
+        'school': []
+    }
+    
+    for time_slot in all_times:
+        if time_slot.class_type in times_by_type:
+            times_by_type[time_slot.class_type].append(time_slot)
+    
+    # Get all classes for dropdowns
+    individual_classes = IndividualClass.query.all()
+    group_classes = GroupClass.query.all()
+    
+    return render_template('admin_class_time_settings.html',
+        times_by_type=times_by_type,
+        individual_classes=individual_classes,
+        group_classes=group_classes
+    )
+
+
+@bp.route('/admin/class-time-selections')
+@login_required
+def admin_class_time_selections():
+    """Admin view of student time selections"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    # Get all time selections
+    selections = StudentClassTimeSelection.query.order_by(
+        StudentClassTimeSelection.selected_at.desc()
+    ).all()
+    
+    # Get class times for display
+    for selection in selections:
+        selection.class_time_display = selection.class_time.get_full_display() if selection.class_time else 'N/A'
+        selection.student_name = f"{selection.user.first_name} {selection.user.last_name}" if selection.user else 'Unknown'
+        selection.student_id = selection.user.student_id if selection.user else 'N/A'
+    
+    return render_template('admin_class_time_selections.html', selections=selections)

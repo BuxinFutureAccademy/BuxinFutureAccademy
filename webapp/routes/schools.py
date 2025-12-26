@@ -793,8 +793,13 @@ def school_student_dashboard():
             is_active=True
         ).order_by(ClassTime.day, ClassTime.start_time).all()
         
-        # Check if any fixed time matches current time
+        # Check if any fixed time matches current time for THIS specific class
         for class_time in fixed_times:
+            # Check if this time slot applies to this class
+            # class_time.class_id can be None (general) or specific to a class
+            if class_time.class_id is not None and class_time.class_id != cls['id']:
+                continue  # Skip if time slot is for a different class
+            
             try:
                 admin_tz = pytz.timezone(class_time.timezone)
                 today = current_datetime.date()
@@ -808,10 +813,9 @@ def school_student_dashboard():
                 student_end_time = end_dt_student.time()
                 student_day = start_dt_student.strftime('%A')
                 
-                # Check if current day and time match AND student belongs to this class
+                # Check if current day and time match
                 if (current_day == student_day and 
-                    student_start_time <= current_time <= student_end_time and
-                    enrollment.class_id == cls['id']):  # Ensure student belongs to this specific class
+                    student_start_time <= current_time <= student_end_time):
                     class_obj = GroupClass.query.get(enrollment.class_id)
                     if class_obj:
                         active_live_class = {

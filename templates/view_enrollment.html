@@ -108,6 +108,25 @@
                                 </span>
                             </div>
                         </div>
+                        {% if enrollment.class_type == 'family' and enrollment.family_system_id %}
+                        <div class="col-md-6 info-row">
+                            <div class="info-label">Family System ID</div>
+                            <div class="info-value">
+                                <code style="background: #f0f0f0; padding: 0.25rem 0.5rem; border-radius: 4px; color: #f72585; font-weight: bold;">
+                                    {{ enrollment.family_system_id }}
+                                </code>
+                            </div>
+                        </div>
+                        {% elif enrollment.class_type == 'group' and enrollment.group_system_id %}
+                        <div class="col-md-6 info-row">
+                            <div class="info-label">Group System ID</div>
+                            <div class="info-value">
+                                <code style="background: #f0f0f0; padding: 0.25rem 0.5rem; border-radius: 4px; color: #11998e; font-weight: bold;">
+                                    {{ enrollment.group_system_id }}
+                                </code>
+                            </div>
+                        </div>
+                        {% endif %}
                         <div class="col-12 info-row">
                             <div class="info-label">Description</div>
                             <div class="info-value">{{ class_obj.description if class_obj and class_obj.description else 'No description' }}</div>

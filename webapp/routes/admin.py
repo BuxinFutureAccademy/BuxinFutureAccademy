@@ -100,6 +100,63 @@ def add_family_system_id_column():
         """, 500
 
 
+@bp.route('/admin/add-group-system-id-column')
+def add_group_system_id_column():
+    """Add group_system_id column to class_enrollment table - ADMIN ONLY"""
+    from sqlalchemy import text, inspect
+    
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        # Check if column already exists
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('class_enrollment')]
+        
+        if 'group_system_id' in columns:
+            return f"""
+        <html>
+        <head><title>Migration Complete</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>✅ Column Already Exists</h1>
+            <p><strong>group_system_id</strong> column already exists in class_enrollment table.</p>
+            <p>No migration needed.</p>
+        </body>
+        </html>
+        """
+        
+        # Add the column
+        with db.engine.connect() as conn:
+            conn.execute(text('ALTER TABLE class_enrollment ADD COLUMN group_system_id VARCHAR(20)'))
+            conn.commit()
+        
+        return f"""
+        <html>
+        <head><title>Migration Complete</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>✅ Migration Successful!</h1>
+            <p><strong>group_system_id</strong> column added to class_enrollment table.</p>
+            <p>Group System ID functionality is now ready to use.</p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Migration Error</title>
+        <style>body {{ font-family: Arial; padding: 20px; text-align: center; }}</style></head>
+        <body>
+            <h1>❌ Migration Error</h1>
+            <p>Error: {str(e)}</p>
+        </body>
+        </html>
+        """, 500
+
+
 @bp.route('/admin/add-profile-picture-column')
 def add_profile_picture_column():
     """Add profile_picture column to user table - accessible without login for initial setup"""
@@ -1435,12 +1492,51 @@ def approve_enrollment(enrollment_id):
         flash('User not found for this enrollment.', 'danger')
         return redirect(url_for('admin.admin_enrollments'))
     
-    # Generate Student ID if not already generated (for Group, Family, Individual classes)
-    if enrollment.class_type in ['group', 'family', 'individual']:
+    # Generate System IDs and Student IDs based on class type
+    if enrollment.class_type == 'group':
+        # Generate Group System ID if not exists
+        try:
+            if not enrollment.group_system_id:
+                from ..models.classes import generate_group_system_id
+                enrollment.group_system_id = generate_group_system_id()
+        except Exception as e:
+            # Handle case where group_system_id column doesn't exist yet
+            if 'group_system_id' in str(e).lower() or 'column' in str(e).lower():
+                flash('Database migration required. Please visit /admin/add-group-system-id-column first.', 'warning')
+                return redirect(url_for('admin.admin_enrollments'))
+            raise
+        
+        # Generate Student ID if not exists
         if not user.student_id:
             from ..models.classes import generate_student_id_for_class
-            user.student_id = generate_student_id_for_class(enrollment.class_type)
-            user.class_type = enrollment.class_type
+            user.student_id = generate_student_id_for_class('group')
+            user.class_type = 'group'
+            flash(f'Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}', 'info')
+    elif enrollment.class_type == 'family':
+        # Generate Family System ID if not exists
+        try:
+            if not enrollment.family_system_id:
+                from ..models.classes import generate_family_system_id
+                enrollment.family_system_id = generate_family_system_id()
+        except Exception as e:
+            # Handle case where family_system_id column doesn't exist yet
+            if 'family_system_id' in str(e).lower() or 'column' in str(e).lower():
+                flash('Database migration required. Please visit /admin/add-family-system-id-column first.', 'warning')
+                return redirect(url_for('admin.admin_enrollments'))
+            raise
+        
+        # Generate Student ID if not exists
+        if not user.student_id:
+            from ..models.classes import generate_student_id_for_class
+            user.student_id = generate_student_id_for_class('family')
+            user.class_type = 'family'
+            flash(f'Family System ID: {enrollment.family_system_id}, Student ID: {user.student_id}', 'info')
+    elif enrollment.class_type == 'individual':
+        # Generate Student ID if not exists
+        if not user.student_id:
+            from ..models.classes import generate_student_id_for_class
+            user.student_id = generate_student_id_for_class('individual')
+            user.class_type = 'individual'
             flash(f'Student ID generated: {user.student_id}', 'info')
     
     # Add student to class based on class type
@@ -3288,6 +3384,18 @@ def admin_group_class_detail(class_id):
                 if action == 'approve':
                     user = User.query.get(enrollment.user_id)
                     if user:
+                        # Generate Group System ID if not exists
+                        try:
+                            if not enrollment.group_system_id:
+                                from ..models.classes import generate_group_system_id
+                                enrollment.group_system_id = generate_group_system_id()
+                        except Exception as e:
+                            # Handle case where group_system_id column doesn't exist yet
+                            if 'group_system_id' in str(e).lower() or 'column' in str(e).lower():
+                                flash('Database migration required. Please visit /admin/add-group-system-id-column first.', 'warning')
+                                return redirect(url_for('admin.admin_group_class_detail', class_id=class_id))
+                            raise
+                        
                         # Generate Student ID if not exists
                         if not user.student_id:
                             from ..models.classes import generate_student_id_for_class
@@ -3301,11 +3409,11 @@ def admin_group_class_detail(class_id):
                             group_class.students.append(user)
                             enrollment.status = 'completed'
                             db.session.commit()
-                            flash(f'Enrollment approved! Student ID: {user.student_id}', 'success')
+                            flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}', 'success')
                         else:
                             enrollment.status = 'completed'
                             db.session.commit()
-                            flash('Enrollment approved!', 'success')
+                            flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}', 'success')
                 elif action == 'reject':
                     enrollment.status = 'rejected'
                     db.session.commit()
@@ -3350,7 +3458,8 @@ def admin_group_class_detail(class_id):
             'student_name': f"{student.first_name} {student.last_name}",
             'student_id': student.student_id or 'N/A',
             'payment_status': enrollment.status if enrollment else 'N/A',
-            'registration_date': enrollment.enrolled_at if enrollment else None
+            'registration_date': enrollment.enrolled_at if enrollment else None,
+            'enrollment': enrollment  # Include enrollment to access group_system_id
         })
     
     # Get pending enrollments for this group class

@@ -31,6 +31,7 @@ class ClassEnrollment(db.Model):
     customer_address = db.Column(db.Text)
     payment_proof = db.Column(db.String(255))
     family_system_id = db.Column(db.String(20), nullable=True)  # Family System ID for family classes (e.g., FAM-XXXXX)
+    group_system_id = db.Column(db.String(20), nullable=True)  # Group System ID for group classes (e.g., GRO-XXXXX)
 
 
 class IndividualClass(db.Model):
@@ -207,3 +208,54 @@ def generate_family_system_id():
         family_id = f"FAM-{next_number:05d}"
     
     return family_id
+
+
+def generate_group_system_id():
+    """
+    Generate a unique Group System ID for group class enrollments
+    Format: GRO-XXXXX (6-character alphanumeric, similar to FAM-8KD29A format)
+    """
+    import secrets
+    import string
+    
+    # Generate a 6-character alphanumeric code
+    alphabet = string.ascii_uppercase + string.digits
+    # Exclude similar-looking characters: 0, O, I, 1
+    alphabet = ''.join(c for c in alphabet if c not in '0O1I')
+    
+    # Get all existing group system IDs
+    existing_ids = [e.group_system_id for e in ClassEnrollment.query.filter(
+        ClassEnrollment.group_system_id.isnot(None)
+    ).all() if e.group_system_id and e.group_system_id.startswith('GRO-')]
+    
+    # Generate a unique ID
+    max_attempts = 1000
+    for _ in range(max_attempts):
+        # Generate 6-character code
+        code = ''.join(secrets.choice(alphabet) for _ in range(6))
+        group_id = f"GRO-{code}"
+        
+        # Check if it's unique
+        if group_id not in existing_ids and not ClassEnrollment.query.filter_by(group_system_id=group_id).first():
+            return group_id
+    
+    # Fallback: use numeric format if random generation fails
+    existing_numeric = []
+    for gid in existing_ids:
+        try:
+            # Try to extract numeric part if it's numeric format
+            if len(gid) == 10 and gid.startswith('GRO-'):
+                num = int(gid.split('-')[1])
+                existing_numeric.append(num)
+        except (ValueError, IndexError):
+            continue
+    
+    next_number = max(existing_numeric) + 1 if existing_numeric else 1
+    group_id = f"GRO-{next_number:05d}"
+    
+    # Double-check uniqueness
+    while ClassEnrollment.query.filter_by(group_system_id=group_id).first():
+        next_number += 1
+        group_id = f"GRO-{next_number:05d}"
+    
+    return group_id

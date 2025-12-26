@@ -287,6 +287,55 @@ def register_class(class_type, class_id):
                     payment_methods=payment_methods
                 )
             
+            # Generate System ID based on class type
+            family_system_id = None
+            group_system_id = None
+            
+            if class_type == 'family':
+                from ..models.classes import generate_family_system_id
+                try:
+                    family_system_id = generate_family_system_id()
+                except Exception as e:
+                    # Handle case where family_system_id column doesn't exist yet
+                    if 'family_system_id' in str(e).lower() or 'column' in str(e).lower():
+                        flash('Database migration required. Please contact administrator.', 'warning')
+                        return render_template('register_class.html',
+                            class_obj=class_obj,
+                            class_type=class_type,
+                            pricing_type=class_type,
+                            pricing_name=pricing_name,
+                            pricing_color=pricing_color,
+                            pricing_icon=pricing_icon,
+                            max_students=max_students,
+                            features=features,
+                            fee_display=fee_display,
+                            amount=amount,
+                            payment_methods=payment_methods
+                        )
+                    raise
+            elif class_type == 'group':
+                from ..models.classes import generate_group_system_id
+                try:
+                    group_system_id = generate_group_system_id()
+                except Exception as e:
+                    # Handle case where group_system_id column doesn't exist yet
+                    if 'group_system_id' in str(e).lower() or 'column' in str(e).lower():
+                        flash('Database migration required. Please contact administrator.', 'warning')
+                        return render_template('register_class.html',
+                            class_obj=class_obj,
+                            class_type=class_type,
+                            pricing_type=class_type,
+                            pricing_name=pricing_name,
+                            pricing_color=pricing_color,
+                            pricing_icon=pricing_icon,
+                            max_students=max_students,
+                            features=features,
+                            fee_display=fee_display,
+                            amount=amount,
+                            payment_methods=payment_methods
+                        )
+                    raise
+            
             # Create enrollment record
             enrollment = ClassEnrollment(
                 user_id=user.id,
@@ -299,7 +348,9 @@ def register_class(class_type, class_id):
                 customer_address=address,
                 payment_method=payment_method,
                 payment_proof=payment_proof_url,
-                status='pending'  # Pending until admin approval
+                status='pending',  # Pending until admin approval
+                family_system_id=family_system_id,
+                group_system_id=group_system_id
             )
             db.session.add(enrollment)
             db.session.commit()

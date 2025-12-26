@@ -147,7 +147,17 @@
                 <div class="family-card card" onclick="window.location='{{ url_for('admin.admin_family_class_detail', enrollment_id=family.enrollment.id) }}'">
                     <div class="family-header">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">{{ family.family_name }}</h5>
+                            <div>
+                                <h5 class="mb-0">{{ family.family_name }}</h5>
+                                {% if family.enrollment.family_system_id %}
+                                <small style="opacity: 0.9;">
+                                    <i class="fas fa-id-card me-1"></i>System ID: 
+                                    <code style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                        {{ family.enrollment.family_system_id }}
+                                    </code>
+                                </small>
+                                {% endif %}
+                            </div>
                             <span class="badge bg-light text-dark">
                                 {{ family.total_students }} members
                             </span>

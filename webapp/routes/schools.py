@@ -451,47 +451,55 @@ def individual_enter():
 
 @bp.route('/group/enter', methods=['GET', 'POST'])
 def group_enter():
-    """Group class entry using Group Class Name + Student System ID"""
+    """Group class entry using Group Class Name + Group System ID (GRO-XXXXXX)"""
     from flask_login import login_user
     from ..models.classes import ClassEnrollment, GroupClass
     
     if request.method == 'POST':
         group_name = request.form.get('group_name', '').strip()
-        student_system_id = request.form.get('student_system_id', '').strip().upper()
+        group_system_id = request.form.get('group_system_id', '').strip().upper()
         
-        if not group_name or not student_system_id:
-            flash('Please provide both Group Class Name and Student System ID.', 'danger')
+        if not group_name or not group_system_id:
+            flash('Please provide both Group Class Name and Group System ID.', 'danger')
             return render_template('group_enter.html')
         
-        # Find user by student_id
-        user = User.query.filter_by(student_id=student_system_id).first()
-        
-        if not user:
-            flash('Student System ID not found.', 'danger')
-            return render_template('group_enter.html')
-        
-        # Find group class by name
-        group_class = GroupClass.query.filter_by(name=group_name, class_type='group').first()
-        
-        if not group_class:
-            flash('Group Class not found.', 'danger')
-            return render_template('group_enter.html')
-        
-        # Check enrollment
-        enrollment = ClassEnrollment.query.filter_by(
-            user_id=user.id,
-            class_id=group_class.id,
-            class_type='group',
-            status='completed'
-        ).first()
+        # Find enrollment by group_system_id
+        try:
+            enrollment = ClassEnrollment.query.filter_by(
+                group_system_id=group_system_id,
+                class_type='group',
+                status='completed'
+            ).first()
+        except Exception as e:
+            if 'group_system_id' in str(e).lower() or 'column' in str(e).lower():
+                flash('Database migration required. Please contact administrator.', 'warning')
+                return render_template('group_enter.html')
+            raise
         
         if not enrollment:
-            flash('You are not enrolled in this Group Class.', 'danger')
+            flash('Group System ID not found.', 'danger')
+            return render_template('group_enter.html')
+        
+        # Find group class by name and verify it matches enrollment
+        group_class = GroupClass.query.filter_by(
+            name=group_name,
+            class_type='group',
+            id=enrollment.class_id
+        ).first()
+        
+        if not group_class:
+            flash('Group Class not found or does not match the Group System ID.', 'danger')
+            return render_template('group_enter.html')
+        
+        # Get user from enrollment
+        user = User.query.get(enrollment.user_id)
+        if not user:
+            flash('User account not found.', 'danger')
             return render_template('group_enter.html')
         
         login_user(user)
         flash(f'Welcome, {user.first_name}!', 'success')
-        return redirect(url_for('admin.student_dashboard'))
+        return redirect(url_for('main.group_class_dashboard'))
     
     return render_template('group_enter.html')
 
@@ -547,7 +555,7 @@ def family_enter():
         
         login_user(user)
         flash(f'Welcome, {user.first_name}!', 'success')
-        return redirect(url_for('admin.student_dashboard'))
+        return redirect(url_for('main.family_dashboard'))
     
     return render_template('family_enter.html')
 

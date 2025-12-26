@@ -4608,15 +4608,25 @@ def admin_live_class():
         selected_class_type = request.form.get('class_type', request.args.get('class_type', ''))
         selected_class_id = request.form.get('class_id', request.args.get('class_id', type=int))
         selected_date = request.form.get('date', request.args.get('date', date.today().isoformat()))
-        selected_time_id = request.form.get('time_id', request.args.get('time_id', type=int))
+        # Ensure time_id is converted to integer
+        time_id_raw = request.form.get('time_id', request.args.get('time_id'))
+        selected_time_id = int(time_id_raw) if time_id_raw and str(time_id_raw).isdigit() else None
         
         eligible_students = []
         selected_class_time = None
         selected_class_obj = None
         
         if selected_class_type and selected_time_id:
-            # Get the selected class time
-            selected_class_time = ClassTime.query.get(selected_time_id)
+            # Get the selected class time (ensure selected_time_id is integer)
+            try:
+                selected_time_id = int(selected_time_id)
+            except (ValueError, TypeError):
+                selected_time_id = None
+            
+            if selected_time_id:
+                selected_class_time = ClassTime.query.get(selected_time_id)
+            else:
+                selected_class_time = None
             
             if selected_class_time:
                 # Parse selected date
@@ -4646,10 +4656,15 @@ def admin_live_class():
                             ).all()
                             
                             for enrollment in enrollments:
-                                selection = StudentClassTimeSelection.query.filter_by(
-                                    enrollment_id=enrollment.id,
-                                    class_time_id=selected_time_id
-                                ).first()
+                                # Ensure selected_time_id is integer for query
+                                time_id_int = int(selected_time_id) if selected_time_id else None
+                                if time_id_int:
+                                    selection = StudentClassTimeSelection.query.filter_by(
+                                        enrollment_id=enrollment.id,
+                                        class_time_id=time_id_int
+                                    ).first()
+                                else:
+                                    selection = None
                                 
                                 if selection:
                                     user = enrollment.user
@@ -4672,10 +4687,15 @@ def admin_live_class():
                             ).all()
                             
                             for enrollment in enrollments:
-                                selection = StudentClassTimeSelection.query.filter_by(
-                                    enrollment_id=enrollment.id,
-                                    class_time_id=selected_time_id
-                                ).first()
+                                # Ensure selected_time_id is integer for query
+                                time_id_int = int(selected_time_id) if selected_time_id else None
+                                if time_id_int:
+                                    selection = StudentClassTimeSelection.query.filter_by(
+                                        enrollment_id=enrollment.id,
+                                        class_time_id=time_id_int
+                                    ).first()
+                                else:
+                                    selection = None
                                 
                                 if selection:
                                     user = enrollment.user

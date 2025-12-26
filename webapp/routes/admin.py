@@ -4478,9 +4478,20 @@ def admin_class_time_settings():
             if time_id:
                 class_time = ClassTime.query.get(time_id)
                 if class_time:
+                    # Check if there are any student selections using this time
+                    selections = StudentClassTimeSelection.query.filter_by(class_time_id=time_id).all()
+                    if selections:
+                        # Delete all selections first
+                        for selection in selections:
+                            db.session.delete(selection)
+                        db.session.commit()
+                        flash(f'Time slot deleted successfully. {len(selections)} student selection(s) were also removed.', 'success')
+                    else:
+                        flash('Time slot deleted successfully.', 'success')
+                    
+                    # Now delete the time slot
                     db.session.delete(class_time)
                     db.session.commit()
-                    flash('Time slot deleted successfully.', 'success')
                 else:
                     flash('Time slot not found.', 'danger')
         
@@ -4667,7 +4678,7 @@ def admin_live_class():
                                     selection = None
                                 
                                 if selection:
-                                    user = enrollment.user
+                                    user = User.query.get(enrollment.user_id)
                                     if user:  # Check if user exists
                                         eligible_students.append({
                                             'id': user.id,
@@ -4698,7 +4709,7 @@ def admin_live_class():
                                     selection = None
                                 
                                 if selection:
-                                    user = enrollment.user
+                                    user = User.query.get(enrollment.user_id)
                                     # Get family members
                                     family_members = FamilyMember.query.filter_by(
                                         enrollment_id=enrollment.id,
@@ -4734,7 +4745,7 @@ def admin_live_class():
                             ).all()
                             
                             for enrollment in enrollments:
-                                user = enrollment.user
+                                user = User.query.get(enrollment.user_id)
                                 if user:  # Check if user exists
                                     eligible_students.append({
                                         'id': user.id,

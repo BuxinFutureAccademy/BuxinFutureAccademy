@@ -4574,16 +4574,34 @@ def admin_live_class():
     from datetime import datetime, date, time as dt_time
     import pytz
     
-    # Get all classes for dropdown
-    individual_classes = IndividualClass.query.all()
-    group_classes = GroupClass.query.filter_by(class_type='group').all()
-    family_classes = GroupClass.query.filter_by(class_type='family').all()
-    school_classes = GroupClass.query.filter_by(class_type='school').all()
+    # Get all classes for dropdown (with error handling)
+    try:
+        individual_classes = IndividualClass.query.all() or []
+    except Exception:
+        individual_classes = []
     
-    # Get all active class times
-    all_class_times = ClassTime.query.filter_by(is_active=True).order_by(
-        ClassTime.class_type, ClassTime.day, ClassTime.start_time
-    ).all()
+    try:
+        group_classes = GroupClass.query.filter_by(class_type='group').all() or []
+    except Exception:
+        group_classes = []
+    
+    try:
+        family_classes = GroupClass.query.filter_by(class_type='family').all() or []
+    except Exception:
+        family_classes = []
+    
+    try:
+        school_classes = GroupClass.query.filter_by(class_type='school').all() or []
+    except Exception:
+        school_classes = []
+    
+    # Get all active class times (with error handling)
+    try:
+        all_class_times = ClassTime.query.filter_by(is_active=True).order_by(
+            ClassTime.class_type, ClassTime.day, ClassTime.start_time
+        ).all() or []
+    except Exception:
+        all_class_times = []
     
     # Get selected filters from form or default to today
     selected_class_type = request.form.get('class_type', request.args.get('class_type', ''))
@@ -4734,11 +4752,21 @@ def admin_live_class():
     
     # Group class times by class type for dropdown
     class_times_by_type = {
-        'individual': [t for t in all_class_times if t.class_type == 'individual'],
-        'family': [t for t in all_class_times if t.class_type == 'family'],
-        'group': [t for t in all_class_times if t.class_type == 'group'],
-        'school': [t for t in all_class_times if t.class_type == 'school']
+        'individual': [t for t in all_class_times if t and t.class_type == 'individual'],
+        'family': [t for t in all_class_times if t and t.class_type == 'family'],
+        'group': [t for t in all_class_times if t and t.class_type == 'group'],
+        'school': [t for t in all_class_times if t and t.class_type == 'school']
     }
+    
+    # Ensure all lists exist (defensive)
+    if 'individual' not in class_times_by_type:
+        class_times_by_type['individual'] = []
+    if 'family' not in class_times_by_type:
+        class_times_by_type['family'] = []
+    if 'group' not in class_times_by_type:
+        class_times_by_type['group'] = []
+    if 'school' not in class_times_by_type:
+        class_times_by_type['school'] = []
     
     return render_template('admin_live_class.html',
                          individual_classes=individual_classes,

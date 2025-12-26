@@ -4615,141 +4615,141 @@ def admin_live_class():
         selected_class_obj = None
         
         if selected_class_type and selected_time_id:
-        # Get the selected class time
-        selected_class_time = ClassTime.query.get(selected_time_id)
-        
-        if selected_class_time:
-            # Parse selected date
-            try:
-                target_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
-                target_day = target_date.strftime('%A')  # Monday, Tuesday, etc.
-            except:
-                target_date = date.today()
-                target_day = target_date.strftime('%A')
+            # Get the selected class time
+            selected_class_time = ClassTime.query.get(selected_time_id)
             
-            # Verify day matches
-            if selected_class_time.day == target_day:
-                # Get class object
-                if selected_class_type == 'individual':
-                    selected_class_obj = IndividualClass.query.get(selected_class_id) if selected_class_id else None
-                elif selected_class_type in ['group', 'family', 'school']:
-                    selected_class_obj = GroupClass.query.get(selected_class_id) if selected_class_id else None
+            if selected_class_time:
+                # Parse selected date
+                try:
+                    target_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+                    target_day = target_date.strftime('%A')  # Monday, Tuesday, etc.
+                except:
+                    target_date = date.today()
+                    target_day = target_date.strftime('%A')
                 
-                if selected_class_obj:
-                    # Get eligible students based on class type
+                # Verify day matches
+                if selected_class_time.day == target_day:
+                    # Get class object
                     if selected_class_type == 'individual':
-                        # Get students who selected this time
-                        enrollments = ClassEnrollment.query.filter_by(
-                            class_id=selected_class_obj.id,
-                            class_type='individual',
-                            status='completed'
-                        ).all()
-                        
-                        for enrollment in enrollments:
-                            selection = StudentClassTimeSelection.query.filter_by(
-                                enrollment_id=enrollment.id,
-                                class_time_id=selected_time_id
-                            ).first()
+                        selected_class_obj = IndividualClass.query.get(selected_class_id) if selected_class_id else None
+                    elif selected_class_type in ['group', 'family', 'school']:
+                        selected_class_obj = GroupClass.query.get(selected_class_id) if selected_class_id else None
+                    
+                    if selected_class_obj:
+                        # Get eligible students based on class type
+                        if selected_class_type == 'individual':
+                            # Get students who selected this time
+                            enrollments = ClassEnrollment.query.filter_by(
+                                class_id=selected_class_obj.id,
+                                class_type='individual',
+                                status='completed'
+                            ).all()
                             
-                            if selection:
+                            for enrollment in enrollments:
+                                selection = StudentClassTimeSelection.query.filter_by(
+                                    enrollment_id=enrollment.id,
+                                    class_time_id=selected_time_id
+                                ).first()
+                                
+                                if selection:
+                                    user = enrollment.user
+                                    if user:  # Check if user exists
+                                        eligible_students.append({
+                                            'id': user.id,
+                                            'name': f"{user.first_name} {user.last_name}",
+                                            'system_id': user.student_id or 'N/A',
+                                            'class_type': 'Individual',
+                                            'enrollment': enrollment,
+                                            'user': user
+                                        })
+                        
+                        elif selected_class_type == 'family':
+                            # Get families who selected this time
+                            enrollments = ClassEnrollment.query.filter_by(
+                                class_id=selected_class_obj.id,
+                                class_type='family',
+                                status='completed'
+                            ).all()
+                            
+                            for enrollment in enrollments:
+                                selection = StudentClassTimeSelection.query.filter_by(
+                                    enrollment_id=enrollment.id,
+                                    class_time_id=selected_time_id
+                                ).first()
+                                
+                                if selection:
+                                    user = enrollment.user
+                                    # Get family members
+                                    family_members = FamilyMember.query.filter_by(
+                                        enrollment_id=enrollment.id,
+                                        class_id=selected_class_obj.id
+                                    ).all()
+                                    
+                                    if family_members:
+                                        for member in family_members:
+                                            eligible_students.append({
+                                                'id': f"family_{member.id}",
+                                                'name': member.member_name,
+                                                'system_id': enrollment.family_system_id or 'N/A',
+                                                'class_type': 'Family',
+                                                'enrollment': enrollment,
+                                                'member': member
+                                            })
+                                    elif user:  # If no family members, add the main user
+                                        eligible_students.append({
+                                            'id': user.id,
+                                            'name': f"{user.first_name} {user.last_name}",
+                                            'system_id': enrollment.family_system_id or 'N/A',
+                                            'class_type': 'Family',
+                                            'enrollment': enrollment,
+                                            'user': user
+                                        })
+                        
+                        elif selected_class_type == 'group':
+                            # Get all students in this group class (fixed time applies to all)
+                            enrollments = ClassEnrollment.query.filter_by(
+                                class_id=selected_class_obj.id,
+                                class_type='group',
+                                status='completed'
+                            ).all()
+                            
+                            for enrollment in enrollments:
                                 user = enrollment.user
                                 if user:  # Check if user exists
                                     eligible_students.append({
                                         'id': user.id,
                                         'name': f"{user.first_name} {user.last_name}",
-                                        'system_id': user.student_id or 'N/A',
-                                        'class_type': 'Individual',
+                                        'system_id': user.student_id or enrollment.group_system_id or 'N/A',
+                                        'class_type': 'Group',
                                         'enrollment': enrollment,
                                         'user': user
                                     })
-                    
-                    elif selected_class_type == 'family':
-                        # Get families who selected this time
-                        enrollments = ClassEnrollment.query.filter_by(
-                            class_id=selected_class_obj.id,
-                            class_type='family',
-                            status='completed'
-                        ).all()
                         
-                        for enrollment in enrollments:
-                            selection = StudentClassTimeSelection.query.filter_by(
-                                enrollment_id=enrollment.id,
-                                class_time_id=selected_time_id
-                            ).first()
+                        elif selected_class_type == 'school':
+                            # Get all school students registered in this class
+                            enrollments = ClassEnrollment.query.filter_by(
+                                class_id=selected_class_obj.id,
+                                class_type='school',
+                                status='completed'
+                            ).all()
                             
-                            if selection:
-                                user = enrollment.user
-                                # Get family members
-                                family_members = FamilyMember.query.filter_by(
+                            for enrollment in enrollments:
+                                # Get registered school students for this enrollment
+                                school_students = SchoolStudent.query.filter_by(
                                     enrollment_id=enrollment.id,
                                     class_id=selected_class_obj.id
                                 ).all()
                                 
-                                if family_members:
-                                    for member in family_members:
-                                        eligible_students.append({
-                                            'id': f"family_{member.id}",
-                                            'name': member.member_name,
-                                            'system_id': enrollment.family_system_id or 'N/A',
-                                            'class_type': 'Family',
-                                            'enrollment': enrollment,
-                                            'member': member
-                                        })
-                                elif user:  # If no family members, add the main user
+                                for school_student in school_students:
                                     eligible_students.append({
-                                        'id': user.id,
-                                        'name': f"{user.first_name} {user.last_name}",
-                                        'system_id': enrollment.family_system_id or 'N/A',
-                                        'class_type': 'Family',
+                                        'id': f"school_{school_student.id}",
+                                        'name': school_student.student_name,
+                                        'system_id': school_student.student_system_id or 'N/A',
+                                        'class_type': 'School',
                                         'enrollment': enrollment,
-                                        'user': user
+                                        'school_student': school_student,
+                                        'school_name': school_student.school_name
                                     })
-                    
-                    elif selected_class_type == 'group':
-                        # Get all students in this group class (fixed time applies to all)
-                        enrollments = ClassEnrollment.query.filter_by(
-                            class_id=selected_class_obj.id,
-                            class_type='group',
-                            status='completed'
-                        ).all()
-                        
-                        for enrollment in enrollments:
-                            user = enrollment.user
-                            if user:  # Check if user exists
-                                eligible_students.append({
-                                    'id': user.id,
-                                    'name': f"{user.first_name} {user.last_name}",
-                                    'system_id': user.student_id or enrollment.group_system_id or 'N/A',
-                                    'class_type': 'Group',
-                                    'enrollment': enrollment,
-                                    'user': user
-                                })
-                    
-                    elif selected_class_type == 'school':
-                        # Get all school students registered in this class
-                        enrollments = ClassEnrollment.query.filter_by(
-                            class_id=selected_class_obj.id,
-                            class_type='school',
-                            status='completed'
-                        ).all()
-                        
-                        for enrollment in enrollments:
-                            # Get registered school students for this enrollment
-                            school_students = SchoolStudent.query.filter_by(
-                                enrollment_id=enrollment.id,
-                                class_id=selected_class_obj.id
-                            ).all()
-                            
-                            for school_student in school_students:
-                                eligible_students.append({
-                                    'id': f"school_{school_student.id}",
-                                    'name': school_student.student_name,
-                                    'system_id': school_student.student_system_id or 'N/A',
-                                    'class_type': 'School',
-                                    'enrollment': enrollment,
-                                    'school_student': school_student,
-                                    'school_name': school_student.school_name
-                                })
         
         # Group class times by class type for dropdown
         class_times_by_type = {

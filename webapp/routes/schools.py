@@ -766,6 +766,63 @@ def school_student_dashboard():
     # In the future, if projects are linked to school students, update this logic
     projects_count = 0
     
+    # Live Class Logic - Check if current time matches class time for school students
+    active_live_class = None
+    from ..models.classes import ClassTime
+    import pytz
+    from datetime import datetime, time as dt_time
+    
+    # Get student's timezone (default to India if not set - school students don't have timezone preference yet)
+    # In future, we can add timezone to SchoolStudent model or get from school admin
+    student_timezone = 'Asia/Kolkata'  # Default timezone for school students
+    
+    # Get current time in student's timezone
+    student_tz = pytz.timezone(student_timezone)
+    current_datetime = datetime.now(student_tz)
+    current_time = current_datetime.time()
+    current_day = current_datetime.strftime('%A')  # Monday, Tuesday, etc.
+    
+    # Check each enrolled class for active live class
+    for cls in enrolled_classes:
+        enrollment = cls['enrollment']
+        class_type = 'school'  # School students are always in school classes
+        
+        # Get fixed times for school class
+        fixed_times = ClassTime.query.filter_by(
+            class_type='school',
+            is_active=True
+        ).order_by(ClassTime.day, ClassTime.start_time).all()
+        
+        # Check if any fixed time matches current time
+        for class_time in fixed_times:
+            try:
+                admin_tz = pytz.timezone(class_time.timezone)
+                today = current_datetime.date()
+                start_dt = admin_tz.localize(datetime.combine(today, class_time.start_time))
+                end_dt = admin_tz.localize(datetime.combine(today, class_time.end_time))
+                
+                start_dt_student = start_dt.astimezone(student_tz)
+                end_dt_student = end_dt.astimezone(student_tz)
+                
+                student_start_time = start_dt_student.time()
+                student_end_time = end_dt_student.time()
+                student_day = start_dt_student.strftime('%A')
+                
+                # Check if current day and time match AND student belongs to this class
+                if (current_day == student_day and 
+                    student_start_time <= current_time <= student_end_time and
+                    enrollment.class_id == cls['id']):  # Ensure student belongs to this specific class
+                    class_obj = GroupClass.query.get(enrollment.class_id)
+                    if class_obj:
+                        active_live_class = {
+                            'enrollment': enrollment,
+                            'class_time': class_time,
+                            'class': class_obj
+                        }
+                        break  # Only one live class at a time
+            except Exception:
+                pass  # If conversion fails, skip
+    
     return render_template('school_student_dashboard.html',
                          student=student,
                          enrolled_classes=enrolled_classes,
@@ -774,7 +831,9 @@ def school_student_dashboard():
                          monthly_stats=monthly_stats,
                          today_attendance=today_attendance,
                          today=today,
-                         projects_count=projects_count)
+                         projects_count=projects_count,
+                         active_live_class=active_live_class,
+                         student_timezone=student_timezone)
 
 
 @bp.route('/school-student/logout')

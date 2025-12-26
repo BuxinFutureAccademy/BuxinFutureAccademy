@@ -776,8 +776,8 @@
 
         <!-- Main Content Area -->
         <div class="main-content">
-            <!-- Live Classes Section -->
-            {% if enrolled_classes %}
+            <!-- Live Classes Section - Only visible when current time matches student's class time -->
+            {% if active_live_class %}
             <div class="live-class-section">
                 <h2 class="section-title" style="color: var(--robotics-accent);">
                     <i class="fas fa-video"></i>
@@ -791,6 +791,13 @@
                                 LIVE CLASS IN SESSION
                             </div>
                             <small class="text-muted">Join the live class meeting now</small>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-day me-1"></i>{{ active_live_class.class_time.day }}
+                                    <i class="fas fa-clock me-1 ms-2"></i>{{ active_live_class.class_time.get_display_time(student_timezone) }}
+                                    <i class="fas fa-book me-1 ms-2"></i>{{ active_live_class.class.name if active_live_class.class else 'Class' }}
+                                </small>
+                            </div>
                         </div>
                     </div>
                     
@@ -806,6 +813,7 @@
                         <div class="alert" style="background: rgba(57, 255, 20, 0.1); border: 1px solid var(--robotics-accent); color: var(--on-surface);">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Instructions:</strong> Click "Allow" when prompted to enable your camera and microphone for the live class.
+                            <br><small class="d-block mt-1"><i class="fas fa-globe me-1"></i>Time shown in your local country timezone</small>
                         </div>
                     </div>
                 </div>

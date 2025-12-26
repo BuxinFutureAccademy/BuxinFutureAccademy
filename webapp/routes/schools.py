@@ -480,15 +480,22 @@ def group_enter():
             flash('Group System ID not found.', 'danger')
             return render_template('group_enter.html')
         
-        # Find group class by name and verify it matches enrollment
+        # Find group class by ID from enrollment (more reliable than name)
         group_class = GroupClass.query.filter_by(
-            name=group_name,
-            class_type='group',
-            id=enrollment.class_id
+            id=enrollment.class_id,
+            class_type='group'
         ).first()
         
         if not group_class:
-            flash('Group Class not found or does not match the Group System ID.', 'danger')
+            flash('Group Class not found for this enrollment.', 'danger')
+            return render_template('group_enter.html')
+        
+        # Verify group name matches (case-insensitive, trimmed)
+        group_name_normalized = group_name.strip().lower()
+        actual_class_name_normalized = group_class.name.strip().lower() if group_class.name else ''
+        
+        if group_name_normalized != actual_class_name_normalized:
+            flash(f'Group Class Name does not match. Expected: "{group_class.name}", but you entered: "{group_name}".', 'danger')
             return render_template('group_enter.html')
         
         # Get user from enrollment

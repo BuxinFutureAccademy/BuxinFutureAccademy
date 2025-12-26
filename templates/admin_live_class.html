@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-video me-2" style="color: #ff0000;"></i>Admin Live Class</h2>
+            <p class="text-muted mb-0">Host live classes for students - Select class and time to see eligible students</p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Class & Time Selection Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Select Class & Time</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.admin_live_class') }}" id="liveClassForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Class Type *</label>
+                        <select name="class_type" class="form-select" id="classTypeSelect" required onchange="updateClassDropdown()">
+                            <option value="">Select Class Type</option>
+                            <option value="individual" {% if selected_class_type == 'individual' %}selected{% endif %}>Individual</option>
+                            <option value="family" {% if selected_class_type == 'family' %}selected{% endif %}>Family</option>
+                            <option value="group" {% if selected_class_type == 'group' %}selected{% endif %}>Group</option>
+                            <option value="school" {% if selected_class_type == 'school' %}selected{% endif %}>School</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Class *</label>
+                        <select name="class_id" class="form-select" id="classSelect" required onchange="updateTimeDropdown()">
+                            <option value="">Select Class Type First</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Date *</label>
+                        <input type="date" name="date" class="form-control" value="{{ selected_date }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Time Slot *</label>
+                        <select name="time_id" class="form-select" id="timeSelect" required>
+                            <option value="">Select Class First</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Load
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_class_time and selected_class_obj %}
+    <!-- Live Class Session -->
+    <div class="row">
+        <!-- Student List Panel (Left) -->
+        <div class="col-md-3">
+            <div class="card" style="position: sticky; top: 2rem; max-height: calc(100vh - 200px); overflow-y: auto;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Eligible Students
+                        <span class="badge bg-light text-dark ms-2">{{ eligible_students|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if eligible_students %}
+                        <div class="list-group list-group-flush">
+                            {% for student in eligible_students %}
+                            <div class="list-group-item" id="student-{{ student.id }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ student.name }}</h6>
+                                        <small class="text-muted d-block">
+                                            <code>{{ student.system_id }}</code>
+                                        </small>
+                                        <span class="badge bg-info mt-1">{{ student.class_type }}</span>
+                                        {% if student.school_name %}
+                                        <br><small class="text-muted">{{ student.school_name }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-secondary" id="status-{{ student.id }}">
+                                            <i class="fas fa-circle" style="font-size: 0.5rem;"></i> Offline
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-3 text-center text-muted">
+                            <i class="fas fa-user-slash fa-2x mb-2"></i>
+                            <p>No students found for this class and time.</p>
+                            <small>Make sure students have selected this time slot (for Individual/Family) or the time is set (for Group/School).</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Class Video Area (Main) -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-video me-2"></i>Live Class Session
+                        </h5>
+                        <small>
+                            <i class="fas fa-calendar-day me-1"></i>{{ selected_class_time.day }}
+                            <i class="fas fa-clock me-1 ms-2"></i>{{ selected_class_time.get_display_time() }}
+                            <i class="fas fa-book me-1 ms-2"></i>{{ selected_class_obj.name }}
+                        </small>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-light" onclick="toggleFullscreen()">
+                            <i class="fas fa-expand me-1"></i>Fullscreen
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0" id="videoContainer">
+                    <div style="background: #000; min-height: 600px; position: relative;">
+                        <iframe 
+                            id="liveClassIframe"
+                            allow="camera; microphone; fullscreen; display-capture; autoplay" 
+                            src="https://meet.jit.si/SportingDimensionsEmphasizeGenerally" 
+                            style="height: 600px; width: 100%; border: 0px; display: block;">
+                        </iframe>
+                    </div>
+                    <div class="p-3">
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Live Class Controls:</strong> Use the controls in the video window to manage camera, microphone, screen sharing, and more.
+                            <br><small class="d-block mt-1">Students will see "LIVE CLASS IN SESSION" in their dashboard when this session is active.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Instructions when no class/time selected -->
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-video fa-4x mb-3" style="color: #ccc;"></i>
+            <h4>Select Class & Time to Start Live Class</h4>
+            <p class="text-muted">Choose a class type, class, date, and time slot above to see eligible students and start the live class session.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Class data from server
+const classData = {
+    individual: [
+        {% for cls in individual_classes %}
+        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    group: [
+        {% for cls in group_classes %}
+        {% if cls.class_type == 'group' %}
+        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
+        {% endif %}
+        {% endfor %}
+    ],
+    family: [
+        {% for cls in family_classes %}
+        {% if cls.class_type == 'family' %}
+        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
+        {% endif %}
+        {% endfor %}
+    ],
+    school: [
+        {% for cls in school_classes %}
+        {% if cls.class_type == 'school' %}
+        {id: {{ cls.id }}, name: {{ cls.name|tojson }}}{% if not loop.last %},{% endif %}
+        {% endif %}
+        {% endfor %}
+    ]
+};
+
+// Time data from server
+const timeData = {
+    individual: [
+        {% for time in class_times_by_type.individual %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    family: [
+        {% for time in class_times_by_type.family %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    group: [
+        {% for time in class_times_by_type.group %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    school: [
+        {% for time in class_times_by_type.school %}
+        {id: {{ time.id }}, display: {{ time.get_full_display()|tojson }}, class_id: {{ time.class_id if time.class_id else 'null' }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+};
+
+// Populate class dropdown based on class type
+function updateClassDropdown() {
+    const classType = document.getElementById('classTypeSelect').value;
+    const classSelect = document.getElementById('classSelect');
+    classSelect.innerHTML = '<option value="">Select Class...</option>';
+    
+    if (!classType || !classData[classType]) return;
+    
+    classData[classType].forEach(cls => {
+        const option = document.createElement('option');
+        option.value = cls.id;
+        option.textContent = cls.name;
+        {% if selected_class_id %}
+        if (cls.id === {{ selected_class_id }}) option.selected = true;
+        {% endif %}
+        classSelect.appendChild(option);
+    });
+    
+    updateTimeDropdown();
+}
+
+// Populate time dropdown based on class type and class
+function updateTimeDropdown() {
+    const classType = document.getElementById('classTypeSelect').value;
+    const classId = document.getElementById('classSelect').value;
+    const timeSelect = document.getElementById('timeSelect');
+    timeSelect.innerHTML = '<option value="">Select Class First</option>';
+    
+    if (!classType || !timeData[classType]) return;
+    
+    // Filter times: show all if class_id is null, or only matching class_id
+    const filteredTimes = timeData[classType].filter(time => {
+        return time.class_id === null || time.class_id === parseInt(classId);
+    });
+    
+    filteredTimes.forEach(time => {
+        const option = document.createElement('option');
+        option.value = time.id;
+        option.textContent = time.display;
+        {% if selected_time_id %}
+        if (time.id === {{ selected_time_id }}) option.selected = true;
+        {% endif %}
+        timeSelect.appendChild(option);
+    });
+}
+
+// Toggle fullscreen
+function toggleFullscreen() {
+    const container = document.getElementById('videoContainer');
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => {
+            alert('Error attempting to enable fullscreen: ' + err.message);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateClassDropdown();
+    
+    // Auto-refresh student status every 5 seconds (future: implement WebSocket for real-time)
+    {% if eligible_students %}
+    setInterval(function() {
+        // Future: Check student online status via API
+        // For now, this is a placeholder for real-time status updates
+    }, 5000);
+    {% endif %}
+});
+</script>
+{% endblock %}
+

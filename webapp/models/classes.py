@@ -229,8 +229,17 @@ class ClassTime(db.Model):
     
     def get_display_time(self):
         """Format time as HH:MM - HH:MM"""
-        start_str = self.start_time.strftime('%H:%M') if isinstance(self.start_time, datetime.time) else str(self.start_time)
-        end_str = self.end_time.strftime('%H:%M') if isinstance(self.end_time, datetime.time) else str(self.end_time)
+        from datetime import time as dt_time
+        if isinstance(self.start_time, dt_time):
+            start_str = self.start_time.strftime('%H:%M')
+        else:
+            start_str = str(self.start_time) if self.start_time else 'N/A'
+        
+        if isinstance(self.end_time, dt_time):
+            end_str = self.end_time.strftime('%H:%M')
+        else:
+            end_str = str(self.end_time) if self.end_time else 'N/A'
+        
         return f"{start_str} – {end_str}"
     
     def get_full_display(self):

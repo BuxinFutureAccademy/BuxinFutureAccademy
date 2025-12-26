@@ -162,14 +162,14 @@
 <script>
 // Class data from server
 const classData = {
-    individual: {{ (individual_classes|map(attribute='id')|list) if individual_classes else []|tojson }},
-    individualNames: {{ (individual_classes|map(attribute='name')|list) if individual_classes else []|tojson }},
-    group: {{ (group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='id')|list) if group_classes else []|tojson }},
-    groupNames: {{ (group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='name')|list) if group_classes else []|tojson }},
-    family: {{ (family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='id')|list) if family_classes else []|tojson }},
-    familyNames: {{ (family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='name')|list) if family_classes else []|tojson }},
-    school: {{ (school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='id')|list) if school_classes else []|tojson }},
-    schoolNames: {{ (school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='name')|list) if school_classes else []|tojson }}
+    individual: {% if individual_classes %}{{ individual_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    individualNames: {% if individual_classes %}{{ individual_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    group: {% if group_classes %}{{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    groupNames: {% if group_classes %}{{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    family: {% if family_classes %}{{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    familyNames: {% if family_classes %}{{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    school: {% if school_classes %}{{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    schoolNames: {% if school_classes %}{{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='name')|list|tojson }}{% else %}[]{% endif %}
 };
 
 // Time data from server
@@ -210,34 +210,52 @@ function updateClassDropdown() {
     const classSelect = document.getElementById('classSelect');
     classSelect.innerHTML = '<option value="">Select Class...</option>';
     
-    if (!classType) return;
+    console.log('updateClassDropdown called with classType:', classType);
+    
+    if (!classType) {
+        updateTimeDropdown(); // Clear time dropdown too
+        return;
+    }
     
     let classes = [];
     let classNames = [];
     
-    if (classType === 'individual' && classData.individual) {
+    if (classType === 'individual' && classData.individual && Array.isArray(classData.individual) && classData.individual.length > 0) {
         classes = classData.individual;
-        classNames = classData.individualNames;
-    } else if (classType === 'group' && classData.group) {
+        classNames = classData.individualNames || [];
+        console.log('Individual classes found:', classes.length);
+    } else if (classType === 'group' && classData.group && Array.isArray(classData.group) && classData.group.length > 0) {
         classes = classData.group;
-        classNames = classData.groupNames;
-    } else if (classType === 'family' && classData.family) {
+        classNames = classData.groupNames || [];
+        console.log('Group classes found:', classes.length);
+    } else if (classType === 'family' && classData.family && Array.isArray(classData.family) && classData.family.length > 0) {
         classes = classData.family;
-        classNames = classData.familyNames;
-    } else if (classType === 'school' && classData.school) {
+        classNames = classData.familyNames || [];
+        console.log('Family classes found:', classes.length);
+    } else if (classType === 'school' && classData.school && Array.isArray(classData.school) && classData.school.length > 0) {
         classes = classData.school;
-        classNames = classData.schoolNames;
+        classNames = classData.schoolNames || [];
+        console.log('School classes found:', classes.length);
     }
     
-    classes.forEach((id, index) => {
+    if (classes.length === 0) {
         const option = document.createElement('option');
-        option.value = id;
-        option.textContent = classNames[index];
-        {% if selected_class_id %}
-        if (id === {{ selected_class_id }}) option.selected = true;
-        {% endif %}
+        option.value = '';
+        option.textContent = 'No classes available';
         classSelect.appendChild(option);
-    });
+        console.log('No classes available for type:', classType);
+    } else {
+        classes.forEach((id, index) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = classNames[index] || `Class ${id}`;
+            {% if selected_class_id %}
+            if (id === {{ selected_class_id }}) option.selected = true;
+            {% endif %}
+            classSelect.appendChild(option);
+        });
+        console.log('Populated', classes.length, 'classes');
+    }
     
     updateTimeDropdown();
 }
@@ -247,24 +265,54 @@ function updateTimeDropdown() {
     const classType = document.getElementById('classTypeSelect').value;
     const classId = document.getElementById('classSelect').value;
     const timeSelect = document.getElementById('timeSelect');
-    timeSelect.innerHTML = '<option value="">Select Class First</option>';
+    timeSelect.innerHTML = '<option value="">Select Class Type First</option>';
     
-    if (!classType || !timeData[classType]) return;
+    console.log('updateTimeDropdown called with classType:', classType, 'classId:', classId);
     
-    // Filter times: show all if class_id is null, or only matching class_id
+    if (!classType) {
+        timeSelect.innerHTML = '<option value="">Select Class Type First</option>';
+        return;
+    }
+    
+    if (!timeData[classType] || !Array.isArray(timeData[classType]) || timeData[classType].length === 0) {
+        timeSelect.innerHTML = '<option value="">No time slots available</option>';
+        console.log('No time data for classType:', classType);
+        return;
+    }
+    
+    console.log('Time data for', classType, ':', timeData[classType].length, 'slots');
+    
+    // If no class selected, show all times for this class type
+    // If class selected, filter times by class_id (show all if class_id is null, or only matching)
     const filteredTimes = timeData[classType].filter(time => {
-        return time.class_id === null || time.class_id === parseInt(classId);
+        if (!classId || classId === '') {
+            // No class selected - show all times for this class type
+            return true;
+        }
+        // Class selected - show times that match this class or are general (class_id is null)
+        const matches = time.class_id === null || time.class_id === parseInt(classId);
+        console.log('Time', time.id, 'class_id:', time.class_id, 'matches classId', classId, ':', matches);
+        return matches;
     });
     
+    console.log('Filtered times:', filteredTimes.length);
+    
+    if (filteredTimes.length === 0) {
+        timeSelect.innerHTML = '<option value="">No time slots available for this class</option>';
+        return;
+    }
+    
+    timeSelect.innerHTML = '<option value="">Select Time Slot...</option>';
     filteredTimes.forEach(time => {
         const option = document.createElement('option');
         option.value = time.id;
-        option.textContent = time.display;
+        option.textContent = time.display || `Time ${time.id}`;
         {% if selected_time_id %}
         if (time.id === {{ selected_time_id }}) option.selected = true;
         {% endif %}
         timeSelect.appendChild(option);
     });
+    console.log('Populated', filteredTimes.length, 'time slots');
 }
 
 // Toggle fullscreen
@@ -281,7 +329,12 @@ function toggleFullscreen() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Class Data:', classData);
+    console.log('Time Data:', timeData);
+    
+    // Initialize dropdowns
     updateClassDropdown();
+    updateTimeDropdown();
     
     // Auto-refresh student status every 5 seconds (future: implement WebSocket for real-time)
     {% if eligible_students %}

@@ -296,6 +296,7 @@ def family_dashboard():
 @login_required
 def select_class_time():
     """Student route for selecting class time (Individual and Family only)"""
+    from datetime import datetime
     from ..extensions import db
     
     time_id = request.form.get('time_id', type=int)

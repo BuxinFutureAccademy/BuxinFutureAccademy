@@ -2,6 +2,7 @@ from datetime import datetime
 import qrcode
 import io
 import base64
+from flask import url_for, current_app
 from ..extensions import db
 
 
@@ -118,7 +119,9 @@ def generate_individual_student_id_card(enrollment, user, class_obj, approved_by
     db.session.flush()  # Get ID without committing
     
     # Generate QR code URL now that we have the ID
-    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    # Use url_for within app context
+    with current_app.app_context():
+        qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
     id_card.qr_code_data = qr_url
     
     db.session.commit()
@@ -163,7 +166,9 @@ def generate_group_student_id_card(enrollment, user, class_obj, approved_by_user
     db.session.flush()  # Get ID without committing
     
     # Generate QR code URL now that we have the ID
-    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    # Use url_for within app context
+    with current_app.app_context():
+        qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
     id_card.qr_code_data = qr_url
     
     db.session.commit()
@@ -215,7 +220,9 @@ def generate_family_id_card(enrollment, user, class_obj, approved_by_user_id):
     db.session.flush()  # Get ID without committing
     
     # Generate QR code URL now that we have the ID
-    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    # Use url_for within app context
+    with current_app.app_context():
+        qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
     id_card.qr_code_data = qr_url
     
     db.session.commit()
@@ -260,7 +267,9 @@ def generate_school_id_card(school, approved_by_user_id):
     db.session.flush()  # Get ID without committing
     
     # Generate QR code URL now that we have the ID
-    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    # Use url_for within app context
+    with current_app.app_context():
+        qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
     id_card.qr_code_data = qr_url
     
     db.session.commit()
@@ -321,7 +330,9 @@ def generate_school_student_id_card(registered_student, school, approved_by_user
     db.session.flush()  # Get ID without committing
     
     # Generate QR code URL now that we have the ID
-    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    # Use url_for within app context
+    with current_app.app_context():
+        qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
     id_card.qr_code_data = qr_url
     
     db.session.commit()

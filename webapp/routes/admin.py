@@ -1709,11 +1709,21 @@ def approve_enrollment(enrollment_id):
                 return redirect(url_for('admin.admin_enrollments'))
             raise
         
-        # Generate Student ID if not exists
+        # CRITICAL: Generate Student ID if not exists
+        # Always check database uniqueness before assigning
         if not user.student_id:
             from ..models.classes import generate_student_id_for_class
-            user.student_id = generate_student_id_for_class('group')
+            new_student_id = generate_student_id_for_class('group')
+            
+            # Double-check: Ensure this ID is truly unique
+            existing_user = User.query.filter_by(student_id=new_student_id).first()
+            if existing_user and existing_user.id != user.id:
+                # ID collision - generate a new one
+                new_student_id = generate_student_id_for_class('group')
+            
+            user.student_id = new_student_id
             user.class_type = 'group'
+            db.session.flush()  # Ensure it's saved before ID card generation
             flash(f'Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}', 'info')
     elif enrollment.class_type == 'family':
         # Generate Family System ID if not exists
@@ -1728,18 +1738,38 @@ def approve_enrollment(enrollment_id):
                 return redirect(url_for('admin.admin_enrollments'))
             raise
         
-        # Generate Student ID if not exists
+        # CRITICAL: Generate Student ID if not exists
+        # Always check database uniqueness before assigning
         if not user.student_id:
             from ..models.classes import generate_student_id_for_class
-            user.student_id = generate_student_id_for_class('family')
+            new_student_id = generate_student_id_for_class('family')
+            
+            # Double-check: Ensure this ID is truly unique
+            existing_user = User.query.filter_by(student_id=new_student_id).first()
+            if existing_user and existing_user.id != user.id:
+                # ID collision - generate a new one
+                new_student_id = generate_student_id_for_class('family')
+            
+            user.student_id = new_student_id
             user.class_type = 'family'
+            db.session.flush()  # Ensure it's saved before ID card generation
             flash(f'Family System ID: {enrollment.family_system_id}, Student ID: {user.student_id}', 'info')
     elif enrollment.class_type == 'individual':
-        # Generate Student ID if not exists
+        # CRITICAL: Generate Student ID if not exists
+        # Always check database uniqueness before assigning
         if not user.student_id:
             from ..models.classes import generate_student_id_for_class
-            user.student_id = generate_student_id_for_class('individual')
+            new_student_id = generate_student_id_for_class('individual')
+            
+            # Double-check: Ensure this ID is truly unique
+            existing_user = User.query.filter_by(student_id=new_student_id).first()
+            if existing_user and existing_user.id != user.id:
+                # ID collision - generate a new one
+                new_student_id = generate_student_id_for_class('individual')
+            
+            user.student_id = new_student_id
             user.class_type = 'individual'
+            db.session.flush()  # Ensure it's saved before ID card generation
             flash(f'Student ID generated: {user.student_id}', 'info')
     
     # Add student to class based on class type
@@ -2015,7 +2045,7 @@ def student_dashboard():
                 registered_students = SchoolStudent.query.filter_by(
                     class_id=cls['id'],
                     enrollment_id=cls['enrollment'].id,
-                    registered_by=current_user.id
+                    registered_by=user_id
                 ).all()
                 
                 # For school students, we can't directly query by student_id since they're not Users
@@ -3613,8 +3643,13 @@ def admin_individual_classes():
                     # Generate Student ID if not exists
                     if not user.student_id:
                         from ..models.classes import generate_student_id_for_class
-                        user.student_id = generate_student_id_for_class('individual')
+                        new_student_id = generate_student_id_for_class('individual')
+                        existing_user = User.query.filter_by(student_id=new_student_id).first()
+                        if existing_user and existing_user.id != user.id:
+                            new_student_id = generate_student_id_for_class('individual')
+                        user.student_id = new_student_id
                         user.class_type = 'individual'
+                        db.session.flush()
                     
                     # Add student to individual class
                     individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
@@ -3837,8 +3872,13 @@ def admin_group_class_detail(class_id):
                         # Generate Student ID if not exists
                         if not user.student_id:
                             from ..models.classes import generate_student_id_for_class
-                            user.student_id = generate_student_id_for_class('group')
+                            new_student_id = generate_student_id_for_class('group')
+                            existing_user = User.query.filter_by(student_id=new_student_id).first()
+                            if existing_user and existing_user.id != user.id:
+                                new_student_id = generate_student_id_for_class('group')
+                            user.student_id = new_student_id
                             user.class_type = 'group'
+                            db.session.flush()
                         
                         # Check if class is full
                         if len(group_class.students) >= group_class.max_students:
@@ -4041,8 +4081,13 @@ def admin_family_class_detail(enrollment_id):
                     # Generate Student ID if not exists
                     if not user.student_id:
                         from ..models.classes import generate_student_id_for_class
-                        user.student_id = generate_student_id_for_class('family')
+                        new_student_id = generate_student_id_for_class('family')
+                        existing_user = User.query.filter_by(student_id=new_student_id).first()
+                        if existing_user and existing_user.id != user.id:
+                            new_student_id = generate_student_id_for_class('family')
+                        user.student_id = new_student_id
                         user.class_type = 'family'
+                        db.session.flush()
                     
                     # Generate Student IDs for all family members
                     family_members = FamilyMember.query.filter_by(enrollment_id=enrollment.id).all()

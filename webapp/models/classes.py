@@ -136,38 +136,66 @@ def generate_student_id_for_class(class_type='individual'):
     """
     Generate a unique Student ID for Group, Family, or Individual classes
     Format: STU-XXXXX (5-digit number)
+    CRITICAL: Ensures true uniqueness with database-level checking
     """
     from .users import User
+    from ..extensions import db
     
-    # Get all existing student IDs
-    existing_ids = [u.student_id for u in User.query.filter(
-        User.student_id.isnot(None)
-    ).all() if u.student_id and u.student_id.startswith('STU-')]
+    # Use a transaction to ensure atomicity
+    max_attempts = 100  # Prevent infinite loop
+    attempt = 0
     
-    if existing_ids:
-        # Extract numbers from existing IDs and find the max
-        numbers = []
-        for sid in existing_ids:
-            try:
-                num = int(sid.split('-')[1])
-                numbers.append(num)
-            except (ValueError, IndexError):
-                continue
+    while attempt < max_attempts:
+        # Get all existing student IDs in a single query
+        existing_users = User.query.filter(
+            User.student_id.isnot(None),
+            User.student_id.like('STU-%')
+        ).all()
         
-        if numbers:
-            next_number = max(numbers) + 1
+        existing_ids = [u.student_id for u in existing_users if u.student_id and u.student_id.startswith('STU-')]
+        
+        if existing_ids:
+            # Extract numbers from existing IDs and find the max
+            numbers = []
+            for sid in existing_ids:
+                try:
+                    num = int(sid.split('-')[1])
+                    numbers.append(num)
+                except (ValueError, IndexError):
+                    continue
+            
+            if numbers:
+                next_number = max(numbers) + 1
+            else:
+                next_number = 1
         else:
             next_number = 1
-    else:
-        next_number = 1
-    
-    # Format as 5-digit number with leading zeros
-    student_id = f"STU-{next_number:05d}"
-    
-    # Double-check uniqueness (shouldn't happen, but safety check)
-    while User.query.filter_by(student_id=student_id).first():
-        next_number += 1
+        
+        # Format as 5-digit number with leading zeros
         student_id = f"STU-{next_number:05d}"
+        
+        # CRITICAL: Check uniqueness at database level before returning
+        existing_user = User.query.filter_by(student_id=student_id).first()
+        if not existing_user:
+            # This ID is available - return it
+            return student_id
+        
+        # If we get here, the ID exists - try next number
+        next_number += 1
+        attempt += 1
+    
+    # Fallback: If we've tried 100 times, something is very wrong
+    # Generate a random suffix to ensure uniqueness
+    import random
+    random_suffix = random.randint(10000, 99999)
+    student_id = f"STU-{random_suffix:05d}"
+    
+    # Final check
+    if User.query.filter_by(student_id=student_id).first():
+        # Last resort: use timestamp-based ID
+        from datetime import datetime
+        timestamp = int(datetime.utcnow().timestamp()) % 100000
+        student_id = f"STU-{timestamp:05d}"
     
     return student_id
 

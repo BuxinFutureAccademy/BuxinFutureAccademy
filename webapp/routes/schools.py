@@ -422,16 +422,42 @@ def individual_enter():
             flash('Please provide both Student Name and Student System ID.', 'danger')
             return render_template('individual_enter.html')
         
-        # Find user by student_id
-        user = User.query.filter_by(student_id=student_system_id).first()
+        # CRITICAL: Find user by student_id AND verify name matches
+        # This ensures we get the correct student even if IDs are duplicated (shouldn't happen, but safety)
+        full_name_lower = student_name.lower().strip()
         
-        if not user:
+        # Find all users with this student_id
+        users_with_id = User.query.filter_by(student_id=student_system_id).all()
+        
+        if not users_with_id:
             flash('Student System ID not found.', 'danger')
             return render_template('individual_enter.html')
         
-        # Verify name matches
-        full_name_lower = student_name.lower()
-        user_full_name = f"{user.first_name} {user.last_name}".lower()
+        # Find the user whose name matches
+        user = None
+        for u in users_with_id:
+            user_full_name = f"{u.first_name} {u.last_name}".lower().strip()
+            if user_full_name == full_name_lower:
+                user = u
+                break
+        
+        # If no exact match, check enrollment customer_name
+        if not user:
+            for u in users_with_id:
+                enrollment = ClassEnrollment.query.filter_by(
+                    user_id=u.id,
+                    class_type='individual',
+                    status='completed'
+                ).first()
+                if enrollment and enrollment.customer_name:
+                    customer_name_lower = enrollment.customer_name.lower().strip()
+                    if customer_name_lower == full_name_lower:
+                        user = u
+                        break
+        
+        if not user:
+            flash('Student Name does not match the Student System ID. Please check your name and ID.', 'danger')
+            return render_template('individual_enter.html')
         
         # Check enrollment
         enrollment = ClassEnrollment.query.filter_by(
@@ -440,20 +466,15 @@ def individual_enter():
             status='completed'
         ).first()
         
-        name_matches = (
-            user_full_name == full_name_lower or
-            (enrollment and enrollment.customer_name and enrollment.customer_name.lower() == full_name_lower)
-        )
-        
-        if not name_matches:
-            flash('Student Name does not match the Student System ID.', 'danger')
-            return render_template('individual_enter.html')
-        
         if not enrollment:
-            flash('You are not enrolled in any Individual class.', 'danger')
+            flash('You are not enrolled in any Individual class or your enrollment is pending approval.', 'danger')
             return render_template('individual_enter.html')
         
-        login_user(user)
+        # Set session data for dashboard access (NO LOGIN REQUIRED)
+        session['student_user_id'] = user.id
+        session['student_name'] = f"{user.first_name} {user.last_name}"
+        session['student_system_id'] = user.student_id
+        
         flash(f'Welcome, {user.first_name}!', 'success')
         return redirect(url_for('admin.student_dashboard'))
     

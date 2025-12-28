@@ -2871,13 +2871,23 @@ def admin_edit_user(user_id):
         except Exception as e:
             db.session.rollback()
             flash(f'Failed to update user: {e}', 'danger')
+    # Get user statistics
+    purchases_count = Purchase.query.filter_by(user_id=user.id, status='completed').count()
+    enrollments_count = ClassEnrollment.query.filter_by(user_id=user.id, status='completed').count()
+    projects_count = len(user.student_projects) if hasattr(user, 'student_projects') else 0
+    account_age_days = (datetime.utcnow() - user.created_at).days if user.created_at else 0
+    
     return render_template('edit_user.html', 
                            user=user, 
                            Purchase=Purchase, 
                            ClassEnrollment=ClassEnrollment,
                            GroupClass=GroupClass,
                            IndividualClass=IndividualClass,
-                           datetime=datetime)
+                           datetime=datetime,
+                           purchases_count=purchases_count,
+                           enrollments_count=enrollments_count,
+                           projects_count=projects_count,
+                           account_age_days=account_age_days)
 
 
 # ========== GALLERY MANAGEMENT ==========

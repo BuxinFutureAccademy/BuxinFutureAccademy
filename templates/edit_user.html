@@ -160,25 +160,25 @@
                                     <div class="col-md-3">
                                         <div class="border rounded p-3">
                                             <h6 class="text-primary">Courses Purchased</h6>
-<h4>{{ Purchase.query.filter_by(user_id=user.id, status='completed').count() }}</h4>
+                                            <h4>{{ purchases_count }}</h4>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded p-3">
                                             <h6 class="text-success">Total Enrollments</h6>
-                                            <h4>{{ ClassEnrollment.query.filter_by(user_id=user.id, status='completed').count() }}</h4>
+                                            <h4>{{ enrollments_count }}</h4>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded p-3">
                                             <h6 class="text-warning">Projects Posted</h6>
-                                            <h4>{{ user.student_projects|length if user.student_projects is defined else 0 }}</h4>
+                                            <h4>{{ projects_count }}</h4>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded p-3">
                                             <h6 class="text-info">Account Age</h6>
-                                            <h4>{{ (datetime.utcnow() - user.created_at).days }} days</h4>
+                                            <h4>{{ account_age_days }} days</h4>
                                         </div>
                                     </div>
                                 </div>

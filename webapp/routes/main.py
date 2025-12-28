@@ -12,23 +12,26 @@ def index():
     from ..extensions import db
     from flask_login import current_user
     
-    # CRITICAL: Block home page access for approved students
+    # CRITICAL: Block home page access for approved students - NEVER show home page
     # They must see ID card first, then go to dashboard
     if current_user.is_authenticated and not current_user.is_admin:
         from ..routes.admin import check_student_needs_id_card
+        from ..models import ClassEnrollment, School, RegisteredSchoolStudent
+        
+        # Step 1: Check if student needs to see ID card
         needs_card, id_card = check_student_needs_id_card(current_user)
         if needs_card and id_card:
             # Redirect to ID card page
             return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
         
-        # If approved but ID card already viewed, redirect to dashboard
-        from ..models import ClassEnrollment
+        # Step 2: Check for approved enrollments (Individual, Group, Family, School)
         approved_enrollment = ClassEnrollment.query.filter_by(
             user_id=current_user.id,
             status='completed'
         ).first()
+        
         if approved_enrollment:
-            # Redirect to appropriate dashboard
+            # Redirect to appropriate dashboard based on class type
             if approved_enrollment.class_type == 'individual':
                 return redirect(url_for('admin.student_dashboard'))
             elif approved_enrollment.class_type == 'group':
@@ -37,6 +40,27 @@ def index():
                 return redirect(url_for('main.family_dashboard'))
             elif approved_enrollment.class_type == 'school':
                 return redirect(url_for('schools.school_dashboard'))
+        
+        # Step 3: Check if user is a school admin with active school
+        school = School.query.filter_by(user_id=current_user.id).first()
+        if school and school.status == 'active' and school.payment_status == 'completed':
+            # School admin/mentor - redirect to school dashboard
+            return redirect(url_for('schools.school_dashboard'))
+        
+        # Step 4: Check if user is a registered school student (via session or database)
+        # This handles school students who login via school student entry
+        from flask import session
+        if session.get('school_student_id'):
+            # School student logged in via school student entry
+            return redirect(url_for('schools.school_student_dashboard'))
+        
+        # Check if there's a registered school student record for this user
+        registered_school_student = RegisteredSchoolStudent.query.filter_by(
+            user_id=current_user.id
+        ).first()
+        if registered_school_student:
+            # Has school student record - redirect to school student dashboard
+            return redirect(url_for('schools.school_student_dashboard'))
     
     # Initialize empty lists for graceful degradation if tables don't exist
     gallery_images = []

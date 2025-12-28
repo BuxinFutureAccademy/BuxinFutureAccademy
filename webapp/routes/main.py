@@ -10,6 +10,33 @@ bp = Blueprint('main', __name__)
 def index():
     from datetime import datetime
     from ..extensions import db
+    from flask_login import current_user
+    
+    # CRITICAL: Block home page access for approved students
+    # They must see ID card first, then go to dashboard
+    if current_user.is_authenticated and not current_user.is_admin:
+        from ..routes.admin import check_student_needs_id_card
+        needs_card, id_card = check_student_needs_id_card(current_user)
+        if needs_card and id_card:
+            # Redirect to ID card page
+            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+        
+        # If approved but ID card already viewed, redirect to dashboard
+        from ..models import ClassEnrollment
+        approved_enrollment = ClassEnrollment.query.filter_by(
+            user_id=current_user.id,
+            status='completed'
+        ).first()
+        if approved_enrollment:
+            # Redirect to appropriate dashboard
+            if approved_enrollment.class_type == 'individual':
+                return redirect(url_for('admin.student_dashboard'))
+            elif approved_enrollment.class_type == 'group':
+                return redirect(url_for('main.group_class_dashboard'))
+            elif approved_enrollment.class_type == 'family':
+                return redirect(url_for('main.family_dashboard'))
+            elif approved_enrollment.class_type == 'school':
+                return redirect(url_for('schools.school_dashboard'))
     
     # Initialize empty lists for graceful degradation if tables don't exist
     gallery_images = []

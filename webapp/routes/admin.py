@@ -5176,38 +5176,21 @@ def admin_live_class():
 
 
 @bp.route('/id-card/<int:id_card_id>', methods=['GET', 'POST'])
-@login_required
 def view_id_card(id_card_id):
     """
-    CRITICAL: ID Card viewing page
-    This is the ONLY page students can access before viewing their ID card
+    View ID card - NO LOGIN REQUIRED
+    Students can see their ID card immediately after approval without logging in
     """
-    """View ID card popup - shown after approval, before entering classroom"""
     from flask import session
     id_card = IDCard.query.get_or_404(id_card_id)
     
-    # Check access permissions
-    has_access = False
-    is_owner = False
-    if current_user.is_admin:
-        has_access = True
-    elif id_card.entity_type == 'individual' and id_card.entity_id == current_user.id:
-        has_access = True
-        is_owner = True
-    elif id_card.entity_type == 'group' and id_card.entity_id == current_user.id:
-        has_access = True
-        is_owner = True
-    elif id_card.entity_type == 'family':
-        # Check if user is the family registrant
-        enrollment = ClassEnrollment.query.get(id_card.entity_id)
-        if enrollment and enrollment.user_id == current_user.id:
-            has_access = True
-            is_owner = True
-    elif id_card.entity_type == 'school':
-        # Check if user is the school admin
-        school = School.query.get(id_card.entity_id)
-        if school and school.user_id == current_user.id:
-            has_access = True
+    # NO LOGIN CHECK - Allow access to ID card without login
+    # Students can view their ID card directly after approval
+    has_access = True  # Always allow access - no login needed
+    is_owner = True  # Treat as owner since they're viewing their own card
+    
+    # If user is logged in and is admin, mark as admin
+    is_admin = current_user.is_authenticated and current_user.is_admin
             is_owner = True
     elif id_card.entity_type == 'school_student':
         # Check if user is the school student

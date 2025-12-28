@@ -379,37 +379,43 @@ def register_class(class_type, class_id):
 
 @bp.route('/enrollment-pending/<int:enrollment_id>', endpoint='enrollment_pending_approval')
 def enrollment_pending_approval(enrollment_id):
-    """Waiting for approval page - Existing page reused for class enrollments"""
-    from ..models import ClassEnrollment
-    from ..routes.admin import check_student_needs_id_card
+    """Waiting for approval page - NO LOGIN REQUIRED - Student sees ID card immediately after approval"""
+    from ..models import ClassEnrollment, IDCard, User
     
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     
     # CRITICAL: Check enrollment status FIRST
     if enrollment.status == 'completed':
-        # Enrollment is approved - check if user is logged in
-        if current_user.is_authenticated:
-            # User is logged in - check for ID card
-            needs_card, id_card = check_student_needs_id_card(current_user)
-            if needs_card and id_card:
-                # FORCE redirect to ID card page - approval incomplete until ID card viewed
-                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+        # Enrollment is approved - GET ID CARD DIRECTLY (NO LOGIN NEEDED)
+        user = User.query.get(enrollment.user_id)
+        if user:
+            # Get ID card directly from enrollment/user
+            entity_type = enrollment.class_type
+            entity_id = user.id if entity_type in ['individual', 'group'] else enrollment.id
             
-            # ID card already viewed or not needed - redirect to dashboard
-            if enrollment.class_type == 'individual':
-                return redirect(url_for('admin.student_dashboard'))
-            elif enrollment.class_type == 'group':
-                return redirect(url_for('main.group_class_dashboard'))
-            elif enrollment.class_type == 'family':
-                return redirect(url_for('main.family_dashboard'))
-            elif enrollment.class_type == 'school':
-                return redirect(url_for('schools.school_dashboard'))
+            id_card = IDCard.query.filter_by(
+                entity_type=entity_type,
+                entity_id=entity_id,
+                is_active=True
+            ).first()
+            
+            # If not found, try without is_active filter
+            if not id_card:
+                id_card = IDCard.query.filter_by(
+                    entity_type=entity_type,
+                    entity_id=entity_id
+                ).first()
+            
+            if id_card:
+                # SHOW ID CARD IMMEDIATELY - NO LOGIN REQUIRED
+                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
             else:
-                return redirect(url_for('main.index'))
+                # ID card not found yet - might be generating, show message
+                flash('Your enrollment has been approved! Your ID card is being generated. Please refresh in a moment.', 'info')
+                return render_template('enrollment_pending_approval.html', enrollment=enrollment)
         else:
-            # User not logged in - redirect to login, then they'll be redirected to ID card
-            flash('Your enrollment has been approved! Please log in to view your ID card.', 'success')
-            return redirect(url_for('auth.login'))
+            flash('User not found for this enrollment.', 'danger')
+            return render_template('enrollment_pending_approval.html', enrollment=enrollment)
     
     # Still pending - show waiting page
     return render_template('enrollment_pending_approval.html', enrollment=enrollment)

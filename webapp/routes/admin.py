@@ -1768,10 +1768,36 @@ def approve_enrollment(enrollment_id):
     
     enrollment.status = 'completed'
     
+    # CRITICAL: Generate ID Card IMMEDIATELY after approval
+    try:
+        from ..models.id_cards import (
+            generate_individual_student_id_card,
+            generate_group_student_id_card,
+            generate_family_id_card
+        )
+        
+        # Get class object for ID card generation
+        if enrollment.class_type == 'individual':
+            class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
+                        IndividualClass.query.get(enrollment.class_id)
+            if class_obj:
+                generate_individual_student_id_card(enrollment, user, class_obj, current_user.id)
+        elif enrollment.class_type == 'group':
+            class_obj = GroupClass.query.get(enrollment.class_id)
+            if class_obj:
+                generate_group_student_id_card(enrollment, user, class_obj, current_user.id)
+        elif enrollment.class_type == 'family':
+            class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='family').first()
+            if class_obj:
+                generate_family_id_card(enrollment, user, class_obj, current_user.id)
+    except Exception as e:
+        print(f"Error generating ID card: {e}")
+        # Don't fail approval if ID card generation fails, but log it
+    
     try:
         db.session.commit()
-        student_id_msg = f' (Student ID: {user.student_id})' if user.student_id else ''
-        flash(f'Enrollment approved for {enrollment.customer_name}!{student_id_msg}', 'success')
+        student_id_msg = f'Student ID: {user.student_id}' if user.student_id else ''
+        flash(f'Enrollment approved! {student_id_msg}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')

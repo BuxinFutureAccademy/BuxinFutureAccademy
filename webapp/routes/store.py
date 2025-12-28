@@ -381,35 +381,37 @@ def register_class(class_type, class_id):
 def enrollment_pending_approval(enrollment_id):
     """Waiting for approval page - Existing page reused for class enrollments"""
     from ..models import ClassEnrollment
-    from ..routes.admin import check_student_needs_id_card, get_id_card_for_entity, require_id_card_viewed
-    
-    # Apply ID card check decorator logic manually to avoid circular import
-    if current_user.is_authenticated:
-        needs_card, id_card = check_student_needs_id_card(current_user)
-        if needs_card and id_card:
-            # FORCE redirect to ID card page - approval incomplete until ID card viewed
-            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+    from ..routes.admin import check_student_needs_id_card
     
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     
-    # If already approved, check for ID card FIRST
+    # CRITICAL: Check enrollment status FIRST
     if enrollment.status == 'completed':
-        # ID card check already done above (before enrollment check)
-        # If we get here, either ID card already viewed or no ID card needed
-        
-        # Redirect based on class type
-        if enrollment.class_type == 'individual':
-            return redirect(url_for('admin.student_dashboard'))
-        elif enrollment.class_type == 'group':
-            return redirect(url_for('main.group_class_dashboard'))
-        elif enrollment.class_type == 'family':
-            return redirect(url_for('main.family_dashboard'))
-        elif enrollment.class_type == 'school':
-            return redirect(url_for('schools.school_dashboard'))
+        # Enrollment is approved - check if user is logged in
+        if current_user.is_authenticated:
+            # User is logged in - check for ID card
+            needs_card, id_card = check_student_needs_id_card(current_user)
+            if needs_card and id_card:
+                # FORCE redirect to ID card page - approval incomplete until ID card viewed
+                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+            
+            # ID card already viewed or not needed - redirect to dashboard
+            if enrollment.class_type == 'individual':
+                return redirect(url_for('admin.student_dashboard'))
+            elif enrollment.class_type == 'group':
+                return redirect(url_for('main.group_class_dashboard'))
+            elif enrollment.class_type == 'family':
+                return redirect(url_for('main.family_dashboard'))
+            elif enrollment.class_type == 'school':
+                return redirect(url_for('schools.school_dashboard'))
+            else:
+                return redirect(url_for('main.index'))
         else:
-            # Fallback to index (will be checked by decorator there)
-            return redirect(url_for('main.index'))
+            # User not logged in - redirect to login, then they'll be redirected to ID card
+            flash('Your enrollment has been approved! Please log in to view your ID card.', 'success')
+            return redirect(url_for('auth.login'))
     
+    # Still pending - show waiting page
     return render_template('enrollment_pending_approval.html', enrollment=enrollment)
 
 

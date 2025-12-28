@@ -12,7 +12,8 @@
                 <p class="mb-0">Your registration has been approved. Please download your ID card before entering your classroom.</p>
             </div>
 
-            <!-- ID Card Container -->
+            <!-- ID Card Container (Print Area) -->
+            <div id="id-card-print-area">
             <div class="card shadow-lg border-0 mb-4" style="border-radius: 20px; overflow: hidden;">
                 <div class="card-body p-0">
                     <!-- ID Card Header (BuXin Academy Branding) -->
@@ -34,8 +35,8 @@
                                             <i class="fas fa-user fa-5x text-muted"></i>
                                         </div>
                                     {% endif %}
-                                    <!-- Upload Photo Button -->
-                                    <button type="button" class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal" style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);">
+                                    <!-- Upload Photo Button (Hidden in print) -->
+                                    <button type="button" class="btn btn-sm btn-primary mt-2 no-print" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal" style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);">
                                         <i class="fas fa-camera"></i> Upload Photo
                                     </button>
                                 </div>
@@ -145,13 +146,15 @@
                     </div>
                 </div>
             </div>
+            </div>
+            <!-- End Print Area -->
 
-            <!-- Action Buttons -->
-            <div class="text-center mb-4">
-                <a href="{{ url_for('admin.download_id_card', id_card_id=id_card.id) }}" class="btn btn-lg btn-outline-primary me-2 mb-2" style="min-width: 200px;">
-                    <i class="fas fa-download"></i> Download ID Card (PDF)
-                </a>
-                <a href="{{ redirect_url }}" class="btn btn-lg btn-primary mb-2" style="min-width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+            <!-- Action Buttons (Outside Print Area) -->
+            <div class="text-center mb-4" id="action-buttons">
+                <button onclick="printIDCard()" class="btn btn-lg btn-primary me-2 mb-2" style="min-width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    <i class="fas fa-print"></i> Print ID Card
+                </button>
+                <a href="{{ redirect_url }}" class="btn btn-lg btn-outline-primary mb-2" style="min-width: 200px;">
                     <i class="fas fa-door-open"></i> Enter My Classroom
                 </a>
             </div>
@@ -159,8 +162,7 @@
             <!-- Help Text -->
             <div class="alert alert-info text-center" role="alert">
                 <small>
-                    <i class="fas fa-info-circle"></i> You can access your ID card anytime from your dashboard. 
-                    Make sure to download and save it for your records.
+                    <i class="fas fa-info-circle"></i> Click "Print ID Card" to print your ID card. You can access your ID card anytime from your dashboard.
                 </small>
             </div>
         </div>
@@ -194,15 +196,55 @@
 </div>
 
 <style>
+    /* Print-Only CSS - Hide everything except ID card */
     @media print {
-        .btn, .alert, .modal {
-            display: none !important;
+        body * {
+            visibility: hidden;
         }
+
+        #id-card-print-area,
+        #id-card-print-area * {
+            visibility: visible;
+        }
+
+        #id-card-print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+
         .card {
             box-shadow: none !important;
             border: 1px solid #ddd !important;
+            page-break-inside: avoid;
+        }
+
+        /* Hide buttons and non-print elements */
+        .btn, .no-print, #action-buttons, .alert, .modal {
+            display: none !important;
         }
     }
 </style>
+
+<script>
+function printIDCard() {
+    // Get the print area content
+    const printContents = document.getElementById('id-card-print-area').innerHTML;
+    const originalContents = document.body.innerHTML;
+
+    // Replace body content with only the ID card
+    document.body.innerHTML = printContents;
+    
+    // Trigger print
+    window.print();
+    
+    // Restore original content
+    document.body.innerHTML = originalContents;
+    
+    // Reload to restore any event listeners
+    location.reload();
+}
+</script>
 {% endblock %}
 

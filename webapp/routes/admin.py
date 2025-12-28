@@ -45,13 +45,25 @@ def get_id_card_for_entity(entity_type, entity_id):
     Returns IDCard object or None if not found
     """
     try:
+        # First try with is_active=True
         id_card = IDCard.query.filter_by(
             entity_type=entity_type,
             entity_id=entity_id,
             is_active=True
         ).first()
+        
+        # If not found, try without is_active filter (fallback)
+        if not id_card:
+            id_card = IDCard.query.filter_by(
+                entity_type=entity_type,
+                entity_id=entity_id
+            ).first()
+        
         return id_card
-    except Exception:
+    except Exception as e:
+        print(f"Error in get_id_card_for_entity: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -158,31 +170,34 @@ def require_id_card_viewed(f):
     
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Only check for authenticated non-admin users
-        if current_user.is_authenticated and not current_user.is_admin:
+        # CRITICAL: Only check for authenticated non-admin users
+        # If user is not authenticated, they can't have an ID card yet, so skip check
+        if not current_user.is_authenticated:
+            return f(*args, **kwargs)
+        
+        if not current_user.is_admin:
             try:
                 # CRITICAL: Check if student needs to see ID card
+                # This is the SINGLE SOURCE OF TRUTH
                 needs_card, id_card = check_student_needs_id_card(current_user)
                 
-                # DEBUG: Log the check result
                 if needs_card and id_card:
                     # FORCE redirect to ID card - override EVERYTHING
                     # This is the ONLY page student can access until ID card is viewed
+                    print(f"REDIRECTING: User {current_user.id} to ID card {id_card.id}")
                     return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
                 elif id_card is None:
-                    # ID card doesn't exist - this might be a problem
-                    # Check if enrollment is approved but no ID card
+                    # ID card doesn't exist - check if enrollment is approved
                     approved_enrollment = ClassEnrollment.query.filter_by(
                         user_id=current_user.id,
                         status='completed'
                     ).first()
                     if approved_enrollment:
                         # Enrollment is approved but no ID card found - this is an error
-                        # Log it but don't block (let admin fix it)
                         print(f"WARNING: User {current_user.id} has approved enrollment but no ID card found")
             except Exception as e:
                 # If check fails, log the error but don't block
-                print(f"ERROR in require_id_card_viewed decorator: {str(e)}")
+                print(f"ERROR in require_id_card_viewed decorator for user {current_user.id}: {str(e)}")
                 traceback.print_exc()
         return f(*args, **kwargs)
     return decorated_function
@@ -3571,11 +3586,22 @@ def admin_individual_classes():
                         # Generate ID Card
                         try:
                             from ..models.id_cards import generate_individual_student_id_card
+                            # ID card generation function commits internally
                             id_card = generate_individual_student_id_card(enrollment, user, individual_class, current_user.id)
-                            db.session.commit()
-                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
+                            # Verify ID card was created and can be found
+                            verify_card = IDCard.query.filter_by(
+                                entity_type='individual',
+                                entity_id=user.id,
+                                is_active=True
+                            ).first()
+                            if verify_card:
+                                flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
+                            else:
+                                flash(f'Enrollment approved! Student ID: {user.student_id}. Warning: ID Card may not be accessible yet.', 'warning')
                         except Exception as e:
-                            db.session.commit()
+                            db.session.rollback()
+                            import traceback
+                            traceback.print_exc()
                             flash(f'Enrollment approved! Student ID: {user.student_id}. Error generating ID card: {str(e)}', 'warning')
                 elif action == 'reject':
                     enrollment.status = 'rejected'

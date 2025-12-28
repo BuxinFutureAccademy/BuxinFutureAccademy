@@ -254,20 +254,38 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Auto-refresh every 30 seconds to check approval status
+    // Auto-refresh every 5 seconds to check approval status (faster detection)
     setInterval(function() {
-        fetch(window.location.href)
-            .then(response => response.text())
+        fetch(window.location.href, {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        })
+            .then(response => {
+                // Check if we got redirected (status 302 or 200 with different content)
+                if (response.redirected || response.status === 302) {
+                    window.location.reload();
+                    return;
+                }
+                return response.text();
+            })
             .then(html => {
+                if (!html) return;
                 // Check if status changed (enrollment approved)
-                if (!html.includes('Pending Approval') || html.includes('Student ID')) {
+                // If page doesn't contain "Pending Approval" or contains redirect indicators
+                if (!html.includes('Pending Approval') || 
+                    html.includes('redirect') || 
+                    html.includes('ID card') ||
+                    html.includes('dashboard')) {
                     window.location.reload();
                 }
             })
             .catch(() => {
                 // Silently fail, will retry on next interval
             });
-    }, 30000);
+    }, 5000); // Check every 5 seconds instead of 30
     </script>
 </body>
 </html>

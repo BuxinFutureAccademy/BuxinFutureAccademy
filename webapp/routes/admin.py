@@ -5076,7 +5076,11 @@ def view_id_card(id_card_id):
 @bp.route('/id-card/<int:id_card_id>/download')
 @login_required
 def download_id_card(id_card_id):
-    """Download ID card as PDF or image"""
+    """Download ID card as PDF"""
+    from flask import make_response
+    from weasyprint import HTML, CSS
+    from io import BytesIO
+    
     id_card = IDCard.query.get_or_404(id_card_id)
     
     # Check access (same as view_id_card)
@@ -5102,7 +5106,28 @@ def download_id_card(id_card_id):
         flash('Access denied.', 'danger')
         return redirect(url_for('main.index'))
     
-    # TODO: Implement PDF/image generation
-    # For now, redirect to view page
-    flash('Download functionality coming soon. Please use the print option in your browser.', 'info')
-    return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+    try:
+        # Render the ID card template
+        html_content = render_template('id_card_pdf.html', id_card=id_card)
+        
+        # Generate PDF using WeasyPrint
+        pdf_buffer = BytesIO()
+        
+        # Create HTML object and write to PDF
+        # WeasyPrint handles external images automatically
+        html_doc = HTML(string=html_content, base_url=request.url_root)
+        html_doc.write_pdf(pdf_buffer)
+        pdf_buffer.seek(0)
+        
+        # Create response with PDF
+        response = make_response(pdf_buffer.read())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=ID_CARD_{id_card.system_id}.pdf'
+        
+        return response
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        flash(f'Error generating PDF: {str(e)}', 'danger')
+        return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Card - {{ id_card.name }}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .id-card-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        .id-card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .id-card-header h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .id-card-header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        .id-card-body {
+            padding: 40px;
+        }
+        .id-card-content {
+            display: flex;
+            gap: 40px;
+        }
+        .photo-section {
+            flex: 0 0 250px;
+            text-align: center;
+        }
+        .photo-placeholder {
+            width: 250px;
+            height: 250px;
+            background: #f0f0f0;
+            border: 4px solid #667eea;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .photo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 6px;
+            display: block;
+        }
+        .photo-placeholder .icon {
+            font-size: 80px;
+            color: #999;
+        }
+        .details-section {
+            flex: 1;
+        }
+        .detail-row {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            color: #666;
+            font-size: 1.1em;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-right: 10px;
+        }
+        .badge-primary {
+            background: #667eea;
+            color: white;
+        }
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        .entity-name {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .entity-type {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        .id-card-footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 2px solid #e9ecef;
+        }
+        .id-card-footer p {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin: 0;
+        }
+        .qr-section {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .qr-placeholder {
+            width: 100px;
+            height: 100px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="id-card-container">
+        <!-- Header -->
+        <div class="id-card-header">
+            <h1>BuXin Academy</h1>
+            <p>Official Student ID Card</p>
+        </div>
+        
+        <!-- Body -->
+        <div class="id-card-body">
+            <div class="id-card-content">
+                <!-- Photo Section -->
+                <div class="photo-section">
+                    {% if id_card.photo_url %}
+                        <div class="photo-placeholder">
+                            <img src="{{ id_card.photo_url }}" alt="Photo">
+                        </div>
+                    {% else %}
+                        <div class="photo-placeholder">
+                            <div class="icon">👤</div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Details Section -->
+                <div class="details-section">
+                    <div class="entity-name">{{ id_card.name }}</div>
+                    <div class="entity-type">
+                        {% if id_card.entity_type == 'individual' %}
+                            Individual Student
+                        {% elif id_card.entity_type == 'group' %}
+                            Group Student
+                        {% elif id_card.entity_type == 'family' %}
+                            Family Member
+                        {% elif id_card.entity_type == 'school' %}
+                            School
+                        {% elif id_card.entity_type == 'school_student' %}
+                            School Student
+                        {% endif %}
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">System ID</div>
+                        <div class="detail-value">
+                            <span class="badge badge-primary">{{ id_card.system_id }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if id_card.class_name %}
+                    <div class="detail-row">
+                        <div class="detail-label">Class</div>
+                        <div class="detail-value">{{ id_card.class_name }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if id_card.school_name %}
+                    <div class="detail-row">
+                        <div class="detail-label">School</div>
+                        <div class="detail-value">{{ id_card.school_name }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if id_card.school_system_id %}
+                    <div class="detail-row">
+                        <div class="detail-label">School ID</div>
+                        <div class="detail-value">
+                            <span class="badge badge-info">{{ id_card.school_system_id }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if id_card.group_system_id %}
+                    <div class="detail-row">
+                        <div class="detail-label">Group ID</div>
+                        <div class="detail-value">
+                            <span class="badge badge-success">{{ id_card.group_system_id }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if id_card.family_system_id %}
+                    <div class="detail-row">
+                        <div class="detail-label">Family ID</div>
+                        <div class="detail-value">
+                            <span class="badge badge-warning">{{ id_card.family_system_id }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if id_card.email %}
+                    <div class="detail-row">
+                        <div class="detail-label">Email</div>
+                        <div class="detail-value">{{ id_card.email }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if id_card.phone %}
+                    <div class="detail-row">
+                        <div class="detail-label">Phone</div>
+                        <div class="detail-value">{{ id_card.phone }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if id_card.guardian_name %}
+                    <div class="detail-row">
+                        <div class="detail-label">Guardian</div>
+                        <div class="detail-value">{{ id_card.guardian_name }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Approved</div>
+                        <div class="detail-value">{{ id_card.approved_at.strftime('%B %d, %Y') }}</div>
+                    </div>
+                    
+                    <!-- QR Code Section -->
+                    <div class="qr-section">
+                        <div class="qr-placeholder">
+                            <div style="font-size: 40px;">📱</div>
+                        </div>
+                        <p style="color: #999; font-size: 0.9em; margin-top: 5px;">QR Code</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="id-card-footer">
+            <p>
+                <strong>🛡️</strong> This ID card confirms that you are an approved, verified, and active member of BuXin Academy.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

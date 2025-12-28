@@ -1827,37 +1827,49 @@ def reject_enrollment(enrollment_id):
 
 
 @bp.route('/student/dashboard')
-@login_required
-@require_id_card_viewed
 def student_dashboard():
     from datetime import datetime, date, timedelta
-    from flask import flash
+    from flask import flash, session
     from calendar import monthrange
     
-    # Decorator @require_id_card_viewed handles ID card check - no duplicate check needed
+    # NO LOGIN REQUIRED - Get user from session or current_user
+    user = None
+    user_id = None
+    
+    # Check if user is logged in (for admin or logged-in users)
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        # Get user from session (set by entry forms or ID card)
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    # If no user found, redirect to entry form
+    if not user:
+        flash('Please enter your Name and System ID to access your classroom.', 'info')
+        return redirect(url_for('main.index'))
     
     # Check if user has any CONFIRMED enrollment (status = 'completed')
-    # Only confirmed students can access the dashboard
     has_confirmed_enrollment = ClassEnrollment.query.filter_by(
-        user_id=current_user.id,
+        user_id=user_id,
         status='completed'
     ).first() is not None
     
     # Check if user is a school admin with active status and completed payment
     is_approved_school = False
-    if current_user.is_school_admin or getattr(current_user, 'is_school_student', False):
-        school = School.query.filter_by(user_id=current_user.id).first()
+    if getattr(user, 'is_school_admin', False) or getattr(user, 'is_school_student', False):
+        school = School.query.filter_by(user_id=user_id).first()
         if school and school.status == 'active' and school.payment_status == 'completed':
             is_approved_school = True
     
-    if not has_confirmed_enrollment and not current_user.is_admin and not is_approved_school:
+    if not has_confirmed_enrollment and not getattr(user, 'is_admin', False) and not is_approved_school:
         # Check if they have pending enrollment
         has_pending = ClassEnrollment.query.filter_by(
-            user_id=current_user.id,
+            user_id=user_id,
             status='pending'
         ).first() is not None
-        
-        # Decorator already checked ID card - if we get here, either no card needed or already viewed
         
         if has_pending:
             flash('Your class enrollment is pending approval. Please wait for admin confirmation.', 'warning')
@@ -1865,9 +1877,9 @@ def student_dashboard():
             flash('You need to enroll in a class first. Please register for a class to access your dashboard.', 'info')
         return redirect(url_for('main.index'))
     
-    purchases = Purchase.query.filter_by(user_id=current_user.id, status='completed').all()
-    projects = StudentProject.query.filter_by(student_id=current_user.id).all()
-    enrollments = ClassEnrollment.query.filter_by(user_id=current_user.id, status='completed').all()
+    purchases = Purchase.query.filter_by(user_id=user_id, status='completed').all()
+    projects = StudentProject.query.filter_by(student_id=user_id).all()
+    enrollments = ClassEnrollment.query.filter_by(user_id=user_id, status='completed').all()
     
     # Get classes the student is enrolled in
     enrolled_classes = []
@@ -1901,7 +1913,7 @@ def student_dashboard():
                 # For class_students, we can include the admin user (for other purposes)
                 # But for attendance, we ONLY want registered school students
                 students = []
-                if current_school_enrollment and current_school_enrollment.user_id == current_user.id:
+                if current_school_enrollment and current_school_enrollment.user_id == user_id:
                     student = User.query.get(current_school_enrollment.user_id)
                     if student:
                         students.append({
@@ -1916,7 +1928,7 @@ def student_dashboard():
                 registered_school_students = SchoolStudent.query.filter_by(
                     class_id=cls['id'],  # THIS class only
                     enrollment_id=current_school_enrollment.id,  # THIS school's enrollment only
-                    registered_by=current_user.id  # Only students registered by this school admin
+                    registered_by=user_id  # Only students registered by this school admin
                 ).order_by(SchoolStudent.student_name).all()
                 
                 # Attendance list: ONLY registered school students (no admin user)
@@ -1984,7 +1996,7 @@ def student_dashboard():
     for cls in enrolled_classes:
         # Get attendance for current user in this class this month
         attendance = Attendance.query.filter(
-            Attendance.student_id == current_user.id,
+            Attendance.student_id == user_id,
             Attendance.class_id == cls['id'],
             Attendance.attendance_date >= month_start,
             Attendance.attendance_date <= month_end
@@ -1997,7 +2009,7 @@ def student_dashboard():
             if cls['class_type'] == 'school':
                 # CRITICAL: For school classes, only get attendance for students from THIS school
                 # Get list of valid student IDs (school admin + registered school students)
-                valid_student_ids = [current_user.id]  # School admin
+                valid_student_ids = [user_id]  # School admin
                 
                 # Add registered school students for this class
                 registered_students = SchoolStudent.query.filter_by(
@@ -2049,7 +2061,7 @@ def student_dashboard():
     
     for cls in enrolled_classes:
         today_att = Attendance.query.filter(
-            Attendance.student_id == current_user.id,
+            Attendance.student_id == user_id,
             Attendance.class_id == cls['id'],
             Attendance.attendance_date == today
         ).first()
@@ -2076,7 +2088,7 @@ def student_dashboard():
                     for reg_student in registered_students:
                         # Find attendance record with school_student_id in notes
                         att = Attendance.query.filter(
-                            Attendance.student_id == current_user.id,  # School admin as proxy
+                            Attendance.student_id == user_id,  # School admin as proxy
                             Attendance.class_id == cls['id'],
                             Attendance.class_type == 'school',
                             Attendance.attendance_date == today,
@@ -2113,7 +2125,7 @@ def student_dashboard():
             students = SchoolStudent.query.filter_by(
                 class_id=cls['id'],  # THIS class only
                 enrollment_id=cls['enrollment'].id,  # THIS enrollment only
-                registered_by=current_user.id  # Only students registered by this school admin
+                registered_by=user_id  # Only students registered by this school admin
             ).order_by(SchoolStudent.student_name).all()
             registered_students[cls['id']] = students
         elif cls['class_type'] == 'family':
@@ -2134,7 +2146,7 @@ def student_dashboard():
                 from sqlalchemy import or_
                 class_materials = LearningMaterial.query.filter(
                     or_(
-                        LearningMaterial.class_id == f"student_{current_user.id}",
+                        LearningMaterial.class_id == f"student_{user_id}",
                         (LearningMaterial.class_type == 'individual') & (LearningMaterial.actual_class_id == cls['id'])
                     )
                 ).all()
@@ -2186,11 +2198,11 @@ def student_dashboard():
     
     # Get school information if user is a school mentor
     school = None
-    if current_user.is_school_admin:
-        school = School.query.filter_by(user_id=current_user.id).first()
+    if getattr(user, 'is_school_admin', False):
+        school = School.query.filter_by(user_id=user_id).first()
     
     # Get student's timezone (default to browser timezone or India if not set)
-    student_timezone = current_user.timezone or 'Asia/Kolkata'
+    student_timezone = getattr(user, 'timezone', None) or 'Asia/Kolkata'
     
     # Get class times for each enrolled class type
     class_times_by_type = {}
@@ -2298,26 +2310,26 @@ def student_dashboard():
                 except Exception:
                     pass  # If conversion fails, skip
     
-    # Get ID card for current user (always get it if it exists, regardless of viewing status)
+    # Get ID card for user (always get it if it exists, regardless of viewing status)
     user_id_card = None
-    if not current_user.is_admin:
+    if not getattr(user, 'is_admin', False):
         approved_enrollment = ClassEnrollment.query.filter_by(
-            user_id=current_user.id,
+            user_id=user_id,
             status='completed'
         ).first()
         if approved_enrollment:
             entity_type = approved_enrollment.class_type
             entity_id = None
             if entity_type == 'individual':
-                entity_id = current_user.id
+                entity_id = user_id
             elif entity_type == 'group':
-                entity_id = current_user.id
+                entity_id = user_id
             elif entity_type == 'family':
                 entity_id = approved_enrollment.id
             elif entity_type == 'school':
-                school = School.query.filter_by(user_id=current_user.id).first()
-                if school:
-                    entity_id = school.id
+                school_obj = School.query.filter_by(user_id=user_id).first()
+                if school_obj:
+                    entity_id = school_obj.id
             if entity_id:
                 user_id_card = get_id_card_for_entity(entity_type, entity_id)
     
@@ -5197,6 +5209,42 @@ def view_id_card(id_card_id):
     if id_card_id not in session['id_card_viewed']:
         session['id_card_viewed'].append(id_card_id)
         session.permanent = True
+    
+    # CRITICAL: Set session data for student access (NO LOGIN REQUIRED)
+    # This allows students to access dashboard using Name + System ID
+    if id_card.entity_type == 'individual' or id_card.entity_type == 'group':
+        # Get user from entity_id
+        user = User.query.get(id_card.entity_id)
+        if user:
+            session['student_user_id'] = user.id
+            session['student_name'] = f"{user.first_name} {user.last_name}"
+            session['student_system_id'] = user.student_id
+    elif id_card.entity_type == 'family':
+        # Get enrollment and user
+        enrollment = ClassEnrollment.query.get(id_card.entity_id)
+        if enrollment:
+            user = User.query.get(enrollment.user_id)
+            if user:
+                session['student_user_id'] = user.id
+                session['student_name'] = f"{user.first_name} {user.last_name}"
+                session['family_system_id'] = enrollment.family_system_id
+    elif id_card.entity_type == 'school':
+        # Get school and user
+        school_obj = School.query.get(id_card.entity_id)
+        if school_obj:
+            user = User.query.get(school_obj.user_id)
+            if user:
+                session['student_user_id'] = user.id
+                session['school_name'] = school_obj.school_name
+                session['school_system_id'] = school_obj.school_system_id
+    elif id_card.entity_type == 'school_student':
+        # Get registered school student
+        registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
+        if registered_student:
+            session['school_student_id'] = registered_student.id
+            session['school_student_name'] = registered_student.student_name
+            session['school_student_system_id'] = registered_student.student_system_id
+            session['school_name'] = registered_student.school_name
     
     # Handle photo/logo upload
     if request.method == 'POST' and request.form.get('action') == 'upload_photo':

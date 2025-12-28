@@ -329,8 +329,6 @@ def user_profile(user_id):
                            IndividualClass=IndividualClass)
 
 @bp.route('/group-class/dashboard')
-@login_required
-@require_id_card_viewed
 def group_class_dashboard():
     """Group Class Dashboard - Unified with student dashboard design"""
     from .admin import student_dashboard
@@ -338,8 +336,6 @@ def group_class_dashboard():
 
 
 @bp.route('/family/dashboard')
-@login_required
-@require_id_card_viewed
 def family_dashboard():
     """Family Dashboard - Unified with student dashboard design"""
     from .admin import student_dashboard

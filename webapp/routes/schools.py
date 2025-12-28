@@ -307,25 +307,25 @@ def school_pending_approval():
 
 
 @bp.route('/school/dashboard')
-@login_required
-@require_id_card_viewed
 def school_dashboard():
-    """School Mentor Dashboard - For school mentors to manage students and attendance"""
-    # CRITICAL: Check if school needs to see ID card first
-    from ..routes.admin import check_student_needs_id_card
-    needs_card, id_card = check_student_needs_id_card(current_user)
-    if needs_card and id_card:
-        # Redirect to ID card page - school must see ID card before dashboard
-        return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
-    # Verify user is a school admin (mentor)
-    if not current_user.is_school_admin:
-        flash('Access denied. School mentor privileges required.', 'danger')
+    """School Mentor Dashboard - NO LOGIN REQUIRED - Uses session data"""
+    from flask import session
+    
+    # NO LOGIN REQUIRED - Get user from session (set by ID card or entry form)
+    user_id = session.get('student_user_id')
+    if not user_id:
+        flash('Please enter your School Name and School System ID to access your dashboard.', 'info')
         return redirect(url_for('main.index'))
     
-    # Get school for current user
-    school = School.query.filter_by(user_id=current_user.id).first()
+    user = User.query.get(user_id)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get school for user
+    school = School.query.filter_by(user_id=user_id).first()
     if not school:
-        flash('No school registration found for your account.', 'danger')
+        flash('No school registration found.', 'danger')
         return redirect(url_for('main.index'))
     
     if school.status != 'active':
@@ -333,7 +333,6 @@ def school_dashboard():
         return redirect(url_for('schools.school_pending_approval'))
     
     # Use the unified student dashboard logic which handles school classes
-    # But we'll customize the profile section in the template to show mentor info
     from .admin import student_dashboard
     return student_dashboard()
 
@@ -672,8 +671,6 @@ def school_student_login():
 
 
 @bp.route('/school-student/dashboard')
-@login_required
-@require_id_card_viewed
 def school_student_dashboard():
     """School student dashboard - shows only their classes and materials"""
     from flask import session

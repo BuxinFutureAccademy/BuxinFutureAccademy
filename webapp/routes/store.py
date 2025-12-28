@@ -378,11 +378,17 @@ def register_class(class_type, class_id):
 
 
 @bp.route('/enrollment-pending/<int:enrollment_id>', endpoint='enrollment_pending_approval')
-@require_id_card_viewed
 def enrollment_pending_approval(enrollment_id):
     """Waiting for approval page - Existing page reused for class enrollments"""
     from ..models import ClassEnrollment
-    from ..routes.admin import check_student_needs_id_card, get_id_card_for_entity
+    from ..routes.admin import check_student_needs_id_card, get_id_card_for_entity, require_id_card_viewed
+    
+    # Apply ID card check decorator logic manually to avoid circular import
+    if current_user.is_authenticated:
+        needs_card, id_card = check_student_needs_id_card(current_user)
+        if needs_card and id_card:
+            # FORCE redirect to ID card page - approval incomplete until ID card viewed
+            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
     
     enrollment = ClassEnrollment.query.get_or_404(enrollment_id)
     

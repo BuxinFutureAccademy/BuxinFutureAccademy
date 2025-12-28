@@ -3,10 +3,12 @@ from flask import Blueprint, current_app, render_template, redirect, url_for, se
 from flask_login import login_required, current_user
 from ..services.mailer import send_bulk_email
 from ..models import HomeGallery, StudentVictory, StudentProject, ClassPricing, ClassTime, StudentClassTimeSelection, ClassEnrollment
+from ..routes.admin import require_id_card_viewed
 
 bp = Blueprint('main', __name__)
 
 @bp.route('/')
+@require_id_card_viewed
 def index():
     from datetime import datetime
     from ..extensions import db
@@ -344,6 +346,7 @@ def user_profile(user_id):
 
 @bp.route('/group-class/dashboard')
 @login_required
+@require_id_card_viewed
 def group_class_dashboard():
     """Group Class Dashboard - Unified with student dashboard design"""
     from .admin import student_dashboard
@@ -352,6 +355,7 @@ def group_class_dashboard():
 
 @bp.route('/family/dashboard')
 @login_required
+@require_id_card_viewed
 def family_dashboard():
     """Family Dashboard - Unified with student dashboard design"""
     from .admin import student_dashboard

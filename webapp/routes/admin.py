@@ -57,8 +57,11 @@ def get_id_card_for_entity(entity_type, entity_id):
 
 def check_student_needs_id_card(user):
     """
-    Check if a student needs to see their ID card
+    CRITICAL: Check if a student needs to see their ID card
+    This is the SINGLE SOURCE OF TRUTH for ID card viewing requirement
     Returns (needs_card, id_card) tuple
+    
+    Rule: Approval is NOT COMPLETE until student views ID card
     """
     from flask import session
     if not user or user.is_admin:
@@ -71,6 +74,30 @@ def check_student_needs_id_card(user):
     ).first()
     
     if not approved_enrollment:
+        # Also check for school students
+        from ..models.schools import School, RegisteredSchoolStudent
+        school = School.query.filter_by(user_id=user.id).first()
+        if school and school.status == 'active' and school.payment_status == 'completed':
+            # School admin - check for school ID card
+            id_card = get_id_card_for_entity('school', school.id)
+            if id_card:
+                viewed_cards = session.get('id_card_viewed', [])
+                if id_card.id not in viewed_cards:
+                    return True, id_card
+            return False, None
+        
+        # Check for registered school student
+        registered_student = RegisteredSchoolStudent.query.filter_by(
+            user_id=user.id
+        ).first()
+        if registered_student:
+            id_card = get_id_card_for_entity('school_student', registered_student.id)
+            if id_card:
+                viewed_cards = session.get('id_card_viewed', [])
+                if id_card.id not in viewed_cards:
+                    return True, id_card
+            return False, None
+        
         return False, None
     
     # Determine entity type and ID
@@ -92,17 +119,36 @@ def check_student_needs_id_card(user):
         else:
             return False, None
     
-    # Get ID card
+    # Get ID card - MUST exist if enrollment is approved
     id_card = get_id_card_for_entity(entity_type, entity_id)
     
     if id_card:
         # Check if ID card has been viewed in session
         viewed_cards = session.get('id_card_viewed', [])
         if id_card.id not in viewed_cards:
-            # Student needs to see ID card
+            # Student MUST see ID card - approval is incomplete
             return True, id_card
     
     return False, None
+
+
+def require_id_card_viewed(f):
+    """
+    Decorator to enforce ID card viewing on ALL student routes
+    This MUST be the FIRST check - before any other logic
+    """
+    from functools import wraps
+    from flask import redirect, url_for
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.is_authenticated and not current_user.is_admin:
+            needs_card, id_card = check_student_needs_id_card(current_user)
+            if needs_card and id_card:
+                # FORCE redirect to ID card - override everything
+                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 # Removed /class-admin route - using existing /login page instead
@@ -1704,6 +1750,7 @@ def reject_enrollment(enrollment_id):
 
 @bp.route('/student/dashboard')
 @login_required
+@require_id_card_viewed
 def student_dashboard():
     from datetime import datetime, date, timedelta
     from flask import flash
@@ -1736,6 +1783,11 @@ def student_dashboard():
             user_id=current_user.id,
             status='pending'
         ).first() is not None
+        
+        # CRITICAL: Check if student needs to see ID card FIRST
+        needs_card, id_card = check_student_needs_id_card(current_user)
+        if needs_card and id_card:
+            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
         
         if has_pending:
             flash('Your class enrollment is pending approval. Please wait for admin confirmation.', 'warning')
@@ -3492,7 +3544,7 @@ def admin_individual_classes():
                             from ..models.id_cards import generate_individual_student_id_card
                             id_card = generate_individual_student_id_card(enrollment, user, individual_class, current_user.id)
                             db.session.commit()
-                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated. Student will see ID card on next login.', 'success')
+                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
                         except Exception as e:
                             db.session.commit()
                             flash(f'Enrollment approved! Student ID: {user.student_id}. Error generating ID card: {str(e)}', 'warning')
@@ -3681,7 +3733,7 @@ def admin_group_class_detail(class_id):
                                 from ..models.id_cards import generate_group_student_id_card
                                 id_card = generate_group_student_id_card(enrollment, user, group_class, current_user.id)
                                 db.session.commit()
-                                flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}. ID Card generated. Student will see ID card on next login.', 'success')
+                                flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
                             except Exception as e:
                                 db.session.commit()
                                 flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}. Error generating ID card: {str(e)}', 'warning')
@@ -3892,7 +3944,7 @@ def admin_family_class_detail(enrollment_id):
                         from ..models.id_cards import generate_family_id_card
                         id_card = generate_family_id_card(enrollment, user, class_obj, current_user.id)
                         db.session.commit()
-                        flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. ID Card generated. Family will see ID card on next login.', 'success')
+                        flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. ID Card generated. Family will be redirected to view ID card immediately.', 'success')
                     except Exception as e:
                         db.session.commit()
                         flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. Error generating ID card: {str(e)}', 'warning')
@@ -4188,9 +4240,9 @@ def approve_school(school_id):
                 id_card = generate_school_id_card(school, current_user.id)
                 db.session.commit()
                 if enrollment_count > 0:
-                    flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated. ID Card generated. School will see ID card on next login.', 'success')
+                    flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated. ID Card generated. School will be redirected to view ID card immediately.', 'success')
                 else:
-                    flash(f'School "{school.school_name}" has been approved! ID Card generated. School will see ID card on next login.', 'success')
+                    flash(f'School "{school.school_name}" has been approved! ID Card generated. School will be redirected to view ID card immediately.', 'success')
             except Exception as e:
                 if enrollment_count > 0:
                     flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated. Error generating ID card: {str(e)}', 'warning')
@@ -5019,6 +5071,10 @@ def admin_live_class():
 @bp.route('/id-card/<int:id_card_id>', methods=['GET', 'POST'])
 @login_required
 def view_id_card(id_card_id):
+    """
+    CRITICAL: ID Card viewing page
+    This is the ONLY page students can access before viewing their ID card
+    """
     """View ID card popup - shown after approval, before entering classroom"""
     from flask import session
     id_card = IDCard.query.get_or_404(id_card_id)
@@ -5055,6 +5111,11 @@ def view_id_card(id_card_id):
     
     if not has_access:
         flash('Access denied. You do not have permission to view this ID card.', 'danger')
+        # Check if student needs to see their own ID card instead
+        if current_user.is_authenticated and not current_user.is_admin:
+            needs_card, student_id_card = check_student_needs_id_card(current_user)
+            if needs_card and student_id_card:
+                return redirect(url_for('admin.view_id_card', id_card_id=student_id_card.id))
         return redirect(url_for('main.index'))
     
     # Mark ID card as viewed in session (for non-admin owners)

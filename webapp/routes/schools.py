@@ -10,6 +10,7 @@ from sqlalchemy import text
 from ..extensions import db
 from ..models import User, School, RegisteredSchoolStudent
 from ..models.schools import generate_school_id, generate_student_id
+from ..routes.admin import require_id_card_viewed
 
 bp = Blueprint('schools', __name__)
 
@@ -303,6 +304,7 @@ def school_pending_approval():
 
 @bp.route('/school/dashboard')
 @login_required
+@require_id_card_viewed
 def school_dashboard():
     """School Mentor Dashboard - For school mentors to manage students and attendance"""
     # CRITICAL: Check if school needs to see ID card first
@@ -666,6 +668,8 @@ def school_student_login():
 
 
 @bp.route('/school-student/dashboard')
+@login_required
+@require_id_card_viewed
 def school_student_dashboard():
     """School student dashboard - shows only their classes and materials"""
     from flask import session

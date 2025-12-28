@@ -122,12 +122,26 @@ def check_student_needs_id_card(user):
     # Get ID card - MUST exist if enrollment is approved
     id_card = get_id_card_for_entity(entity_type, entity_id)
     
+    # DEBUG: Log if ID card not found
+    if not id_card:
+        print(f"WARNING: No ID card found for user {user.id}, entity_type={entity_type}, entity_id={entity_id}")
+        # Try to find ANY ID card for this user (fallback)
+        id_card = IDCard.query.filter_by(
+            entity_type=entity_type,
+            entity_id=entity_id
+        ).first()  # Remove is_active filter as fallback
+        if id_card:
+            print(f"Found ID card without is_active filter: {id_card.id}")
+    
     if id_card:
         # Check if ID card has been viewed in session
         viewed_cards = session.get('id_card_viewed', [])
         if id_card.id not in viewed_cards:
             # Student MUST see ID card - approval is incomplete
+            print(f"Student {user.id} needs to view ID card {id_card.id}")
             return True, id_card
+        else:
+            print(f"Student {user.id} has already viewed ID card {id_card.id}")
     
     return False, None
 
@@ -140,22 +154,36 @@ def require_id_card_viewed(f):
     """
     from functools import wraps
     from flask import redirect, url_for, session
+    import traceback
     
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Only check for authenticated non-admin users
         if current_user.is_authenticated and not current_user.is_admin:
             try:
+                # CRITICAL: Check if student needs to see ID card
                 needs_card, id_card = check_student_needs_id_card(current_user)
+                
+                # DEBUG: Log the check result
                 if needs_card and id_card:
                     # FORCE redirect to ID card - override EVERYTHING
                     # This is the ONLY page student can access until ID card is viewed
                     return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+                elif id_card is None:
+                    # ID card doesn't exist - this might be a problem
+                    # Check if enrollment is approved but no ID card
+                    approved_enrollment = ClassEnrollment.query.filter_by(
+                        user_id=current_user.id,
+                        status='completed'
+                    ).first()
+                    if approved_enrollment:
+                        # Enrollment is approved but no ID card found - this is an error
+                        # Log it but don't block (let admin fix it)
+                        print(f"WARNING: User {current_user.id} has approved enrollment but no ID card found")
             except Exception as e:
-                # If check fails, log but don't block (fallback to normal flow)
-                import traceback
+                # If check fails, log the error but don't block
+                print(f"ERROR in require_id_card_viewed decorator: {str(e)}")
                 traceback.print_exc()
-                pass
         return f(*args, **kwargs)
     return decorated_function
 

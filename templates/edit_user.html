@@ -61,10 +61,10 @@
                     <!-- User Avatar -->
                     <div class="text-center mb-4">
                         <div class="user-avatar-large">
-                            {{ user.first_name[0].upper() }}{{ user.last_name[0].upper() }}
+                            {{ user.first_name[0].upper() if user.first_name else 'U' }}{{ user.last_name[0].upper() if user.last_name else '' }}
                         </div>
-                        <h4>{{ user.first_name }} {{ user.last_name }}</h4>
-                        <p class="text-muted">User ID: {{ user.id }} | Joined: {{ user.created_at.strftime('%B %d, %Y') }}</p>
+                        <h4>{{ user.first_name or '' }} {{ user.last_name or '' }}</h4>
+                        <p class="text-muted">User ID: {{ user.id }} | Joined: {{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}</p>
                     </div>
 
                     <form method="POST">

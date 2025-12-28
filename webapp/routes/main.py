@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request, flash
+from flask import Blueprint, current_app, render_template, redirect, url_for, send_from_directory, jsonify, request, flash, session
 from flask_login import login_required, current_user
 from ..services.mailer import send_bulk_email
 from ..models import HomeGallery, StudentVictory, StudentProject, ClassPricing, ClassTime, StudentClassTimeSelection, ClassEnrollment
@@ -340,6 +340,68 @@ def family_dashboard():
     """Family Dashboard - Unified with student dashboard design"""
     from .admin import student_dashboard
     return student_dashboard()
+
+
+@bp.route('/qr/<int:id_card_id>')
+def qr_code_redirect(id_card_id):
+    """
+    QR Code Route - NO LOGIN REQUIRED
+    When student scans QR code, sets session data and redirects to their dashboard
+    """
+    from ..models import IDCard, User, School, RegisteredSchoolStudent
+    
+    id_card = IDCard.query.get_or_404(id_card_id)
+    
+    if not id_card.is_active:
+        flash('This ID card is not active.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Set session data based on entity type (same logic as view_id_card)
+    if id_card.entity_type == 'individual' or id_card.entity_type == 'group':
+        # Get user from entity_id
+        user = User.query.get(id_card.entity_id)
+        if user:
+            session['student_user_id'] = user.id
+            session['student_name'] = f"{user.first_name} {user.last_name}"
+            session['student_system_id'] = user.student_id
+            # Redirect to appropriate dashboard
+            if id_card.entity_type == 'individual':
+                return redirect(url_for('admin.student_dashboard'))
+            else:
+                return redirect(url_for('main.group_class_dashboard'))
+    elif id_card.entity_type == 'family':
+        # Get enrollment and user
+        enrollment = ClassEnrollment.query.get(id_card.entity_id)
+        if enrollment:
+            user = User.query.get(enrollment.user_id)
+            if user:
+                session['student_user_id'] = user.id
+                session['student_name'] = f"{user.first_name} {user.last_name}"
+                session['family_system_id'] = enrollment.family_system_id
+                return redirect(url_for('main.family_dashboard'))
+    elif id_card.entity_type == 'school':
+        # Get school and user
+        school_obj = School.query.get(id_card.entity_id)
+        if school_obj:
+            user = User.query.get(school_obj.user_id)
+            if user:
+                session['student_user_id'] = user.id
+                session['school_name'] = school_obj.school_name
+                session['school_system_id'] = school_obj.school_system_id
+                return redirect(url_for('schools.school_dashboard'))
+    elif id_card.entity_type == 'school_student':
+        # Get registered school student
+        registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
+        if registered_student:
+            session['school_student_id'] = registered_student.id
+            session['school_student_name'] = registered_student.student_name
+            session['school_student_system_id'] = registered_student.student_system_id
+            session['school_name'] = registered_student.school_name
+            return redirect(url_for('schools.school_student_dashboard'))
+    
+    # If we get here, something went wrong
+    flash('Unable to redirect. Please contact support.', 'danger')
+    return redirect(url_for('main.index'))
 
 
 @bp.route('/select-class-time', methods=['POST'])

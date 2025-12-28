@@ -679,9 +679,9 @@ def school_student_dashboard():
     from ..models.classes import SchoolStudent, ClassEnrollment, GroupClass, Attendance
     from ..models.materials import LearningMaterial
     
-    # Check if student is logged in via session
+    # NO LOGIN REQUIRED - Check if student session data exists (set by ID card or entry form)
     if 'school_student_id' not in session:
-        flash('Please log in to access your dashboard.', 'warning')
+        flash('Please enter your School Name and Student System ID to access your dashboard.', 'info')
         return redirect(url_for('schools.school_student_login'))
     
     student_id = session['school_student_id']

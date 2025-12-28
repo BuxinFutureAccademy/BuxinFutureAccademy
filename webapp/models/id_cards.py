@@ -1,4 +1,7 @@
 from datetime import datetime
+import qrcode
+import io
+import base64
 from ..extensions import db
 
 
@@ -67,6 +70,12 @@ class IDCard(db.Model):
         elif self.entity_type == 'family':
             return f"{self.name} (Family)"
         return self.name
+    
+    def generate_qr_code_url(self, base_url='https://edu.techbuxin.com'):
+        """Generate QR code URL that redirects to student dashboard"""
+        from flask import url_for
+        # Generate URL that will set session and redirect to dashboard
+        return f"{base_url}/qr/{self.id}"
 
 
 # ID Card Generation Functions
@@ -101,10 +110,17 @@ def generate_individual_student_id_card(enrollment, user, class_obj, approved_by
         approved_at=datetime.utcnow(),
         approved_by=approved_by_user_id,
         is_active=True,
-        is_locked=False
+        is_locked=False,
+        qr_code_data=None  # Will be set after we get the ID
     )
     
     db.session.add(id_card)
+    db.session.flush()  # Get ID without committing
+    
+    # Generate QR code URL now that we have the ID
+    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    id_card.qr_code_data = qr_url
+    
     db.session.commit()
     return id_card
 
@@ -139,10 +155,17 @@ def generate_group_student_id_card(enrollment, user, class_obj, approved_by_user
         approved_at=datetime.utcnow(),
         approved_by=approved_by_user_id,
         is_active=True,
-        is_locked=False
+        is_locked=False,
+        qr_code_data=None  # Will be set after we get the ID
     )
     
     db.session.add(id_card)
+    db.session.flush()  # Get ID without committing
+    
+    # Generate QR code URL now that we have the ID
+    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    id_card.qr_code_data = qr_url
+    
     db.session.commit()
     return id_card
 
@@ -184,10 +207,17 @@ def generate_family_id_card(enrollment, user, class_obj, approved_by_user_id):
         approved_at=datetime.utcnow(),
         approved_by=approved_by_user_id,
         is_active=True,
-        is_locked=False
+        is_locked=False,
+        qr_code_data=None  # Will be set after we get the ID
     )
     
     db.session.add(id_card)
+    db.session.flush()  # Get ID without committing
+    
+    # Generate QR code URL now that we have the ID
+    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    id_card.qr_code_data = qr_url
+    
     db.session.commit()
     return id_card
 
@@ -222,10 +252,17 @@ def generate_school_id_card(school, approved_by_user_id):
         approved_at=school.approved_at or datetime.utcnow(),
         approved_by=approved_by_user_id,
         is_active=True,
-        is_locked=False
+        is_locked=False,
+        qr_code_data=None  # Will be set after we get the ID
     )
     
     db.session.add(id_card)
+    db.session.flush()  # Get ID without committing
+    
+    # Generate QR code URL now that we have the ID
+    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    id_card.qr_code_data = qr_url
+    
     db.session.commit()
     return id_card
 
@@ -276,10 +313,17 @@ def generate_school_student_id_card(registered_student, school, approved_by_user
         approved_at=datetime.utcnow(),
         approved_by=approved_by_user_id,
         is_active=True,
-        is_locked=False
+        is_locked=False,
+        qr_code_data=None  # Will be set after we get the ID
     )
     
     db.session.add(id_card)
+    db.session.flush()  # Get ID without committing
+    
+    # Generate QR code URL now that we have the ID
+    qr_url = f"https://edu.techbuxin.com/qr/{id_card.id}"
+    id_card.qr_code_data = qr_url
+    
     db.session.commit()
     return id_card
 

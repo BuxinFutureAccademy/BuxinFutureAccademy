@@ -29,6 +29,8 @@ twilio==8.10.0
 python-multipart==0.0.6
 pytz==2023.3.post1
 WeasyPrint==60.2
+qrcode[pil]==7.4.2
+qrcode[pil]==7.4.2
 
 # Development (not required in production)
 python-dotenv==1.0.0

@@ -394,14 +394,10 @@ def enrollment_pending_approval(enrollment_id):
     
     # If already approved, check for ID card FIRST
     if enrollment.status == 'completed':
-        # CRITICAL: Check if student needs to see ID card
-        if current_user.is_authenticated:
-            needs_card, id_card = check_student_needs_id_card(current_user)
-            if needs_card and id_card:
-                # FORCE redirect to ID card page - approval incomplete until ID card viewed
-                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+        # ID card check already done above (before enrollment check)
+        # If we get here, either ID card already viewed or no ID card needed
         
-        # If ID card already viewed or user not logged in, redirect based on class type
+        # Redirect based on class type
         if enrollment.class_type == 'individual':
             return redirect(url_for('admin.student_dashboard'))
         elif enrollment.class_type == 'group':
@@ -411,7 +407,7 @@ def enrollment_pending_approval(enrollment_id):
         elif enrollment.class_type == 'school':
             return redirect(url_for('schools.school_dashboard'))
         else:
-            # Fallback to index (decorator will catch ID card check)
+            # Fallback to index (will be checked by decorator there)
             return redirect(url_for('main.index'))
     
     return render_template('enrollment_pending_approval.html', enrollment=enrollment)

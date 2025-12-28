@@ -209,7 +209,19 @@ def get_user_redirect_url(user):
     - User with pending enrollment OR no enrollment → Homepage
     
     NOTE: Only admin-confirmed enrollments allow access to student dashboard
+    
+    CRITICAL: ID card check happens FIRST - if student needs to see ID card,
+    they are redirected to ID card page regardless of other logic
     """
+    # CRITICAL: Check if student needs to see ID card FIRST
+    # This overrides ALL other redirects
+    if not user.is_admin:
+        from ..routes.admin import check_student_needs_id_card
+        needs_card, id_card = check_student_needs_id_card(user)
+        if needs_card and id_card:
+            # FORCE redirect to ID card - this is the ONLY page they can access
+            return url_for('admin.view_id_card', id_card_id=id_card.id)
+    
     # Admin goes to existing admin dashboard
     if user.is_admin:
         return url_for('admin.admin_dashboard')

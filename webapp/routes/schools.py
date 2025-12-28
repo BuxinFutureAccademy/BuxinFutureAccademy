@@ -281,6 +281,7 @@ def school_payment():
 
 @bp.route('/school/pending-approval')
 @login_required
+@require_id_card_viewed
 def school_pending_approval():
     """Waiting page shown to schools until admin approval"""
     # Get school for current user
@@ -291,7 +292,10 @@ def school_pending_approval():
         return redirect(url_for('main.index'))
     
     if school.status == 'active':
-        # Already approved, redirect to dashboard
+        # School is approved - decorator already checked ID card
+        # If ID card not viewed, decorator redirected to ID card page
+        # If we get here, either ID card viewed or no ID card needed
+        # Redirect to dashboard
         return redirect(url_for('schools.school_dashboard'))
     
     if school.status == 'rejected':

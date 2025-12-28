@@ -2111,7 +2111,7 @@ def student_dashboard():
                     registered_students = SchoolStudent.query.filter_by(
                         class_id=cls['id'],
                         enrollment_id=school_enrollment.id,
-                        registered_by=current_user.id
+                        registered_by=user_id
                     ).all()
                     
                     # Get attendance for each registered school student

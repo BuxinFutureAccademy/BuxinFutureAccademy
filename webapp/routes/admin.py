@@ -2176,33 +2176,28 @@ def student_dashboard():
                 except Exception:
                     pass  # If conversion fails, skip
     
-    # Get ID card for current user
+    # Get ID card for current user (always get it if it exists, regardless of viewing status)
     user_id_card = None
     if not current_user.is_admin:
-        _, user_id_card = check_student_needs_id_card(current_user)
-        # If needs_card is True, user would have been redirected already
-        # So if we get here, either no card needed or card already viewed
-        # Get the ID card if it exists
-        if not user_id_card:
-            approved_enrollment = ClassEnrollment.query.filter_by(
-                user_id=current_user.id,
-                status='completed'
-            ).first()
-            if approved_enrollment:
-                entity_type = approved_enrollment.class_type
-                entity_id = None
-                if entity_type == 'individual':
-                    entity_id = current_user.id
-                elif entity_type == 'group':
-                    entity_id = current_user.id
-                elif entity_type == 'family':
-                    entity_id = approved_enrollment.id
-                elif entity_type == 'school':
-                    school = School.query.filter_by(user_id=current_user.id).first()
-                    if school:
-                        entity_id = school.id
-                if entity_id:
-                    user_id_card = get_id_card_for_entity(entity_type, entity_id)
+        approved_enrollment = ClassEnrollment.query.filter_by(
+            user_id=current_user.id,
+            status='completed'
+        ).first()
+        if approved_enrollment:
+            entity_type = approved_enrollment.class_type
+            entity_id = None
+            if entity_type == 'individual':
+                entity_id = current_user.id
+            elif entity_type == 'group':
+                entity_id = current_user.id
+            elif entity_type == 'family':
+                entity_id = approved_enrollment.id
+            elif entity_type == 'school':
+                school = School.query.filter_by(user_id=current_user.id).first()
+                if school:
+                    entity_id = school.id
+            if entity_id:
+                user_id_card = get_id_card_for_entity(entity_type, entity_id)
     
     return render_template('student_dashboard.html', 
                           purchases=purchases, 

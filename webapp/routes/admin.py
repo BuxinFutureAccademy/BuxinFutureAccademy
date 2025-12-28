@@ -1756,12 +1756,7 @@ def student_dashboard():
     from flask import flash
     from calendar import monthrange
     
-    # CRITICAL: Check if student needs to see ID card first
-    if not current_user.is_admin:
-        needs_card, id_card = check_student_needs_id_card(current_user)
-        if needs_card and id_card:
-            # Redirect to ID card page - student must see ID card before dashboard
-            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+    # Decorator @require_id_card_viewed handles ID card check - no duplicate check needed
     
     # Check if user has any CONFIRMED enrollment (status = 'completed')
     # Only confirmed students can access the dashboard
@@ -1784,10 +1779,7 @@ def student_dashboard():
             status='pending'
         ).first() is not None
         
-        # CRITICAL: Check if student needs to see ID card FIRST
-        needs_card, id_card = check_student_needs_id_card(current_user)
-        if needs_card and id_card:
-            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+        # Decorator already checked ID card - if we get here, either no card needed or already viewed
         
         if has_pending:
             flash('Your class enrollment is pending approval. Please wait for admin confirmation.', 'warning')

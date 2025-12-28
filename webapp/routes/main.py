@@ -25,21 +25,36 @@ def index():
             return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
         
         # Step 2: Check for approved enrollments (Individual, Group, Family, School)
-        approved_enrollment = ClassEnrollment.query.filter_by(
+        # Get ALL approved enrollments to determine the best dashboard
+        approved_enrollments = ClassEnrollment.query.filter_by(
             user_id=current_user.id,
             status='completed'
-        ).first()
+        ).all()
         
-        if approved_enrollment:
-            # Redirect to appropriate dashboard based on class type
-            if approved_enrollment.class_type == 'individual':
+        if approved_enrollments:
+            # Priority order: Individual > Group > Family > School
+            # Check for individual first (highest priority)
+            individual_enrollment = next((e for e in approved_enrollments if e.class_type == 'individual'), None)
+            if individual_enrollment:
                 return redirect(url_for('admin.student_dashboard'))
-            elif approved_enrollment.class_type == 'group':
+            
+            # Check for group
+            group_enrollment = next((e for e in approved_enrollments if e.class_type == 'group'), None)
+            if group_enrollment:
                 return redirect(url_for('main.group_class_dashboard'))
-            elif approved_enrollment.class_type == 'family':
+            
+            # Check for family
+            family_enrollment = next((e for e in approved_enrollments if e.class_type == 'family'), None)
+            if family_enrollment:
                 return redirect(url_for('main.family_dashboard'))
-            elif approved_enrollment.class_type == 'school':
+            
+            # Check for school
+            school_enrollment = next((e for e in approved_enrollments if e.class_type == 'school'), None)
+            if school_enrollment:
                 return redirect(url_for('schools.school_dashboard'))
+            
+            # Fallback: if any approved enrollment exists, redirect to student dashboard
+            return redirect(url_for('admin.student_dashboard'))
         
         # Step 3: Check if user is a school admin with active school
         school = School.query.filter_by(user_id=current_user.id).first()

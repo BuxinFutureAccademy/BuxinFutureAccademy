@@ -22,6 +22,7 @@ from ..models import (
     RegisteredSchoolStudent,
     ClassTime,
     StudentClassTimeSelection,
+    IDCard,
 )
 
 bp = Blueprint('admin', __name__)
@@ -3369,7 +3370,16 @@ def admin_individual_classes():
                         
                         enrollment.status = 'completed'
                         db.session.commit()
-                        flash(f'Enrollment approved! Student ID: {user.student_id}', 'success')
+                        
+                        # Generate ID Card
+                        try:
+                            from ..models.id_cards import generate_individual_student_id_card
+                            id_card = generate_individual_student_id_card(enrollment, user, individual_class, current_user.id)
+                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated.', 'success')
+                            # Redirect to ID card popup
+                            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+                        except Exception as e:
+                            flash(f'Enrollment approved! Student ID: {user.student_id}. Error generating ID card: {str(e)}', 'warning')
                 elif action == 'reject':
                     enrollment.status = 'rejected'
                     db.session.commit()
@@ -3745,6 +3755,21 @@ def admin_family_class_detail(enrollment_id):
                                 member_user.class_type = 'family'
                     
                     enrollment.status = 'completed'
+                    
+                    # Get class object
+                    class_obj = GroupClass.query.get(enrollment.class_id) or IndividualClass.query.get(enrollment.class_id)
+                    
+                    # Generate ID Card
+                    try:
+                        from ..models.id_cards import generate_family_id_card
+                        id_card = generate_family_id_card(enrollment, user, class_obj, current_user.id)
+                        db.session.commit()
+                        flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. ID Card generated.', 'success')
+                        # Redirect to ID card popup
+                        return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+                    except Exception as e:
+                        db.session.commit()
+                        flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. Error generating ID card: {str(e)}', 'warning')
                     db.session.commit()
                     flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. Student IDs generated.', 'success')
             elif action == 'reject':
@@ -4015,16 +4040,27 @@ def approve_school(school_id):
         
         db.session.commit()
         
-        if is_reapproval:
+        # Generate ID Card (only for new approvals)
+        if not is_reapproval:
+            try:
+                from ..models.id_cards import generate_school_id_card
+                id_card = generate_school_id_card(school, current_user.id)
+                if enrollment_count > 0:
+                    flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated. ID Card generated.', 'success')
+                else:
+                    flash(f'School "{school.school_name}" has been approved! ID Card generated.', 'success')
+                # Redirect to ID card popup
+                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+            except Exception as e:
+                if enrollment_count > 0:
+                    flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated. Error generating ID card: {str(e)}', 'warning')
+                else:
+                    flash(f'School "{school.school_name}" has been approved! Error generating ID card: {str(e)}', 'warning')
+        else:
             if enrollment_count > 0:
                 flash(f'School "{school.school_name}" re-approved! {enrollment_count} class enrollment(s) activated.', 'success')
             else:
                 flash(f'School "{school.school_name}" is already approved with active enrollments.', 'info')
-        else:
-            if enrollment_count > 0:
-                flash(f'School "{school.school_name}" has been approved! {enrollment_count} class enrollment(s) activated.', 'success')
-            else:
-                flash(f'School "{school.school_name}" has been approved!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error approving school: {str(e)}', 'danger')
@@ -4838,3 +4874,115 @@ def admin_live_class():
                              selected_time_id=None,
                              selected_class_time=None,
                              selected_class_obj=None)
+
+
+@bp.route('/id-card/<int:id_card_id>', methods=['GET', 'POST'])
+@login_required
+def view_id_card(id_card_id):
+    """View ID card popup - shown after approval, before entering classroom"""
+    id_card = IDCard.query.get_or_404(id_card_id)
+    
+    # Check access permissions
+    has_access = False
+    if current_user.is_admin:
+        has_access = True
+    elif id_card.entity_type == 'individual' and id_card.entity_id == current_user.id:
+        has_access = True
+    elif id_card.entity_type == 'group' and id_card.entity_id == current_user.id:
+        has_access = True
+    elif id_card.entity_type == 'family':
+        # Check if user is the family registrant
+        enrollment = ClassEnrollment.query.get(id_card.entity_id)
+        if enrollment and enrollment.user_id == current_user.id:
+            has_access = True
+    elif id_card.entity_type == 'school':
+        # Check if user is the school admin
+        school = School.query.get(id_card.entity_id)
+        if school and school.user_id == current_user.id:
+            has_access = True
+    elif id_card.entity_type == 'school_student':
+        # Check if user is the school student
+        registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
+        if registered_student and registered_student.user_id == current_user.id:
+            has_access = True
+    
+    if not has_access:
+        flash('Access denied. You do not have permission to view this ID card.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Handle photo/logo upload
+    if request.method == 'POST' and request.form.get('action') == 'upload_photo':
+        photo_file = request.files.get('photo')
+        if photo_file and photo_file.filename:
+            try:
+                from ..services.cloudinary_service import CloudinaryService
+                success, result = CloudinaryService.upload_file(photo_file, folder='id_cards', resource_type='image')
+                if success:
+                    photo_url = result.get('url')
+                    id_card.photo_url = photo_url
+                
+                # Update user profile picture if applicable
+                if id_card.entity_type in ['individual', 'group']:
+                    user = User.query.get(id_card.entity_id)
+                    if user:
+                        user.profile_picture = photo_url
+                elif id_card.entity_type == 'school':
+                    school = School.query.get(id_card.entity_id)
+                    # TODO: Add school logo field to School model if needed
+                
+                db.session.commit()
+                flash('Photo updated successfully!', 'success')
+                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error uploading photo: {str(e)}', 'danger')
+    
+    # Determine redirect URL based on entity type
+    redirect_url = None
+    if id_card.entity_type == 'individual':
+        redirect_url = url_for('admin.student_dashboard')
+    elif id_card.entity_type == 'group':
+        redirect_url = url_for('main.group_class_dashboard')
+    elif id_card.entity_type == 'family':
+        redirect_url = url_for('main.family_dashboard')
+    elif id_card.entity_type == 'school':
+        redirect_url = url_for('schools.school_dashboard')
+    elif id_card.entity_type == 'school_student':
+        redirect_url = url_for('schools.school_student_dashboard')
+    
+    return render_template('view_id_card.html', id_card=id_card, redirect_url=redirect_url)
+
+
+@bp.route('/id-card/<int:id_card_id>/download')
+@login_required
+def download_id_card(id_card_id):
+    """Download ID card as PDF or image"""
+    id_card = IDCard.query.get_or_404(id_card_id)
+    
+    # Check access (same as view_id_card)
+    has_access = False
+    if current_user.is_admin:
+        has_access = True
+    elif id_card.entity_type in ['individual', 'group'] and id_card.entity_id == current_user.id:
+        has_access = True
+    elif id_card.entity_type == 'family':
+        enrollment = ClassEnrollment.query.get(id_card.entity_id)
+        if enrollment and enrollment.user_id == current_user.id:
+            has_access = True
+    elif id_card.entity_type == 'school':
+        school = School.query.get(id_card.entity_id)
+        if school and school.user_id == current_user.id:
+            has_access = True
+    elif id_card.entity_type == 'school_student':
+        registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
+        if registered_student and registered_student.user_id == current_user.id:
+            has_access = True
+    
+    if not has_access:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # TODO: Implement PDF/image generation
+    # For now, redirect to view page
+    flash('Download functionality coming soon. Please use the print option in your browser.', 'info')
+    return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))

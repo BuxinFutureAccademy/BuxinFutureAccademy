@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Your ID Card - BuXin Academy{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Success Message -->
+            <div class="alert alert-success text-center mb-4" role="alert">
+                <h4 class="alert-heading"><i class="fas fa-check-circle"></i> Registration Approved!</h4>
+                <p class="mb-0">Your registration has been approved. Please download your ID card before entering your classroom.</p>
+            </div>
+
+            <!-- ID Card Container -->
+            <div class="card shadow-lg border-0 mb-4" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-body p-0">
+                    <!-- ID Card Header (BuXin Academy Branding) -->
+                    <div class="text-center py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <h2 class="mb-1" style="font-weight: bold; font-size: 2rem;">BuXin Academy</h2>
+                        <p class="mb-0" style="opacity: 0.9;">Official Student ID Card</p>
+                    </div>
+
+                    <!-- ID Card Content -->
+                    <div class="p-5">
+                        <div class="row">
+                            <!-- Photo Section -->
+                            <div class="col-md-4 text-center mb-4 mb-md-0">
+                                <div class="position-relative d-inline-block">
+                                    {% if id_card.photo_url %}
+                                        <img src="{{ id_card.photo_url }}" alt="Photo" class="img-fluid rounded" style="width: 200px; height: 200px; object-fit: cover; border: 4px solid #667eea;">
+                                    {% else %}
+                                        <div class="rounded d-flex align-items-center justify-content-center" style="width: 200px; height: 200px; background: #f0f0f0; border: 4px solid #667eea; margin: 0 auto;">
+                                            <i class="fas fa-user fa-5x text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <!-- Upload Photo Button -->
+                                    <button type="button" class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal" style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);">
+                                        <i class="fas fa-camera"></i> Upload Photo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Details Section -->
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <h3 class="mb-1" style="color: #333; font-weight: bold;">{{ id_card.name }}</h3>
+                                    <p class="text-muted mb-2">
+                                        {% if id_card.entity_type == 'individual' %}
+                                            Individual Student
+                                        {% elif id_card.entity_type == 'group' %}
+                                            Group Student
+                                        {% elif id_card.entity_type == 'family' %}
+                                            Family Member
+                                        {% elif id_card.entity_type == 'school' %}
+                                            School
+                                        {% elif id_card.entity_type == 'school_student' %}
+                                            School Student
+                                        {% endif %}
+                                    </p>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>System ID:</strong></div>
+                                    <div class="col-7"><span class="badge bg-primary">{{ id_card.system_id }}</span></div>
+                                </div>
+
+                                {% if id_card.class_name %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>Class:</strong></div>
+                                    <div class="col-7">{{ id_card.class_name }}</div>
+                                </div>
+                                {% endif %}
+
+                                {% if id_card.school_name %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>School:</strong></div>
+                                    <div class="col-7">{{ id_card.school_name }}</div>
+                                </div>
+                                {% endif %}
+
+                                {% if id_card.school_system_id %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>School ID:</strong></div>
+                                    <div class="col-7"><span class="badge bg-info">{{ id_card.school_system_id }}</span></div>
+                                </div>
+                                {% endif %}
+
+                                {% if id_card.group_system_id %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>Group ID:</strong></div>
+                                    <div class="col-7"><span class="badge bg-success">{{ id_card.group_system_id }}</span></div>
+                                </div>
+                                {% endif %}
+
+                                {% if id_card.family_system_id %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>Family ID:</strong></div>
+                                    <div class="col-7"><span class="badge bg-warning text-dark">{{ id_card.family_system_id }}</span></div>
+                                </div>
+                                {% endif %}
+
+                                {% if id_card.email %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>Email:</strong></div>
+                                    <div class="col-7">{{ id_card.email }}</div>
+                                </div>
+                                {% endif %}
+
+                                {% if id_card.phone %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>Phone:</strong></div>
+                                    <div class="col-7">{{ id_card.phone }}</div>
+                                </div>
+                                {% endif %}
+
+                                {% if id_card.guardian_name %}
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>Guardian:</strong></div>
+                                    <div class="col-7">{{ id_card.guardian_name }}</div>
+                                </div>
+                                {% endif %}
+
+                                <div class="row mb-2">
+                                    <div class="col-5"><strong>Approved:</strong></div>
+                                    <div class="col-7">{{ id_card.approved_at.strftime('%B %d, %Y') }}</div>
+                                </div>
+
+                                <!-- QR Code Placeholder (Future) -->
+                                <div class="text-center mt-4">
+                                    <div class="d-inline-block p-3 bg-light rounded">
+                                        <i class="fas fa-qrcode fa-3x text-muted"></i>
+                                        <p class="small text-muted mb-0 mt-2">QR Code</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ID Card Footer -->
+                    <div class="text-center py-3" style="background: #f8f9fa; border-top: 2px solid #e9ecef;">
+                        <p class="mb-0 text-muted small">
+                            <i class="fas fa-shield-alt"></i> This ID card confirms that you are an approved, verified, and active member of BuXin Academy.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center mb-4">
+                <a href="{{ url_for('admin.download_id_card', id_card_id=id_card.id) }}" class="btn btn-lg btn-outline-primary me-2 mb-2" style="min-width: 200px;">
+                    <i class="fas fa-download"></i> Download ID Card
+                </a>
+                <a href="{{ redirect_url }}" class="btn btn-lg btn-primary mb-2" style="min-width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    <i class="fas fa-door-open"></i> Enter My Classroom
+                </a>
+            </div>
+
+            <!-- Help Text -->
+            <div class="alert alert-info text-center" role="alert">
+                <small>
+                    <i class="fas fa-info-circle"></i> You can access your ID card anytime from your dashboard. 
+                    Make sure to download and save it for your records.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Photo Modal -->
+<div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-labelledby="uploadPhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadPhotoModalLabel">Upload Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="upload_photo">
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">Select Photo</label>
+                        <input type="file" class="form-control" id="photo" name="photo" accept="image/*" required>
+                        <small class="text-muted">Recommended size: 200x200px or larger. Max file size: 5MB.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload Photo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .btn, .alert, .modal {
+            display: none !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+

@@ -48,6 +48,8 @@
         </div>
     </div>
     
+    <!-- Note: ID cards for individual students are shown in the student list below -->
+    
     <!-- Pending Registrations Section -->
     {% if pending_enrollments %}
     <div class="card mb-4 border-warning">
@@ -167,6 +169,12 @@
                                            {% if not student.user %}disabled title="User account not found"{% endif %}>
                                             <i class="fas fa-eye"></i> View Profile
                                         </a>
+                                        {% if student.id_card %}
+                                        <a href="{{ url_for('admin.view_id_card', id_card_id=student.id_card.id) }}" 
+                                           class="btn btn-sm btn-outline-primary action-btn" target="_blank" title="View ID Card">
+                                            <i class="fas fa-id-card"></i> ID Card
+                                        </a>
+                                        {% endif %}
                                         <form action="{{ url_for('admin.admin_group_classes') }}" method="POST" style="display: inline;">
                                             <input type="hidden" name="class_id" value="{{ group_class.id }}">
                                             <input type="hidden" name="user_id" value="{{ student.user.id if student.user else '' }}">

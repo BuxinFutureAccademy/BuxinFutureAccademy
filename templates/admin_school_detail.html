@@ -9,6 +9,10 @@
         </a>
     </div>
 
+    <!-- ID Card Section -->
+    {% set id_card = id_card %}
+    {% include 'partials/admin_id_card_section.html' %}
+    
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-4">
@@ -134,6 +138,7 @@
                                     <th>Student Name</th>
                                     <th>Student System ID</th>
                                     <th>Registered</th>
+                                    <th>ID Card</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -142,6 +147,16 @@
                                     <td>{{ student.student_name }}</td>
                                     <td><code>{{ student.student_system_id }}</code></td>
                                     <td>{{ student.created_at.strftime('%b %d, %Y') }}</td>
+                                    <td>
+                                        {% if student_id_cards and student_id_cards.get(student.id) %}
+                                        <a href="{{ url_for('admin.view_id_card', id_card_id=student_id_cards[student.id].id) }}" 
+                                           class="btn btn-sm btn-outline-info" target="_blank" title="View ID Card">
+                                            <i class="fas fa-id-card me-1"></i>View
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small">Pending</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

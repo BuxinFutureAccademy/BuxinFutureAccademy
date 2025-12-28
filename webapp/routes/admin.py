@@ -39,6 +39,22 @@ def require_admin():
     return None
 
 
+def get_id_card_for_entity(entity_type, entity_id):
+    """
+    Helper function to get ID card for an entity
+    Returns IDCard object or None if not found
+    """
+    try:
+        id_card = IDCard.query.filter_by(
+            entity_type=entity_type,
+            entity_id=entity_id,
+            is_active=True
+        ).first()
+        return id_card
+    except Exception:
+        return None
+
+
 # Removed /class-admin route - using existing /login page instead
 
 
@@ -1499,10 +1515,20 @@ def view_enrollment(enrollment_id):
     # Get user info
     user = User.query.get(enrollment.user_id)
     
+    # Get ID card for this enrollment/user
+    id_card = None
+    if enrollment.class_type == 'individual' and user:
+        id_card = get_id_card_for_entity('individual', user.id)
+    elif enrollment.class_type == 'group' and user:
+        id_card = get_id_card_for_entity('group', user.id)
+    elif enrollment.class_type == 'family':
+        id_card = get_id_card_for_entity('family', enrollment.id)
+    
     return render_template('view_enrollment.html',
         enrollment=enrollment,
         class_obj=class_obj,
-        user=user
+        user=user,
+        id_card=id_card
     )
 
 
@@ -3604,13 +3630,17 @@ def admin_group_class_detail(class_id):
             status='completed'
         ).first()
         
+        # Get ID card for this student
+        id_card = get_id_card_for_entity('group', student.id) if student else None
+        
         students.append({
             'user': student,
             'student_name': f"{student.first_name} {student.last_name}",
             'student_id': student.student_id or 'N/A',
             'payment_status': enrollment.status if enrollment else 'N/A',
             'registration_date': enrollment.enrolled_at if enrollment else None,
-            'enrollment': enrollment  # Include enrollment to access group_system_id
+            'enrollment': enrollment,  # Include enrollment to access group_system_id
+            'id_card': id_card  # Include ID card
         })
     
     # Get pending enrollments for this group class
@@ -3793,6 +3823,9 @@ def admin_family_class_detail(enrollment_id):
     # Get parent/registrant user
     parent_user = User.query.get(enrollment.user_id)
     
+    # Get ID card for this family
+    id_card = get_id_card_for_entity('family', enrollment_id)
+    
     # Get all family members
     family_members = FamilyMember.query.filter_by(enrollment_id=enrollment_id).all()
     
@@ -3833,7 +3866,8 @@ def admin_family_class_detail(enrollment_id):
         enrollment=enrollment,
         parent_user=parent_user,
         all_family_students=all_family_students,
-        family_members=family_members
+        family_members=family_members,
+        id_card=id_card
     )
 
 
@@ -3886,7 +3920,18 @@ def admin_school_detail(school_id):
         return admin_check
     
     school = School.query.get_or_404(school_id)
+    
+    # Get ID card for this school
+    id_card = get_id_card_for_entity('school', school_id)
+    
     students = RegisteredSchoolStudent.query.filter_by(school_id=school_id).order_by(RegisteredSchoolStudent.created_at.desc()).all()
+    
+    # Get ID cards for school students
+    student_id_cards = {}
+    for student in students:
+        student_id_card = get_id_card_for_entity('school_student', student.id)
+        if student_id_card:
+            student_id_cards[student.id] = student_id_card
     
     # Get classes this school has enrolled in with students per class
     school_classes = []
@@ -4001,7 +4046,9 @@ def admin_school_detail(school_id):
                          available_school_classes=available_school_classes,
                          attendance_summary=attendance_summary,
                          attendance_history=attendance_history,
-                         daily_attendance=daily_attendance)
+                         daily_attendance=daily_attendance,
+                         id_card=id_card,
+                         student_id_cards=student_id_cards)
 
 
 @bp.route('/admin/schools/<int:school_id>/approve', methods=['POST'])

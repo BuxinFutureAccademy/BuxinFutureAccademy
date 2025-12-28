@@ -45,6 +45,10 @@
         </a>
     </div>
     
+    <!-- ID Card Section -->
+    {% set id_card = id_card %}
+    {% include 'partials/admin_id_card_section.html' %}
+    
     <!-- Family Information -->
     <div class="family-header">
         <h3>{{ enrollment.customer_name or 'Family Class' }}</h3>

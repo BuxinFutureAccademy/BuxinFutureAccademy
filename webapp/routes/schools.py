@@ -833,6 +833,10 @@ def school_student_dashboard():
             except Exception:
                 pass  # If conversion fails, skip
     
+    # Get ID card for school student
+    from ..routes.admin import get_id_card_for_entity
+    student_id_card = get_id_card_for_entity('school_student', student.id)
+    
     return render_template('school_student_dashboard.html',
                          student=student,
                          enrolled_classes=enrolled_classes,
@@ -843,7 +847,8 @@ def school_student_dashboard():
                          today=today,
                          projects_count=projects_count,
                          active_live_class=active_live_class,
-                         student_timezone=student_timezone)
+                         student_timezone=student_timezone,
+                         id_card=student_id_card)
 
 
 @bp.route('/school-student/logout')

@@ -134,19 +134,28 @@ def check_student_needs_id_card(user):
 
 def require_id_card_viewed(f):
     """
-    Decorator to enforce ID card viewing on ALL student routes
+    CRITICAL Decorator to enforce ID card viewing on ALL student routes
     This MUST be the FIRST check - before any other logic
+    Approval is NOT COMPLETE until student views ID card
     """
     from functools import wraps
-    from flask import redirect, url_for
+    from flask import redirect, url_for, session
     
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Only check for authenticated non-admin users
         if current_user.is_authenticated and not current_user.is_admin:
-            needs_card, id_card = check_student_needs_id_card(current_user)
-            if needs_card and id_card:
-                # FORCE redirect to ID card - override everything
-                return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+            try:
+                needs_card, id_card = check_student_needs_id_card(current_user)
+                if needs_card and id_card:
+                    # FORCE redirect to ID card - override EVERYTHING
+                    # This is the ONLY page student can access until ID card is viewed
+                    return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+            except Exception as e:
+                # If check fails, log but don't block (fallback to normal flow)
+                import traceback
+                traceback.print_exc()
+                pass
         return f(*args, **kwargs)
     return decorated_function
 

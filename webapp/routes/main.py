@@ -14,20 +14,14 @@ def index():
     from ..extensions import db
     from flask_login import current_user
     
-    # CRITICAL: Block home page access for approved students - NEVER show home page
-    # They must see ID card first, then go to dashboard
+    # Decorator @require_id_card_viewed handles ID card check FIRST
+    # If student needs ID card, decorator redirects them - this code never runs
+    # If student has viewed ID card, check if they should be redirected to dashboard
+    
     if current_user.is_authenticated and not current_user.is_admin:
-        from ..routes.admin import check_student_needs_id_card
         from ..models import ClassEnrollment, School, RegisteredSchoolStudent
         
-        # Step 1: Check if student needs to see ID card
-        needs_card, id_card = check_student_needs_id_card(current_user)
-        if needs_card and id_card:
-            # Redirect to ID card page
-            return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
-        
-        # Step 2: Check for approved enrollments (Individual, Group, Family, School)
-        # Get ALL approved enrollments to determine the best dashboard
+        # Check for approved enrollments (Individual, Group, Family, School)
         approved_enrollments = ClassEnrollment.query.filter_by(
             user_id=current_user.id,
             status='completed'
@@ -35,48 +29,38 @@ def index():
         
         if approved_enrollments:
             # Priority order: Individual > Group > Family > School
-            # Check for individual first (highest priority)
             individual_enrollment = next((e for e in approved_enrollments if e.class_type == 'individual'), None)
             if individual_enrollment:
                 return redirect(url_for('admin.student_dashboard'))
             
-            # Check for group
             group_enrollment = next((e for e in approved_enrollments if e.class_type == 'group'), None)
             if group_enrollment:
                 return redirect(url_for('main.group_class_dashboard'))
             
-            # Check for family
             family_enrollment = next((e for e in approved_enrollments if e.class_type == 'family'), None)
             if family_enrollment:
                 return redirect(url_for('main.family_dashboard'))
             
-            # Check for school
             school_enrollment = next((e for e in approved_enrollments if e.class_type == 'school'), None)
             if school_enrollment:
                 return redirect(url_for('schools.school_dashboard'))
             
-            # Fallback: if any approved enrollment exists, redirect to student dashboard
             return redirect(url_for('admin.student_dashboard'))
         
-        # Step 3: Check if user is a school admin with active school
+        # Check if user is a school admin with active school
         school = School.query.filter_by(user_id=current_user.id).first()
         if school and school.status == 'active' and school.payment_status == 'completed':
-            # School admin/mentor - redirect to school dashboard
             return redirect(url_for('schools.school_dashboard'))
         
-        # Step 4: Check if user is a registered school student (via session or database)
-        # This handles school students who login via school student entry
+        # Check if user is a registered school student
         from flask import session
         if session.get('school_student_id'):
-            # School student logged in via school student entry
             return redirect(url_for('schools.school_student_dashboard'))
         
-        # Check if there's a registered school student record for this user
         registered_school_student = RegisteredSchoolStudent.query.filter_by(
             user_id=current_user.id
         ).first()
         if registered_school_student:
-            # Has school student record - redirect to school student dashboard
             return redirect(url_for('schools.school_student_dashboard'))
     
     # Initialize empty lists for graceful degradation if tables don't exist

@@ -5190,30 +5190,13 @@ def view_id_card(id_card_id):
     is_owner = True  # Treat as owner since they're viewing their own card
     
     # If user is logged in and is admin, mark as admin
-    is_admin = current_user.is_authenticated and current_user.is_admin
-            is_owner = True
-    elif id_card.entity_type == 'school_student':
-        # Check if user is the school student
-        registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
-        if registered_student and registered_student.user_id == current_user.id:
-            has_access = True
-            is_owner = True
+    is_admin = current_user.is_authenticated and current_user.is_admin if current_user.is_authenticated else False
     
-    if not has_access:
-        flash('Access denied. You do not have permission to view this ID card.', 'danger')
-        # Check if student needs to see their own ID card instead
-        if current_user.is_authenticated and not current_user.is_admin:
-            needs_card, student_id_card = check_student_needs_id_card(current_user)
-            if needs_card and student_id_card:
-                return redirect(url_for('admin.view_id_card', id_card_id=student_id_card.id))
-        return redirect(url_for('main.index'))
-    
-    # Mark ID card as viewed in session (for non-admin owners)
-    if is_owner and not current_user.is_admin:
-        session['id_card_viewed'] = session.get('id_card_viewed', [])
-        if id_card_id not in session['id_card_viewed']:
-            session['id_card_viewed'].append(id_card_id)
-            session.permanent = True
+    # Mark ID card as viewed in session (for tracking) - NO LOGIN REQUIRED
+    session['id_card_viewed'] = session.get('id_card_viewed', [])
+    if id_card_id not in session['id_card_viewed']:
+        session['id_card_viewed'].append(id_card_id)
+        session.permanent = True
     
     # Handle photo/logo upload
     if request.method == 'POST' and request.form.get('action') == 'upload_photo':

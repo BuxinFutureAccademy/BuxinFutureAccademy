@@ -304,13 +304,13 @@ def school_pending_approval():
 @bp.route('/school/dashboard')
 @login_required
 def school_dashboard():
+    """School Mentor Dashboard - For school mentors to manage students and attendance"""
     # CRITICAL: Check if school needs to see ID card first
     from ..routes.admin import check_student_needs_id_card
     needs_card, id_card = check_student_needs_id_card(current_user)
     if needs_card and id_card:
         # Redirect to ID card page - school must see ID card before dashboard
         return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
-    """School Mentor Dashboard - For school mentors to manage students and attendance"""
     # Verify user is a school admin (mentor)
     if not current_user.is_school_admin:
         flash('Access denied. School mentor privileges required.', 'danger')

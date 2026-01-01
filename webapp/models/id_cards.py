@@ -316,8 +316,10 @@ def generate_school_id_card(school, approved_by_user_id):
 
 
 def generate_school_student_id_card(registered_student, school, approved_by_user_id):
-    """Generate ID card for school student after approval"""
-    from .classes import ClassEnrollment
+    """Generate ID card for school student after approval
+    Works with both SchoolStudent and RegisteredSchoolStudent models
+    """
+    from .classes import ClassEnrollment, SchoolStudent
     
     # Check if ID card already exists
     existing_card = IDCard.query.filter_by(
@@ -330,11 +332,18 @@ def generate_school_student_id_card(registered_student, school, approved_by_user
         return existing_card
     
     # Get class name(s) from enrollment
-    enrollment = ClassEnrollment.query.filter_by(
-        user_id=school.user_id,
-        class_type='school',
-        status='completed'
-    ).first()
+    # Try to get enrollment from student's enrollment_id if it's a SchoolStudent
+    enrollment = None
+    if hasattr(registered_student, 'enrollment_id') and registered_student.enrollment_id:
+        # This is a SchoolStudent with direct enrollment_id
+        enrollment = ClassEnrollment.query.get(registered_student.enrollment_id)
+    else:
+        # This is a RegisteredSchoolStudent - get enrollment from school
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=school.user_id,
+            class_type='school',
+            status='completed'
+        ).first()
     
     class_name = None
     if enrollment:

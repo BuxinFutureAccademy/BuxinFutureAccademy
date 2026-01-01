@@ -712,16 +712,28 @@
                 </h2>
                 <div class="profile-info">
                     <div class="info-row mb-2">
-                        <strong style="color: var(--text-secondary);">Student Name:</strong>
+                        <strong style="color: var(--text-secondary);">School Student Name:</strong>
                         <span style="color: var(--on-surface); margin-left: 1rem;">{{ student.student_name }}</span>
                     </div>
                     <div class="info-row mb-2">
-                        <strong style="color: var(--text-secondary);">School Student ID:</strong>
+                        <strong style="color: var(--text-secondary);">School Student System ID:</strong>
                         <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">{{ student.student_system_id }}</code>
                     </div>
                     <div class="info-row mb-2">
-                        <strong style="color: var(--text-secondary);">School Name:</strong>
-                        <span style="color: var(--on-surface); margin-left: 1rem;">{{ student.school_name }}</span>
+                        <strong style="color: var(--text-secondary);">Class/Subject:</strong>
+                        <span style="color: var(--on-surface); margin-left: 1rem;">
+                            {% if enrolled_classes %}
+                                {% for cls in enrolled_classes %}
+                                    {{ cls.name }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row mb-2">
+                        <strong style="color: var(--text-secondary);">Associated Entity:</strong>
+                        <span style="color: var(--on-surface); margin-left: 1rem;">School Student</span>
                     </div>
                     {% if id_card %}
                     <div class="info-row mb-2 mt-3">

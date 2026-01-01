@@ -398,9 +398,17 @@ def register_student_in_school():
             registered_by=current_user.id
         )
         db.session.add(student)
-        db.session.commit()
+        db.session.flush()  # Get ID without committing
         
-        flash(f'Student "{student_name}" registered successfully! Student System ID: {student_system_id}', 'success')
+        # Generate ID Card for the school student
+        try:
+            from ..models.id_cards import generate_school_student_id_card
+            id_card = generate_school_student_id_card(student, school, current_user.id)
+            db.session.commit()
+            flash(f'Student "{student_name}" registered successfully! Student System ID: {student_system_id}. ID Card generated.', 'success')
+        except Exception as e:
+            db.session.commit()  # Commit student even if ID card generation fails
+            flash(f'Student "{student_name}" registered successfully! Student System ID: {student_system_id}. Error generating ID card: {str(e)}', 'warning')
     except Exception as e:
         db.session.rollback()
         flash(f'Error registering student: {str(e)}', 'danger')

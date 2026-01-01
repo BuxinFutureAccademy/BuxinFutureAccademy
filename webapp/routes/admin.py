@@ -2687,8 +2687,17 @@ def register_student():
             registered_by=current_user.id
         )
         db.session.add(new_student)
-        db.session.commit()
-        flash(f'Student "{student_name}" registered successfully! Student System ID: {student_system_id}', 'success')
+        db.session.flush()  # Get ID without committing
+        
+        # Generate ID Card for the school student
+        try:
+            from ..models.id_cards import generate_school_student_id_card
+            id_card = generate_school_student_id_card(new_student, school, current_user.id)
+            db.session.commit()
+            flash(f'Student "{student_name}" registered successfully! Student System ID: {student_system_id}. ID Card generated.', 'success')
+        except Exception as e:
+            db.session.commit()  # Commit student even if ID card generation fails
+            flash(f'Student "{student_name}" registered successfully! Student System ID: {student_system_id}. Error generating ID card: {str(e)}', 'warning')
     except Exception as e:
         db.session.rollback()
         flash(f'Error registering student: {str(e)}', 'danger')
@@ -4636,7 +4645,7 @@ def admin_individual_classes():
                             return redirect(url_for('admin.admin_individual_classes'))
                         
                         # Set user class type
-                        user.class_type = 'individual'
+                            user.class_type = 'individual'
                         
                         # Get the individual class
                         individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
@@ -6259,13 +6268,27 @@ def view_id_card(id_card_id):
                 session['school_name'] = school_obj.school_name
                 session['school_system_id'] = school_obj.school_system_id
     elif id_card.entity_type == 'school_student':
-        # Get registered school student
+        # Get registered school student - handle both SchoolStudent and RegisteredSchoolStudent
+        from ..models.classes import SchoolStudent
+        school_student = SchoolStudent.query.get(id_card.entity_id)
         registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
-        if registered_student:
+        
+        if school_student:
+            # This is a SchoolStudent (registered in a specific class)
+            session['school_student_id'] = school_student.id
+            session['school_student_name'] = school_student.student_name
+            session['school_student_system_id'] = school_student.student_system_id
+            session['school_name'] = school_student.school_name
+        elif registered_student:
+            # This is a RegisteredSchoolStudent (general school registration)
             session['school_student_id'] = registered_student.id
             session['school_student_name'] = registered_student.student_name
             session['school_student_system_id'] = registered_student.student_system_id
-            session['school_name'] = registered_student.school_name
+            # Get school name from school_id
+            from ..models.schools import School
+            school = School.query.get(registered_student.school_id)
+            if school:
+                session['school_name'] = school.school_name
     
     # Handle photo/logo upload
     if request.method == 'POST' and request.form.get('action') == 'upload_photo':
@@ -6331,8 +6354,14 @@ def download_id_card(id_card_id):
         if school and school.user_id == current_user.id:
             has_access = True
     elif id_card.entity_type == 'school_student':
+        # Check both SchoolStudent and RegisteredSchoolStudent
+        from ..models.classes import SchoolStudent
+        school_student = SchoolStudent.query.get(id_card.entity_id)
         registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
-        if registered_student and registered_student.user_id == current_user.id:
+        
+        if school_student and school_student.registered_by == current_user.id:
+            has_access = True
+        elif registered_student and registered_student.user_id == current_user.id:
             has_access = True
     
     if not has_access:

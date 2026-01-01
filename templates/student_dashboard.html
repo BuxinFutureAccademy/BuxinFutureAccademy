@@ -810,41 +810,32 @@
                 </h2>
                 <div class="profile-info">
                     {% if current_user.is_school_admin and school %}
-                        {# School Mentor Profile #}
-                        <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">Role:</strong>
-                            <span class="badge bg-primary" style="margin-left: 1rem;">School Mentor</span>
-                        </div>
-                        <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">Mentor Name:</strong>
-                            <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
-                        </div>
+                        {# School Dashboard Profile #}
+                        {% set school_classes = enrolled_classes|selectattr('class_type', 'equalto', 'school')|list if enrolled_classes else [] %}
                         <div class="info-row mb-2">
                             <strong style="color: var(--text-secondary);">School Name:</strong>
                             <span style="color: var(--on-surface); margin-left: 1rem;">{{ school.school_name }}</span>
                         </div>
                         <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">School ID:</strong>
+                            <strong style="color: var(--text-secondary);">School System ID:</strong>
                             <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">{{ school.school_system_id }}</code>
                         </div>
-                        {% if current_user.id %}
                         <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">Mentor ID:</strong>
-                            <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">MENT-{{ current_user.id }}</code>
-                        </div>
-                        {% endif %}
-                        {% if enrolled_classes %}
-                        <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">Assigned Classes:</strong>
+                            <strong style="color: var(--text-secondary);">Class/Subject:</strong>
                             <span style="color: var(--on-surface); margin-left: 1rem;">
-                                {% for cls in enrolled_classes %}
-                                    {% if cls.class_type == 'school' %}
+                                {% if school_classes %}
+                                    {% for cls in school_classes %}
                                         {{ cls.name }}{% if not loop.last %}, {% endif %}
-                                    {% endif %}
-                                {% endfor %}
+                                    {% endfor %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
                             </span>
                         </div>
-                        {% endif %}
+                        <div class="info-row mb-2">
+                            <strong style="color: var(--text-secondary);">Associated Entity:</strong>
+                            <span style="color: var(--on-surface); margin-left: 1rem;">School</span>
+                        </div>
                         {% if id_card %}
                         <div class="info-row mb-2 mt-3">
                             <a href="{{ url_for('admin.view_id_card', id_card_id=id_card.id) }}" 
@@ -855,33 +846,92 @@
                         </div>
                         {% endif %}
                     {% else %}
-                        {# Regular Student Profile #}
-                        <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">Student Name:</strong>
-                            <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
-                        </div>
-                        <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">System ID:</strong>
-                            <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
-                                {% if current_user.student_id %}{{ current_user.student_id }}{% else %}Not assigned{% endif %}
-                            </code>
-                        </div>
-                        <div class="info-row mb-2">
-                            <strong style="color: var(--text-secondary);">Associated Entity:</strong>
-                            <span style="color: var(--on-surface); margin-left: 1rem;">
-                                {% if current_user.class_type == 'individual' %}
-                                    Individual Student
-                                {% elif current_user.class_type == 'group' %}
-                                    {% set group_class = enrolled_classes|selectattr('class_type', 'equalto', 'group')|first if enrolled_classes else None %}
-                                    Group: {{ group_class.name if group_class else 'N/A' }}
-                                {% elif current_user.class_type == 'family' %}
-                                    {% set family_enrollment = enrolled_classes|selectattr('class_type', 'equalto', 'family')|first if enrolled_classes else None %}
-                                    Family: {{ family_enrollment.family_system_id if family_enrollment and family_enrollment.family_system_id else 'N/A' }}
-                                {% else %}
-                                    Student
-                                {% endif %}
-                            </span>
-                        </div>
+                        {# Student Profile - Different for Individual, Group, Family #}
+                        {% if current_user.class_type == 'individual' %}
+                            {# Individual Student Profile #}
+                            {% set individual_class = enrolled_classes|selectattr('class_type', 'equalto', 'individual')|first if enrolled_classes else None %}
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Student Name:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Student System ID:</strong>
+                                <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
+                                    {% if current_user.student_id %}{{ current_user.student_id }}{% else %}Not assigned{% endif %}
+                                </code>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Class/Subject:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ individual_class.name if individual_class else 'N/A' }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Associated Entity:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">Student</span>
+                            </div>
+                        {% elif current_user.class_type == 'group' %}
+                            {# Group Class Profile #}
+                            {% set group_class = enrolled_classes|selectattr('class_type', 'equalto', 'group')|first if enrolled_classes else None %}
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Group Class Name:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ group_class.name if group_class else 'N/A' }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Group System ID:</strong>
+                                <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
+                                    {% if group_class and group_class.enrollment.group_system_id %}{{ group_class.enrollment.group_system_id }}{% else %}Not assigned{% endif %}
+                                </code>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Class Name:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ group_class.name if group_class else 'N/A' }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Associated Entity:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">Group</span>
+                            </div>
+                        {% elif current_user.class_type == 'family' %}
+                            {# Family Class Profile #}
+                            {% set family_class = enrolled_classes|selectattr('class_type', 'equalto', 'family')|first if enrolled_classes else None %}
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Family Name:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Family System ID:</strong>
+                                <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
+                                    {% if family_class and family_class.enrollment.family_system_id %}{{ family_class.enrollment.family_system_id }}{% else %}Not assigned{% endif %}
+                                </code>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Class/Subject:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ family_class.name if family_class else 'N/A' }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Associated Entity:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">Family</span>
+                            </div>
+                        {% else %}
+                            {# Default Student Profile #}
+                            {% set default_class = enrolled_classes|first if enrolled_classes else None %}
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Student Name:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">System ID:</strong>
+                                <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
+                                    {% if current_user.student_id %}{{ current_user.student_id }}{% else %}Not assigned{% endif %}
+                                </code>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Class/Subject:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ default_class.name if default_class else 'N/A' }}</span>
+                            </div>
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Associated Entity:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">Student</span>
+                            </div>
+                        {% endif %}
                         {% if id_card %}
                         <div class="info-row mb-2 mt-3">
                             <a href="{{ url_for('admin.view_id_card', id_card_id=id_card.id) }}" 

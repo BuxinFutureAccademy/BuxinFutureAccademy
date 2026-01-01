@@ -4622,63 +4622,45 @@ def admin_individual_classes():
             enrollment = ClassEnrollment.query.get(enrollment_id)
             if enrollment and enrollment.class_type == 'individual':
                 if action == 'approve':
-                    # SIMPLE APPROVAL - JUST MAKE IT WORK
+                    # EXACT SAME PATTERN AS WORKING GROUP CLASS APPROVAL
                     user = User.query.get(enrollment.user_id)
-                    if not user:
-                        flash('User not found.', 'danger')
-                        return redirect(url_for('admin.admin_individual_classes'))
-                    
-                    # Generate Student ID if not exists - CRITICAL: Always generate for new enrollments
-                        if not user.student_id:
-                            from ..models.classes import generate_student_id_for_class
-                        new_student_id = generate_student_id_for_class('individual')
-                        # Double-check uniqueness
-                        existing_user = User.query.filter_by(student_id=new_student_id).first()
-                        while existing_user and existing_user.id != user.id:
-                            new_student_id = generate_student_id_for_class('individual')
-                            existing_user = User.query.filter_by(student_id=new_student_id).first()
-                        user.student_id = new_student_id
-                        user.class_type = 'individual'
-                        db.session.flush()  # Ensure student_id is saved before ID card generation
-                    
-                    # Verify student_id is set - if still None, something went wrong
-                    if not user.student_id:
-                        flash('Error: Failed to generate Student ID. Please try again.', 'danger')
-                        return redirect(url_for('admin.admin_individual_classes'))
+                    if user:
+                        # Generate Student ID if not exists (same as group_system_id for groups)
+                        try:
+                            if not user.student_id:
+                                from ..models.classes import generate_student_id_for_class
+                                user.student_id = generate_student_id_for_class('individual')
+                        except Exception as e:
+                            # Handle any errors in student ID generation
+                            flash(f'Error generating Student ID: {str(e)}', 'danger')
+                            return redirect(url_for('admin.admin_individual_classes'))
                         
-                        # Add student to individual class
+                        # Set user class type
+                        user.class_type = 'individual'
+                        
+                        # Get the individual class
                         individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
                                           IndividualClass.query.get(enrollment.class_id)
+                        
+                        # Check if user not already in class (same pattern as group)
                         if individual_class and user not in individual_class.students:
                             individual_class.students.append(user)
-                        
-                    # Set enrollment to completed
-                        enrollment.status = 'completed'
-                    db.session.flush()  # Ensure enrollment status is saved
-                    
-                    # Generate ID Card using proper function (includes QR code)
-                    try:
-                        from ..models.id_cards import generate_individual_student_id_card
-                        id_card = generate_individual_student_id_card(enrollment, user, individual_class, current_user.id)
-                        # Function handles commit internally, but we'll commit everything together below
-                    except Exception as e:
-                        print(f"ID card generation error: {e}")
-                        import traceback
-                        traceback.print_exc()
-                        # Continue anyway - enrollment will still be approved
-                        id_card = None
-                    
-                    # COMMIT EVERYTHING AT ONCE
-                    try:
-                        db.session.commit()
-                        if id_card:
-                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated with QR code. Student will be redirected to view ID card immediately.', 'success')
+                            enrollment.status = 'completed'
+                            
+                            # Generate ID Card (same pattern as group)
+                            try:
+                                from ..models.id_cards import generate_individual_student_id_card
+                                id_card = generate_individual_student_id_card(enrollment, user, individual_class, current_user.id)
+                                db.session.commit()
+                                flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
+                            except Exception as e:
+                                db.session.rollback()
+                                db.session.commit()
+                                flash(f'Enrollment approved! Student ID: {user.student_id}. Error generating ID card: {str(e)}', 'warning')
                         else:
-                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generation had issues, but enrollment is approved.', 'warning')
-                    except Exception as e:
-                        db.session.rollback()
-                        flash(f'Error approving enrollment: {str(e)}', 'danger')
-                        return redirect(url_for('admin.admin_individual_classes'))
+                            enrollment.status = 'completed'
+                            db.session.commit()
+                            flash(f'Enrollment approved! Student ID: {user.student_id}', 'success')
                 elif action == 'reject':
                     enrollment.status = 'rejected'
                     db.session.commit()

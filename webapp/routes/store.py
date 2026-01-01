@@ -68,8 +68,39 @@ def store():
 @bp.route('/available-classes', endpoint='available_classes')
 def available_classes():
     """Browse and enroll in available classes - Filtered by class type"""
-    from ..models import ClassPricing
-
+    from ..models import ClassPricing, ClassEnrollment
+    from flask import session
+    
+    # Check if student is registered - if yes, redirect to dashboard
+    user = None
+    user_id = None
+    
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    # If student is registered, redirect to dashboard
+    if user:
+        enrollment = ClassEnrollment.query.filter_by(
+            user_id=user_id,
+            status='completed'
+        ).first()
+        if enrollment:
+            # Student is registered - redirect to dashboard
+            if enrollment.class_type == 'individual':
+                return redirect(url_for('admin.student_dashboard'))
+            elif enrollment.class_type == 'group':
+                return redirect(url_for('main.group_class_dashboard'))
+            elif enrollment.class_type == 'family':
+                return redirect(url_for('main.family_dashboard'))
+            elif enrollment.class_type == 'school':
+                return redirect(url_for('schools.school_dashboard'))
+            return redirect(url_for('admin.student_dashboard'))
+    
     pricing_type = request.args.get('type')
     
     # If user is logged in, force their pricing type
@@ -88,6 +119,15 @@ def available_classes():
         pricing_info = {'name': pricing_type.title(), 'price': 100}
 
     classes = []
+    enrolled_class_ids = set()
+    
+    # Get enrolled class IDs for this user
+    if user_id:
+        enrollments = ClassEnrollment.query.filter_by(
+            user_id=user_id,
+            status='completed'
+        ).all()
+        enrolled_class_ids = {e.class_id for e in enrollments}
     
     # Filter classes by type - each type has its own list
     if pricing_type == 'individual':
@@ -119,7 +159,9 @@ def available_classes():
         classes=classes,
         pricing_type=pricing_type,
         pricing_info=pricing_info,
-        pricing_data=pricing_data
+        pricing_data=pricing_data,
+        enrolled_class_ids=enrolled_class_ids,
+        user=user
     )
 
 

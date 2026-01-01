@@ -158,14 +158,16 @@
 <body>
     {% block navbar %}
     <!-- Complete Navigation -->
+    {% set is_registered_student = session.get('is_registered_student', false) %}
+    {% set student_dashboard_url = url_for('admin.student_dashboard') %}
     <nav class="navbar navbar-expand-lg navbar-light">
     <div class="container">
-        <a class="navbar-brand" href="{{ url_for('main.index') }}">
+        <a class="navbar-brand" href="{% if is_registered_student %}{{ student_dashboard_url }}{% else %}{{ url_for('main.index') }}{% endif %}">
             <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" alt="Logo" width="30" height="30" class="d-inline-block align-text-top me-2">
             BuXin Academy
         </a>
 
-            
+            {% if not is_registered_student %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>

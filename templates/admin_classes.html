@@ -1,5 +1,44 @@
 {% extends "base.html" %}
 
+{% macro render_class_card(class, type) %}
+<div class="col-md-6 col-lg-4 mb-3">
+    <div class="class-card card h-100">
+        <div class="class-header header-{{ type }}">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ class.name }}</h5>
+                <span class="badge bg-light text-dark">
+                    {{ class.students|length if (class.students is defined and class.students) else 0 }} Students
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-2">{{ class.description|truncate(100) or 'No description' }}</p>
+            {% if class.instructor_name %}
+                <p class="mb-2 small"><strong>Instructor:</strong> {{ class.instructor_name }}</p>
+            {% endif %}
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+                <small class="text-muted">
+                    ID: #{{ class.id }}
+                </small>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.edit_class', class_id=class.id) }}" 
+                       class="btn btn-sm btn-outline-primary action-btn">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <form action="{{ url_for('admin.delete_class', class_id=class.id) }}" 
+                          method="POST" style="display: inline;" 
+                          onsubmit="return confirm('Are you sure?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
 {% block content %}
 <style>
     .class-card {
@@ -108,44 +147,5 @@
         </a>
     </div>
 </div>
-
-{% macro render_class_card(class, type) %}
-<div class="col-md-6 col-lg-4 mb-3">
-    <div class="class-card card h-100">
-        <div class="class-header header-{{ type }}">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">{{ class.name }}</h5>
-                <span class="badge bg-light text-dark">
-                    {{ class.students|length if (class.students is defined and class.students) else 0 }} Students
-                </span>
-            </div>
-        </div>
-        <div class="card-body">
-            <p class="text-muted small mb-2">{{ class.description|truncate(100) or 'No description' }}</p>
-            {% if class.instructor_name %}
-                <p class="mb-2 small"><strong>Instructor:</strong> {{ class.instructor_name }}</p>
-            {% endif %}
-            <div class="d-flex justify-content-between align-items-center mt-auto">
-                <small class="text-muted">
-                    ID: #{{ class.id }}
-                </small>
-                <div class="btn-group">
-                    <a href="{{ url_for('admin.edit_class', class_id=class.id) }}" 
-                       class="btn btn-sm btn-outline-primary action-btn">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <form action="{{ url_for('admin.delete_class', class_id=class.id) }}" 
-                          method="POST" style="display: inline;" 
-                          onsubmit="return confirm('Are you sure?');">
-                        <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endmacro %}
 
 {% endblock %}

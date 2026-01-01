@@ -13,21 +13,33 @@ def index():
     from datetime import datetime
     from ..extensions import db
     from flask_login import current_user
+    from flask import session
+    from ..models import ClassEnrollment, School, RegisteredSchoolStudent, User
     
-    # Decorator @require_id_card_viewed handles ID card check FIRST
-    # If student needs ID card, decorator redirects them - this code never runs
-    # If student has viewed ID card, check if they should be redirected to dashboard
+    # Check if student is registered (either logged in or via session)
+    user = None
+    user_id = None
     
-    if current_user.is_authenticated and not current_user.is_admin:
-        from ..models import ClassEnrollment, School, RegisteredSchoolStudent
-        
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        # Check session for student access
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    # If student is registered, BLOCK home page - redirect to dashboard
+    if user and not getattr(user, 'is_admin', False):
         # Check for approved enrollments (Individual, Group, Family, School)
         approved_enrollments = ClassEnrollment.query.filter_by(
-            user_id=current_user.id,
+            user_id=user_id,
             status='completed'
         ).all()
         
         if approved_enrollments:
+            # Set session variable for navbar
+            session['is_registered_student'] = True
             # Priority order: Individual > Group > Family > School
             individual_enrollment = next((e for e in approved_enrollments if e.class_type == 'individual'), None)
             if individual_enrollment:
@@ -35,11 +47,11 @@ def index():
             
             group_enrollment = next((e for e in approved_enrollments if e.class_type == 'group'), None)
             if group_enrollment:
-                return redirect(url_for('main.group_class_dashboard'))
+                return redirect(url_for('admin.student_dashboard'))
             
             family_enrollment = next((e for e in approved_enrollments if e.class_type == 'family'), None)
             if family_enrollment:
-                return redirect(url_for('main.family_dashboard'))
+                return redirect(url_for('admin.student_dashboard'))
             
             school_enrollment = next((e for e in approved_enrollments if e.class_type == 'school'), None)
             if school_enrollment:
@@ -48,17 +60,16 @@ def index():
             return redirect(url_for('admin.student_dashboard'))
         
         # Check if user is a school admin with active school
-        school = School.query.filter_by(user_id=current_user.id).first()
+        school = School.query.filter_by(user_id=user_id).first()
         if school and school.status == 'active' and school.payment_status == 'completed':
             return redirect(url_for('schools.school_dashboard'))
         
         # Check if user is a registered school student
-        from flask import session
         if session.get('school_student_id'):
             return redirect(url_for('schools.school_student_dashboard'))
         
         registered_school_student = RegisteredSchoolStudent.query.filter_by(
-            user_id=current_user.id
+            user_id=user_id
         ).first()
         if registered_school_student:
             return redirect(url_for('schools.school_student_dashboard'))

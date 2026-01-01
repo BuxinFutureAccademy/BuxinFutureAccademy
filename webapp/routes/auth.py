@@ -173,8 +173,41 @@ def login():
     """
     Existing sign-in page - connects to Admin Panel for admins
     Students use Name + Student ID (no login needed)
+    BLOCKED for registered students - they should never see this page
     """
+    from flask import session
+    
+    # Check if student is registered via session (even if not logged in)
+    user_id = session.get('student_user_id') or session.get('user_id')
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            enrollment = ClassEnrollment.query.filter_by(
+                user_id=user_id,
+                status='completed'
+            ).first()
+            if enrollment:
+                # Student is registered - redirect to dashboard, never show login
+                if enrollment.class_type == 'individual':
+                    return redirect(url_for('admin.student_dashboard'))
+                elif enrollment.class_type == 'group':
+                    return redirect(url_for('admin.student_dashboard'))
+                elif enrollment.class_type == 'family':
+                    return redirect(url_for('admin.student_dashboard'))
+                elif enrollment.class_type == 'school':
+                    return redirect(url_for('schools.school_dashboard'))
+                return redirect(url_for('admin.student_dashboard'))
+    
     if current_user.is_authenticated:
+        # Check if registered student - block login page
+        if not current_user.is_admin:
+            enrollment = ClassEnrollment.query.filter_by(
+                user_id=current_user.id,
+                status='completed'
+            ).first()
+            if enrollment:
+                # Registered student - redirect to dashboard
+                return redirect(get_user_redirect_url(current_user))
         # Redirect based on user type
         return redirect(get_user_redirect_url(current_user))
     

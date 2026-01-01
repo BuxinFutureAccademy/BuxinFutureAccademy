@@ -1460,12 +1460,34 @@ def create_class():
             all_classes = GroupClass.query.order_by(GroupClass.name).all()
             return render_template('create_class.html', all_classes=all_classes)
         
-        # If existing class is selected, just redirect (class already exists)
+        # If existing class is selected, create a new class with same content but new class_type
         if existing_class_id and existing_class_id != 'none':
             try:
                 existing_class = GroupClass.query.get(int(existing_class_id))
                 if existing_class:
-                    flash(f'Using existing class "{existing_class.name}"', 'info')
+                    # Check if class with same name and new type already exists
+                    existing_same_type = GroupClass.query.filter_by(
+                        name=existing_class.name,
+                        class_type=class_type
+                    ).first()
+                    
+                    if existing_same_type:
+                        flash(f'Class "{existing_class.name}" already exists for {class_type} type.', 'info')
+                    else:
+                        # Create new class with same content but new class_type
+                        new_class = GroupClass(
+                            name=existing_class.name,
+                            description=existing_class.description,
+                            teacher_id=current_user.id,
+                            class_type=class_type,
+                            instructor_name=existing_class.instructor_name,
+                            curriculum=existing_class.curriculum,
+                            max_students=existing_class.max_students if existing_class.max_students else 100
+                        )
+                        db.session.add(new_class)
+                        db.session.commit()
+                        flash(f'Class "{existing_class.name}" created for {class_type} type! It will now appear in {class_type} classes.', 'success')
+                    
                     # Redirect to the correct management section
                     if class_type == 'school':
                         return redirect(url_for('admin.admin_schools'))
@@ -1476,8 +1498,8 @@ def create_class():
                     elif class_type == 'family':
                         return redirect(url_for('admin.admin_family_classes'))
                     return redirect(url_for('admin.admin_dashboard'))
-            except (ValueError, AttributeError):
-                pass
+            except (ValueError, AttributeError) as e:
+                flash(f'Error using existing class: {str(e)}', 'danger')
         
         # Create new class
         name = request.form.get('name', '').strip()
@@ -1933,6 +1955,12 @@ def student_dashboard():
         user_id=user_id,
         status='completed'
     ).first() is not None
+    
+    # Set session variable for navbar (hide all links except BuXin Academy logo)
+    if has_confirmed_enrollment:
+        session['is_registered_student'] = True
+    else:
+        session['is_registered_student'] = False
     
     # Check if user is a school admin with active status and completed payment
     is_approved_school = False

@@ -625,11 +625,12 @@
     <!-- Navigation -->
     <nav class="robotics-navbar">
         <div class="nav-container">
-            <a href="{{ url_for('main.index') }}" class="nav-brand">
+            <a href="{% if user %}{{ url_for('admin.student_dashboard') }}{% else %}{{ url_for('main.index') }}{% endif %}" class="nav-brand">
                 <img src="https://res.cloudinary.com/dfizb64hx/image/upload/v1753480189/Untvvvvitled-1_i2iduk.png" alt="BuXin">
-                <span class="nav-brand-text">Bu<span>Xin</span></span>
+                <span class="nav-brand-text">Bu<span>Xin</span> Academy</span>
             </a>
             
+            {% if not user %}
             <ul class="nav-links">
                 <li><a href="{{ url_for('main.index') }}#about" class="nav-link">About Us</a></li>
                 <li><a href="{{ url_for('main.index') }}#gallery" class="nav-link">Student Gallery</a></li>
@@ -637,10 +638,7 @@
                 <li><a href="{{ url_for('main.index') }}#victories" class="nav-link">Student Victory</a></li>
                 <li><a href="{{ url_for('main.index') }}#contact" class="nav-link">Contact Us</a></li>
             </ul>
-            
-            {# Login removed - Students use Name + Student ID #}
-                <i class="fas fa-chalkboard-teacher me-2"></i>Classroom
-            </a>
+            {% endif %}
         </div>
     </nav>
 
@@ -741,7 +739,14 @@
                                     </button>
                                 </div>
                                 
-                                {% if class.max_students is defined and class.students is defined and class.students and class.students|length >= class.max_students %}
+                                {% set class_id_to_check = class.id %}
+                                {% set is_enrolled = class_id_to_check in enrolled_class_ids if enrolled_class_ids else False %}
+                                
+                                {% if is_enrolled %}
+                                    <button class="enroll-btn enroll-btn-disabled" disabled>
+                                        <i class="fas fa-check-circle"></i> Already Registered
+                                    </button>
+                                {% elif class.max_students is defined and class.students is defined and class.students and class.students|length >= class.max_students %}
                                     <button class="enroll-btn enroll-btn-disabled" disabled>
                                         <i class="fas fa-ban"></i> Class Full
                                     </button>
@@ -773,31 +778,28 @@
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body" style="padding: 2rem; color: white;">
-                                    {% if class.curriculum and class.curriculum.strip() %}
-                                        {% set all_items = class.curriculum.split('\n') %}
-                                        {% set has_items = false %}
+                                    {% set curriculum_text = class.curriculum if (class.curriculum is defined and class.curriculum) else '' %}
+                                    {% if curriculum_text and curriculum_text.strip() %}
+                                        {% set all_items = curriculum_text.split('\n') %}
+                                        {% set filtered_items = [] %}
                                         {% for item in all_items %}
                                             {% if item.strip() %}
-                                                {% set has_items = true %}
+                                                {% set _ = filtered_items.append(item.strip()) %}
                                             {% endif %}
                                         {% endfor %}
-                                        {% if has_items %}
+                                        {% if filtered_items|length > 0 %}
                                         <div class="curriculum-list">
-                                            {% set item_count = 0 %}
-                                            {% for item in all_items %}
-                                                {% if item.strip() %}
-                                                    {% set item_count = item_count + 1 %}
-                                                    <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(0, 212, 255, 0.08); border-left: 4px solid var(--primary); border-radius: 10px; transition: all 0.3s ease;">
-                                                        <div style="display: flex; align-items: start; gap: 1.2rem;">
-                                                            <div style="width: 40px; height: 40px; background: var(--gradient-cyber); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: var(--dark); font-size: 1rem; box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);">
-                                                                {{ item_count }}
-                                                            </div>
-                                                            <div style="flex: 1; color: rgba(255, 255, 255, 0.95); line-height: 1.8; font-size: 1.05rem; padding-top: 2px;">
-                                                                <strong style="color: var(--primary); display: block; margin-bottom: 0.3rem;">{{ item.strip() }}</strong>
-                                                            </div>
+                                            {% for item in filtered_items %}
+                                                <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(0, 212, 255, 0.08); border-left: 4px solid var(--primary); border-radius: 10px; transition: all 0.3s ease;">
+                                                    <div style="display: flex; align-items: start; gap: 1.2rem;">
+                                                        <div style="width: 40px; height: 40px; background: var(--gradient-cyber); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: var(--dark); font-size: 1rem; box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);">
+                                                            {{ loop.index }}
+                                                        </div>
+                                                        <div style="flex: 1; color: rgba(255, 255, 255, 0.95); line-height: 1.8; font-size: 1.05rem; padding-top: 2px;">
+                                                            <strong style="color: var(--primary); display: block; margin-bottom: 0.3rem;">{{ item }}</strong>
                                                         </div>
                                                     </div>
-                                                {% endif %}
+                                                </div>
                                             {% endfor %}
                                         </div>
                                         {% else %}
@@ -813,14 +815,22 @@
                                 </div>
                                 <div class="modal-footer" style="border-top: 1px solid rgba(0, 212, 255, 0.2); padding: 1rem 2rem;">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    {% if pricing_type == 'school' %}
-                                        <a href="{{ url_for('schools.register_school', class_id=class.id) }}" class="btn btn-primary" style="background: var(--gradient-cyber); border: none;">
-                                            <i class="fas fa-school me-2"></i>Register School
-                                        </a>
+                                    {% set class_id_to_check = class.id %}
+                                    {% set is_enrolled = class_id_to_check in enrolled_class_ids if enrolled_class_ids else False %}
+                                    {% if not is_enrolled %}
+                                        {% if pricing_type == 'school' %}
+                                            <a href="{{ url_for('schools.register_school', class_id=class.id) }}" class="btn btn-primary" style="background: var(--gradient-cyber); border: none;">
+                                                <i class="fas fa-school me-2"></i>Register School
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('store.register_class', class_type=pricing_type, class_id=class.id) }}" class="btn btn-primary" style="background: var(--gradient-cyber); border: none;">
+                                                <i class="fas fa-rocket me-2"></i>Register for Class
+                                            </a>
+                                        {% endif %}
                                     {% else %}
-                                        <a href="{{ url_for('store.register_class', class_type=pricing_type, class_id=class.id) }}" class="btn btn-primary" style="background: var(--gradient-cyber); border: none;">
-                                            <i class="fas fa-rocket me-2"></i>Register for Class
-                                        </a>
+                                        <button class="btn btn-success" disabled style="background: rgba(57, 255, 20, 0.3); border: 1px solid rgba(57, 255, 20, 0.5);">
+                                            <i class="fas fa-check-circle me-2"></i>Already Registered
+                                        </button>
                                     {% endif %}
                                 </div>
                             </div>

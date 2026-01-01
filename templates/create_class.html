@@ -117,15 +117,15 @@ document.addEventListener('DOMContentLoaded', function() {
     classTypeSelect.addEventListener('change', function() {
         const selectedType = this.value;
         if (selectedType) {
-            // Filter classes by type
-            const filteredClasses = allClasses.filter(cls => cls.class_type === selectedType);
-            
-            // Clear and populate dropdown
+            // Show ALL classes regardless of type (user can reuse any class)
+            // Clear and populate dropdown with all classes
             existingClassSelect.innerHTML = '<option value="none">-- Create New Class --</option>';
-            filteredClasses.forEach(cls => {
+            allClasses.forEach(cls => {
                 const option = document.createElement('option');
                 option.value = cls.id;
-                option.textContent = cls.name;
+                // Show class name with type badge for clarity
+                const typeBadge = cls.class_type ? `[${cls.class_type.toUpperCase()}]` : '';
+                option.textContent = `${cls.name} ${typeBadge}`;
                 existingClassSelect.appendChild(option);
             });
             

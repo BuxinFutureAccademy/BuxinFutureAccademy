@@ -847,7 +847,10 @@
                         {% endif %}
                     {% else %}
                         {# Student Profile - Different for Individual, Group, Family #}
-                        {% if current_user.class_type == 'individual' %}
+                        {% set first_enrollment = enrollments|first if enrollments else None %}
+                        {% set class_type = first_enrollment.class_type if first_enrollment else None %}
+                        
+                        {% if class_type == 'individual' %}
                             {# Individual Student Profile #}
                             {% set individual_class = enrolled_classes|selectattr('class_type', 'equalto', 'individual')|first if enrolled_classes else None %}
                             <div class="info-row mb-2">
@@ -868,7 +871,7 @@
                                 <strong style="color: var(--text-secondary);">Associated Entity:</strong>
                                 <span style="color: var(--on-surface); margin-left: 1rem;">Student</span>
                             </div>
-                        {% elif current_user.class_type == 'group' %}
+                        {% elif class_type == 'group' %}
                             {# Group Class Profile #}
                             {% set group_class = enrolled_classes|selectattr('class_type', 'equalto', 'group')|first if enrolled_classes else None %}
                             <div class="info-row mb-2">
@@ -878,18 +881,18 @@
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Group System ID:</strong>
                                 <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
-                                    {% if group_class and group_class.enrollment.group_system_id %}{{ group_class.enrollment.group_system_id }}{% else %}Not assigned{% endif %}
+                                    {% if group_class and group_class.enrollment and group_class.enrollment.group_system_id %}{{ group_class.enrollment.group_system_id }}{% else %}Not assigned{% endif %}
                                 </code>
                             </div>
                             <div class="info-row mb-2">
-                                <strong style="color: var(--text-secondary);">Class Name:</strong>
+                                <strong style="color: var(--text-secondary);">Class/Subject:</strong>
                                 <span style="color: var(--on-surface); margin-left: 1rem;">{{ group_class.name if group_class else 'N/A' }}</span>
                             </div>
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Associated Entity:</strong>
                                 <span style="color: var(--on-surface); margin-left: 1rem;">Group</span>
                             </div>
-                        {% elif current_user.class_type == 'family' %}
+                        {% elif class_type == 'family' %}
                             {# Family Class Profile #}
                             {% set family_class = enrolled_classes|selectattr('class_type', 'equalto', 'family')|first if enrolled_classes else None %}
                             <div class="info-row mb-2">
@@ -899,7 +902,7 @@
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Family System ID:</strong>
                                 <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
-                                    {% if family_class and family_class.enrollment.family_system_id %}{{ family_class.enrollment.family_system_id }}{% else %}Not assigned{% endif %}
+                                    {% if family_class and family_class.enrollment and family_class.enrollment.family_system_id %}{{ family_class.enrollment.family_system_id }}{% else %}Not assigned{% endif %}
                                 </code>
                             </div>
                             <div class="info-row mb-2">

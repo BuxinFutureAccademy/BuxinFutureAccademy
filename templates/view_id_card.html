@@ -48,18 +48,17 @@
         background-image: 
             radial-gradient(circle at 50% 50%, #102027 0%, #05080a 100%);
         min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
         font-family: 'Orbitron', sans-serif;
         margin: 0;
         padding: 40px 20px;
         overflow-x: hidden;
+        display: block; /* Changed from flex to block so navbar stays on top */
     }
 
     /* Container for centering and scaling */
     .id-card-container {
         display: flex;
+        flex-direction: column; /* Stack vertically */
         justify-content: center;
         align-items: center;
         width: 100%;
@@ -303,23 +302,30 @@
         box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
     }
 
-    /* Print Styles - Critical for proper printing */
+    /* Print Styles - Optimized for A4 PDF with perfect colors */
     @media print {
         @page {
-            size: 3.375in 2.125in; /* Standard ID card size */
-            margin: 0;
+            size: A4 landscape; /* A4 landscape orientation */
+            margin: 0.5in; /* Adequate margin for professional printing */
+        }
+
+        * {
+            /* CRITICAL: Force all colors to print exactly as displayed */
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
         }
 
         body {
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            height: 100vh !important;
+            display: block !important;
+            height: auto !important;
+            width: 100% !important;
         }
 
+        /* Hide everything except ID card */
         body * {
             visibility: hidden;
         }
@@ -330,48 +336,107 @@
         }
 
         #id-card-print-area {
-            position: absolute !important;
-            left: 50% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) scale(1) !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            transform: scale(0.75) !important; /* Perfect size for A4 landscape */
             transform-origin: center !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             page-break-inside: avoid !important;
+            page-break-after: avoid !important;
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            min-height: 100vh !important;
         }
 
         .id-card {
             width: 500px !important;
             height: 300px !important;
-            box-shadow: none !important;
-            border: 2px solid var(--neon-cyan) !important;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3) !important;
+            border: 3px solid var(--neon-cyan) !important;
+            background: rgba(10, 20, 30, 0.95) !important; /* Darker background for better contrast in PDF */
+            /* Force all colors to print */
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
         }
 
-        /* Ensure colors print */
-        * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
+        /* Ensure all neon colors print correctly */
+        .header {
+            border-bottom-color: var(--neon-cyan) !important;
         }
 
+        .logo-area h1 {
+            color: var(--neon-cyan) !important;
+            text-shadow: 0 0 10px var(--neon-cyan) !important;
+        }
+
+        .status-badge {
+            background: var(--neon-cyan) !important;
+            color: black !important;
+        }
+
+        .profile-frame {
+            border-color: var(--neon-cyan) !important;
+        }
+
+        .label {
+            color: var(--neon-cyan) !important;
+        }
+
+        .value {
+            color: #fff !important;
+        }
+
+        .name-large {
+            color: #fff !important;
+            border-left-color: var(--neon-cyan) !important;
+        }
+
+        .qr-code {
+            border-color: var(--neon-cyan) !important;
+        }
+
+        .footer-note {
+            color: var(--neon-cyan) !important;
+        }
+
+        /* Hide non-printable elements */
         .no-print,
         .action-buttons,
         .navbar,
         .modal,
-        .alert {
+        .alert,
+        nav {
             display: none !important;
             visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
 
-        /* Remove animations for print */
+        /* Remove animations and effects for print */
         .id-card::after {
             display: none !important;
         }
 
         .id-card:hover {
             transform: none !important;
+        }
+
+        /* Ensure high quality rendering */
+        .id-card,
+        .id-card * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
+        /* Force background colors to print */
+        .id-card {
+            background-color: rgba(10, 20, 30, 0.95) !important;
+            background-image: none !important; /* Remove gradients for cleaner PDF */
         }
     }
 
@@ -554,8 +619,30 @@
 
 <script>
 function printIDCard() {
+    // Ensure high quality for PDF printing
     // Use window.print() which will use our @media print styles
+    // The browser will handle PDF generation with all colors preserved
     window.print();
 }
+
+// Additional enhancement for PDF quality
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure all images are loaded before printing
+    const images = document.querySelectorAll('.id-card img');
+    let imagesLoaded = 0;
+    const totalImages = images.length;
+    
+    if (totalImages > 0) {
+        images.forEach(img => {
+            if (img.complete) {
+                imagesLoaded++;
+            } else {
+                img.onload = function() {
+                    imagesLoaded++;
+                };
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

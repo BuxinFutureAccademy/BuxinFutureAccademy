@@ -506,14 +506,32 @@ def checkout():
 
 
 @bp.route('/my_courses')
-@login_required
 def my_courses():
+    from flask import session
+    from ..models import User
+    
+    # Get user from session or current_user
+    user = None
+    user_id = None
+    
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    if not user:
+        flash('Please enter your Name and System ID to access your courses.', 'info')
+        return redirect(url_for('main.index'))
+    
     purchases = (
-        Purchase.query.filter_by(user_id=current_user.id, status='completed')
+        Purchase.query.filter_by(user_id=user_id, status='completed')
         .order_by(Purchase.purchased_at.desc())
         .all()
     )
-    return render_template('my_courses.html', purchases=purchases)
+    return render_template('my_courses.html', purchases=purchases, user=user)
 
 
 @bp.route('/my_course_orders')

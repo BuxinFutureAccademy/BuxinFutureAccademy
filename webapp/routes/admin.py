@@ -2394,7 +2394,8 @@ def student_dashboard():
                           now=now,
                           id_card=user_id_card,
                           today=today,
-                          Attendance=Attendance)
+                          Attendance=Attendance,
+                          user=user)
 
 
 @bp.route('/student/mark-attendance', methods=['POST'])

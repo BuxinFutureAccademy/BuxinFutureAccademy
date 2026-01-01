@@ -78,19 +78,54 @@ def view_project(project_id):
 
 
 @bp.route('/my-projects', endpoint='my_projects')
-@login_required
 def my_projects():
+    from flask import session
+    from ..models import User
+    
+    # Get user from session or current_user
+    user = None
+    user_id = None
+    
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    if not user:
+        flash('Please enter your Name and System ID to access your projects.', 'info')
+        return redirect(url_for('main.index'))
+    
     projects = (
-        StudentProject.query.filter_by(student_id=current_user.id).order_by(StudentProject.created_at.desc()).all()
+        StudentProject.query.filter_by(student_id=user_id).order_by(StudentProject.created_at.desc()).all()
     )
     total_likes = sum(project.get_like_count() for project in projects)
     total_comments = sum(project.get_comment_count() for project in projects)
-    return render_template('my_projects.html', projects=projects, total_likes=total_likes, total_comments=total_comments)
+    return render_template('my_projects.html', projects=projects, total_likes=total_likes, total_comments=total_comments, user=user)
 
 
 @bp.route('/create-project', methods=['GET', 'POST'], endpoint='create_project')
-@login_required
 def create_project():
+    from flask import session
+    from ..models import User
+    
+    # Get user from session or current_user
+    user = None
+    user_id = None
+    
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    if not user:
+        flash('Please enter your Name and System ID to create a project.', 'info')
+        return redirect(url_for('main.index'))
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
@@ -111,7 +146,7 @@ def create_project():
                 github_url=github_url or None,
                 image_url=image_url or None,
                 tags=tags or None,
-                student_id=current_user.id,
+                student_id=user_id,
                 is_active=True,
                 featured=False
             )

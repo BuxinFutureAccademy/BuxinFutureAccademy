@@ -151,6 +151,7 @@
         display: grid;
         grid-template-columns: 120px 1fr;
         gap: 25px;
+        align-items: center;
     }
 
     /* Profile Image Area */
@@ -165,6 +166,13 @@
         justify-content: center;
         clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
         overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+    .profile-frame:hover {
+        transform: scale(1.05);
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
     }
 
     .profile-frame img {
@@ -481,7 +489,7 @@
             </div>
 
             <div class="main-info">
-                <div class="profile-frame">
+                <div class="profile-frame" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal" title="Click to upload photo">
                     {% if id_card.photo_url %}
                         <img src="{{ id_card.photo_url }}" alt="Photo">
                     {% else %}
@@ -492,10 +500,25 @@
                 <div class="data-fields">
                     <div class="name-large">{{ id_card.name|upper }}</div>
                     
+                    {% if id_card.entity_type == 'group' %}
+                    {# For group cards, show Group ID instead of System ID #}
+                    <div class="field-group">
+                        <span class="label">Group ID</span>
+                        <span class="value">{{ id_card.group_system_id or id_card.system_id or 'N/A' }}</span>
+                    </div>
+                    {% elif id_card.entity_type == 'family' %}
+                    {# For family cards, show Family ID instead of System ID #}
+                    <div class="field-group">
+                        <span class="label">Family ID</span>
+                        <span class="value">{{ id_card.family_system_id or id_card.system_id or 'N/A' }}</span>
+                    </div>
+                    {% else %}
+                    {# For other card types (individual, school, school_student), show System ID #}
                     <div class="field-group">
                         <span class="label">System ID</span>
                         <span class="value">{{ id_card.system_id or 'N/A' }}</span>
                     </div>
+                    {% endif %}
 
                     <div class="field-group">
                         <span class="label">Approved</span>
@@ -545,20 +568,6 @@
                         <span class="value">{{ id_card.school_system_id }}</span>
                     </div>
                     {% endif %}
-
-                    {% if id_card.group_system_id %}
-                    <div class="field-group">
-                        <span class="label">Group ID</span>
-                        <span class="value">{{ id_card.group_system_id }}</span>
-                    </div>
-                    {% endif %}
-
-                    {% if id_card.family_system_id %}
-                    <div class="field-group">
-                        <span class="label">Family ID</span>
-                        <span class="value">{{ id_card.family_system_id }}</span>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -566,6 +575,12 @@
             <div class="qr-code">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ id_card.qr_code_data }}" 
                      alt="QR Code">
+            </div>
+            {% endif %}
+
+            {% if id_card.class_name %}
+            <div class="class-version" style="position: absolute; bottom: 50px; right: 30px; font-size: 8px; color: var(--neon-cyan); opacity: 0.7; text-align: right;">
+                {{ id_card.class_name }}
             </div>
             {% endif %}
 

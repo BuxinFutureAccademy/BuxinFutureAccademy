@@ -853,14 +853,16 @@
                         {% if class_type == 'individual' %}
                             {# Individual Student Profile #}
                             {% set individual_class = enrolled_classes|selectattr('class_type', 'equalto', 'individual')|first if enrolled_classes else None %}
+                            {% set student_name = session.get('student_name') or (user.first_name + ' ' + user.last_name if user else '') or (current_user.first_name + ' ' + current_user.last_name if current_user.is_authenticated else '') %}
+                            {% set student_system_id = session.get('student_system_id') or (id_card.system_id if id_card else None) or (user.student_id if user else None) or (current_user.student_id if current_user.is_authenticated else None) %}
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Student Name:</strong>
-                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ student_name }}</span>
                             </div>
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Student System ID:</strong>
                                 <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
-                                    {% if current_user.student_id %}{{ current_user.student_id }}{% else %}Not assigned{% endif %}
+                                    {% if student_system_id %}{{ student_system_id }}{% else %}Not assigned{% endif %}
                                 </code>
                             </div>
                             <div class="info-row mb-2">
@@ -874,6 +876,12 @@
                         {% elif class_type == 'group' %}
                             {# Group Class Profile #}
                             {% set group_class = enrolled_classes|selectattr('class_type', 'equalto', 'group')|first if enrolled_classes else None %}
+                            {% set student_name = session.get('student_name') or (user.first_name + ' ' + user.last_name if user else '') or (current_user.first_name + ' ' + current_user.last_name if current_user.is_authenticated else '') %}
+                            {% set group_system_id = session.get('group_system_id') or (id_card.group_system_id if id_card else None) or (group_class.enrollment.group_system_id if group_class and group_class.enrollment else None) %}
+                            <div class="info-row mb-2">
+                                <strong style="color: var(--text-secondary);">Student Name:</strong>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ student_name }}</span>
+                            </div>
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Group Class Name:</strong>
                                 <span style="color: var(--on-surface); margin-left: 1rem;">{{ group_class.name if group_class else 'N/A' }}</span>
@@ -881,7 +889,7 @@
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Group System ID:</strong>
                                 <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
-                                    {% if group_class and group_class.enrollment and group_class.enrollment.group_system_id %}{{ group_class.enrollment.group_system_id }}{% else %}Not assigned{% endif %}
+                                    {% if group_system_id %}{{ group_system_id }}{% else %}Not assigned{% endif %}
                                 </code>
                             </div>
                             <div class="info-row mb-2">
@@ -895,14 +903,16 @@
                         {% elif class_type == 'family' %}
                             {# Family Class Profile #}
                             {% set family_class = enrolled_classes|selectattr('class_type', 'equalto', 'family')|first if enrolled_classes else None %}
+                            {% set family_name = session.get('student_name') or (user.first_name + ' ' + user.last_name if user else '') or (current_user.first_name + ' ' + current_user.last_name if current_user.is_authenticated else '') %}
+                            {% set family_system_id = session.get('family_system_id') or (id_card.family_system_id if id_card else None) or (family_class.enrollment.family_system_id if family_class and family_class.enrollment else None) %}
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Family Name:</strong>
-                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ family_name }}</span>
                             </div>
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Family System ID:</strong>
                                 <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
-                                    {% if family_class and family_class.enrollment and family_class.enrollment.family_system_id %}{{ family_class.enrollment.family_system_id }}{% else %}Not assigned{% endif %}
+                                    {% if family_system_id %}{{ family_system_id }}{% else %}Not assigned{% endif %}
                                 </code>
                             </div>
                             <div class="info-row mb-2">
@@ -916,14 +926,16 @@
                         {% else %}
                             {# Default Student Profile #}
                             {% set default_class = enrolled_classes|first if enrolled_classes else None %}
+                            {% set student_name = session.get('student_name') or (user.first_name + ' ' + user.last_name if user else '') or (current_user.first_name + ' ' + current_user.last_name if current_user.is_authenticated else '') %}
+                            {% set student_system_id = session.get('student_system_id') or (id_card.system_id if id_card else None) or (user.student_id if user else None) or (current_user.student_id if current_user.is_authenticated else None) %}
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">Student Name:</strong>
-                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                                <span style="color: var(--on-surface); margin-left: 1rem;">{{ student_name }}</span>
                             </div>
                             <div class="info-row mb-2">
                                 <strong style="color: var(--text-secondary);">System ID:</strong>
                                 <code style="background: rgba(0, 212, 255, 0.2); color: var(--robotics-accent); padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 1rem;">
-                                    {% if current_user.student_id %}{{ current_user.student_id }}{% else %}Not assigned{% endif %}
+                                    {% if student_system_id %}{{ student_system_id }}{% else %}Not assigned{% endif %}
                                 </code>
                             </div>
                             <div class="info-row mb-2">

@@ -10,8 +10,25 @@ bp = Blueprint('integrations', __name__)
 
 # AI Assistant
 @bp.route('/ai_assistant', methods=['GET', 'POST'])
-@login_required
 def ai_assistant():
+    from flask import session
+    from ..models import User
+    
+    # Get user from session or current_user
+    user = None
+    user_id = None
+    
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    if not user:
+        flash('Please enter your Name and System ID to access AI Assistant.', 'info')
+        return redirect(url_for('main.index'))
     if request.method == 'POST':
         question = (request.form.get('question') or '').strip()
         if not question:

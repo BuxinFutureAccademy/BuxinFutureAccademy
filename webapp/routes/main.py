@@ -357,18 +357,23 @@ def qr_code_redirect(id_card_id):
         return redirect(url_for('main.index'))
     
     # Set session data based on entity type (same logic as view_id_card)
-    if id_card.entity_type == 'individual' or id_card.entity_type == 'group':
+    if id_card.entity_type == 'individual':
         # Get user from entity_id
         user = User.query.get(id_card.entity_id)
         if user:
             session['student_user_id'] = user.id
             session['student_name'] = f"{user.first_name} {user.last_name}"
-            session['student_system_id'] = user.student_id
-            # Redirect to appropriate dashboard
-            if id_card.entity_type == 'individual':
-                return redirect(url_for('admin.student_dashboard'))
-            else:
-                return redirect(url_for('main.group_class_dashboard'))
+            session['student_system_id'] = user.student_id  # Individual students use student_id
+            return redirect(url_for('admin.student_dashboard'))
+    elif id_card.entity_type == 'group':
+        # Get user from entity_id
+        user = User.query.get(id_card.entity_id)
+        if user:
+            session['student_user_id'] = user.id
+            session['student_name'] = f"{user.first_name} {user.last_name}"
+            # Group students use group_system_id (stored in id_card.system_id), NOT individual student_id
+            session['group_system_id'] = id_card.system_id or id_card.group_system_id
+            return redirect(url_for('main.group_class_dashboard'))
     elif id_card.entity_type == 'family':
         # Get enrollment and user
         enrollment = ClassEnrollment.query.get(id_card.entity_id)

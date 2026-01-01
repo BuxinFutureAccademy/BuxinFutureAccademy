@@ -137,67 +137,117 @@ def generate_student_id_for_class(class_type='individual'):
     Generate a unique Student ID for Group, Family, or Individual classes
     Format: STU-XXXXX (5-digit number)
     CRITICAL: Ensures true uniqueness with database-level checking
+    Returns sequential IDs: STU-00001, STU-00002, STU-00003, etc.
+    """
+    from .users import User
+    from ..extensions import db
+    from sqlalchemy import func
+    
+    # Get all existing student IDs in a single query - use database aggregation for efficiency
+    existing_ids_query = db.session.query(User.student_id).filter(
+        User.student_id.isnot(None),
+        User.student_id.like('STU-%')
+    ).all()
+    
+    existing_ids = [row[0] for row in existing_ids_query if row[0] and row[0].startswith('STU-')]
+    
+    if existing_ids:
+        # Extract numbers from existing IDs and find the max
+        numbers = []
+        for sid in existing_ids:
+            try:
+                # Extract number part after 'STU-'
+                num_str = sid.split('-')[1] if '-' in sid else sid.replace('STU-', '')
+                num = int(num_str)
+                numbers.append(num)
+            except (ValueError, IndexError):
+                continue
+        
+        if numbers:
+            next_number = max(numbers) + 1
+        else:
+            next_number = 1
+    else:
+        next_number = 1
+    
+    # Format as 5-digit number with leading zeros
+    student_id = f"STU-{next_number:05d}"
+    
+    # CRITICAL: Double-check uniqueness at database level
+    # This prevents race conditions where multiple approvals happen simultaneously
+    existing_user = User.query.filter_by(student_id=student_id).first()
+    if existing_user:
+        # ID collision - find next available number
+        max_attempts = 1000
+        attempt = 0
+        while existing_user and attempt < max_attempts:
+            next_number += 1
+            student_id = f"STU-{next_number:05d}"
+            existing_user = User.query.filter_by(student_id=student_id).first()
+            attempt += 1
+        
+        if attempt >= max_attempts:
+            # Fallback: use timestamp-based ID
+            from datetime import datetime
+            timestamp = int(datetime.utcnow().timestamp()) % 100000
+            student_id = f"STU-{timestamp:05d}"
+            # Final uniqueness check
+            if User.query.filter_by(student_id=student_id).first():
+                # Last resort: add random suffix
+                import random
+                random_suffix = random.randint(100, 999)
+                student_id = f"STU-{timestamp:05d}-{random_suffix:03d}"
+    
+    return student_id
+
+
+def reset_all_student_ids():
+    """
+    Reset all student IDs to start from STU-00001
+    WARNING: This will reassign all student IDs sequentially
+    Returns: dict with success status and count of IDs reset
     """
     from .users import User
     from ..extensions import db
     
-    # Use a transaction to ensure atomicity
-    max_attempts = 100  # Prevent infinite loop
-    attempt = 0
-    
-    while attempt < max_attempts:
-        # Get all existing student IDs in a single query
-        existing_users = User.query.filter(
+    try:
+        # Get all users with student IDs, ordered by user ID (original registration order)
+        users_with_ids = User.query.filter(
             User.student_id.isnot(None),
             User.student_id.like('STU-%')
-        ).all()
+        ).order_by(User.id.asc()).all()
         
-        existing_ids = [u.student_id for u in existing_users if u.student_id and u.student_id.startswith('STU-')]
+        count = 0
+        for index, user in enumerate(users_with_ids, start=1):
+            new_student_id = f"STU-{index:05d}"
+            user.student_id = new_student_id
+            count += 1
         
-        if existing_ids:
-            # Extract numbers from existing IDs and find the max
-            numbers = []
-            for sid in existing_ids:
-                try:
-                    num = int(sid.split('-')[1])
-                    numbers.append(num)
-                except (ValueError, IndexError):
-                    continue
-            
-            if numbers:
-                next_number = max(numbers) + 1
-            else:
-                next_number = 1
-        else:
-            next_number = 1
+        # Also update ID cards to match new student IDs
+        from .id_cards import IDCard
+        for user in users_with_ids:
+            id_cards = IDCard.query.filter_by(
+                entity_type='individual',
+                entity_id=user.id
+            ).all()
+            for id_card in id_cards:
+                id_card.system_id = user.student_id
         
-        # Format as 5-digit number with leading zeros
-        student_id = f"STU-{next_number:05d}"
+        db.session.commit()
         
-        # CRITICAL: Check uniqueness at database level before returning
-        existing_user = User.query.filter_by(student_id=student_id).first()
-        if not existing_user:
-            # This ID is available - return it
-            return student_id
-        
-        # If we get here, the ID exists - try next number
-        next_number += 1
-        attempt += 1
-    
-    # Fallback: If we've tried 100 times, something is very wrong
-    # Generate a random suffix to ensure uniqueness
-    import random
-    random_suffix = random.randint(10000, 99999)
-    student_id = f"STU-{random_suffix:05d}"
-    
-    # Final check
-    if User.query.filter_by(student_id=student_id).first():
-        # Last resort: use timestamp-based ID
-        from datetime import datetime
-        timestamp = int(datetime.utcnow().timestamp()) % 100000
-        student_id = f"STU-{timestamp:05d}"
-    
-    return student_id
+        return {
+            'success': True,
+            'count': count,
+            'message': f'Successfully reset {count} student IDs starting from STU-00001'
+        }
+    except Exception as e:
+        db.session.rollback()
+        return {
+            'success': False,
+            'count': 0,
+            'error': str(e),
+            'message': f'Error resetting student IDs: {str(e)}'
+        }
 
 
 def generate_family_system_id():

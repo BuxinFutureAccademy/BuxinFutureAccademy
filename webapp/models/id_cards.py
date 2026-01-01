@@ -92,16 +92,32 @@ def generate_individual_student_id_card(enrollment, user, class_obj, approved_by
     ).first()
     
     if existing_card:
+        # Update QR code if missing
+        if not existing_card.qr_code_data:
+            with current_app.app_context():
+                qr_url = url_for('main.qr_code_redirect', id_card_id=existing_card.id, _external=True)
+                existing_card.qr_code_data = qr_url
+                db.session.add(existing_card)
+                db.session.commit()
+        # Update system_id if it was 'N/A' or missing
+        if existing_card.system_id == 'N/A' or not existing_card.system_id:
+            existing_card.system_id = user.student_id or 'N/A'
+            db.session.add(existing_card)
+            db.session.commit()
         return existing_card
     
     # Get class name
     class_name = class_obj.name if class_obj else 'Individual Class'
     
+    # CRITICAL: Ensure student_id is set before creating ID card
+    if not user.student_id:
+        raise ValueError(f"User {user.id} does not have a student_id. Cannot create ID card.")
+    
     # Create ID card
     id_card = IDCard(
         entity_type='individual',
         entity_id=user.id,
-        system_id=user.student_id or 'N/A',
+        system_id=user.student_id,  # Never use 'N/A' - student_id must be set
         name=f"{user.first_name} {user.last_name}",
         photo_url=user.profile_picture,
         class_name=class_name,
@@ -120,9 +136,13 @@ def generate_individual_student_id_card(enrollment, user, class_obj, approved_by
     
     # Generate QR code URL now that we have the ID
     # Use url_for within app context
-    with current_app.app_context():
-        qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
-    id_card.qr_code_data = qr_url
+    try:
+        with current_app.app_context():
+            qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
+        id_card.qr_code_data = qr_url
+    except Exception as e:
+        print(f"Error generating QR code URL: {e}")
+        # Continue without QR code - it can be added later
     
     db.session.commit()
     return id_card
@@ -130,24 +150,40 @@ def generate_individual_student_id_card(enrollment, user, class_obj, approved_by
 
 def generate_group_student_id_card(enrollment, user, class_obj, approved_by_user_id):
     """Generate ID card for group student after approval"""
-    # Check if ID card already exists
+    # CRITICAL: Group students use group_system_id (GRO-XXXXX), NOT individual student_id (STU-XXXXX)
+    if not enrollment.group_system_id:
+        raise ValueError(f"Enrollment {enrollment.id} does not have a group_system_id. Cannot create ID card.")
+    
+    # Check if ID card already exists (using group_system_id as system_id)
     existing_card = IDCard.query.filter_by(
         entity_type='group',
         entity_id=user.id,
-        system_id=user.student_id
+        system_id=enrollment.group_system_id
     ).first()
     
     if existing_card:
+        # Update QR code if missing
+        if not existing_card.qr_code_data:
+            with current_app.app_context():
+                qr_url = url_for('main.qr_code_redirect', id_card_id=existing_card.id, _external=True)
+                existing_card.qr_code_data = qr_url
+                db.session.add(existing_card)
+                db.session.commit()
+        # Update system_id if it was wrong (should be group_system_id, not student_id)
+        if existing_card.system_id != enrollment.group_system_id:
+            existing_card.system_id = enrollment.group_system_id
+            db.session.add(existing_card)
+            db.session.commit()
         return existing_card
     
     # Get class name
     class_name = class_obj.name if class_obj else 'Group Class'
     
-    # Create ID card
+    # Create ID card - use group_system_id as the system_id
     id_card = IDCard(
         entity_type='group',
         entity_id=user.id,
-        system_id=user.student_id or 'N/A',
+        system_id=enrollment.group_system_id,  # Use group_system_id, NOT individual student_id
         name=f"{user.first_name} {user.last_name}",
         photo_url=user.profile_picture,
         class_name=class_name,
@@ -166,10 +202,13 @@ def generate_group_student_id_card(enrollment, user, class_obj, approved_by_user
     db.session.flush()  # Get ID without committing
     
     # Generate QR code URL now that we have the ID
-    # Use url_for within app context
-    with current_app.app_context():
-        qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
-    id_card.qr_code_data = qr_url
+    try:
+        with current_app.app_context():
+            qr_url = url_for('main.qr_code_redirect', id_card_id=id_card.id, _external=True)
+        id_card.qr_code_data = qr_url
+    except Exception as e:
+        print(f"Error generating QR code URL: {e}")
+        # Continue without QR code - it can be added later
     
     db.session.commit()
     return id_card

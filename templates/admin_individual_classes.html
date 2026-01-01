@@ -55,9 +55,61 @@
             <h2><i class="fas fa-user me-2" style="color: #667eea;"></i>Individual Classes</h2>
             <p class="text-muted mb-0">View and manage all individual (one-on-one) students and classes</p>
         </div>
-        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-        </a>
+        <div>
+            <!-- Backup Button -->
+            <a href="{{ url_for('admin.backup_individual_classes') }}" class="btn btn-info me-2">
+                <i class="fas fa-download me-2"></i>Backup Data
+            </a>
+            <!-- Reset Button with PIN -->
+            <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#resetModal">
+                <i class="fas fa-trash-alt me-2"></i>Reset All Data
+            </button>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <!-- Reset Confirmation Modal -->
+    <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="resetModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Reset Individual Classes Data
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin.reset_individual_classes') }}">
+                    <div class="modal-body">
+                        <div class="alert alert-danger">
+                            <strong>⚠️ WARNING:</strong> This will permanently delete ALL individual classes data including:
+                            <ul class="mb-0 mt-2">
+                                <li>All individual class enrollments</li>
+                                <li>All individual classes</li>
+                                <li>All individual student IDs</li>
+                                <li>All individual ID cards</li>
+                            </ul>
+                            <strong class="mt-2 d-block">This action CANNOT be undone!</strong>
+                        </div>
+                        <div class="mb-3">
+                            <label for="resetPin" class="form-label">
+                                <strong>Enter PIN to confirm reset:</strong> <span class="badge bg-secondary">PIN: 1</span>
+                            </label>
+                            <input type="text" class="form-control" id="resetPin" name="pin" 
+                                   placeholder="Enter PIN: 1" required autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash-alt me-2"></i>Confirm Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     </div>
     
     <!-- Search and Filter -->

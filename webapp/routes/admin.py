@@ -1709,22 +1709,26 @@ def approve_enrollment(enrollment_id):
                 return redirect(url_for('admin.admin_enrollments'))
             raise
         
-        # CRITICAL: Generate Student ID if not exists
-        # Always check database uniqueness before assigning
-        if not user.student_id:
-            from ..models.classes import generate_student_id_for_class
-            new_student_id = generate_student_id_for_class('group')
-            
-            # Double-check: Ensure this ID is truly unique
-            existing_user = User.query.filter_by(student_id=new_student_id).first()
-            if existing_user and existing_user.id != user.id:
-                # ID collision - generate a new one
-                new_student_id = generate_student_id_for_class('group')
-            
-            user.student_id = new_student_id
-            user.class_type = 'group'
-            db.session.flush()  # Ensure it's saved before ID card generation
-            flash(f'Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}', 'info')
+        # CRITICAL: Group students should NOT have individual student IDs (STU-XXXXX)
+        # They only use Group System ID (GRO-XXXXX)
+        # Remove any existing student_id if this user is only in group classes
+        user.class_type = 'group'
+        
+        # Check if user has any individual class enrollments
+        individual_enrollment = ClassEnrollment.query.filter_by(
+            user_id=user.id,
+            class_type='individual',
+            status='completed'
+        ).first()
+        
+        # Only remove student_id if user has NO individual enrollments
+        if not individual_enrollment and user.student_id:
+            # User is only in group classes - remove individual student ID
+            user.student_id = None
+            db.session.flush()
+        
+        db.session.flush()  # Ensure changes are saved before ID card generation
+        flash(f'Group System ID: {enrollment.group_system_id}', 'info')
     elif enrollment.class_type == 'family':
         # Generate Family System ID if not exists
         try:
@@ -1826,8 +1830,12 @@ def approve_enrollment(enrollment_id):
     
     try:
         db.session.commit()
-        student_id_msg = f'Student ID: {user.student_id}' if user.student_id else ''
-        flash(f'Enrollment approved! {student_id_msg}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
+        # For group enrollments, only show group system ID, not individual student ID
+        if enrollment.class_type == 'group':
+            flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
+        else:
+            student_id_msg = f'Student ID: {user.student_id}' if user.student_id else ''
+            flash(f'Enrollment approved! {student_id_msg}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')
@@ -1945,11 +1953,11 @@ def student_dashboard():
                 students = []
                 if current_school_enrollment and current_school_enrollment.user_id == user_id:
                     student = User.query.get(current_school_enrollment.user_id)
-                    if student:
-                        students.append({
-                            'id': student.id,
-                            'name': f"{student.first_name} {student.last_name}",
-                            'username': student.username,
+                if student:
+                    students.append({
+                        'id': student.id,
+                        'name': f"{student.first_name} {student.last_name}",
+                        'username': student.username,
                             'type': 'user'  # School admin user (for class_students only, not attendance)
                         })
                 
@@ -1995,20 +2003,20 @@ def student_dashboard():
                 attendance_students = list(students)  # Start with enrolled users
                 
                 if cls['class_type'] == 'family':
-                    # Add registered family members
-                    registered_family_members = FamilyMember.query.filter_by(
-                        class_id=cls['id'],
-                        enrollment_id=cls['enrollment'].id
-                    ).all()
-                    for member in registered_family_members:
-                        attendance_students.append({
-                            'id': f"family_member_{member.id}",  # Unique identifier
-                            'name': member.member_name,
-                            'username': None,
-                            'type': 'family_member',
-                            'family_member_id': member.id,
-                            'relationship': member.relationship
-                        })
+                # Add registered family members
+                registered_family_members = FamilyMember.query.filter_by(
+                    class_id=cls['id'],
+                    enrollment_id=cls['enrollment'].id
+                ).all()
+                for member in registered_family_members:
+                    attendance_students.append({
+                        'id': f"family_member_{member.id}",  # Unique identifier
+                        'name': member.member_name,
+                        'username': None,
+                        'type': 'family_member',
+                        'family_member_id': member.id,
+                        'relationship': member.relationship
+                    })
                 
                 class_students[cls['id']] = students
             
@@ -2068,12 +2076,12 @@ def student_dashboard():
                 all_class_attendance[cls['id']] = filtered_attendance
             else:
                 # For group and family classes, get all attendance (not school-specific)
-                all_students_attendance = Attendance.query.filter(
-                    Attendance.class_id == cls['id'],
-                    Attendance.attendance_date >= month_start,
-                    Attendance.attendance_date <= month_end
-                ).order_by(Attendance.attendance_date.desc()).all()
-                all_class_attendance[cls['id']] = all_students_attendance
+            all_students_attendance = Attendance.query.filter(
+                Attendance.class_id == cls['id'],
+                Attendance.attendance_date >= month_start,
+                Attendance.attendance_date <= month_end
+            ).order_by(Attendance.attendance_date.desc()).all()
+            all_class_attendance[cls['id']] = all_students_attendance
         
         # Calculate monthly percentage
         total_days = monthrange(today.year, today.month)[1]
@@ -2132,15 +2140,15 @@ def student_dashboard():
                     # They are view-only in the attendance list
             else:
                 # For group and family classes, get attendance for all enrolled users
-                for student in class_students.get(cls['id'], []):
-                    if student['type'] == 'user':
-                        att = Attendance.query.filter(
-                            Attendance.student_id == student['id'],
+            for student in class_students.get(cls['id'], []):
+                if student['type'] == 'user':
+                    att = Attendance.query.filter(
+                        Attendance.student_id == student['id'],
                             Attendance.class_id == cls['id'],  # THIS class only
-                            Attendance.attendance_date == today
-                        ).first()
-                        if att:
-                            class_today_attendance[student['id']] = att
+                        Attendance.attendance_date == today
+                    ).first()
+                    if att:
+                        class_today_attendance[student['id']] = att
             
             all_students_today_attendance[cls['id']] = class_today_attendance
     
@@ -2484,7 +2492,7 @@ def mark_attendance():
         
         if enrollment:
             is_valid = True
-        else:
+    else:
             school_enrollment = ClassEnrollment.query.filter_by(
                 user_id=current_user.id,
                 class_id=class_id,
@@ -3617,6 +3625,539 @@ def update_pricing(class_type):
 
 # ==================== SCHOOL MANAGEMENT ====================
 
+@bp.route('/admin/reset-student-ids', methods=['POST'])
+@login_required
+def reset_student_ids():
+    """Reset all student IDs to start from STU-00001 - ADMIN ONLY"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        from ..models.classes import reset_all_student_ids
+        result = reset_all_student_ids()
+        
+        if result['success']:
+            flash(result['message'], 'success')
+        else:
+            flash(result['message'], 'danger')
+    except Exception as e:
+        flash(f'Error resetting student IDs: {str(e)}', 'danger')
+    
+        return redirect(url_for('admin.admin_individual_classes'))
+
+
+# ==================== RESET & BACKUP MANAGEMENT ====================
+
+@bp.route('/admin/individual-classes/reset', methods=['POST'])
+@login_required
+def reset_individual_classes():
+    """Reset all individual classes data - PIN: 1"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    pin = request.form.get('pin', '').strip()
+    if pin != '1':
+        flash('Invalid PIN. Reset cancelled.', 'danger')
+        return redirect(url_for('admin.admin_individual_classes'))
+    
+    try:
+        # Delete all individual class enrollments
+        individual_enrollments = ClassEnrollment.query.filter_by(class_type='individual').all()
+        for enrollment in individual_enrollments:
+            db.session.delete(enrollment)
+        
+        # Delete all individual classes
+        individual_classes = IndividualClass.query.all()
+        for class_obj in individual_classes:
+            db.session.delete(class_obj)
+        
+        # Delete group classes with class_type='individual'
+        group_individual_classes = GroupClass.query.filter_by(class_type='individual').all()
+        for class_obj in group_individual_classes:
+            db.session.delete(class_obj)
+        
+        # Remove individual student IDs from users (set to None)
+        users_with_individual = User.query.filter(
+            User.student_id.isnot(None),
+            User.student_id.like('STU-%')
+        ).all()
+        for user in users_with_individual:
+            # Check if user has other enrollments
+            other_enrollments = ClassEnrollment.query.filter(
+                ClassEnrollment.user_id == user.id,
+                ClassEnrollment.class_type != 'individual',
+                ClassEnrollment.status == 'completed'
+            ).first()
+            if not other_enrollments:
+                user.student_id = None
+                user.class_type = None
+        
+        # Delete individual ID cards
+        individual_id_cards = IDCard.query.filter_by(entity_type='individual').all()
+        for id_card in individual_id_cards:
+            db.session.delete(id_card)
+        
+        db.session.commit()
+        flash('✅ All individual classes data has been reset successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error resetting individual classes: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_individual_classes'))
+
+
+@bp.route('/admin/individual-classes/backup', methods=['GET'])
+@login_required
+def backup_individual_classes():
+    """Backup all individual classes data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        from flask import jsonify
+        from datetime import datetime
+        
+        # Get all individual class data
+        enrollments = ClassEnrollment.query.filter_by(class_type='individual').all()
+        classes = IndividualClass.query.all()
+        group_individual_classes = GroupClass.query.filter_by(class_type='individual').all()
+        id_cards = IDCard.query.filter_by(entity_type='individual').all()
+        
+        backup_data = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'enrollments': [{
+                'id': e.id,
+                'user_id': e.user_id,
+                'class_id': e.class_id,
+                'amount': float(e.amount),
+                'status': e.status,
+                'payment_method': e.payment_method,
+                'enrolled_at': e.enrolled_at.isoformat() if e.enrolled_at else None,
+                'customer_name': e.customer_name,
+                'customer_email': e.customer_email,
+                'customer_phone': e.customer_phone
+            } for e in enrollments],
+            'individual_classes': [{
+                'id': c.id,
+                'name': c.name,
+                'description': c.description,
+                'teacher_id': c.teacher_id,
+                'created_at': c.created_at.isoformat() if c.created_at else None
+            } for c in classes],
+            'group_individual_classes': [{
+                'id': c.id,
+                'name': c.name,
+                'description': c.description,
+                'teacher_id': c.teacher_id,
+                'max_students': c.max_students,
+                'created_at': c.created_at.isoformat() if c.created_at else None
+            } for c in group_individual_classes],
+            'id_cards': [{
+                'id': card.id,
+                'entity_id': card.entity_id,
+                'system_id': card.system_id,
+                'name': card.name,
+                'email': card.email,
+                'phone': card.phone,
+                'created_at': card.created_at.isoformat() if card.created_at else None
+            } for card in id_cards]
+        }
+        
+        response = jsonify(backup_data)
+        response.headers['Content-Disposition'] = f'attachment; filename=individual_classes_backup_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.json'
+        return response
+    except Exception as e:
+        flash(f'Error creating backup: {str(e)}', 'danger')
+        return redirect(url_for('admin.admin_individual_classes'))
+
+
+@bp.route('/admin/group-classes/reset', methods=['POST'])
+@login_required
+def reset_group_classes():
+    """Reset all group classes data - PIN: 2"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    pin = request.form.get('pin', '').strip()
+    if pin != '2':
+        flash('Invalid PIN. Reset cancelled.', 'danger')
+        return redirect(url_for('admin.admin_group_classes'))
+    
+    try:
+        # Delete all group class enrollments
+        group_enrollments = ClassEnrollment.query.filter_by(class_type='group').all()
+        for enrollment in group_enrollments:
+            db.session.delete(enrollment)
+        
+        # Delete all group classes
+        group_classes = GroupClass.query.filter_by(class_type='group').all()
+        for class_obj in group_classes:
+            db.session.delete(class_obj)
+        
+        # Remove individual student IDs from group-only users
+        users_with_student_id = User.query.filter(
+            User.student_id.isnot(None),
+            User.student_id.like('STU-%')
+        ).all()
+        for user in users_with_student_id:
+            # Check if user has individual enrollments
+            individual_enrollment = ClassEnrollment.query.filter_by(
+                user_id=user.id,
+                class_type='individual',
+                status='completed'
+            ).first()
+            if not individual_enrollment:
+                user.student_id = None
+                user.class_type = None
+        
+        # Delete group ID cards
+        group_id_cards = IDCard.query.filter_by(entity_type='group').all()
+        for id_card in group_id_cards:
+            db.session.delete(id_card)
+        
+        db.session.commit()
+        flash('✅ All group classes data has been reset successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error resetting group classes: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_group_classes'))
+
+
+@bp.route('/admin/group-classes/backup', methods=['GET'])
+@login_required
+def backup_group_classes():
+    """Backup all group classes data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        from flask import jsonify
+        from datetime import datetime
+        
+        enrollments = ClassEnrollment.query.filter_by(class_type='group').all()
+        classes = GroupClass.query.filter_by(class_type='group').all()
+        id_cards = IDCard.query.filter_by(entity_type='group').all()
+        
+        backup_data = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'enrollments': [{
+                'id': e.id,
+                'user_id': e.user_id,
+                'class_id': e.class_id,
+                'group_system_id': e.group_system_id,
+                'amount': float(e.amount),
+                'status': e.status,
+                'payment_method': e.payment_method,
+                'enrolled_at': e.enrolled_at.isoformat() if e.enrolled_at else None,
+                'customer_name': e.customer_name,
+                'customer_email': e.customer_email,
+                'customer_phone': e.customer_phone
+            } for e in enrollments],
+            'group_classes': [{
+                'id': c.id,
+                'name': c.name,
+                'description': c.description,
+                'teacher_id': c.teacher_id,
+                'max_students': c.max_students,
+                'created_at': c.created_at.isoformat() if c.created_at else None
+            } for c in classes],
+            'id_cards': [{
+                'id': card.id,
+                'entity_id': card.entity_id,
+                'system_id': card.system_id,
+                'group_system_id': card.group_system_id,
+                'name': card.name,
+                'email': card.email,
+                'phone': card.phone,
+                'created_at': card.created_at.isoformat() if card.created_at else None
+            } for card in id_cards]
+        }
+        
+        response = jsonify(backup_data)
+        response.headers['Content-Disposition'] = f'attachment; filename=group_classes_backup_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.json'
+        return response
+    except Exception as e:
+        flash(f'Error creating backup: {str(e)}', 'danger')
+        return redirect(url_for('admin.admin_group_classes'))
+
+
+@bp.route('/admin/family-classes/reset', methods=['POST'])
+@login_required
+def reset_family_classes():
+    """Reset all family classes data - PIN: 3"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    pin = request.form.get('pin', '').strip()
+    if pin != '3':
+        flash('Invalid PIN. Reset cancelled.', 'danger')
+        return redirect(url_for('admin.admin_family_classes'))
+    
+    try:
+        # Delete all family class enrollments
+        family_enrollments = ClassEnrollment.query.filter_by(class_type='family').all()
+        for enrollment in family_enrollments:
+            db.session.delete(enrollment)
+        
+        # Delete all family classes
+        family_classes = GroupClass.query.filter_by(class_type='family').all()
+        for class_obj in family_classes:
+            db.session.delete(class_obj)
+        
+        # Delete all family members
+        from ..models.classes import FamilyMember
+        family_members = FamilyMember.query.all()
+        for member in family_members:
+            db.session.delete(member)
+        
+        # Remove family system IDs and student IDs from users
+        users_with_family = User.query.filter(
+            User.student_id.isnot(None),
+            User.student_id.like('STU-%')
+        ).all()
+        for user in users_with_family:
+            # Check if user has other enrollments
+            other_enrollments = ClassEnrollment.query.filter(
+                ClassEnrollment.user_id == user.id,
+                ClassEnrollment.class_type != 'family',
+                ClassEnrollment.status == 'completed'
+            ).first()
+            if not other_enrollments:
+                user.student_id = None
+                user.class_type = None
+        
+        # Delete family ID cards
+        family_id_cards = IDCard.query.filter_by(entity_type='family').all()
+        for id_card in family_id_cards:
+            db.session.delete(id_card)
+        
+        db.session.commit()
+        flash('✅ All family classes data has been reset successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error resetting family classes: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_family_classes'))
+
+
+@bp.route('/admin/family-classes/backup', methods=['GET'])
+@login_required
+def backup_family_classes():
+    """Backup all family classes data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        from flask import jsonify
+        from datetime import datetime
+        from ..models.classes import FamilyMember
+        
+        enrollments = ClassEnrollment.query.filter_by(class_type='family').all()
+        classes = GroupClass.query.filter_by(class_type='family').all()
+        family_members = FamilyMember.query.all()
+        id_cards = IDCard.query.filter_by(entity_type='family').all()
+        
+        backup_data = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'enrollments': [{
+                'id': e.id,
+                'user_id': e.user_id,
+                'class_id': e.class_id,
+                'family_system_id': e.family_system_id,
+                'amount': float(e.amount),
+                'status': e.status,
+                'payment_method': e.payment_method,
+                'enrolled_at': e.enrolled_at.isoformat() if e.enrolled_at else None,
+                'customer_name': e.customer_name,
+                'customer_email': e.customer_email,
+                'customer_phone': e.customer_phone
+            } for e in enrollments],
+            'family_classes': [{
+                'id': c.id,
+                'name': c.name,
+                'description': c.description,
+                'teacher_id': c.teacher_id,
+                'max_students': c.max_students,
+                'created_at': c.created_at.isoformat() if c.created_at else None
+            } for c in classes],
+            'family_members': [{
+                'id': m.id,
+                'enrollment_id': m.enrollment_id,
+                'member_name': m.member_name,
+                'member_age': m.member_age,
+                'relationship': m.relationship,
+                'member_email': m.member_email,
+                'member_phone': m.member_phone
+            } for m in family_members],
+            'id_cards': [{
+                'id': card.id,
+                'entity_id': card.entity_id,
+                'system_id': card.system_id,
+                'family_system_id': card.family_system_id,
+                'name': card.name,
+                'email': card.email,
+                'phone': card.phone,
+                'created_at': card.created_at.isoformat() if card.created_at else None
+            } for card in id_cards]
+        }
+        
+        response = jsonify(backup_data)
+        response.headers['Content-Disposition'] = f'attachment; filename=family_classes_backup_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.json'
+        return response
+    except Exception as e:
+        flash(f'Error creating backup: {str(e)}', 'danger')
+        return redirect(url_for('admin.admin_family_classes'))
+
+
+@bp.route('/admin/schools/reset', methods=['POST'])
+@login_required
+def reset_school_classes():
+    """Reset all school classes data - PIN: 4"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    pin = request.form.get('pin', '').strip()
+    if pin != '4':
+        flash('Invalid PIN. Reset cancelled.', 'danger')
+        return redirect(url_for('admin.admin_schools'))
+    
+    try:
+        # Delete all school class enrollments
+        school_enrollments = ClassEnrollment.query.filter_by(class_type='school').all()
+        for enrollment in school_enrollments:
+            db.session.delete(enrollment)
+        
+        # Delete all school classes
+        school_classes = GroupClass.query.filter_by(class_type='school').all()
+        for class_obj in school_classes:
+            db.session.delete(class_obj)
+        
+        # Delete all registered school students
+        registered_students = RegisteredSchoolStudent.query.all()
+        for student in registered_students:
+            db.session.delete(student)
+        
+        # Delete all schools
+        schools = School.query.all()
+        for school in schools:
+            db.session.delete(school)
+        
+        # Delete school ID cards
+        school_id_cards = IDCard.query.filter_by(entity_type='school').all()
+        for id_card in school_id_cards:
+            db.session.delete(id_card)
+        
+        # Delete school student ID cards
+        school_student_id_cards = IDCard.query.filter_by(entity_type='school_student').all()
+        for id_card in school_student_id_cards:
+            db.session.delete(id_card)
+        
+        db.session.commit()
+        flash('✅ All school classes data has been reset successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error resetting school classes: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_schools'))
+
+
+@bp.route('/admin/schools/backup', methods=['GET'])
+@login_required
+def backup_school_classes():
+    """Backup all school classes data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        from flask import jsonify
+        from datetime import datetime
+        
+        enrollments = ClassEnrollment.query.filter_by(class_type='school').all()
+        classes = GroupClass.query.filter_by(class_type='school').all()
+        schools = School.query.all()
+        registered_students = RegisteredSchoolStudent.query.all()
+        school_id_cards = IDCard.query.filter_by(entity_type='school').all()
+        school_student_id_cards = IDCard.query.filter_by(entity_type='school_student').all()
+        
+        backup_data = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'enrollments': [{
+                'id': e.id,
+                'user_id': e.user_id,
+                'class_id': e.class_id,
+                'amount': float(e.amount),
+                'status': e.status,
+                'payment_method': e.payment_method,
+                'enrolled_at': e.enrolled_at.isoformat() if e.enrolled_at else None,
+                'customer_name': e.customer_name,
+                'customer_email': e.customer_email,
+                'customer_phone': e.customer_phone
+            } for e in enrollments],
+            'school_classes': [{
+                'id': c.id,
+                'name': c.name,
+                'description': c.description,
+                'teacher_id': c.teacher_id,
+                'max_students': c.max_students,
+                'created_at': c.created_at.isoformat() if c.created_at else None
+            } for c in classes],
+            'schools': [{
+                'id': s.id,
+                'school_name': s.school_name,
+                'school_system_id': s.school_system_id,
+                'admin_name': s.admin_name,
+                'admin_email': s.admin_email,
+                'status': s.status,
+                'payment_status': s.payment_status,
+                'created_at': s.created_at.isoformat() if s.created_at else None
+            } for s in schools],
+            'registered_students': [{
+                'id': rs.id,
+                'enrollment_id': rs.enrollment_id,
+                'student_name': rs.student_name,
+                'student_system_id': rs.student_system_id,
+                'school_name': rs.school_name,
+                'student_email': rs.student_email,
+                'student_phone': rs.student_phone
+            } for rs in registered_students],
+            'school_id_cards': [{
+                'id': card.id,
+                'entity_id': card.entity_id,
+                'system_id': card.system_id,
+                'school_system_id': card.school_system_id,
+                'name': card.name,
+                'email': card.email,
+                'phone': card.phone
+            } for card in school_id_cards],
+            'school_student_id_cards': [{
+                'id': card.id,
+                'entity_id': card.entity_id,
+                'system_id': card.system_id,
+                'school_system_id': card.school_system_id,
+                'name': card.name,
+                'email': card.email,
+                'phone': card.phone
+            } for card in school_student_id_cards]
+        }
+        
+        response = jsonify(backup_data)
+        response.headers['Content-Disposition'] = f'attachment; filename=school_classes_backup_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.json'
+        return response
+    except Exception as e:
+        flash(f'Error creating backup: {str(e)}', 'danger')
+        return redirect(url_for('admin.admin_schools'))
+
+
 @bp.route('/admin/individual-classes', methods=['GET', 'POST'])
 @login_required
 def admin_individual_classes():
@@ -3640,64 +4181,53 @@ def admin_individual_classes():
                         flash('User not found.', 'danger')
                         return redirect(url_for('admin.admin_individual_classes'))
                     
-                    # Generate Student ID if not exists
-                    if not user.student_id:
-                        from ..models.classes import generate_student_id_for_class
+                    # Generate Student ID if not exists - CRITICAL: Always generate for new enrollments
+                        if not user.student_id:
+                            from ..models.classes import generate_student_id_for_class
                         new_student_id = generate_student_id_for_class('individual')
+                        # Double-check uniqueness
                         existing_user = User.query.filter_by(student_id=new_student_id).first()
-                        if existing_user and existing_user.id != user.id:
+                        while existing_user and existing_user.id != user.id:
                             new_student_id = generate_student_id_for_class('individual')
+                            existing_user = User.query.filter_by(student_id=new_student_id).first()
                         user.student_id = new_student_id
-                        user.class_type = 'individual'
-                        db.session.flush()
+                            user.class_type = 'individual'
+                        db.session.flush()  # Ensure student_id is saved before ID card generation
                     
-                    # Add student to individual class
-                    individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
-                                      IndividualClass.query.get(enrollment.class_id)
-                    if individual_class and user not in individual_class.students:
-                        individual_class.students.append(user)
-                    
+                    # Verify student_id is set - if still None, something went wrong
+                    if not user.student_id:
+                        flash('Error: Failed to generate Student ID. Please try again.', 'danger')
+                        return redirect(url_for('admin.admin_individual_classes'))
+                        
+                        # Add student to individual class
+                        individual_class = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
+                                          IndividualClass.query.get(enrollment.class_id)
+                        if individual_class and user not in individual_class.students:
+                            individual_class.students.append(user)
+                        
                     # Set enrollment to completed
-                    enrollment.status = 'completed'
+                        enrollment.status = 'completed'
+                    db.session.flush()  # Ensure enrollment status is saved
                     
-                    # Generate ID Card BEFORE commit (so everything commits together)
+                    # Generate ID Card using proper function (includes QR code)
                     try:
-                        from ..models.id_cards import IDCard
-                        from datetime import datetime
-                        
-                        # Check if ID card already exists
-                        existing_card = IDCard.query.filter_by(
-                            entity_type='individual',
-                            entity_id=user.id,
-                            system_id=user.student_id
-                        ).first()
-                        
-                        if not existing_card:
-                            class_name = individual_class.name if individual_class else 'Individual Class'
-                            id_card = IDCard(
-                                entity_type='individual',
-                                entity_id=user.id,
-                                system_id=user.student_id or 'N/A',
-                                name=f"{user.first_name} {user.last_name}",
-                                photo_url=user.profile_picture,
-                                class_name=class_name,
-                                email=user.email,
-                                phone=user.whatsapp_number,
-                                registration_date=enrollment.enrolled_at,
-                                approved_at=datetime.utcnow(),
-                                approved_by=current_user.id,
-                                is_active=True,
-                                is_locked=False
-                            )
-                            db.session.add(id_card)
+                        from ..models.id_cards import generate_individual_student_id_card
+                        id_card = generate_individual_student_id_card(enrollment, user, individual_class, current_user.id)
+                        # Function handles commit internally, but we'll commit everything together below
                     except Exception as e:
                         print(f"ID card generation error: {e}")
+                        import traceback
+                        traceback.print_exc()
                         # Continue anyway - enrollment will still be approved
+                        id_card = None
                     
                     # COMMIT EVERYTHING AT ONCE
                     try:
                         db.session.commit()
-                        flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
+                        if id_card:
+                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generated with QR code. Student will be redirected to view ID card immediately.', 'success')
+                        else:
+                            flash(f'Enrollment approved! Student ID: {user.student_id}. ID Card generation had issues, but enrollment is approved.', 'warning')
                     except Exception as e:
                         db.session.rollback()
                         flash(f'Error approving enrollment: {str(e)}', 'danger')
@@ -3869,15 +4399,21 @@ def admin_group_class_detail(class_id):
                                 return redirect(url_for('admin.admin_group_class_detail', class_id=class_id))
                             raise
                         
-                        # Generate Student ID if not exists
-                        if not user.student_id:
-                            from ..models.classes import generate_student_id_for_class
-                            new_student_id = generate_student_id_for_class('group')
-                            existing_user = User.query.filter_by(student_id=new_student_id).first()
-                            if existing_user and existing_user.id != user.id:
-                                new_student_id = generate_student_id_for_class('group')
-                            user.student_id = new_student_id
+                        # CRITICAL: Group students should NOT have individual student IDs (STU-XXXXX)
+                        # They only use Group System ID (GRO-XXXXX)
                             user.class_type = 'group'
+                        
+                        # Check if user has any individual class enrollments
+                        individual_enrollment = ClassEnrollment.query.filter_by(
+                            user_id=user.id,
+                            class_type='individual',
+                            status='completed'
+                        ).first()
+                        
+                        # Only remove student_id if user has NO individual enrollments
+                        if not individual_enrollment and user.student_id:
+                            # User is only in group classes - remove individual student ID
+                            user.student_id = None
                             db.session.flush()
                         
                         # Check if class is full
@@ -3891,11 +4427,11 @@ def admin_group_class_detail(class_id):
                             try:
                                 from ..models.id_cards import generate_group_student_id_card
                                 id_card = generate_group_student_id_card(enrollment, user, group_class, current_user.id)
-                                db.session.commit()
-                                flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
+                            db.session.commit()
+                                flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
                             except Exception as e:
                                 db.session.commit()
-                                flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}, Student ID: {user.student_id}. Error generating ID card: {str(e)}', 'warning')
+                                flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}. Error generating ID card: {str(e)}', 'warning')
                         else:
                             enrollment.status = 'completed'
                             db.session.commit()
@@ -4107,7 +4643,7 @@ def admin_family_class_detail(enrollment_id):
                     try:
                         from ..models.id_cards import generate_family_id_card
                         id_card = generate_family_id_card(enrollment, user, class_obj, current_user.id)
-                        db.session.commit()
+                    db.session.commit()
                         flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. ID Card generated. Family will be redirected to view ID card immediately.', 'success')
                     except Exception as e:
                         db.session.commit()
@@ -4375,7 +4911,7 @@ def approve_school(school_id):
         is_reapproval = school.status == 'active'
         school.status = 'active'
         if not school.approved_at:
-            school.approved_at = datetime.utcnow()
+        school.approved_at = datetime.utcnow()
         school.approved_by = current_user.id
         
         # CRITICAL FIX: Update all school enrollments to 'completed' status
@@ -5145,10 +5681,11 @@ def admin_live_class():
                             for enrollment in enrollments:
                                 user = User.query.get(enrollment.user_id)
                                 if user:  # Check if user exists
+                                    # Group students use group_system_id, NOT individual student_id
                                     eligible_students.append({
                                         'id': user.id,
                                         'name': f"{user.first_name} {user.last_name}",
-                                        'system_id': user.student_id or enrollment.group_system_id or 'N/A',
+                                        'system_id': enrollment.group_system_id or 'N/A',  # Use group_system_id only
                                         'class_type': 'Group',
                                         'enrollment': enrollment,
                                         'user': user
@@ -5257,13 +5794,21 @@ def view_id_card(id_card_id):
     
     # CRITICAL: Set session data for student access (NO LOGIN REQUIRED)
     # This allows students to access dashboard using Name + System ID
-    if id_card.entity_type == 'individual' or id_card.entity_type == 'group':
+    if id_card.entity_type == 'individual':
         # Get user from entity_id
         user = User.query.get(id_card.entity_id)
         if user:
             session['student_user_id'] = user.id
             session['student_name'] = f"{user.first_name} {user.last_name}"
-            session['student_system_id'] = user.student_id
+            session['student_system_id'] = user.student_id  # Individual students use student_id
+    elif id_card.entity_type == 'group':
+        # Get user from entity_id
+        user = User.query.get(id_card.entity_id)
+        if user:
+            session['student_user_id'] = user.id
+            session['student_name'] = f"{user.first_name} {user.last_name}"
+            # Group students use group_system_id (stored in id_card.system_id), NOT individual student_id
+            session['group_system_id'] = id_card.system_id or id_card.group_system_id
     elif id_card.entity_type == 'family':
         # Get enrollment and user
         enrollment = ClassEnrollment.query.get(id_card.entity_id)

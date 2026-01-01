@@ -2003,11 +2003,11 @@ def student_dashboard():
                 attendance_students = list(students)  # Start with enrolled users
                 
                 if cls['class_type'] == 'family':
-                # Add registered family members
-                registered_family_members = FamilyMember.query.filter_by(
-                    class_id=cls['id'],
-                    enrollment_id=cls['enrollment'].id
-                ).all()
+                    # Add registered family members
+                    registered_family_members = FamilyMember.query.filter_by(
+                        class_id=cls['id'],
+                        enrollment_id=cls['enrollment'].id
+                    ).all()
                 for member in registered_family_members:
                     attendance_students.append({
                         'id': f"family_member_{member.id}",  # Unique identifier
@@ -2076,12 +2076,12 @@ def student_dashboard():
                 all_class_attendance[cls['id']] = filtered_attendance
             else:
                 # For group and family classes, get all attendance (not school-specific)
-            all_students_attendance = Attendance.query.filter(
-                Attendance.class_id == cls['id'],
-                Attendance.attendance_date >= month_start,
-                Attendance.attendance_date <= month_end
-            ).order_by(Attendance.attendance_date.desc()).all()
-            all_class_attendance[cls['id']] = all_students_attendance
+                all_students_attendance = Attendance.query.filter(
+                    Attendance.class_id == cls['id'],
+                    Attendance.attendance_date >= month_start,
+                    Attendance.attendance_date <= month_end
+                ).order_by(Attendance.attendance_date.desc()).all()
+                all_class_attendance[cls['id']] = all_students_attendance
         
         # Calculate monthly percentage
         total_days = monthrange(today.year, today.month)[1]
@@ -2140,15 +2140,15 @@ def student_dashboard():
                     # They are view-only in the attendance list
             else:
                 # For group and family classes, get attendance for all enrolled users
-            for student in class_students.get(cls['id'], []):
-                if student['type'] == 'user':
-                    att = Attendance.query.filter(
-                        Attendance.student_id == student['id'],
+                for student in class_students.get(cls['id'], []):
+                    if student['type'] == 'user':
+                        att = Attendance.query.filter(
+                            Attendance.student_id == student['id'],
                             Attendance.class_id == cls['id'],  # THIS class only
-                        Attendance.attendance_date == today
-                    ).first()
-                    if att:
-                        class_today_attendance[student['id']] = att
+                            Attendance.attendance_date == today
+                        ).first()
+                        if att:
+                            class_today_attendance[student['id']] = att
             
             all_students_today_attendance[cls['id']] = class_today_attendance
     
@@ -2492,7 +2492,7 @@ def mark_attendance():
         
         if enrollment:
             is_valid = True
-    else:
+        else:
             school_enrollment = ClassEnrollment.query.filter_by(
                 user_id=current_user.id,
                 class_id=class_id,
@@ -4191,7 +4191,7 @@ def admin_individual_classes():
                             new_student_id = generate_student_id_for_class('individual')
                             existing_user = User.query.filter_by(student_id=new_student_id).first()
                         user.student_id = new_student_id
-                            user.class_type = 'individual'
+                        user.class_type = 'individual'
                         db.session.flush()  # Ensure student_id is saved before ID card generation
                     
                     # Verify student_id is set - if still None, something went wrong
@@ -4427,7 +4427,7 @@ def admin_group_class_detail(class_id):
                             try:
                                 from ..models.id_cards import generate_group_student_id_card
                                 id_card = generate_group_student_id_card(enrollment, user, group_class, current_user.id)
-                            db.session.commit()
+                                db.session.commit()
                                 flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
                             except Exception as e:
                                 db.session.commit()
@@ -4643,7 +4643,7 @@ def admin_family_class_detail(enrollment_id):
                     try:
                         from ..models.id_cards import generate_family_id_card
                         id_card = generate_family_id_card(enrollment, user, class_obj, current_user.id)
-                    db.session.commit()
+                        db.session.commit()
                         flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. ID Card generated. Family will be redirected to view ID card immediately.', 'success')
                     except Exception as e:
                         db.session.commit()
@@ -4911,8 +4911,8 @@ def approve_school(school_id):
         is_reapproval = school.status == 'active'
         school.status = 'active'
         if not school.approved_at:
-        school.approved_at = datetime.utcnow()
-        school.approved_by = current_user.id
+            school.approved_at = datetime.utcnow()
+            school.approved_by = current_user.id
         
         # CRITICAL FIX: Update all school enrollments to 'completed' status
         # This is required for admin material sharing to work correctly

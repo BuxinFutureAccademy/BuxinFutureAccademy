@@ -6216,6 +6216,7 @@ def view_id_card(id_card_id):
     Students can see their ID card immediately after approval without logging in
     """
     from flask import session
+    from ..models.classes import SchoolStudent
     id_card = IDCard.query.get_or_404(id_card_id)
     
     # NO LOGIN CHECK - Allow access to ID card without login
@@ -6269,7 +6270,6 @@ def view_id_card(id_card_id):
                 session['school_system_id'] = school_obj.school_system_id
     elif id_card.entity_type == 'school_student':
         # Get registered school student - handle both SchoolStudent and RegisteredSchoolStudent
-        from ..models.classes import SchoolStudent
         school_student = SchoolStudent.query.get(id_card.entity_id)
         registered_student = RegisteredSchoolStudent.query.get(id_card.entity_id)
         
@@ -6285,7 +6285,6 @@ def view_id_card(id_card_id):
             session['school_student_name'] = registered_student.student_name
             session['school_student_system_id'] = registered_student.student_system_id
             # Get school name from school_id
-            from ..models.schools import School
             school = School.query.get(registered_student.school_id)
             if school:
                 session['school_name'] = school.school_name

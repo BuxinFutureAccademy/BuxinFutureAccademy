@@ -1448,16 +1448,50 @@ def create_class():
         return admin_check
     
     from flask import request
+    import json
     
     if request.method == 'POST':
+        class_type = request.form.get('class_type', '').strip()
+        existing_class_id = request.form.get('existing_class_id', '').strip()
+        
+        if not class_type:
+            flash('Class Type is required.', 'danger')
+            # Get all existing classes for dropdown
+            all_classes = GroupClass.query.order_by(GroupClass.name).all()
+            return render_template('create_class.html', all_classes=all_classes)
+        
+        # If existing class is selected, just redirect (class already exists)
+        if existing_class_id and existing_class_id != 'none':
+            try:
+                existing_class = GroupClass.query.get(int(existing_class_id))
+                if existing_class:
+                    flash(f'Using existing class "{existing_class.name}"', 'info')
+                    # Redirect to the correct management section
+                    if class_type == 'school':
+                        return redirect(url_for('admin.admin_schools'))
+                    elif class_type == 'individual':
+                        return redirect(url_for('admin.admin_individual_classes'))
+                    elif class_type == 'group':
+                        return redirect(url_for('admin.admin_group_classes'))
+                    elif class_type == 'family':
+                        return redirect(url_for('admin.admin_family_classes'))
+                    return redirect(url_for('admin.admin_dashboard'))
+            except (ValueError, AttributeError):
+                pass
+        
+        # Create new class
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
-        class_type = request.form.get('class_type', 'group')
         instructor_name = request.form.get('instructor_name', '').strip()
         
-        if not name or not description or not class_type:
-            flash('Name, Description, and Class Type are required.', 'danger')
-            return render_template('create_class.html')
+        # Get curriculum items
+        curriculum_items = request.form.getlist('curriculum[]')
+        curriculum_text = '\n'.join([item.strip() for item in curriculum_items if item.strip()])
+        
+        if not name or not description:
+            flash('Name and Description are required when creating a new class.', 'danger')
+            all_classes = GroupClass.query.order_by(GroupClass.name).all()
+            return render_template('create_class.html', all_classes=all_classes)
         
         try:
             # Create the class using GroupClass as the unified model
@@ -1467,6 +1501,7 @@ def create_class():
                 teacher_id=current_user.id,
                 class_type=class_type,
                 instructor_name=instructor_name,
+                curriculum=curriculum_text if curriculum_text else None,
                 max_students=100 # High default as limits are managed elsewhere
             )
             
@@ -1488,20 +1523,24 @@ def create_class():
         except Exception as e:
             db.session.rollback()
             # If the error is about missing columns, try to fix it automatically
-            if 'column "class_type" of relation "group_class" does not exist' in str(e):
+            if 'column "class_type" of relation "group_class" does not exist' in str(e) or 'column "curriculum" of relation "group_class" does not exist' in str(e):
                 try:
                     from sqlalchemy import text
                     db.session.execute(text('ALTER TABLE group_class ADD COLUMN IF NOT EXISTS class_type VARCHAR(20) DEFAULT \'group\''))
                     db.session.execute(text('ALTER TABLE group_class ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)'))
+                    db.session.execute(text('ALTER TABLE group_class ADD COLUMN IF NOT EXISTS curriculum TEXT'))
                     db.session.commit()
                     flash('Database structure updated. Please try creating the class again.', 'info')
                 except Exception as db_e:
                     flash(f'Database update failed: {str(db_e)}', 'danger')
             else:
                 flash(f'Error creating class: {str(e)}', 'danger')
-            return render_template('create_class.html')
+            all_classes = GroupClass.query.order_by(GroupClass.name).all()
+            return render_template('create_class.html', all_classes=all_classes)
     
-    return render_template('create_class.html')
+    # GET request - show form with existing classes
+    all_classes = GroupClass.query.order_by(GroupClass.name).all()
+    return render_template('create_class.html', all_classes=all_classes)
 
 
 @bp.route('/admin/classes')

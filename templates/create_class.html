@@ -14,7 +14,8 @@
                         <strong>Simple Class Definition:</strong> Define your class here. Pricing, schedules, and limits are managed separately.
                     </div>
                     
-                    <form method="POST">
+                    <form method="POST" id="createClassForm">
+                        <!-- Step 1: Class Type Selection -->
                         <div class="mb-4">
                             <label for="class_type" class="form-label fw-bold text-primary">Class Type <span class="text-danger">*</span></label>
                             <select class="form-select form-select-lg border-primary" id="class_type" name="class_type" required>
@@ -27,25 +28,57 @@
                             <small class="text-muted">Determines which Available Classes section this will appear in.</small>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="name" class="form-label fw-bold">Class Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" name="name" required 
-                                   placeholder="e.g., Robotics 101, Python Basics">
+                        <!-- Step 2: Existing Class Selection -->
+                        <div class="mb-4" id="existingClassSection" style="display: none;">
+                            <label for="existing_class_id" class="form-label fw-bold">Select Existing Class</label>
+                            <select class="form-select" id="existing_class_id" name="existing_class_id">
+                                <option value="none">-- Create New Class --</option>
+                            </select>
+                            <small class="text-muted">If the class you want already exists, select it here. Otherwise, choose "Create New Class".</small>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="instructor_name" class="form-label fw-bold">Instructor Name (Optional)</label>
-                            <input type="text" class="form-control" id="instructor_name" name="instructor_name" placeholder="Name of the teacher">
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="description" class="form-label fw-bold">Description <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="description" name="description" rows="5" required
-                                      placeholder="What will students learn in this class?"></textarea>
+                        <!-- Step 3: New Class Form (shown when "Create New Class" is selected) -->
+                        <div id="newClassForm" style="display: none;">
+                            <div class="mb-3">
+                                <label for="name" class="form-label fw-bold">Class Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="e.g., Robotics 101, Python Basics">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="instructor_name" class="form-label fw-bold">Instructor Name (Optional)</label>
+                                <input type="text" class="form-control" id="instructor_name" name="instructor_name" placeholder="Name of the teacher">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="description" class="form-label fw-bold">Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="description" name="description" rows="5"
+                                          placeholder="What will students learn in this class?"></textarea>
+                            </div>
+
+                            <!-- Curriculum Section -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Class Curriculum</label>
+                                <div id="curriculumContainer">
+                                    <div class="curriculum-item mb-2">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control curriculum-input" name="curriculum[]" 
+                                                   placeholder="e.g., Month 1: Introduction to Robotics">
+                                            <button type="button" class="btn btn-outline-danger remove-curriculum" style="display: none;">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addCurriculum">
+                                    <i class="fas fa-plus me-1"></i>Add Curriculum Item
+                                </button>
+                                <small class="text-muted d-block mt-2">Add curriculum items like "Month 1: Learn X", "Month 2: Learn Y", etc.</small>
+                            </div>
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <i class="fas fa-save me-2"></i>Create Class
                             </button>
                             <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary">
@@ -58,4 +91,149 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classTypeSelect = document.getElementById('class_type');
+    const existingClassSection = document.getElementById('existingClassSection');
+    const existingClassSelect = document.getElementById('existing_class_id');
+    const newClassForm = document.getElementById('newClassForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const curriculumContainer = document.getElementById('curriculumContainer');
+    const addCurriculumBtn = document.getElementById('addCurriculum');
+    
+    // All classes data from server
+    const allClasses = [
+        {% for cls in all_classes %}
+        {
+            id: {{ cls.id }},
+            name: {{ cls.name|tojson|safe }},
+            class_type: {{ cls.class_type|tojson|safe }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Update existing classes dropdown when class type changes
+    classTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        if (selectedType) {
+            // Filter classes by type
+            const filteredClasses = allClasses.filter(cls => cls.class_type === selectedType);
+            
+            // Clear and populate dropdown
+            existingClassSelect.innerHTML = '<option value="none">-- Create New Class --</option>';
+            filteredClasses.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.id;
+                option.textContent = cls.name;
+                existingClassSelect.appendChild(option);
+            });
+            
+            // Show existing class section
+            existingClassSection.style.display = 'block';
+            
+            // Show new class form if "none" is selected
+            if (existingClassSelect.value === 'none') {
+                newClassForm.style.display = 'block';
+                updateSubmitButton();
+            }
+        } else {
+            existingClassSection.style.display = 'none';
+            newClassForm.style.display = 'none';
+        }
+    });
+    
+    // Handle existing class selection
+    existingClassSelect.addEventListener('change', function() {
+        if (this.value === 'none') {
+            newClassForm.style.display = 'block';
+            // Clear form
+            document.getElementById('name').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('instructor_name').value = '';
+            // Clear curriculum
+            curriculumContainer.innerHTML = '<div class="curriculum-item mb-2"><div class="input-group"><input type="text" class="form-control curriculum-input" name="curriculum[]" placeholder="e.g., Month 1: Introduction to Robotics"><button type="button" class="btn btn-outline-danger remove-curriculum" style="display: none;"><i class="fas fa-times"></i></button></div></div>';
+            updateRemoveButtons();
+        } else {
+            newClassForm.style.display = 'none';
+            // Find selected class and populate (optional - for editing)
+            const selectedClass = allClasses.find(cls => cls.id == this.value);
+            if (selectedClass) {
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Use Existing Class';
+            }
+        }
+        updateSubmitButton();
+    });
+    
+    // Add curriculum item
+    addCurriculumBtn.addEventListener('click', function() {
+        const newItem = document.createElement('div');
+        newItem.className = 'curriculum-item mb-2';
+        newItem.innerHTML = `
+            <div class="input-group">
+                <input type="text" class="form-control curriculum-input" name="curriculum[]" 
+                       placeholder="e.g., Month 1: Introduction to Robotics">
+                <button type="button" class="btn btn-outline-danger remove-curriculum">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        curriculumContainer.appendChild(newItem);
+        updateRemoveButtons();
+    });
+    
+    // Remove curriculum item (delegated event)
+    curriculumContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-curriculum')) {
+            const item = e.target.closest('.curriculum-item');
+            item.remove();
+            updateRemoveButtons();
+        }
+    });
+    
+    function updateRemoveButtons() {
+        const items = curriculumContainer.querySelectorAll('.curriculum-item');
+        items.forEach((item, index) => {
+            const removeBtn = item.querySelector('.remove-curriculum');
+            if (items.length > 1) {
+                removeBtn.style.display = 'block';
+            } else {
+                removeBtn.style.display = 'none';
+            }
+        });
+    }
+    
+    function updateSubmitButton() {
+        if (existingClassSelect.value && existingClassSelect.value !== 'none') {
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Use Existing Class';
+        } else {
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Create Class';
+        }
+    }
+    
+    // Form validation
+    document.getElementById('createClassForm').addEventListener('submit', function(e) {
+        const classType = classTypeSelect.value;
+        const existingClassId = existingClassSelect.value;
+        
+        if (!classType) {
+            e.preventDefault();
+            alert('Please select a class type.');
+            return false;
+        }
+        
+        if (existingClassId === 'none') {
+            // Validate new class form
+            const name = document.getElementById('name').value.trim();
+            const description = document.getElementById('description').value.trim();
+            
+            if (!name || !description) {
+                e.preventDefault();
+                alert('Class Name and Description are required when creating a new class.');
+                return false;
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -54,6 +54,7 @@ class GroupClass(db.Model):
     max_students = db.Column(db.Integer, default=100)
     class_type = db.Column(db.String(20), nullable=False, default='group')  # 'individual', 'group', 'family', 'school'
     instructor_name = db.Column(db.String(100))
+    curriculum = db.Column(db.Text)  # JSON string or newline-separated curriculum items
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship to students through association table

@@ -60,6 +60,10 @@
             <a href="{{ url_for('admin.backup_individual_classes') }}" class="btn btn-info me-2">
                 <i class="fas fa-download me-2"></i>Backup Data
             </a>
+            <!-- Upload Backup Button -->
+            <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#uploadBackupModal">
+                <i class="fas fa-upload me-2"></i>Upload Backup
+            </button>
             <!-- Reset Button with PIN -->
             <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#resetModal">
                 <i class="fas fa-trash-alt me-2"></i>Reset All Data
@@ -67,6 +71,42 @@
             <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
             </a>
+        </div>
+    </div>
+    
+    <!-- Upload Backup Modal -->
+    <div class="modal fade" id="uploadBackupModal" tabindex="-1" aria-labelledby="uploadBackupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="uploadBackupModalLabel">
+                        <i class="fas fa-upload me-2"></i>Upload Backup Data
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin.upload_backup_individual_classes') }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <strong>ℹ️ Information:</strong> Upload a JSON backup file to restore individual classes data.
+                            <br><small>This will add the backup data to your existing data.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="backupFile" class="form-label">
+                                <strong>Select Backup File:</strong>
+                            </label>
+                            <input type="file" class="form-control" id="backupFile" name="backup_file" 
+                                   accept=".json" required>
+                            <small class="form-text text-muted">Only JSON files are accepted</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload me-2"></i>Upload & Restore
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

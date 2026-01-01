@@ -2003,11 +2003,11 @@ def student_dashboard():
                 attendance_students = list(students)  # Start with enrolled users
                 
                 if cls['class_type'] == 'family':
-                    # Add registered family members
-                    registered_family_members = FamilyMember.query.filter_by(
-                        class_id=cls['id'],
-                        enrollment_id=cls['enrollment'].id
-                    ).all()
+                # Add registered family members
+                registered_family_members = FamilyMember.query.filter_by(
+                    class_id=cls['id'],
+                    enrollment_id=cls['enrollment'].id
+                ).all()
                 for member in registered_family_members:
                     attendance_students.append({
                         'id': f"family_member_{member.id}",  # Unique identifier
@@ -2076,12 +2076,12 @@ def student_dashboard():
                 all_class_attendance[cls['id']] = filtered_attendance
             else:
                 # For group and family classes, get all attendance (not school-specific)
-                all_students_attendance = Attendance.query.filter(
-                    Attendance.class_id == cls['id'],
-                    Attendance.attendance_date >= month_start,
-                    Attendance.attendance_date <= month_end
-                ).order_by(Attendance.attendance_date.desc()).all()
-                all_class_attendance[cls['id']] = all_students_attendance
+            all_students_attendance = Attendance.query.filter(
+                Attendance.class_id == cls['id'],
+                Attendance.attendance_date >= month_start,
+                Attendance.attendance_date <= month_end
+            ).order_by(Attendance.attendance_date.desc()).all()
+            all_class_attendance[cls['id']] = all_students_attendance
         
         # Calculate monthly percentage
         total_days = monthrange(today.year, today.month)[1]
@@ -2140,15 +2140,15 @@ def student_dashboard():
                     # They are view-only in the attendance list
             else:
                 # For group and family classes, get attendance for all enrolled users
-                for student in class_students.get(cls['id'], []):
-                    if student['type'] == 'user':
-                        att = Attendance.query.filter(
-                            Attendance.student_id == student['id'],
+            for student in class_students.get(cls['id'], []):
+                if student['type'] == 'user':
+                    att = Attendance.query.filter(
+                        Attendance.student_id == student['id'],
                             Attendance.class_id == cls['id'],  # THIS class only
-                            Attendance.attendance_date == today
-                        ).first()
-                        if att:
-                            class_today_attendance[student['id']] = att
+                        Attendance.attendance_date == today
+                    ).first()
+                    if att:
+                        class_today_attendance[student['id']] = att
             
             all_students_today_attendance[cls['id']] = class_today_attendance
     
@@ -2492,7 +2492,7 @@ def mark_attendance():
         
         if enrollment:
             is_valid = True
-        else:
+    else:
             school_enrollment = ClassEnrollment.query.filter_by(
                 user_id=current_user.id,
                 class_id=class_id,
@@ -3663,8 +3663,20 @@ def reset_individual_classes():
         return redirect(url_for('admin.admin_individual_classes'))
     
     try:
-        # Delete all individual class enrollments
+        # Get all individual class enrollments first
         individual_enrollments = ClassEnrollment.query.filter_by(class_type='individual').all()
+        enrollment_ids = [e.id for e in individual_enrollments]
+        
+        # Delete child records first: StudentClassTimeSelection
+        if enrollment_ids:
+            from ..models.classes import StudentClassTimeSelection
+            time_selections = StudentClassTimeSelection.query.filter(
+                StudentClassTimeSelection.enrollment_id.in_(enrollment_ids)
+            ).all()
+            for selection in time_selections:
+                db.session.delete(selection)
+        
+        # Delete all individual class enrollments
         for enrollment in individual_enrollments:
             db.session.delete(enrollment)
         
@@ -3772,6 +3784,98 @@ def backup_individual_classes():
     except Exception as e:
         flash(f'Error creating backup: {str(e)}', 'danger')
         return redirect(url_for('admin.admin_individual_classes'))
+
+
+@bp.route('/admin/individual-classes/upload-backup', methods=['POST'])
+@login_required
+def upload_backup_individual_classes():
+    """Upload and restore individual classes backup data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        if 'backup_file' not in request.files:
+            flash('No file uploaded', 'danger')
+            return redirect(url_for('admin.admin_individual_classes'))
+        
+        file = request.files['backup_file']
+        if file.filename == '':
+            flash('No file selected', 'danger')
+            return redirect(url_for('admin.admin_individual_classes'))
+        
+        if not file.filename.endswith('.json'):
+            flash('Invalid file type. Please upload a JSON file.', 'danger')
+            return redirect(url_for('admin.admin_individual_classes'))
+        
+        import json
+        from datetime import datetime
+        
+        # Read and parse JSON
+        backup_data = json.load(file)
+        
+        # Restore enrollments
+        if 'enrollments' in backup_data:
+            for e_data in backup_data['enrollments']:
+                enrollment = ClassEnrollment(
+                    user_id=e_data['user_id'],
+                    class_id=e_data['class_id'],
+                    class_type='individual',
+                    amount=e_data['amount'],
+                    status=e_data['status'],
+                    payment_method=e_data.get('payment_method'),
+                    enrolled_at=datetime.fromisoformat(e_data['enrolled_at']) if e_data.get('enrolled_at') else None,
+                    customer_name=e_data.get('customer_name'),
+                    customer_email=e_data.get('customer_email'),
+                    customer_phone=e_data.get('customer_phone')
+                )
+                db.session.add(enrollment)
+        
+        # Restore individual classes
+        if 'individual_classes' in backup_data:
+            for c_data in backup_data['individual_classes']:
+                class_obj = IndividualClass(
+                    name=c_data['name'],
+                    description=c_data.get('description'),
+                    teacher_id=c_data.get('teacher_id')
+                )
+                db.session.add(class_obj)
+        
+        # Restore group individual classes
+        if 'group_individual_classes' in backup_data:
+            for c_data in backup_data['group_individual_classes']:
+                class_obj = GroupClass(
+                    name=c_data['name'],
+                    description=c_data.get('description'),
+                    teacher_id=c_data.get('teacher_id'),
+                    max_students=c_data.get('max_students', 10),
+                    class_type='individual'
+                )
+                db.session.add(class_obj)
+        
+        # Restore ID cards
+        if 'id_cards' in backup_data:
+            for card_data in backup_data['id_cards']:
+                id_card = IDCard(
+                    entity_id=card_data['entity_id'],
+                    entity_type='individual',
+                    system_id=card_data.get('system_id'),
+                    name=card_data.get('name'),
+                    email=card_data.get('email'),
+                    phone=card_data.get('phone')
+                )
+                db.session.add(id_card)
+        
+        db.session.commit()
+        flash('✅ Backup data restored successfully!', 'success')
+    except json.JSONDecodeError:
+        db.session.rollback()
+        flash('Invalid JSON file format', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error restoring backup: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_individual_classes'))
 
 
 @bp.route('/admin/group-classes/reset', methods=['POST'])
@@ -3887,6 +3991,89 @@ def backup_group_classes():
         return redirect(url_for('admin.admin_group_classes'))
 
 
+@bp.route('/admin/group-classes/upload-backup', methods=['POST'])
+@login_required
+def upload_backup_group_classes():
+    """Upload and restore group classes backup data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        if 'backup_file' not in request.files:
+            flash('No file uploaded', 'danger')
+            return redirect(url_for('admin.admin_group_classes'))
+        
+        file = request.files['backup_file']
+        if file.filename == '':
+            flash('No file selected', 'danger')
+            return redirect(url_for('admin.admin_group_classes'))
+        
+        if not file.filename.endswith('.json'):
+            flash('Invalid file type. Please upload a JSON file.', 'danger')
+            return redirect(url_for('admin.admin_group_classes'))
+        
+        import json
+        from datetime import datetime
+        
+        backup_data = json.load(file)
+        
+        # Restore enrollments
+        if 'enrollments' in backup_data:
+            for e_data in backup_data['enrollments']:
+                enrollment = ClassEnrollment(
+                    user_id=e_data['user_id'],
+                    class_id=e_data['class_id'],
+                    class_type='group',
+                    amount=e_data['amount'],
+                    status=e_data['status'],
+                    payment_method=e_data.get('payment_method'),
+                    group_system_id=e_data.get('group_system_id'),
+                    enrolled_at=datetime.fromisoformat(e_data['enrolled_at']) if e_data.get('enrolled_at') else None,
+                    customer_name=e_data.get('customer_name'),
+                    customer_email=e_data.get('customer_email'),
+                    customer_phone=e_data.get('customer_phone')
+                )
+                db.session.add(enrollment)
+        
+        # Restore group classes
+        if 'group_classes' in backup_data:
+            for c_data in backup_data['group_classes']:
+                class_obj = GroupClass(
+                    name=c_data['name'],
+                    description=c_data.get('description'),
+                    teacher_id=c_data.get('teacher_id'),
+                    max_students=c_data.get('max_students', 10),
+                    class_type='group'
+                )
+                db.session.add(class_obj)
+        
+        # Restore ID cards
+        if 'id_cards' in backup_data:
+            for card_data in backup_data['id_cards']:
+                id_card = IDCard(
+                    entity_id=card_data['entity_id'],
+                    entity_type='group',
+                    system_id=card_data.get('system_id'),
+                    group_system_id=card_data.get('group_system_id'),
+                    name=card_data.get('name'),
+                    email=card_data.get('email'),
+                    phone=card_data.get('phone')
+                )
+                db.session.add(id_card)
+        
+        db.session.commit()
+        flash('✅ Backup data restored successfully!', 'success')
+    except json.JSONDecodeError:
+        db.session.rollback()
+        flash('Invalid JSON file format', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error restoring backup: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_group_classes'))
+
+
 @bp.route('/admin/family-classes/reset', methods=['POST'])
 @login_required
 def reset_family_classes():
@@ -3901,8 +4088,28 @@ def reset_family_classes():
         return redirect(url_for('admin.admin_family_classes'))
     
     try:
-        # Delete all family class enrollments
+        # Get all family class enrollments first
         family_enrollments = ClassEnrollment.query.filter_by(class_type='family').all()
+        enrollment_ids = [e.id for e in family_enrollments]
+        
+        # Delete child records first: FamilyMember (has FK to enrollment_id)
+        if enrollment_ids:
+            from ..models.classes import FamilyMember
+            family_members = FamilyMember.query.filter(
+                FamilyMember.enrollment_id.in_(enrollment_ids)
+            ).all()
+            for member in family_members:
+                db.session.delete(member)
+            
+            # Delete child records: StudentClassTimeSelection (for family classes)
+            from ..models.classes import StudentClassTimeSelection
+            time_selections = StudentClassTimeSelection.query.filter(
+                StudentClassTimeSelection.enrollment_id.in_(enrollment_ids)
+            ).all()
+            for selection in time_selections:
+                db.session.delete(selection)
+        
+        # Delete all family class enrollments
         for enrollment in family_enrollments:
             db.session.delete(enrollment)
         
@@ -3910,12 +4117,6 @@ def reset_family_classes():
         family_classes = GroupClass.query.filter_by(class_type='family').all()
         for class_obj in family_classes:
             db.session.delete(class_obj)
-        
-        # Delete all family members
-        from ..models.classes import FamilyMember
-        family_members = FamilyMember.query.all()
-        for member in family_members:
-            db.session.delete(member)
         
         # Remove family system IDs and student IDs from users
         users_with_family = User.query.filter(
@@ -4017,6 +4218,111 @@ def backup_family_classes():
         return redirect(url_for('admin.admin_family_classes'))
 
 
+@bp.route('/admin/family-classes/upload-backup', methods=['POST'])
+@login_required
+def upload_backup_family_classes():
+    """Upload and restore family classes backup data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        if 'backup_file' not in request.files:
+            flash('No file uploaded', 'danger')
+            return redirect(url_for('admin.admin_family_classes'))
+        
+        file = request.files['backup_file']
+        if file.filename == '':
+            flash('No file selected', 'danger')
+            return redirect(url_for('admin.admin_family_classes'))
+        
+        if not file.filename.endswith('.json'):
+            flash('Invalid file type. Please upload a JSON file.', 'danger')
+            return redirect(url_for('admin.admin_family_classes'))
+        
+        import json
+        from datetime import datetime
+        from ..models.classes import FamilyMember
+        
+        backup_data = json.load(file)
+        
+        # Restore enrollments first (needed for foreign keys)
+        enrollment_map = {}  # old_id -> new_enrollment
+        if 'enrollments' in backup_data:
+            for e_data in backup_data['enrollments']:
+                enrollment = ClassEnrollment(
+                    user_id=e_data['user_id'],
+                    class_id=e_data['class_id'],
+                    class_type='family',
+                    amount=e_data['amount'],
+                    status=e_data['status'],
+                    payment_method=e_data.get('payment_method'),
+                    family_system_id=e_data.get('family_system_id'),
+                    enrolled_at=datetime.fromisoformat(e_data['enrolled_at']) if e_data.get('enrolled_at') else None,
+                    customer_name=e_data.get('customer_name'),
+                    customer_email=e_data.get('customer_email'),
+                    customer_phone=e_data.get('customer_phone')
+                )
+                db.session.add(enrollment)
+                db.session.flush()  # Get the new ID
+                enrollment_map[e_data['id']] = enrollment
+        
+        # Restore family classes
+        if 'family_classes' in backup_data:
+            for c_data in backup_data['family_classes']:
+                class_obj = GroupClass(
+                    name=c_data['name'],
+                    description=c_data.get('description'),
+                    teacher_id=c_data.get('teacher_id'),
+                    max_students=c_data.get('max_students', 10),
+                    class_type='family'
+                )
+                db.session.add(class_obj)
+        
+        # Restore family members (after enrollments)
+        if 'family_members' in backup_data:
+            for m_data in backup_data['family_members']:
+                old_enrollment_id = m_data['enrollment_id']
+                new_enrollment = enrollment_map.get(old_enrollment_id)
+                if new_enrollment:
+                    member = FamilyMember(
+                        enrollment_id=new_enrollment.id,
+                        class_id=m_data.get('class_id', new_enrollment.class_id),
+                        member_name=m_data['member_name'],
+                        member_age=m_data.get('member_age'),
+                        relationship=m_data.get('relationship'),
+                        member_email=m_data.get('member_email'),
+                        member_phone=m_data.get('member_phone'),
+                        registered_by=m_data.get('registered_by', new_enrollment.user_id)
+                    )
+                    db.session.add(member)
+        
+        # Restore ID cards
+        if 'id_cards' in backup_data:
+            for card_data in backup_data['id_cards']:
+                id_card = IDCard(
+                    entity_id=card_data['entity_id'],
+                    entity_type='family',
+                    system_id=card_data.get('system_id'),
+                    family_system_id=card_data.get('family_system_id'),
+                    name=card_data.get('name'),
+                    email=card_data.get('email'),
+                    phone=card_data.get('phone')
+                )
+                db.session.add(id_card)
+        
+        db.session.commit()
+        flash('✅ Backup data restored successfully!', 'success')
+    except json.JSONDecodeError:
+        db.session.rollback()
+        flash('Invalid JSON file format', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error restoring backup: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_family_classes'))
+
+
 @bp.route('/admin/schools/reset', methods=['POST'])
 @login_required
 def reset_school_classes():
@@ -4031,8 +4337,20 @@ def reset_school_classes():
         return redirect(url_for('admin.admin_schools'))
     
     try:
-        # Delete all school class enrollments
+        # Get all school class enrollments first
         school_enrollments = ClassEnrollment.query.filter_by(class_type='school').all()
+        enrollment_ids = [e.id for e in school_enrollments]
+        
+        # Delete child records first: SchoolStudent (has FK to enrollment_id)
+        if enrollment_ids:
+            from ..models.classes import SchoolStudent
+            school_students = SchoolStudent.query.filter(
+                SchoolStudent.enrollment_id.in_(enrollment_ids)
+            ).all()
+            for student in school_students:
+                db.session.delete(student)
+        
+        # Delete all school class enrollments
         for enrollment in school_enrollments:
             db.session.delete(enrollment)
         
@@ -4041,7 +4359,7 @@ def reset_school_classes():
         for class_obj in school_classes:
             db.session.delete(class_obj)
         
-        # Delete all registered school students
+        # Delete all registered school students (RegisteredSchoolStudent - different table)
         registered_students = RegisteredSchoolStudent.query.all()
         for student in registered_students:
             db.session.delete(student)
@@ -4158,6 +4476,135 @@ def backup_school_classes():
         return redirect(url_for('admin.admin_schools'))
 
 
+@bp.route('/admin/schools/upload-backup', methods=['POST'])
+@login_required
+def upload_backup_school_classes():
+    """Upload and restore school classes backup data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        if 'backup_file' not in request.files:
+            flash('No file uploaded', 'danger')
+            return redirect(url_for('admin.admin_schools'))
+        
+        file = request.files['backup_file']
+        if file.filename == '':
+            flash('No file selected', 'danger')
+            return redirect(url_for('admin.admin_schools'))
+        
+        if not file.filename.endswith('.json'):
+            flash('Invalid file type. Please upload a JSON file.', 'danger')
+            return redirect(url_for('admin.admin_schools'))
+        
+        import json
+        from datetime import datetime
+        from ..models.classes import SchoolStudent
+        
+        backup_data = json.load(file)
+        
+        # Restore enrollments first (needed for foreign keys)
+        enrollment_map = {}  # old_id -> new_enrollment
+        if 'enrollments' in backup_data:
+            for e_data in backup_data['enrollments']:
+                enrollment = ClassEnrollment(
+                    user_id=e_data['user_id'],
+                    class_id=e_data['class_id'],
+                    class_type='school',
+                    amount=e_data['amount'],
+                    status=e_data['status'],
+                    payment_method=e_data.get('payment_method'),
+                    enrolled_at=datetime.fromisoformat(e_data['enrolled_at']) if e_data.get('enrolled_at') else None,
+                    customer_name=e_data.get('customer_name'),
+                    customer_email=e_data.get('customer_email'),
+                    customer_phone=e_data.get('customer_phone')
+                )
+                db.session.add(enrollment)
+                db.session.flush()  # Get the new ID
+                enrollment_map[e_data['id']] = enrollment
+        
+        # Restore school classes
+        if 'school_classes' in backup_data:
+            for c_data in backup_data['school_classes']:
+                class_obj = GroupClass(
+                    name=c_data['name'],
+                    description=c_data.get('description'),
+                    teacher_id=c_data.get('teacher_id'),
+                    max_students=c_data.get('max_students', 10),
+                    class_type='school'
+                )
+                db.session.add(class_obj)
+        
+        # Restore schools
+        if 'schools' in backup_data:
+            for s_data in backup_data['schools']:
+                school = School(
+                    school_name=s_data['school_name'],
+                    school_system_id=s_data.get('school_system_id'),
+                    admin_name=s_data.get('admin_name'),
+                    admin_email=s_data.get('admin_email'),
+                    status=s_data.get('status', 'pending'),
+                    payment_status=s_data.get('payment_status', 'pending')
+                )
+                db.session.add(school)
+        
+        # Restore registered school students (after enrollments)
+        if 'registered_students' in backup_data:
+            for rs_data in backup_data['registered_students']:
+                old_enrollment_id = rs_data.get('enrollment_id')
+                new_enrollment = enrollment_map.get(old_enrollment_id) if old_enrollment_id else None
+                if new_enrollment:
+                    student = RegisteredSchoolStudent(
+                        enrollment_id=new_enrollment.id,
+                        student_name=rs_data['student_name'],
+                        student_system_id=rs_data.get('student_system_id'),
+                        school_name=rs_data.get('school_name'),
+                        student_email=rs_data.get('student_email'),
+                        student_phone=rs_data.get('student_phone')
+                    )
+                    db.session.add(student)
+        
+        # Restore school ID cards
+        if 'school_id_cards' in backup_data:
+            for card_data in backup_data['school_id_cards']:
+                id_card = IDCard(
+                    entity_id=card_data['entity_id'],
+                    entity_type='school',
+                    system_id=card_data.get('system_id'),
+                    school_system_id=card_data.get('school_system_id'),
+                    name=card_data.get('name'),
+                    email=card_data.get('email'),
+                    phone=card_data.get('phone')
+                )
+                db.session.add(id_card)
+        
+        # Restore school student ID cards
+        if 'school_student_id_cards' in backup_data:
+            for card_data in backup_data['school_student_id_cards']:
+                id_card = IDCard(
+                    entity_id=card_data['entity_id'],
+                    entity_type='school_student',
+                    system_id=card_data.get('system_id'),
+                    school_system_id=card_data.get('school_system_id'),
+                    name=card_data.get('name'),
+                    email=card_data.get('email'),
+                    phone=card_data.get('phone')
+                )
+                db.session.add(id_card)
+        
+        db.session.commit()
+        flash('✅ Backup data restored successfully!', 'success')
+    except json.JSONDecodeError:
+        db.session.rollback()
+        flash('Invalid JSON file format', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error restoring backup: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.admin_schools'))
+
+
 @bp.route('/admin/individual-classes', methods=['GET', 'POST'])
 @login_required
 def admin_individual_classes():
@@ -4191,7 +4638,7 @@ def admin_individual_classes():
                             new_student_id = generate_student_id_for_class('individual')
                             existing_user = User.query.filter_by(student_id=new_student_id).first()
                         user.student_id = new_student_id
-                        user.class_type = 'individual'
+                            user.class_type = 'individual'
                         db.session.flush()  # Ensure student_id is saved before ID card generation
                     
                     # Verify student_id is set - if still None, something went wrong
@@ -4427,9 +4874,10 @@ def admin_group_class_detail(class_id):
                             try:
                                 from ..models.id_cards import generate_group_student_id_card
                                 id_card = generate_group_student_id_card(enrollment, user, group_class, current_user.id)
-                                db.session.commit()
+                            db.session.commit()
                                 flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}. ID Card generated. Student will be redirected to view ID card immediately.', 'success')
                             except Exception as e:
+                                db.session.rollback()
                                 db.session.commit()
                                 flash(f'Enrollment approved! Group System ID: {enrollment.group_system_id}. Error generating ID card: {str(e)}', 'warning')
                         else:
@@ -4643,9 +5091,10 @@ def admin_family_class_detail(enrollment_id):
                     try:
                         from ..models.id_cards import generate_family_id_card
                         id_card = generate_family_id_card(enrollment, user, class_obj, current_user.id)
-                        db.session.commit()
+                    db.session.commit()
                         flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. ID Card generated. Family will be redirected to view ID card immediately.', 'success')
                     except Exception as e:
+                        db.session.rollback()
                         db.session.commit()
                         flash(f'Family enrollment approved! Family System ID: {enrollment.family_system_id}. Error generating ID card: {str(e)}', 'warning')
             elif action == 'reject':
@@ -4911,8 +5360,8 @@ def approve_school(school_id):
         is_reapproval = school.status == 'active'
         school.status = 'active'
         if not school.approved_at:
-            school.approved_at = datetime.utcnow()
-            school.approved_by = current_user.id
+        school.approved_at = datetime.utcnow()
+        school.approved_by = current_user.id
         
         # CRITICAL FIX: Update all school enrollments to 'completed' status
         # This is required for admin material sharing to work correctly

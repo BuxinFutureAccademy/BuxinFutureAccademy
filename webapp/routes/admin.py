@@ -2161,6 +2161,10 @@ def student_dashboard():
             # For Individual/Family: Check if student has selected a time and it matches current time
             if selection and selection.class_time:
                 class_time = selection.class_time
+                # IMPORTANT: Verify class_time matches this enrollment's class_id
+                if class_time.class_id and class_time.class_id != enrollment.class_id:
+                    continue  # Skip if time slot is for a different class
+                
                 # Convert class time to student's timezone
                 try:
                     admin_tz = pytz.timezone(class_time.timezone)
@@ -2181,7 +2185,8 @@ def student_dashboard():
                         # Get the class object based on class_type
                         class_obj = None
                         if class_type == 'individual':
-                            class_obj = IndividualClass.query.get(enrollment.class_id)
+                            class_obj = IndividualClass.query.get(enrollment.class_id) or \
+                                       GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first()
                         elif class_type == 'family':
                             class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='family').first()
                         
@@ -2196,9 +2201,13 @@ def student_dashboard():
                     pass  # If conversion fails, skip
                     
         elif class_type in ['group', 'school']:
-            # For Group/School: Check if there's a fixed time that matches current time
+            # For Group/School: Check if there's a fixed time that matches current time AND class_id
             fixed_times = class_times_by_type.get(class_type, [])
             for class_time in fixed_times:
+                # IMPORTANT: Verify class_time matches this enrollment's class_id
+                if class_time.class_id and class_time.class_id != enrollment.class_id:
+                    continue  # Skip if time slot is for a different class
+                
                 try:
                     admin_tz = pytz.timezone(class_time.timezone)
                     today = current_datetime.date()
@@ -2218,7 +2227,7 @@ def student_dashboard():
                         # Get the class object based on class_type
                         class_obj = None
                         if class_type == 'group':
-                            class_obj = GroupClass.query.get(enrollment.class_id)
+                            class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='group').first()
                         elif class_type == 'school':
                             class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='school').first()
                         
@@ -6679,7 +6688,10 @@ def admin_live_class():
         
         # Get all classes for dropdown (with error handling)
         try:
-            individual_classes = IndividualClass.query.all() or []
+            # Individual classes can be in both IndividualClass and GroupClass with class_type='individual'
+            individual_classes_legacy = IndividualClass.query.all() or []
+            individual_classes_new = GroupClass.query.filter_by(class_type='individual').all() or []
+            individual_classes = list(individual_classes_legacy) + list(individual_classes_new)
         except Exception:
             individual_classes = []
         

@@ -132,7 +132,7 @@
                         <iframe 
                             id="liveClassIframe"
                             allow="camera; microphone; fullscreen; display-capture; autoplay" 
-                            src="https://meet.jit.si/SportingDimensionsEmphasizeGenerally" 
+                            src="https://meet.jit.si/SportingDimensionsEmphasizeGenerally?config.prejoinPageEnabled=false&config.requireDisplayName=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false&userInfo.displayName=Admin" 
                             style="height: 600px; width: 100%; border: 0px; display: block;">
                         </iframe>
                     </div>
@@ -164,12 +164,12 @@
 const classData = {
     individual: {% if individual_classes %}{{ individual_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
     individualNames: {% if individual_classes %}{{ individual_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
-    group: {% if group_classes %}{{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
-    groupNames: {% if group_classes %}{{ group_classes|selectattr('class_type', 'equalto', 'group')|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
-    family: {% if family_classes %}{{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
-    familyNames: {% if family_classes %}{{ family_classes|selectattr('class_type', 'equalto', 'family')|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
-    school: {% if school_classes %}{{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
-    schoolNames: {% if school_classes %}{{ school_classes|selectattr('class_type', 'equalto', 'school')|map(attribute='name')|list|tojson }}{% else %}[]{% endif %}
+    group: {% if group_classes %}{{ group_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    groupNames: {% if group_classes %}{{ group_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    family: {% if family_classes %}{{ family_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    familyNames: {% if family_classes %}{{ family_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    school: {% if school_classes %}{{ school_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    schoolNames: {% if school_classes %}{{ school_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %}
 };
 
 // Time data from server

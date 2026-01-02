@@ -702,7 +702,7 @@
                 <!-- Load More Button / Pagination -->
                 {% if projects_pagination.has_next %}
                     <div class="load-more">
-                        <a href="{{ url_for('student_projects', page=projects_pagination.next_num, search=search_term, sort=sort_by, featured='true' if featured_only else '') }}" 
+                        <a href="{{ url_for('student_projects.student_projects', page=projects_pagination.next_num, search=search_term, sort=sort_by, featured='true' if featured_only else '') }}" 
                            class="load-more-btn">
                             <i class="fas fa-plus me-2"></i>Load More Projects
                         </a>

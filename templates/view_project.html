@@ -250,9 +250,10 @@
                     {% if current_user.is_authenticated %}
                         {% if current_user.id == project.student_id or current_user.is_admin %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('edit_project', project_id=project.id) }}">
+                                <!-- Edit Project - Route not implemented yet -->
+                                <!-- <a class="nav-link" href="{{ url_for('student_projects.edit_project', project_id=project.id) }}">
                                     <i class="fas fa-edit me-1"></i>Edit Project
-                                </a>
+                                </a> -->
                             </li>
                         {% endif %}
                         <li class="nav-item">
@@ -408,10 +409,11 @@
                             <div class="engagement-section">
                                 <h6><i class="fas fa-cog me-2"></i>Project Actions</h6>
                                 <div class="d-grid gap-2">
-                                    <a href="{{ url_for('edit_project', project_id=project.id) }}" 
+                                    <!-- Edit Project - Route not implemented yet -->
+                                    <!-- <a href="{{ url_for('student_projects.edit_project', project_id=project.id) }}" 
                                        class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-edit me-1"></i>Edit Project
-                                    </a>
+                                    </a> -->
                                     <button class="btn btn-outline-danger btn-sm" 
                                             onclick="confirmDelete({{ project.id }}, '{{ project.title }}')">
                                         <i class="fas fa-trash me-1"></i>Delete Project
@@ -497,7 +499,7 @@
                     <ul class="pagination justify-content-center">
                         {% if comments.has_prev %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('view_project', project_id=project.id, page=comments.prev_num) }}">
+                                <a class="page-link" href="{{ url_for('student_projects.view_project', project_id=project.id, page=comments.prev_num) }}">
                                     <i class="fas fa-chevron-left"></i>
                                 </a>
                             </li>
@@ -507,7 +509,7 @@
                             {% if page_num %}
                                 {% if page_num != comments.page %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('view_project', project_id=project.id, page=page_num) }}">
+                                        <a class="page-link" href="{{ url_for('student_projects.view_project', project_id=project.id, page=page_num) }}">
                                             {{ page_num }}
                                         </a>
                                     </li>
@@ -525,7 +527,7 @@
                         
                         {% if comments.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('view_project', project_id=project.id, page=comments.next_num) }}">
+                                <a class="page-link" href="{{ url_for('student_projects.view_project', project_id=project.id, page=comments.next_num) }}">
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             </li>
@@ -587,10 +589,11 @@
                 </div>
                 {% if current_user.id == project.student_id or current_user.is_admin %}
                     <div class="col">
-                        <a class="nav-link" href="{{ url_for('edit_project', project_id=project.id) }}">
+                        <!-- Edit Project - Route not implemented yet -->
+                        <!-- <a class="nav-link" href="{{ url_for('student_projects.edit_project', project_id=project.id) }}">
                             <i class="fas fa-edit"></i>
                             <div>Edit</div>
-                        </a>
+                        </a> -->
                     </div>
                     <div class="col">
                         <a class="nav-link" href="{{ url_for('student_projects.my_projects') }}">

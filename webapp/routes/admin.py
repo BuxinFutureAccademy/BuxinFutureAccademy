@@ -23,6 +23,7 @@ from ..models import (
     ClassTime,
     StudentClassTimeSelection,
     IDCard,
+    MonthlyPayment,
 )
 
 bp = Blueprint('admin', __name__)
@@ -2193,6 +2194,25 @@ def student_dashboard():
             if entity_id:
                 user_id_card = get_id_card_for_entity(entity_type, entity_id)
     
+    # Get monthly payments for all enrollments
+    monthly_payments = {}
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+    
+    for enrollment in enrollments:
+        # Get payments for this enrollment for the current year
+        payments = MonthlyPayment.query.filter_by(
+            enrollment_id=enrollment.id,
+            payment_year=current_year
+        ).all()
+        
+        # Create a dict with month as key
+        payment_dict = {}
+        for payment in payments:
+            payment_dict[payment.payment_month] = payment
+        
+        monthly_payments[enrollment.id] = payment_dict
+    
     return render_template('student_dashboard.html', 
                           purchases=purchases, 
                           projects=projects,
@@ -2216,6 +2236,9 @@ def student_dashboard():
                           now=now,
                           id_card=user_id_card,
                           today=today,
+                          monthly_payments=monthly_payments,
+                          current_year=current_year,
+                          current_month=current_month,
                           Attendance=Attendance,
                           user=user)
 
@@ -5383,6 +5406,79 @@ def admin_family_class_detail(enrollment_id):
         family_members=family_members,
         id_card=id_card
     )
+
+
+@bp.route('/student/upload-payment', methods=['POST'])
+@login_required
+def upload_monthly_payment():
+    """Route for students to upload monthly payment receipts"""
+    from ..services.cloudinary_service import CloudinaryService
+    from werkzeug.utils import secure_filename
+    from datetime import datetime
+    
+    enrollment_id = request.form.get('enrollment_id', type=int)
+    payment_month = request.form.get('payment_month', type=int)
+    payment_year = request.form.get('payment_year', type=int)
+    amount = request.form.get('amount', type=float)
+    
+    if not enrollment_id or not payment_month or not payment_year or not amount:
+        flash('Please fill in all required fields.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Verify enrollment belongs to current user
+    enrollment = ClassEnrollment.query.get(enrollment_id)
+    if not enrollment or enrollment.user_id != current_user.id:
+        flash('Invalid enrollment.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Check if payment already exists
+    existing_payment = MonthlyPayment.query.filter_by(
+        enrollment_id=enrollment_id,
+        payment_month=payment_month,
+        payment_year=payment_year
+    ).first()
+    
+    if existing_payment:
+        flash(f'Payment receipt for {existing_payment.get_month_name()} {payment_year} already uploaded.', 'warning')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    # Handle file upload
+    uploaded_file = request.files.get('receipt_file')
+    if not uploaded_file or not uploaded_file.filename:
+        flash('Please upload a payment receipt.', 'danger')
+        return redirect(url_for('admin.student_dashboard'))
+    
+    try:
+        file_name = secure_filename(uploaded_file.filename)
+        success, result = CloudinaryService.upload_file(
+            file=uploaded_file,
+            folder='monthly_payments',
+            resource_type='auto'
+        )
+        
+        if success and isinstance(result, dict) and result.get('url'):
+            # Create payment record
+            payment = MonthlyPayment(
+                user_id=current_user.id,
+                enrollment_id=enrollment_id,
+                class_type=enrollment.class_type,
+                payment_month=payment_month,
+                payment_year=payment_year,
+                amount=amount,
+                receipt_url=result.get('url'),
+                receipt_filename=file_name,
+                status='pending'
+            )
+            db.session.add(payment)
+            db.session.commit()
+            flash(f'Payment receipt for {payment.get_month_name()} {payment_year} uploaded successfully!', 'success')
+        else:
+            flash('Error uploading receipt. Please try again.', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error uploading payment: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.student_dashboard'))
 
 
 @bp.route('/admin/schools', methods=['GET', 'POST'])

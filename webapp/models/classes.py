@@ -251,6 +251,44 @@ def reset_all_student_ids():
         }
 
 
+class MonthlyPayment(db.Model):
+    """Model for storing monthly payment receipts from students"""
+    __tablename__ = 'monthly_payment'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('class_enrollment.id'), nullable=False)
+    class_type = db.Column(db.String(20), nullable=False)  # individual, group, family, school
+    payment_month = db.Column(db.Integer, nullable=False)  # 1-12 (January=1, December=12)
+    payment_year = db.Column(db.Integer, nullable=False)  # e.g., 2024
+    amount = db.Column(db.Float, nullable=False)
+    receipt_url = db.Column(db.String(500), nullable=False)  # Cloudinary URL
+    receipt_filename = db.Column(db.String(255))
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='pending')  # pending, verified, rejected
+    verified_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    verified_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text)
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], lazy='select')
+    enrollment = db.relationship('ClassEnrollment', lazy='select')
+    verifier = db.relationship('User', foreign_keys=[verified_by], lazy='select')
+    
+    # Unique constraint: one payment per student per month per enrollment
+    __table_args__ = (db.UniqueConstraint('user_id', 'enrollment_id', 'payment_month', 'payment_year', name='unique_monthly_payment'),)
+    
+    def __repr__(self):
+        month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December']
+        return f'<MonthlyPayment {self.user_id} - {month_names[self.payment_month]} {self.payment_year}>'
+    
+    def get_month_name(self):
+        month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December']
+        return month_names[self.payment_month] if 1 <= self.payment_month <= 12 else 'Unknown'
+
+
 def generate_family_system_id():
     """
     Generate a unique Family System ID for family class enrollments

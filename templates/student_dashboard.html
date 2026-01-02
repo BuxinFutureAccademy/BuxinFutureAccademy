@@ -776,7 +776,7 @@
 <div class="container">
     <!-- Profile Section -->
     <div class="profile-section" style="background: var(--surface-solid); border-radius: var(--radius); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow); border: 1px solid var(--border);">
-        <div class="row align-items-center">
+        <div class="row align-items-start">
             <div class="col-md-3 text-center">
                 <div class="profile-picture-container" style="position: relative; display: inline-block;">
                     {% if current_user.profile_picture %}
@@ -956,6 +956,101 @@
                             </a>
                         </div>
                         {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Monthly Payment Buttons (Right Side) -->
+            <div class="col-md-3">
+                <h3 style="color: var(--robotics-primary); font-family: var(--font-tech); margin-bottom: 1rem; font-size: 1.2rem;">
+                    <i class="fas fa-calendar-check me-2"></i>Monthly Payments
+                </h3>
+                <div class="payment-buttons" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto;">
+                    {% if enrollments %}
+                        {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                        {% for enrollment in enrollments %}
+                            {% set payments = monthly_payments.get(enrollment.id, {}) %}
+                            {% for month_num in range(1, 13) %}
+                                {% set payment = payments.get(month_num) %}
+                                {% set month_name = month_names[month_num] %}
+                                {% if payment %}
+                                    <!-- Paid - Yellow with checkmark -->
+                                    <button type="button" class="btn btn-sm payment-btn-paid" 
+                                            style="background: #ffc107; color: #000; border: 2px solid #ffc107; width: 100%; text-align: left; position: relative;"
+                                            disabled>
+                                        <i class="fas fa-check-circle me-2"></i>{{ month_name }} - Paid
+                                    </button>
+                                {% else %}
+                                    <!-- Not Paid - Red with X -->
+                                    <button type="button" class="btn btn-sm payment-btn-unpaid" 
+                                            style="background: #dc3545; color: #fff; border: 2px solid #dc3545; width: 100%; text-align: left; position: relative;"
+                                            data-bs-toggle="modal" data-bs-target="#paymentModal{{ enrollment.id }}_{{ month_num }}">
+                                        <i class="fas fa-times-circle me-2"></i>{{ month_name }} - Not Paid
+                                    </button>
+                                    
+                                    <!-- Payment Upload Modal -->
+                                    <div class="modal fade" id="paymentModal{{ enrollment.id }}_{{ month_num }}" tabindex="-1" aria-labelledby="paymentModalLabel{{ enrollment.id }}_{{ month_num }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content" style="background: var(--surface-solid); color: var(--on-surface);">
+                                                <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                                                    <h5 class="modal-title" id="paymentModalLabel{{ enrollment.id }}_{{ month_num }}">
+                                                        <i class="fas fa-upload me-2"></i>Upload Payment Receipt - {{ month_name }} {{ current_year }}
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <form method="POST" action="{{ url_for('admin.upload_monthly_payment') }}" enctype="multipart/form-data">
+                                                        <input type="hidden" name="enrollment_id" value="{{ enrollment.id }}">
+                                                        <input type="hidden" name="payment_month" value="{{ month_num }}">
+                                                        <input type="hidden" name="payment_year" value="{{ current_year }}">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="amount{{ enrollment.id }}_{{ month_num }}" class="form-label">Payment Amount</label>
+                                                            <input type="number" step="0.01" class="form-control" id="amount{{ enrollment.id }}_{{ month_num }}" name="amount" required placeholder="Enter amount">
+                                                        </div>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="receipt_file{{ enrollment.id }}_{{ month_num }}" class="form-label">Payment Receipt</label>
+                                                            <input type="file" class="form-control" id="receipt_file{{ enrollment.id }}_{{ month_num }}" name="receipt_file" accept="image/*,.pdf" required>
+                                                            <small class="form-text text-muted">Upload image or PDF of your payment receipt</small>
+                                                        </div>
+                                                        
+                                                        <button type="submit" class="btn btn-primary w-100">
+                                                            <i class="fas fa-upload me-2"></i>Upload Receipt
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No enrollments found.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Payment Status Messages -->
+                <div class="payment-messages mt-3" style="font-size: 0.9rem;">
+                    {% if enrollments %}
+                        {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                        {% for enrollment in enrollments %}
+                            {% set payments = monthly_payments.get(enrollment.id, {}) %}
+                            {% for month_num in range(1, 13) %}
+                                {% set payment = payments.get(month_num) %}
+                                {% set month_name = month_names[month_num] %}
+                                {% if payment %}
+                                    <div class="alert alert-success alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                        <i class="fas fa-check me-1"></i>{{ month_name }}: You have already paid. Welcome to this class!
+                                    </div>
+                                {% elif month_num <= current_month %}
+                                    <div class="alert alert-danger alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ month_name }}: You don't pay. Please upload your payment receipt.
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
                     {% endif %}
                 </div>
             </div>

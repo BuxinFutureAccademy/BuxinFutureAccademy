@@ -1,14 +1,63 @@
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 from flask_login import login_required, current_user
 from ..extensions import db
-from ..models import StudentProject, ProjectLike, ProjectComment, User
+from ..models import StudentProject, ProjectLike, ProjectComment, User, ClassEnrollment
 
 bp = Blueprint('student_projects', __name__)
 
 
+def get_student_user():
+    """Helper function to get student user from session or current_user"""
+    user = None
+    user_id = None
+    
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    return user, user_id
+
+
+def check_student_enrollment(user_id):
+    """Check if student has a completed enrollment in any class type (individual, group, family, school)"""
+    if not user_id:
+        return False
+    
+    # Check for completed enrollment in any class type
+    enrollment = ClassEnrollment.query.filter_by(
+        user_id=user_id,
+        status='completed'
+    ).first()
+    
+    if enrollment:
+        return True
+    
+    # Also check for school students (RegisteredSchoolStudent)
+    from ..models.schools import RegisteredSchoolStudent
+    school_student = RegisteredSchoolStudent.query.filter_by(user_id=user_id).first()
+    if school_student:
+        # Check if the school enrollment is completed
+        school_enrollment = ClassEnrollment.query.filter_by(
+            id=school_student.enrollment_id,
+            status='completed'
+        ).first()
+        if school_enrollment:
+            return True
+    
+    return False
+
+
 @bp.route('/student-projects', endpoint='student_projects')
 def student_projects():
+    """View all student projects - public page, no enrollment required"""
+    # Get user for like/comment functionality (supports both login and System ID)
+    user, user_id = get_student_user()
+    
     search = request.args.get('search', '').strip()
     sort_by = request.args.get('sort', 'newest')
     featured_only = request.args.get('featured') == 'true'
@@ -60,6 +109,7 @@ def student_projects():
         sort_by=sort_by,
         featured_only=featured_only,
         current_page=page,
+        user=user,  # Pass user for template authentication checks
     )
 
 
@@ -71,32 +121,29 @@ def view_project(project_id):
         return redirect(url_for('student_projects.student_projects'))
     page = request.args.get('page', 1, type=int)
     comments = project.comments.order_by(ProjectComment.created_at.desc()).paginate(page=page, per_page=10, error_out=False)
+    
+    # Get user for reaction (supports both login and System ID authentication)
+    user, user_id = get_student_user()
     user_reaction = None
-    if current_user.is_authenticated:
-        user_reaction = project.user_reaction(current_user.id)
-    return render_template('view_project.html', project=project, comments=comments, user_reaction=user_reaction)
+    if user_id:
+        user_reaction = project.user_reaction(user_id)
+    
+    return render_template('view_project.html', project=project, comments=comments, user_reaction=user_reaction, user=user)
 
 
 @bp.route('/my-projects', endpoint='my_projects')
 def my_projects():
-    from flask import session
-    from ..models import User
-    
-    # Get user from session or current_user
-    user = None
-    user_id = None
-    
-    if current_user.is_authenticated:
-        user = current_user
-        user_id = current_user.id
-    else:
-        user_id = session.get('student_user_id') or session.get('user_id')
-        if user_id:
-            user = User.query.get(user_id)
+    """View student's own projects - requires completed enrollment"""
+    user, user_id = get_student_user()
     
     if not user:
         flash('Please enter your Name and System ID to access your projects.', 'info')
         return redirect(url_for('main.index'))
+    
+    # Check if student has completed enrollment
+    if not check_student_enrollment(user_id):
+        flash('You need to be registered in a class to view your projects. Please register for a class first.', 'warning')
+        return redirect(url_for('store.available_classes'))
     
     projects = (
         StudentProject.query.filter_by(student_id=user_id).order_by(StudentProject.created_at.desc()).all()
@@ -108,44 +155,36 @@ def my_projects():
 
 @bp.route('/create-project', methods=['GET', 'POST'], endpoint='create_project')
 def create_project():
-    from flask import session
-    from ..models import User
-    
-    # Get user from session or current_user
-    user = None
-    user_id = None
-    
-    if current_user.is_authenticated:
-        user = current_user
-        user_id = current_user.id
-    else:
-        user_id = session.get('student_user_id') or session.get('user_id')
-        if user_id:
-            user = User.query.get(user_id)
+    """Create a new project - requires completed enrollment in any class type"""
+    user, user_id = get_student_user()
     
     if not user:
         flash('Please enter your Name and System ID to create a project.', 'info')
         return redirect(url_for('main.index'))
+    
+    # CRITICAL: Check if student has completed enrollment (individual, group, family, or school)
+    if not check_student_enrollment(user_id):
+        flash('You need to be registered in a class to create projects. Please register for a class first.', 'warning')
+        return redirect(url_for('store.available_classes'))
+    
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
-        project_url = request.form.get('project_url', '').strip()
-        github_url = request.form.get('github_url', '').strip()
+        project_link = request.form.get('project_link', '').strip() or request.form.get('project_url', '').strip()
+        youtube_url = request.form.get('youtube_url', '').strip() or request.form.get('github_url', '').strip()
         image_url = request.form.get('image_url', '').strip()
-        tags = request.form.get('tags', '').strip()
         
         if not title or not description:
             flash('Title and description are required.', 'danger')
-            return render_template('create_project.html')
+            return render_template('create_project.html', user=user)
         
         try:
             project = StudentProject(
                 title=title,
                 description=description,
-                project_url=project_url or None,
-                github_url=github_url or None,
+                project_link=project_link or None,
+                youtube_url=youtube_url or None,
                 image_url=image_url or None,
-                tags=tags or None,
                 student_id=user_id,
                 is_active=True,
                 featured=False
@@ -156,10 +195,11 @@ def create_project():
             return redirect(url_for('student_projects.my_projects'))
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Error creating project: {e}")
             flash(f'Failed to create project: {str(e)}', 'danger')
-            return render_template('create_project.html')
+            return render_template('create_project.html', user=user)
     
-    return render_template('create_project.html')
+    return render_template('create_project.html', user=user)
 
 
 @bp.route('/admin/projects', endpoint='admin_projects')
@@ -217,3 +257,123 @@ def admin_projects():
         featured_filter=featured,
         sort_by=sort_by,
     )
+
+
+@bp.route('/project/<int:project_id>/like', methods=['POST'])
+def toggle_project_like(project_id):
+    """Toggle like/dislike for a project - supports System ID authentication"""
+    project = StudentProject.query.get_or_404(project_id)
+    
+    # Get user (supports both login and System ID authentication)
+    user, user_id = get_student_user()
+    
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Please enter your Name and System ID to like projects.'}), 401
+    
+    # Check if student has completed enrollment
+    if not check_student_enrollment(user_id):
+        return jsonify({'success': False, 'error': 'You need to be registered in a class to like projects.'}), 403
+    
+    try:
+        data = request.get_json() or {}
+        is_like = data.get('is_like', True)  # True for like, False for dislike
+        
+        # Check if user already has a reaction
+        existing_reaction = ProjectLike.query.filter_by(
+            project_id=project_id,
+            user_id=user_id
+        ).first()
+        
+        if existing_reaction:
+            if existing_reaction.is_like == is_like:
+                # Same reaction - remove it
+                db.session.delete(existing_reaction)
+                action = 'removed'
+            else:
+                # Different reaction - update it
+                existing_reaction.is_like = is_like
+                action = 'liked' if is_like else 'disliked'
+        else:
+            # New reaction - create it
+            new_reaction = ProjectLike(
+                project_id=project_id,
+                user_id=user_id,
+                is_like=is_like
+            )
+            db.session.add(new_reaction)
+            action = 'liked' if is_like else 'disliked'
+        
+        db.session.commit()
+        
+        # Return updated counts
+        like_count = project.get_like_count()
+        dislike_count = project.get_dislike_count()
+        user_reaction = project.user_reaction(user_id)
+        
+        return jsonify({
+            'success': True,
+            'action': action,
+            'like_count': like_count,
+            'dislike_count': dislike_count,
+            'user_reaction': user_reaction
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error toggling project like: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/project/<int:project_id>/comment', methods=['POST'])
+def add_project_comment(project_id):
+    """Add a comment to a project - supports System ID authentication"""
+    project = StudentProject.query.get_or_404(project_id)
+    
+    # Get user (supports both login and System ID authentication)
+    user, user_id = get_student_user()
+    
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Please enter your Name and System ID to comment on projects.'}), 401
+    
+    # Check if student has completed enrollment
+    if not check_student_enrollment(user_id):
+        return jsonify({'success': False, 'error': 'You need to be registered in a class to comment on projects.'}), 403
+    
+    try:
+        data = request.get_json() or {}
+        comment_text = data.get('comment', '').strip()
+        
+        if not comment_text:
+            return jsonify({'success': False, 'error': 'Comment cannot be empty.'}), 400
+        
+        if len(comment_text) > 500:
+            return jsonify({'success': False, 'error': 'Comment is too long. Maximum 500 characters.'}), 400
+        
+        # Create new comment
+        comment = ProjectComment(
+            project_id=project_id,
+            user_id=user_id,
+            comment=comment_text
+        )
+        db.session.add(comment)
+        db.session.commit()
+        
+        # Return the new comment data
+        return jsonify({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'comment': comment.comment,
+                'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'user': {
+                    'id': user.id,
+                    'name': f"{user.first_name} {user.last_name}".strip() or user.username
+                }
+            },
+            'comment_count': project.get_comment_count()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error adding project comment: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500

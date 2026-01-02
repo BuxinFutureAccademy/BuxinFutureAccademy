@@ -720,15 +720,16 @@
                     document.getElementById('comment-count').textContent = data.comment_count;
                     
                     // Add new comment to the top of the list
+                    const userName = data.comment.user.name || 'Student';
                     const commentHtml = `
                         <div class="comment-item" id="comment-${data.comment.id}">
                             <div class="d-flex align-items-start">
                                 <div class="comment-avatar">
-                                    ${data.comment.user_name.split(' ').map(n => n[0]).join('')}
+                                    ${userName.split(' ').map(n => n[0]).join('')}
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <strong>${data.comment.user_name}</strong>
+                                        <strong>${userName}</strong>
                                         <div>
                                             <small class="text-muted">${data.comment.created_at}</small>
                                             <button class="delete-comment-btn" onclick="deleteComment(${data.comment.id})">

@@ -849,7 +849,8 @@
 
         // Toggle like/dislike reaction
         function toggleReaction(projectId, isLike) {
-            {% if current_user.is_authenticated %}
+            // Check if user is authenticated (either via login or System ID)
+            {% if current_user.is_authenticated or user %}
                 fetch(`/project/${projectId}/like`, {
                     method: 'POST',
                     headers: {
@@ -880,7 +881,12 @@
                             dislikeBtn.classList.add('active-dislike');
                         }
                     } else {
-                        alert('Error: ' + data.error);
+                        if (data.error && data.error.includes('registered')) {
+                            alert(data.error);
+                            window.location.href = '{{ url_for("store.available_classes") }}';
+                        } else {
+                            alert('Error: ' + (data.error || 'Unknown error'));
+                        }
                     }
                 })
                 .catch(error => {
@@ -888,14 +894,15 @@
                     alert('An error occurred. Please try again.');
                 });
             {% else %}
-                alert('Please login to like projects');
-                window.location.href = '{{ url_for("auth.login") }}';
+                alert('Please enter your Name and System ID to like projects');
+                window.location.href = '{{ url_for("main.index") }}';
             {% endif %}
         }
 
         // Add comment
         function addComment(projectId) {
-            {% if current_user.is_authenticated %}
+            // Check if user is authenticated (either via login or System ID)
+            {% if current_user.is_authenticated or user %}
                 const commentInput = document.getElementById(`comment-input-${projectId}`);
                 const comment = commentInput.value.trim();
                 
@@ -928,13 +935,14 @@
                         document.getElementById(`comment-count-${projectId}`).textContent = data.comment_count;
                         
                         // Add new comment to the top of the comments section
+                        const userName = data.comment.user.name || 'Student';
                         const commentHtml = `
                             <div class="comment-item" id="comment-${data.comment.id}">
                                 <div class="comment-avatar">
-                                    ${data.comment.user_name.split(' ').map(n => n[0]).join('')}
+                                    ${userName.split(' ').map(n => n[0]).join('')}
                                 </div>
                                 <div class="comment-content">
-                                    <div class="comment-author">${data.comment.user_name}</div>
+                                    <div class="comment-author">${userName}</div>
                                     <p class="comment-text">${data.comment.comment.replace(/\n/g, '<br>')}</p>
                                     <div class="comment-time">
                                         just now
@@ -960,8 +968,8 @@
                     alert('An error occurred. Please try again.');
                 });
             {% else %}
-                alert('Please login to comment');
-                window.location.href = '{{ url_for("auth.login") }}';
+                alert('Please enter your Name and System ID to comment on projects');
+                window.location.href = '{{ url_for("main.index") }}';
             {% endif %}
         }
 

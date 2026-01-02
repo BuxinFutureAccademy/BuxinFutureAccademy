@@ -2293,6 +2293,23 @@ def student_dashboard():
                 pass
             
             monthly_payments[enrollment.id] = payment_dict
+            
+            # Calculate months to show (from enrollment to current + 1)
+            months_to_show = []
+            temp_year = enrollment_year
+            temp_month = enrollment_month
+            max_months = 15  # Show up to 15 months ahead
+            count = 0
+            
+            while count < max_months and (temp_year < current_year or (temp_year == current_year and temp_month <= current_month + 1)):
+                months_to_show.append((temp_year, temp_month))
+                temp_month += 1
+                if temp_month > 12:
+                    temp_month = 1
+                    temp_year += 1
+                count += 1
+            
+            enrollment_info[enrollment.id]['months_to_show'] = months_to_show
     except Exception as e:
         # If table doesn't exist yet, just use empty dict
         error_str = str(e)

@@ -974,14 +974,12 @@
                             {% set enroll_info = enrollment_info.get(enrollment.id, {}) %}
                             {% set enrollment_month = enroll_info.month if enroll_info else current_month %}
                             {% set enrollment_year = enroll_info.year if enroll_info else current_year %}
+                            {% set months_to_show = enroll_info.months_to_show if enroll_info and enroll_info.months_to_show else [] %}
                             
                             {# Show months from enrollment month to current month + 1 #}
-                            {% set show_year = enrollment_year %}
-                            {% set show_month = enrollment_month %}
-                            {% set max_iterations = 15 %}
-                            {% set iteration = 0 %}
-                            
-                            {% while iteration < max_iterations and (show_year < current_year or (show_year == current_year and show_month <= current_month + 1)) %}
+                            {% for year_month in months_to_show %}
+                                {% set show_year = year_month[0] %}
+                                {% set show_month = year_month[1] %}
                                 {% set month_name = month_names[show_month] %}
                                 {% set payment = payments.get(show_month) if show_year == current_year else None %}
                                 
@@ -1060,15 +1058,7 @@
                                         </div>
                                     </div>
                                 {% endif %}
-                                
-                                {# Move to next month #}
-                                {% set show_month = show_month + 1 %}
-                                {% if show_month > 12 %}
-                                    {% set show_month = 1 %}
-                                    {% set show_year = show_year + 1 %}
-                                {% endif %}
-                                {% set iteration = iteration + 1 %}
-                            {% endwhile %}
+                            {% endfor %}
                             {% endif %}
                         {% endfor %}
                     {% else %}
@@ -1085,49 +1075,43 @@
                             {% set enroll_info = enrollment_info.get(enrollment.id, {}) %}
                             {% set enrollment_month = enroll_info.month if enroll_info else current_month %}
                             {% set enrollment_year = enroll_info.year if enroll_info else current_year %}
+                            {% set months_to_show = enroll_info.months_to_show if enroll_info and enroll_info.months_to_show else [] %}
                             
-                            {# Show messages only for months from enrollment onwards #}
-                            {% set msg_year = enrollment_year %}
-                            {% set msg_month = enrollment_month %}
-                            {% set max_iterations = 15 %}
-                            {% set msg_iteration = 0 %}
-                            
-                            {% while msg_iteration < max_iterations and (msg_year < current_year or (msg_year == current_year and msg_month <= current_month)) %}
+                            {# Show messages only for months from enrollment onwards (up to current month) #}
+                            {% for year_month in months_to_show %}
+                                {% set msg_year = year_month[0] %}
+                                {% set msg_month = year_month[1] %}
                                 {% set month_name = month_names[msg_month] %}
                                 {% set payment = payments.get(msg_month) if msg_year == current_year else None %}
                                 {% set is_enrollment_month = (msg_year == enrollment_year and msg_month == enrollment_month) %}
                                 
-                                {% if is_enrollment_month %}
-                                    <div class="alert alert-success alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
-                                        <i class="fas fa-check me-1"></i>{{ month_name }} {{ msg_year }}: Enrollment payment completed. Welcome to this class!
-                                    </div>
-                                {% elif payment %}
-                                    {% if payment.status == 'verified' %}
+                                {# Only show messages for months up to current month #}
+                                {% if msg_year < current_year or (msg_year == current_year and msg_month <= current_month) %}
+                                    {% if is_enrollment_month %}
                                         <div class="alert alert-success alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
-                                            <i class="fas fa-check me-1"></i>{{ month_name }} {{ msg_year }}: Payment verified. Thank you!
+                                            <i class="fas fa-check me-1"></i>{{ month_name }} {{ msg_year }}: Enrollment payment completed. Welcome to this class!
                                         </div>
-                                    {% elif payment.status == 'pending' %}
-                                        <div class="alert alert-warning alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
-                                            <i class="fas fa-clock me-1"></i>{{ month_name }} {{ msg_year }}: Payment pending admin approval.
-                                        </div>
-                                    {% elif payment.status == 'rejected' %}
+                                    {% elif payment %}
+                                        {% if payment.status == 'verified' %}
+                                            <div class="alert alert-success alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                                <i class="fas fa-check me-1"></i>{{ month_name }} {{ msg_year }}: Payment verified. Thank you!
+                                            </div>
+                                        {% elif payment.status == 'pending' %}
+                                            <div class="alert alert-warning alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                                <i class="fas fa-clock me-1"></i>{{ month_name }} {{ msg_year }}: Payment pending admin approval.
+                                            </div>
+                                        {% elif payment.status == 'rejected' %}
+                                            <div class="alert alert-danger alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                                <i class="fas fa-times me-1"></i>{{ month_name }} {{ msg_year }}: Payment rejected. Please upload a new receipt.
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
                                         <div class="alert alert-danger alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
-                                            <i class="fas fa-times me-1"></i>{{ month_name }} {{ msg_year }}: Payment rejected. Please upload a new receipt.
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ month_name }} {{ msg_year }}: Payment not received. Please upload your receipt.
                                         </div>
                                     {% endif %}
-                                {% else %}
-                                    <div class="alert alert-danger alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ month_name }} {{ msg_year }}: Payment not received. Please upload your receipt.
-                                    </div>
                                 {% endif %}
-                                
-                                {% set msg_month = msg_month + 1 %}
-                                {% if msg_month > 12 %}
-                                    {% set msg_month = 1 %}
-                                    {% set msg_year = msg_year + 1 %}
-                                {% endif %}
-                                {% set msg_iteration = msg_iteration + 1 %}
-                            {% endwhile %}
+                            {% endfor %}
                             {% endif %}
                         {% endfor %}
                     {% endif %}

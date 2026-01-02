@@ -302,6 +302,9 @@
         <button type="button" class="btn btn-info btn-lg ms-2" data-bs-toggle="modal" data-bs-target="#recentMaterialsModal">
             <i class="fas fa-history me-2"></i>View Recent Materials
         </button>
+        <button type="button" class="btn btn-success btn-lg ms-2" data-bs-toggle="modal" data-bs-target="#monthlyPaymentsModal">
+            <i class="fas fa-money-bill-wave me-2"></i>View Monthly Payments
+        </button>
     </div>
 
     <!-- Share Materials Modal -->
@@ -455,6 +458,94 @@ Or upload a file below (Image, Video, or PDF)."></textarea>
                     <p class="text-muted">No materials shared yet for family classes.</p>
                 </div>
             {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Payments Modal -->
+    <div class="modal fade" id="monthlyPaymentsModal" tabindex="-1" aria-labelledby="monthlyPaymentsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="monthlyPaymentsModalLabel">
+                        <i class="fas fa-money-bill-wave me-2"></i>Monthly Payments
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="GET" action="{{ url_for('admin.admin_family_classes') }}" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="payment_month" class="form-label">Select Month</label>
+                                <select class="form-select" id="payment_month" name="payment_month" required>
+                                    <option value="">Choose month...</option>
+                                    <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
+                                    <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
+                                    <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>
+                                    <option value="4" {% if selected_month == 4 %}selected{% endif %}>April</option>
+                                    <option value="5" {% if selected_month == 5 %}selected{% endif %}>May</option>
+                                    <option value="6" {% if selected_month == 6 %}selected{% endif %}>June</option>
+                                    <option value="7" {% if selected_month == 7 %}selected{% endif %}>July</option>
+                                    <option value="8" {% if selected_month == 8 %}selected{% endif %}>August</option>
+                                    <option value="9" {% if selected_month == 9 %}selected{% endif %}>September</option>
+                                    <option value="10" {% if selected_month == 10 %}selected{% endif %}>October</option>
+                                    <option value="11" {% if selected_month == 11 %}selected{% endif %}>November</option>
+                                    <option value="12" {% if selected_month == 12 %}selected{% endif %}>December</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="payment_year" class="form-label">Select Year</label>
+                                <input type="number" class="form-control" id="payment_year" name="payment_year" value="{{ selected_year or 2024 }}" min="2020" max="2030" required>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-2"></i>View Payments
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    {% if selected_month and monthly_payments_data %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Student ID</th>
+                                        <th>Amount</th>
+                                        <th>Payment Receipt</th>
+                                        <th>Uploaded At</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment_id, payment in monthly_payments_data.items() %}
+                                    <tr>
+                                        <td>{{ payment.student_name }}</td>
+                                        <td>{{ payment.student_id }}</td>
+                                        <td>${{ "%.2f"|format(payment.amount) }}</td>
+                                        <td>
+                                            <a href="{{ payment.receipt_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>View Receipt
+                                            </a>
+                                        </td>
+                                        <td>{{ payment.uploaded_at.strftime('%B %d, %Y at %I:%M %p') if payment.uploaded_at else 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% elif selected_month %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No payments found for the selected month.</p>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Please select a month to view payments.</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -4811,13 +4811,39 @@ def admin_individual_classes():
         db.session.rollback()
         individual_materials = []
 
+    # Get monthly payments data (for admin view)
+    monthly_payments_data = {}
+    selected_month = request.args.get('payment_month', type=int)
+    selected_year = request.args.get('payment_year', type=int, default=datetime.now().year)
+    
+    if selected_month:
+        payments = MonthlyPayment.query.filter_by(
+            class_type='individual',
+            payment_month=selected_month,
+            payment_year=selected_year
+        ).all()
+        
+        for payment in payments:
+            student_name = payment.user.first_name + ' ' + payment.user.last_name if payment.user else 'Unknown'
+            monthly_payments_data[payment.id] = {
+                'student_name': student_name,
+                'student_id': payment.user.student_id if payment.user else 'N/A',
+                'receipt_url': payment.receipt_url,
+                'amount': payment.amount,
+                'uploaded_at': payment.uploaded_at,
+                'status': payment.status
+            }
+    
     return render_template('admin_individual_classes.html',
         individual_students=individual_students,
         pending_enrollments=pending_enrollments,
         all_individual_classes=all_individual_classes,
         search=search,
         status_filter=status_filter,
-        materials=individual_materials
+        materials=individual_materials,
+        monthly_payments_data=monthly_payments_data,
+        selected_month=selected_month,
+        selected_year=selected_year
     )
 
 
@@ -4952,10 +4978,36 @@ def admin_group_classes():
         db.session.rollback()
         group_materials = []
     
+    # Get monthly payments data (for admin view)
+    monthly_payments_data = {}
+    selected_month = request.args.get('payment_month', type=int)
+    selected_year = request.args.get('payment_year', type=int, default=datetime.now().year)
+    
+    if selected_month:
+        payments = MonthlyPayment.query.filter_by(
+            class_type='group',
+            payment_month=selected_month,
+            payment_year=selected_year
+        ).all()
+        
+        for payment in payments:
+            student_name = payment.user.first_name + ' ' + payment.user.last_name if payment.user else 'Unknown'
+            monthly_payments_data[payment.id] = {
+                'student_name': student_name,
+                'student_id': payment.user.student_id if payment.user else 'N/A',
+                'receipt_url': payment.receipt_url,
+                'amount': payment.amount,
+                'uploaded_at': payment.uploaded_at,
+                'status': payment.status
+            }
+    
     return render_template('admin_group_classes.html',
         group_classes=group_classes,
         search=search,
-        materials=group_materials
+        materials=group_materials,
+        monthly_payments_data=monthly_payments_data,
+        selected_month=selected_month,
+        selected_year=selected_year
     )
 
 
@@ -5258,11 +5310,37 @@ def admin_family_classes():
         db.session.rollback()
         family_materials = []
     
+    # Get monthly payments data (for admin view)
+    monthly_payments_data = {}
+    selected_month = request.args.get('payment_month', type=int)
+    selected_year = request.args.get('payment_year', type=int, default=datetime.now().year)
+    
+    if selected_month:
+        payments = MonthlyPayment.query.filter_by(
+            class_type='family',
+            payment_month=selected_month,
+            payment_year=selected_year
+        ).all()
+        
+        for payment in payments:
+            student_name = payment.user.first_name + ' ' + payment.user.last_name if payment.user else 'Unknown'
+            monthly_payments_data[payment.id] = {
+                'student_name': student_name,
+                'student_id': payment.user.student_id if payment.user else 'N/A',
+                'receipt_url': payment.receipt_url,
+                'amount': payment.amount,
+                'uploaded_at': payment.uploaded_at,
+                'status': payment.status
+            }
+    
     return render_template('admin_family_classes.html',
         families=families,
         pending_families=pending_families,
         search=search,
-        materials=family_materials
+        materials=family_materials,
+        monthly_payments_data=monthly_payments_data,
+        selected_month=selected_month,
+        selected_year=selected_year
     )
 
 
@@ -5640,7 +5718,37 @@ def admin_schools():
         db.session.rollback()
         school_materials = []
         
-    return render_template('admin_schools.html', schools=schools, school_classes=school_classes, materials=school_materials)
+    # Get monthly payments data (for admin view)
+    monthly_payments_data = {}
+    selected_month = request.args.get('payment_month', type=int)
+    selected_year = request.args.get('payment_year', type=int, default=datetime.now().year)
+    
+    if selected_month:
+        payments = MonthlyPayment.query.filter_by(
+            class_type='school',
+            payment_month=selected_month,
+            payment_year=selected_year
+        ).all()
+        
+        for payment in payments:
+            student_name = payment.user.first_name + ' ' + payment.user.last_name if payment.user else 'Unknown'
+            monthly_payments_data[payment.id] = {
+                'student_name': student_name,
+                'student_id': payment.user.student_id if payment.user else 'N/A',
+                'receipt_url': payment.receipt_url,
+                'amount': payment.amount,
+                'uploaded_at': payment.uploaded_at,
+                'status': payment.status
+            }
+    
+    return render_template('admin_schools.html', 
+        schools=schools, 
+        school_classes=school_classes, 
+        materials=school_materials,
+        monthly_payments_data=monthly_payments_data,
+        selected_month=selected_month,
+        selected_year=selected_year
+    )
 
 
 @bp.route('/admin/schools/<int:school_id>')

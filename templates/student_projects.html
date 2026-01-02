@@ -638,10 +638,22 @@
                                     {% for comment in project.recent_comments %}
                                         <div class="comment-item" id="comment-{{ comment.id }}">
                                             <div class="comment-avatar">
-                                                {{ comment.user.first_name[0] }}{{ comment.user.last_name[0] }}
+                                                {% set first_initial = comment.user.first_name[0] if comment.user.first_name else '' %}
+                                                {% set last_initial = comment.user.last_name[0] if comment.user.last_name else '' %}
+                                                {% if first_initial or last_initial %}
+                                                    {{ first_initial }}{{ last_initial }}
+                                                {% else %}
+                                                    {{ comment.user.username[0] if comment.user.username else 'G' }}
+                                                {% endif %}
                                             </div>
                                             <div class="comment-content">
-                                                <div class="comment-author">{{ comment.user.first_name }} {{ comment.user.last_name }}</div>
+                                                <div class="comment-author">
+                                                    {% if comment.user.first_name or comment.user.last_name %}
+                                                        {{ comment.user.first_name }} {{ comment.user.last_name }}
+                                                    {% else %}
+                                                        {{ comment.user.username or 'Guest' }}
+                                                    {% endif %}
+                                                </div>
                                                 <p class="comment-text">{{ comment.comment }}</p>
                                                 <div class="comment-time">
                                                     {{ comment.created_at.strftime('%m/%d %I:%M %p') }}

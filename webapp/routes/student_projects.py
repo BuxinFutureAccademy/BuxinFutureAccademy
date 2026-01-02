@@ -109,62 +109,78 @@ def check_student_enrollment(user_id):
 @bp.route('/student-projects', endpoint='student_projects')
 def student_projects():
     """View all student projects - public page, no enrollment required"""
-    # Get user for like/comment functionality (supports both login and System ID)
-    user, user_id = get_student_user()
-    
-    search = request.args.get('search', '').strip()
-    sort_by = request.args.get('sort', 'newest')
-    featured_only = request.args.get('featured') == 'true'
-    page = request.args.get('page', 1, type=int)
-    per_page = 10
+    try:
+        # Get user for like/comment functionality (supports both login and System ID)
+        user, user_id = get_student_user()
+        
+        search = request.args.get('search', '').strip()
+        sort_by = request.args.get('sort', 'newest')
+        featured_only = request.args.get('featured') == 'true'
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
 
-    query = StudentProject.query.filter_by(is_active=True)
-    if search:
-        like = f"%{search}%"
-        query = query.filter(db.or_(StudentProject.title.like(like), StudentProject.description.like(like)))
-    if featured_only:
-        query = query.filter_by(featured=True)
+        query = StudentProject.query.filter_by(is_active=True)
+        if search:
+            like = f"%{search}%"
+            query = query.filter(db.or_(StudentProject.title.like(like), StudentProject.description.like(like)))
+        if featured_only:
+            query = query.filter_by(featured=True)
 
-    if sort_by == 'popular':
-        like_counts = db.session.query(
-            ProjectLike.project_id,
-            db.func.count(ProjectLike.id).label('like_count'),
-        ).filter_by(is_like=True).group_by(ProjectLike.project_id).subquery()
-        query = query.outerjoin(like_counts, StudentProject.id == like_counts.c.project_id).order_by(
-            db.desc(db.func.coalesce(like_counts.c.like_count, 0))
+        if sort_by == 'popular':
+            like_counts = db.session.query(
+                ProjectLike.project_id,
+                db.func.count(ProjectLike.id).label('like_count'),
+            ).filter_by(is_like=True).group_by(ProjectLike.project_id).subquery()
+            query = query.outerjoin(like_counts, StudentProject.id == like_counts.c.project_id).order_by(
+                db.desc(db.func.coalesce(like_counts.c.like_count, 0))
+            )
+        elif sort_by == 'title':
+            query = query.order_by(StudentProject.title.asc())
+        else:
+            query = query.order_by(StudentProject.created_at.desc())
+
+        projects_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        projects = projects_pagination.items
+
+        for project in projects:
+            try:
+                recent_comments = (
+                    ProjectComment.query.filter_by(project_id=project.id)
+                    .order_by(ProjectComment.created_at.desc())
+                    .limit(3)
+                    .all()
+                )
+                project.recent_comments = list(reversed(recent_comments))
+            except Exception as e:
+                current_app.logger.error(f"Error loading comments for project {project.id}: {e}")
+                project.recent_comments = []
+
+        try:
+            total_projects = StudentProject.query.filter_by(is_active=True).count()
+            featured_projects = StudentProject.query.filter_by(is_active=True, featured=True).count()
+        except Exception as e:
+            current_app.logger.error(f"Error counting projects: {e}")
+            total_projects = len(projects)
+            featured_projects = 0
+
+        return render_template(
+            'student_projects.html',
+            projects=projects,
+            projects_pagination=projects_pagination,
+            total_projects=total_projects,
+            featured_projects=featured_projects,
+            search_term=search,
+            sort_by=sort_by,
+            featured_only=featured_only,
+            current_page=page,
+            user=user,  # Pass user for template authentication checks
         )
-    elif sort_by == 'title':
-        query = query.order_by(StudentProject.title.asc())
-    else:
-        query = query.order_by(StudentProject.created_at.desc())
-
-    projects_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    projects = projects_pagination.items
-
-    for project in projects:
-        recent_comments = (
-            ProjectComment.query.filter_by(project_id=project.id)
-            .order_by(ProjectComment.created_at.desc())
-            .limit(3)
-            .all()
-        )
-        project.recent_comments = list(reversed(recent_comments))
-
-    total_projects = StudentProject.query.filter_by(is_active=True).count()
-    featured_projects = StudentProject.query.filter_by(is_active=True, featured=True).count()
-
-    return render_template(
-        'student_projects.html',
-        projects=projects,
-        projects_pagination=projects_pagination,
-        total_projects=total_projects,
-        featured_projects=featured_projects,
-        search_term=search,
-        sort_by=sort_by,
-        featured_only=featured_only,
-        current_page=page,
-        user=user,  # Pass user for template authentication checks
-    )
+    except Exception as e:
+        current_app.logger.error(f"Error in student_projects route: {e}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        flash('An error occurred while loading projects. Please try again later.', 'danger')
+        return redirect(url_for('main.index'))
 
 
 @bp.route('/student-projects/<int:project_id>', endpoint='view_project')
@@ -188,23 +204,37 @@ def view_project(project_id):
 @bp.route('/my-projects', endpoint='my_projects')
 def my_projects():
     """View student's own projects - requires completed enrollment"""
-    user, user_id = get_student_user()
-    
-    if not user:
-        flash('Please enter your Name and System ID to access your projects.', 'info')
+    try:
+        user, user_id = get_student_user()
+        
+        if not user:
+            flash('Please enter your Name and System ID to access your projects.', 'info')
+            return redirect(url_for('main.index'))
+        
+        # Check if student has completed enrollment
+        if not check_student_enrollment(user_id):
+            flash('You need to be registered in a class to view your projects. Please register for a class first.', 'warning')
+            return redirect(url_for('store.available_classes'))
+        
+        try:
+            projects = (
+                StudentProject.query.filter_by(student_id=user_id).order_by(StudentProject.created_at.desc()).all()
+            )
+            total_likes = sum(project.get_like_count() for project in projects)
+            total_comments = sum(project.get_comment_count() for project in projects)
+        except Exception as e:
+            current_app.logger.error(f"Error loading projects for user {user_id}: {e}")
+            projects = []
+            total_likes = 0
+            total_comments = 0
+        
+        return render_template('my_projects.html', projects=projects, total_likes=total_likes, total_comments=total_comments, user=user)
+    except Exception as e:
+        current_app.logger.error(f"Error in my_projects route: {e}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        flash('An error occurred while loading your projects. Please try again later.', 'danger')
         return redirect(url_for('main.index'))
-    
-    # Check if student has completed enrollment
-    if not check_student_enrollment(user_id):
-        flash('You need to be registered in a class to view your projects. Please register for a class first.', 'warning')
-        return redirect(url_for('store.available_classes'))
-    
-    projects = (
-        StudentProject.query.filter_by(student_id=user_id).order_by(StudentProject.created_at.desc()).all()
-    )
-    total_likes = sum(project.get_like_count() for project in projects)
-    total_comments = sum(project.get_comment_count() for project in projects)
-    return render_template('my_projects.html', projects=projects, total_likes=total_likes, total_comments=total_comments, user=user)
 
 
 @bp.route('/create-project', methods=['GET', 'POST'], endpoint='create_project')

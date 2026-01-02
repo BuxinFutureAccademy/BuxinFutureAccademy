@@ -458,11 +458,23 @@
                     <div class="comment-item" id="comment-{{ comment.id }}">
                         <div class="d-flex align-items-start">
                             <div class="comment-avatar">
-                                {{ comment.user.first_name[0] }}{{ comment.user.last_name[0] }}
+                                {% set first_initial = comment.user.first_name[0] if comment.user.first_name else '' %}
+                                {% set last_initial = comment.user.last_name[0] if comment.user.last_name else '' %}
+                                {% if first_initial or last_initial %}
+                                    {{ first_initial }}{{ last_initial }}
+                                {% else %}
+                                    {{ comment.user.username[0] if comment.user.username else 'G' }}
+                                {% endif %}
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <strong>{{ comment.user.first_name }} {{ comment.user.last_name }}</strong>
+                                    <strong>
+                                        {% if comment.user.first_name or comment.user.last_name %}
+                                            {{ comment.user.first_name }} {{ comment.user.last_name }}
+                                        {% else %}
+                                            {{ comment.user.username or 'Guest' }}
+                                        {% endif %}
+                                    </strong>
                                     <div>
                                         <small class="text-muted">{{ comment.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
                                         {% if current_user.is_authenticated and (current_user.id == comment.user_id or current_user.is_admin) %}

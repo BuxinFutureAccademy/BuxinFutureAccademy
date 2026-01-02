@@ -1142,12 +1142,7 @@ def admin_dashboard():
     except Exception:
         db.session.rollback()
     
-    # Get materials
-    try:
-        materials = LearningMaterial.query.order_by(LearningMaterial.created_at.desc()).limit(50).all()
-    except Exception:
-        db.session.rollback()
-        materials = []
+    # Materials removed from dashboard - now shown in individual admin pages
     
     # Get all individual classes for the dashboard
     all_individual_classes = []
@@ -1168,7 +1163,6 @@ def admin_dashboard():
         schools_data=schools_data,  # Changed from school_enrollments_data
         families_data=families_data,  # Changed from family_enrollments_data
         group_classes_data=group_classes_data,
-        materials=materials,
         course_orders=course_orders,
         enrollments=enrollments,
         robotics_count=robotics_count
@@ -4752,12 +4746,20 @@ def admin_individual_classes():
     legacy_classes = IndividualClass.query.all()
     all_individual_classes = classes + legacy_classes
 
+    # Get recent materials for individual classes (limit 20)
+    try:
+        individual_materials = LearningMaterial.query.filter_by(class_type='individual').order_by(LearningMaterial.created_at.desc()).limit(20).all()
+    except Exception:
+        db.session.rollback()
+        individual_materials = []
+
     return render_template('admin_individual_classes.html',
         individual_students=individual_students,
         pending_enrollments=pending_enrollments,
         all_individual_classes=all_individual_classes,
         search=search,
-        status_filter=status_filter
+        status_filter=status_filter,
+        materials=individual_materials
     )
 
 
@@ -4885,9 +4887,17 @@ def admin_group_classes():
         group_class.class_status = 'Active' if group_class.total_students > 0 else 'Closed'
         group_class.enrollments = enrollments
     
+    # Get recent materials for group classes (limit 20)
+    try:
+        group_materials = LearningMaterial.query.filter_by(class_type='group').order_by(LearningMaterial.created_at.desc()).limit(20).all()
+    except Exception:
+        db.session.rollback()
+        group_materials = []
+    
     return render_template('admin_group_classes.html',
         group_classes=group_classes,
-        search=search
+        search=search,
+        materials=group_materials
     )
 
 
@@ -5183,10 +5193,18 @@ def admin_family_classes():
         else:
             families.append(family_data)
     
+    # Get recent materials for family classes (limit 20)
+    try:
+        family_materials = LearningMaterial.query.filter_by(class_type='family').order_by(LearningMaterial.created_at.desc()).limit(20).all()
+    except Exception:
+        db.session.rollback()
+        family_materials = []
+    
     return render_template('admin_family_classes.html',
         families=families,
         pending_families=pending_families,
-        search=search
+        search=search,
+        materials=family_materials
     )
 
 
@@ -5466,8 +5484,15 @@ def admin_schools():
     except Exception:
         db.session.rollback()
         school_classes = []
+    
+    # Get recent materials for school classes (limit 20)
+    try:
+        school_materials = LearningMaterial.query.filter_by(class_type='school').order_by(LearningMaterial.created_at.desc()).limit(20).all()
+    except Exception:
+        db.session.rollback()
+        school_materials = []
         
-    return render_template('admin_schools.html', schools=schools, school_classes=school_classes)
+    return render_template('admin_schools.html', schools=schools, school_classes=school_classes, materials=school_materials)
 
 
 @bp.route('/admin/schools/<int:school_id>')

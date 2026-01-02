@@ -1213,7 +1213,7 @@
                             <i class="fas fa-door-open"></i>
                             Enter the Classroom
                         </a>
-                        <a href="{{ url_for('main.choose_class_type') }}" class="btn-outline">
+                        <a href="#class-types" class="btn-outline" onclick="event.preventDefault(); document.getElementById('class-types').scrollIntoView({behavior: 'smooth'});">
                             <i class="fas fa-graduation-cap"></i>
                             Register Now
                     </a>
@@ -1655,8 +1655,8 @@
                 <div class="col-lg-2 col-6">
                     <h5 class="footer-title">Account</h5>
                     <ul class="footer-links">
-                        <li><a href="{{ url_for('main.choose_class_type') }}">Register</a></li>
-                        <li><a href="{{ url_for('main.choose_class_type') }}">Register</a></li>
+                        <li><a href="#class-types" onclick="event.preventDefault(); document.getElementById('class-types').scrollIntoView({behavior: 'smooth'});">Register</a></li>
+                        <li><a href="#class-types" onclick="event.preventDefault(); document.getElementById('class-types').scrollIntoView({behavior: 'smooth'});">Register</a></li>
                         <li><a href="{{ url_for('student_projects.student_projects') }}">Projects</a></li>
                     </ul>
                 </div>

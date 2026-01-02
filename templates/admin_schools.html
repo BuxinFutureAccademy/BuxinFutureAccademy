@@ -217,16 +217,31 @@
         </div>
     </div>
 
-    <!-- Share Materials Section -->
-    <div class="card mt-4">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0"><i class="fas fa-share me-2"></i>Share Learning Material to Schools</h3>
-        </div>
-        <div class="card-body">
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="share_material" value="1">
-                
-                <!-- School Selection (Multi-select) -->
+    <!-- Share Materials Button -->
+    <div class="mt-4 mb-3">
+        <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#shareMaterialModal">
+            <i class="fas fa-share me-2"></i>Share Learning Material to Schools
+        </button>
+        <button type="button" class="btn btn-info btn-lg ms-2" data-bs-toggle="modal" data-bs-target="#recentMaterialsModal">
+            <i class="fas fa-history me-2"></i>View Recent Materials
+        </button>
+    </div>
+
+    <!-- Share Materials Modal -->
+    <div class="modal fade" id="shareMaterialModal" tabindex="-1" aria-labelledby="shareMaterialModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="shareMaterialModalLabel">
+                        <i class="fas fa-share me-2"></i>Share Learning Material to Schools
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="share_material" value="1">
+                        
+                        <!-- School Selection (Multi-select) -->
                 <div class="form-group mb-3">
                     <label class="form-label"><i class="fas fa-school me-2"></i>Select Schools (You can select multiple)</label>
                     <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
@@ -288,19 +303,26 @@ Or upload a file below (Image, Video, or PDF)."></textarea>
                     </ul>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane me-2"></i>Share Material to Selected Schools
-                </button>
-            </form>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i>Share Material to Selected Schools
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Recent Materials Section -->
-    <div class="card mt-4">
-        <div class="card-header bg-info text-white">
-            <h3 class="mb-0"><i class="fas fa-history me-2"></i>Recent Learning Materials (Last 20)</h3>
-        </div>
-        <div class="card-body">
+    <!-- Recent Materials Modal -->
+    <div class="modal fade" id="recentMaterialsModal" tabindex="-1" aria-labelledby="recentMaterialsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="recentMaterialsModalLabel">
+                        <i class="fas fa-history me-2"></i>Recent Learning Materials (Last 20)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
             {% if materials %}
                 {% for material in materials %}
                     <div class="card mb-3">
@@ -361,6 +383,8 @@ Or upload a file below (Image, Video, or PDF)."></textarea>
                     <p class="text-muted">No materials shared yet for school classes.</p>
                 </div>
             {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

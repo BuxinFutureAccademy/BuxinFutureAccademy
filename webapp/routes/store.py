@@ -68,101 +68,155 @@ def store():
 @bp.route('/available-classes', endpoint='available_classes')
 def available_classes():
     """Browse and enroll in available classes - Filtered by class type"""
-    from ..models import ClassPricing, ClassEnrollment
+    from ..models import ClassPricing, ClassEnrollment, User
     from flask import session
+    import traceback
     
-    # Check if student is registered - if yes, redirect to dashboard
-    user = None
-    user_id = None
-    
-    if current_user.is_authenticated:
-        user = current_user
-        user_id = current_user.id
-    else:
-        user_id = session.get('student_user_id') or session.get('user_id')
-        if user_id:
-            user = User.query.get(user_id)
-    
-    # If student is registered, redirect to dashboard
-    if user:
-        enrollment = ClassEnrollment.query.filter_by(
-            user_id=user_id,
-            status='completed'
-        ).first()
-        if enrollment:
-            # Student is registered - redirect to dashboard
-            if enrollment.class_type == 'individual':
-                return redirect(url_for('admin.student_dashboard'))
-            elif enrollment.class_type == 'group':
-                return redirect(url_for('main.group_class_dashboard'))
-            elif enrollment.class_type == 'family':
-                return redirect(url_for('main.family_dashboard'))
-            elif enrollment.class_type == 'school':
-                return redirect(url_for('schools.school_dashboard'))
-            return redirect(url_for('admin.student_dashboard'))
-    
-    pricing_type = request.args.get('type')
-    
-    # If user is logged in, force their pricing type
-    if current_user.is_authenticated and current_user.class_type:
-        pricing_type = current_user.class_type
-    
-    # Default to individual if not specified
-    if not pricing_type:
-        pricing_type = 'individual'
-
     try:
-        pricing_data = ClassPricing.get_all_pricing()
-        pricing_info = pricing_data.get(pricing_type, pricing_data.get('individual', {}))
-    except Exception:
-        pricing_data = {}
-        pricing_info = {'name': pricing_type.title(), 'price': 100}
+        # Check if student is registered - if yes, redirect to dashboard
+        user = None
+        user_id = None
+        
+        try:
+            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+                user = current_user
+                user_id = current_user.id
+            else:
+                user_id = session.get('student_user_id') or session.get('user_id')
+                if user_id:
+                    try:
+                        user = User.query.get(user_id)
+                    except Exception as e:
+                        current_app.logger.error(f"Error querying user: {e}")
+                        user = None
+        except Exception as e:
+            current_app.logger.error(f"Error checking user authentication: {e}")
+            # Continue without user - allow page to load
+        
+        # If student is registered, redirect to dashboard
+        if user:
+            try:
+                enrollment = ClassEnrollment.query.filter_by(
+                    user_id=user_id,
+                    status='completed'
+                ).first()
+                if enrollment:
+                    # Student is registered - redirect to dashboard
+                    if enrollment.class_type == 'individual':
+                        return redirect(url_for('admin.student_dashboard'))
+                    elif enrollment.class_type == 'group':
+                        return redirect(url_for('main.group_class_dashboard'))
+                    elif enrollment.class_type == 'family':
+                        return redirect(url_for('main.family_dashboard'))
+                    elif enrollment.class_type == 'school':
+                        return redirect(url_for('schools.school_dashboard'))
+                    return redirect(url_for('admin.student_dashboard'))
+            except Exception as e:
+                current_app.logger.error(f"Error checking enrollment: {e}")
+                # Continue - don't block page load
+        
+        pricing_type = request.args.get('type')
+        
+        # If user is logged in, force their pricing type
+        try:
+            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated and hasattr(current_user, 'class_type') and current_user.class_type:
+                pricing_type = current_user.class_type
+        except Exception as e:
+            current_app.logger.error(f"Error checking user class_type: {e}")
 
-    classes = []
-    enrolled_class_ids = set()
-    
-    # Get enrolled class IDs for this user
-    if user_id:
-        enrollments = ClassEnrollment.query.filter_by(
-            user_id=user_id,
-            status='completed'
-        ).all()
-        enrolled_class_ids = {e.class_id for e in enrollments}
-    
-    # Filter classes by type - each type has its own list
-    if pricing_type == 'individual':
+        # Default to individual if not specified
+        if not pricing_type:
+            pricing_type = 'individual'
+
         try:
-            # Show legacy individual classes AND new unified classes with type 'individual'
-            legacy_classes = IndividualClass.query.all()
-            new_classes = GroupClass.query.filter_by(class_type='individual').all()
-            classes = legacy_classes + new_classes
-        except Exception:
-            classes = []
-    elif pricing_type == 'group':
-        try:
-            classes = GroupClass.query.filter_by(class_type='group').all()
-        except Exception:
-            classes = []
-    elif pricing_type == 'family':
-        try:
-            classes = GroupClass.query.filter_by(class_type='family').all()
-        except Exception:
-            classes = []
-    elif pricing_type == 'school':
-        try:
-            classes = GroupClass.query.filter_by(class_type='school').all()
-        except Exception:
-            classes = []
-    
-    return render_template(
-        'available_classes.html',
-        classes=classes,
-        pricing_type=pricing_type,
-        pricing_info=pricing_info,
-        pricing_data=pricing_data,
-        enrolled_class_ids=enrolled_class_ids,
-        user=user
-    )
+            pricing_data = ClassPricing.get_all_pricing()
+            pricing_info = pricing_data.get(pricing_type, pricing_data.get('individual', {}))
+        except Exception as e:
+            current_app.logger.error(f"Error getting pricing data: {e}")
+            current_app.logger.error(traceback.format_exc())
+            try:
+                db.session.rollback()
+            except:
+                pass
+            pricing_data = {}
+            pricing_info = {'name': pricing_type.title(), 'price': 100}
+
+        classes = []
+        enrolled_class_ids = set()
+        
+        # Get enrolled class IDs for this user
+        if user_id:
+            try:
+                enrollments = ClassEnrollment.query.filter_by(
+                    user_id=user_id,
+                    status='completed'
+                ).all()
+                enrolled_class_ids = {e.class_id for e in enrollments}
+            except Exception as e:
+                current_app.logger.error(f"Error getting enrollments: {e}")
+                enrolled_class_ids = set()
+        
+        # Filter classes by type - each type has its own list
+        if pricing_type == 'individual':
+            try:
+                # Show legacy individual classes AND new unified classes with type 'individual'
+                legacy_classes = IndividualClass.query.all()
+                new_classes = GroupClass.query.filter_by(class_type='individual').all()
+                classes = legacy_classes + new_classes
+            except Exception as e:
+                current_app.logger.error(f"Error querying individual classes: {e}")
+                current_app.logger.error(traceback.format_exc())
+                try:
+                    db.session.rollback()
+                except:
+                    pass
+                classes = []
+        elif pricing_type == 'group':
+            try:
+                classes = GroupClass.query.filter_by(class_type='group').all()
+            except Exception as e:
+                current_app.logger.error(f"Error querying group classes: {e}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
+                classes = []
+        elif pricing_type == 'family':
+            try:
+                classes = GroupClass.query.filter_by(class_type='family').all()
+            except Exception as e:
+                current_app.logger.error(f"Error querying family classes: {e}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
+                classes = []
+        elif pricing_type == 'school':
+            try:
+                classes = GroupClass.query.filter_by(class_type='school').all()
+            except Exception as e:
+                current_app.logger.error(f"Error querying school classes: {e}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
+                classes = []
+        
+        return render_template(
+            'available_classes.html',
+            classes=classes,
+            pricing_type=pricing_type,
+            pricing_info=pricing_info,
+            pricing_data=pricing_data,
+            enrolled_class_ids=enrolled_class_ids,
+            user=user
+        )
+    except Exception as e:
+        current_app.logger.error(f"Critical error in available_classes route: {e}")
+        current_app.logger.error(traceback.format_exc())
+        # Return a basic error page or redirect
+        flash('An error occurred while loading classes. Please try again later.', 'danger')
+        return redirect(url_for('main.index'))
 
 
 @bp.route('/register-class/<class_type>/<int:class_id>', methods=['GET', 'POST'])

@@ -421,11 +421,12 @@ def qr_code_redirect(id_card_id):
 
 
 @bp.route('/select-class-time', methods=['POST'])
-@login_required
 def select_class_time():
-    """Student route for selecting class time (Individual and Family only)"""
+    """Student route for selecting class time (Individual and Family only) - NO LOGIN REQUIRED"""
     from datetime import datetime
     from ..extensions import db
+    from flask_login import current_user
+    from ..models import User
     
     time_id = request.form.get('time_id', type=int)
     
@@ -449,9 +450,26 @@ def select_class_time():
         flash('Time selection is only available for Individual and Family classes.', 'danger')
         return redirect(request.referrer or url_for('admin.student_dashboard'))
     
+    # Get user from session or current_user (no login required)
+    user = None
+    user_id = None
+    
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        # Get user from session (set by entry forms or ID card)
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    if not user or not user_id:
+        flash('Please enter your Name and System ID to select a time.', 'warning')
+        return redirect(request.referrer or url_for('main.index'))
+    
     # Find the student's enrollment for this class type
     enrollment = ClassEnrollment.query.filter_by(
-        user_id=current_user.id,
+        user_id=user_id,
         class_type=class_time.class_type,
         status='completed'
     ).first()
@@ -461,7 +479,7 @@ def select_class_time():
         return redirect(request.referrer or url_for('admin.student_dashboard'))
     
     # Get student's timezone for display
-    student_timezone = current_user.timezone or 'Asia/Kolkata'
+    student_timezone = user.timezone if user.timezone else 'Asia/Kolkata'
     
     # Check if student already has a selection for this enrollment
     existing_selection = StudentClassTimeSelection.query.filter_by(
@@ -477,7 +495,7 @@ def select_class_time():
     else:
         # Create new selection
         selection = StudentClassTimeSelection(
-            user_id=current_user.id,
+            user_id=user_id,
             enrollment_id=enrollment.id,
             class_time_id=time_id,
             class_type=class_time.class_type

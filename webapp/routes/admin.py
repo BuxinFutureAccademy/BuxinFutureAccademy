@@ -2199,19 +2199,27 @@ def student_dashboard():
     current_year = datetime.now().year
     current_month = datetime.now().month
     
-    for enrollment in enrollments:
-        # Get payments for this enrollment for the current year
-        payments = MonthlyPayment.query.filter_by(
-            enrollment_id=enrollment.id,
-            payment_year=current_year
-        ).all()
-        
-        # Create a dict with month as key
-        payment_dict = {}
-        for payment in payments:
-            payment_dict[payment.payment_month] = payment
-        
-        monthly_payments[enrollment.id] = payment_dict
+    try:
+        for enrollment in enrollments:
+            # Get payments for this enrollment for the current year
+            payments = MonthlyPayment.query.filter_by(
+                enrollment_id=enrollment.id,
+                payment_year=current_year
+            ).all()
+            
+            # Create a dict with month as key
+            payment_dict = {}
+            for payment in payments:
+                payment_dict[payment.payment_month] = payment
+            
+            monthly_payments[enrollment.id] = payment_dict
+    except Exception as e:
+        # If table doesn't exist yet, just use empty dict
+        error_str = str(e)
+        if 'monthly_payment' in error_str.lower() or 'does not exist' in error_str.lower():
+            monthly_payments = {}
+        else:
+            raise
     
     return render_template('student_dashboard.html', 
                           purchases=purchases, 

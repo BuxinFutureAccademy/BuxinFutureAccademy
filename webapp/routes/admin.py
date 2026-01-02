@@ -5471,15 +5471,15 @@ def admin_schools():
                         else:
                             # Fallback: find enrollments by matching school name or system ID
                             from sqlalchemy import or_
-                            from ..models.classes import SchoolStudent
+                            from ..models.classes import SchoolStudent, ClassEnrollment as CE
                             # Get enrollments through SchoolStudent records
                             school_students = SchoolStudent.query.filter_by(school_name=school.school_name).all()
                             enrollment_ids = list(set([s.enrollment_id for s in school_students]))
                             if enrollment_ids:
-                                enrollments = ClassEnrollment.query.filter(
-                                    ClassEnrollment.id.in_(enrollment_ids),
-                                    ClassEnrollment.class_type == 'school',
-                                    ClassEnrollment.status == 'completed'
+                                enrollments = CE.query.filter(
+                                    CE.id.in_(enrollment_ids),
+                                    CE.class_type == 'school',
+                                    CE.status == 'completed'
                                 ).all()
                             else:
                                 enrollments = []

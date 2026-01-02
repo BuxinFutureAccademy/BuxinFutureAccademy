@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Settings - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Contact Settings
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Configure the WhatsApp number and email address that will be displayed in the floating contact buttons on your website.
+                    </p>
+                    
+                    <form method="POST" action="{{ url_for('admin.admin_contact_settings') }}">
+                        <div class="mb-3">
+                            <label for="whatsapp_number" class="form-label">
+                                <i class="fab fa-whatsapp me-2 text-success"></i>WhatsApp Number
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="whatsapp_number" 
+                                   name="whatsapp_number" 
+                                   value="{{ whatsapp_number }}" 
+                                   placeholder="e.g., +1234567890 or 1234567890"
+                                   pattern="[+]?[0-9\s\-]+">
+                            <small class="form-text text-muted">
+                                Enter the WhatsApp number (with or without country code). Users will be able to contact you via WhatsApp.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="contact_email" class="form-label">
+                                <i class="fas fa-envelope me-2 text-primary"></i>Contact Email
+                            </label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="contact_email" 
+                                   name="contact_email" 
+                                   value="{{ contact_email }}" 
+                                   placeholder="e.g., admin@example.com">
+                            <small class="form-text text-muted">
+                                Enter the email address where users can contact you. Users will be able to send emails directly.
+                            </small>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> The floating contact buttons will appear on the right side of all pages once you configure these settings.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

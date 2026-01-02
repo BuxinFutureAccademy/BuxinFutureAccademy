@@ -24,6 +24,7 @@ from ..models import (
     StudentClassTimeSelection,
     IDCard,
     MonthlyPayment,
+    SiteSettings,
 )
 
 bp = Blueprint('admin', __name__)

@@ -488,6 +488,28 @@
         </div>
     </nav>
 
+    <!-- Floating Contact Buttons (WhatsApp & Email) -->
+    {% if whatsapp_number or contact_email %}
+    <div class="floating-contact-buttons">
+        {% if whatsapp_number %}
+        <a href="https://wa.me/{{ whatsapp_number|replace('+', '')|replace(' ', '')|replace('-', '') }}" 
+           target="_blank" 
+           class="floating-btn whatsapp-btn" 
+           title="Contact us on WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+        {% endif %}
+        
+        {% if contact_email %}
+        <a href="mailto:{{ contact_email }}" 
+           class="floating-btn email-btn" 
+           title="Send us an email">
+            <i class="fas fa-envelope"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

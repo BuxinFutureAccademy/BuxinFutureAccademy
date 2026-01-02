@@ -8,6 +8,7 @@ from .student_projects import *
 from .gallery import *
 from .schools import *
 from .id_cards import *
+from .site_settings import SiteSettings
 
 # Import MonthlyPayment explicitly
 from .classes import MonthlyPayment

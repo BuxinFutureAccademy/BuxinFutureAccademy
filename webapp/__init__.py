@@ -137,6 +137,22 @@ def create_app():
     app.register_blueprint(file_uploads_bp, url_prefix='/api')
     app.register_blueprint(health_bp)
     app.register_blueprint(schools_bp)
+    
+    # Context processor to inject site settings into all templates
+    @app.context_processor
+    def inject_site_settings():
+        """Inject site settings into all templates"""
+        try:
+            from .models.site_settings import SiteSettings
+            whatsapp_number = SiteSettings.get_setting('whatsapp_number', '')
+            contact_email = SiteSettings.get_setting('contact_email', '')
+        except Exception:
+            whatsapp_number = ''
+            contact_email = ''
+        return {
+            'whatsapp_number': whatsapp_number,
+            'contact_email': contact_email
+        }
 
     # Alias common endpoints without blueprint prefix to match existing templates
     try:

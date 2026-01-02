@@ -2027,9 +2027,10 @@ def student_dashboard():
                 materials.extend(class_materials)
             elif cls['class_type'] == 'family':
                 # Materials shared to this family enrollment
-                enrollment_id = cls['enrollment'].id
+                # Materials are saved with class_id=f"family_{enrollment.class_id}" and actual_class_id=enrollment.class_id
                 class_materials = LearningMaterial.query.filter(
-                    LearningMaterial.class_id.like(f"%family_{cls['id']}_enrollment_{enrollment_id}%")
+                    LearningMaterial.class_type == 'family',
+                    LearningMaterial.actual_class_id == cls['id']
                 ).all()
                 materials.extend(class_materials)
         
@@ -4523,14 +4524,14 @@ def admin_individual_classes():
     if admin_check:
         return admin_check
     
-    # Handle POST for sharing materials to multiple individual classes
+    # Handle POST for sharing materials to individual students (not classes)
     if request.method == 'POST' and 'share_material' in request.form:
-        class_ids = request.form.getlist('class_ids')
+        student_ids = request.form.getlist('student_ids')  # Changed from class_ids to student_ids
         title = request.form.get('title', '').strip()
         content = request.form.get('message', '').strip()
         
-        if not class_ids:
-            flash('Please select at least one individual class.', 'danger')
+        if not student_ids:
+            flash('Please select at least one student.', 'danger')
         elif not content and not request.files.get('material_file'):
             flash('Please provide content or upload a file.', 'danger')
         else:
@@ -4582,38 +4583,29 @@ def admin_individual_classes():
             
             try:
                 shared_count = 0
-                for class_id_str in class_ids:
-                    class_id = int(class_id_str)
-                    class_obj = GroupClass.query.filter_by(id=class_id, class_type='individual').first() or \
-                               IndividualClass.query.get(class_id)
-                    if class_obj:
-                        enrollments = ClassEnrollment.query.filter_by(
-                            class_id=class_id,
+                for student_id_str in student_ids:
+                    student_id = int(student_id_str)
+                    student = User.query.get(student_id)
+                    if student:
+                        # Share material directly to this student
+                        material = LearningMaterial(
+                            class_id=f"student_{student.id}",
                             class_type='individual',
-                            status='completed'
-                        ).all()
-                        
-                        for enrollment in enrollments:
-                            student = User.query.get(enrollment.user_id)
-                            if student:
-                                material = LearningMaterial(
-                                    class_id=f"student_{student.id}",
-                                    class_type='individual',
-                                    actual_class_id=student.id,
-                                    title=title,
-                                    content=content,
-                                    created_by=current_user.id,
-                                    material_type=material_type,
-                                    file_url=file_url,
-                                    file_type=file_type,
-                                    file_name=file_name,
-                                    youtube_url=youtube_url
-                                )
-                                db.session.add(material)
-                                shared_count += 1
+                            actual_class_id=student.id,
+                            title=title,
+                            content=content,
+                            created_by=current_user.id,
+                            material_type=material_type,
+                            file_url=file_url,
+                            file_type=file_type,
+                            file_name=file_name,
+                            youtube_url=youtube_url
+                        )
+                        db.session.add(material)
+                        shared_count += 1
                 
                 db.session.commit()
-                flash(f'Material shared with {len(class_ids)} individual class(es)! Total {shared_count} student(s) received the material.', 'success')
+                flash(f'Material shared with {shared_count} student(s)!', 'success')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Error sharing material: {str(e)}', 'danger')
@@ -4714,6 +4706,44 @@ def admin_individual_classes():
                 db.session.rollback()
                 individual_class = None
             
+            # Get student's class time selection
+            from ..models.classes import StudentClassTimeSelection, ClassTime
+            from datetime import datetime
+            
+            time_selection = StudentClassTimeSelection.query.filter_by(
+                enrollment_id=enrollment.id
+            ).first()
+            
+            class_time_info = None
+            time_priority = 9999  # Higher priority = appears first (lower number = higher priority)
+            if time_selection and time_selection.class_time:
+                ct = time_selection.class_time
+                # Calculate priority: current/upcoming times get priority 0-100, past times get 100+
+                now = datetime.now()
+                # Get next occurrence of this time
+                days_ahead = (ct.day - now.weekday()) % 7
+                if days_ahead == 0 and ct.start_time > now.time():
+                    # Today, upcoming
+                    time_priority = 0
+                elif days_ahead == 0:
+                    # Today, past
+                    time_priority = 50
+                elif days_ahead == 1:
+                    # Tomorrow
+                    time_priority = 10
+                elif days_ahead <= 7:
+                    # This week
+                    time_priority = 20 + days_ahead
+                else:
+                    # Next week or later
+                    time_priority = 100 + days_ahead
+                
+                class_time_info = {
+                    'time': ct,
+                    'display': ct.get_full_display(user.timezone or 'Asia/Kolkata'),
+                    'priority': time_priority
+                }
+            
             student_data = {
                 'enrollment': enrollment,
                 'user': user,
@@ -4726,13 +4756,18 @@ def admin_individual_classes():
                 'payment_method': enrollment.payment_method or 'N/A',
                 'payment_proof': enrollment.payment_proof,
                 'registration_date': enrollment.enrolled_at,
-                'class_status': 'Active' if enrollment.status == 'completed' else 'Inactive'
+                'class_status': 'Active' if enrollment.status == 'completed' else 'Inactive',
+                'class_time': class_time_info,
+                'time_priority': time_priority
             }
             
             if enrollment.status == 'pending':
                 pending_enrollments.append(student_data)
             else:
                 individual_students.append(student_data)
+    
+    # Sort individual students by class time priority (current/upcoming first)
+    individual_students.sort(key=lambda x: (x['time_priority'], x['student_name']))
     
     # Apply status filter
     if status_filter:
@@ -5426,11 +5461,28 @@ def admin_schools():
                     school = School.query.get(school_id)
                     if school and school.status == 'active':
                         # Get all classes this school has joined
-                        enrollments = ClassEnrollment.query.filter_by(
-                            user_id=school.user_id,
-                            class_type='school',
-                            status='completed'
-                        ).all()
+                        # Check if school has user_id, otherwise find enrollments by school_id or school_name
+                        if school.user_id:
+                            enrollments = ClassEnrollment.query.filter_by(
+                                user_id=school.user_id,
+                                class_type='school',
+                                status='completed'
+                            ).all()
+                        else:
+                            # Fallback: find enrollments by matching school name or system ID
+                            from sqlalchemy import or_
+                            from ..models.classes import SchoolStudent
+                            # Get enrollments through SchoolStudent records
+                            school_students = SchoolStudent.query.filter_by(school_name=school.school_name).all()
+                            enrollment_ids = list(set([s.enrollment_id for s in school_students]))
+                            if enrollment_ids:
+                                enrollments = ClassEnrollment.query.filter(
+                                    ClassEnrollment.id.in_(enrollment_ids),
+                                    ClassEnrollment.class_type == 'school',
+                                    ClassEnrollment.status == 'completed'
+                                ).all()
+                            else:
+                                enrollments = []
                         
                         # Share material to each class this school has joined
                         for enrollment in enrollments:

@@ -971,50 +971,85 @@
                         {% for enrollment in enrollments %}
                             {% if enrollment.status == 'completed' %}
                             {% set payments = monthly_payments.get(enrollment.id, {}) %}
-                            {% for month_num in range(1, 13) %}
-                                {% set payment = payments.get(month_num) %}
-                                {% set month_name = month_names[month_num] %}
-                                {% if payment %}
-                                    <!-- Paid - Yellow with checkmark -->
+                            {% set enroll_info = enrollment_info.get(enrollment.id, {}) %}
+                            {% set enrollment_month = enroll_info.month if enroll_info else current_month %}
+                            {% set enrollment_year = enroll_info.year if enroll_info else current_year %}
+                            
+                            {# Show months from enrollment month to current month + 1 #}
+                            {% set show_year = enrollment_year %}
+                            {% set show_month = enrollment_month %}
+                            {% set max_iterations = 15 %}
+                            {% set iteration = 0 %}
+                            
+                            {% while iteration < max_iterations and (show_year < current_year or (show_year == current_year and show_month <= current_month + 1)) %}
+                                {% set month_name = month_names[show_month] %}
+                                {% set payment = payments.get(show_month) if show_year == current_year else None %}
+                                
+                                {# Check if this is the enrollment month - auto-mark as paid #}
+                                {% set is_enrollment_month = (show_year == enrollment_year and show_month == enrollment_month) %}
+                                {% set is_paid = False %}
+                                
+                                {% if is_enrollment_month %}
+                                    {# Enrollment month is automatically paid (verified) #}
+                                    {% set is_paid = True %}
+                                {% elif payment %}
+                                    {# Check payment status #}
+                                    {% if payment.status == 'verified' %}
+                                        {% set is_paid = True %}
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% if is_paid %}
+                                    <!-- Paid - Yellow/Green with checkmark -->
                                     <button type="button" class="btn btn-sm payment-btn-paid" 
                                             style="background: #ffc107; color: #000; border: 2px solid #ffc107; width: 100%; text-align: left; position: relative;"
                                             disabled>
-                                        <i class="fas fa-check-circle me-2"></i>{{ month_name }} - Paid
+                                        <i class="fas fa-check-circle me-2"></i>{{ month_name }} {{ show_year }} - Paid
                                     </button>
                                 {% else %}
                                     <!-- Not Paid - Red with X -->
                                     <button type="button" class="btn btn-sm payment-btn-unpaid" 
                                             style="background: #dc3545; color: #fff; border: 2px solid #dc3545; width: 100%; text-align: left; position: relative;"
-                                            data-bs-toggle="modal" data-bs-target="#paymentModal{{ enrollment.id }}_{{ month_num }}">
-                                        <i class="fas fa-times-circle me-2"></i>{{ month_name }} - Not Paid
+                                            data-bs-toggle="modal" data-bs-target="#paymentModal{{ enrollment.id }}_{{ show_year }}_{{ show_month }}">
+                                        <i class="fas fa-times-circle me-2"></i>{{ month_name }} {{ show_year }} - Not Paid
                                     </button>
                                     
                                     <!-- Payment Upload Modal -->
-                                    <div class="modal fade" id="paymentModal{{ enrollment.id }}_{{ month_num }}" tabindex="-1" aria-labelledby="paymentModalLabel{{ enrollment.id }}_{{ month_num }}" aria-hidden="true">
+                                    <div class="modal fade" id="paymentModal{{ enrollment.id }}_{{ show_year }}_{{ show_month }}" tabindex="-1" aria-labelledby="paymentModalLabel{{ enrollment.id }}_{{ show_year }}_{{ show_month }}" aria-hidden="true">
                                         <div class="modal-dialog">
                                             <div class="modal-content" style="background: var(--surface-solid); color: var(--on-surface);">
                                                 <div class="modal-header" style="border-bottom: 1px solid var(--border);">
-                                                    <h5 class="modal-title" id="paymentModalLabel{{ enrollment.id }}_{{ month_num }}">
-                                                        <i class="fas fa-upload me-2"></i>Upload Payment Receipt - {{ month_name }} {{ current_year }}
+                                                    <h5 class="modal-title" id="paymentModalLabel{{ enrollment.id }}_{{ show_year }}_{{ show_month }}">
+                                                        <i class="fas fa-upload me-2"></i>Upload Payment Receipt - {{ month_name }} {{ show_year }}
                                                     </h5>
                                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                                 </div>
                                                 <div class="modal-body">
                                                     <form method="POST" action="{{ url_for('admin.upload_monthly_payment') }}" enctype="multipart/form-data">
                                                         <input type="hidden" name="enrollment_id" value="{{ enrollment.id }}">
-                                                        <input type="hidden" name="payment_month" value="{{ month_num }}">
-                                                        <input type="hidden" name="payment_year" value="{{ current_year }}">
+                                                        <input type="hidden" name="payment_month" value="{{ show_month }}">
+                                                        <input type="hidden" name="payment_year" value="{{ show_year }}">
                                                         
                                                         <div class="mb-3">
-                                                            <label for="amount{{ enrollment.id }}_{{ month_num }}" class="form-label">Payment Amount</label>
-                                                            <input type="number" step="0.01" class="form-control" id="amount{{ enrollment.id }}_{{ month_num }}" name="amount" required placeholder="Enter amount">
+                                                            <label for="amount{{ enrollment.id }}_{{ show_year }}_{{ show_month }}" class="form-label">Payment Amount</label>
+                                                            <input type="number" step="0.01" class="form-control" id="amount{{ enrollment.id }}_{{ show_year }}_{{ show_month }}" name="amount" required placeholder="Enter amount">
                                                         </div>
                                                         
                                                         <div class="mb-3">
-                                                            <label for="receipt_file{{ enrollment.id }}_{{ month_num }}" class="form-label">Payment Receipt</label>
-                                                            <input type="file" class="form-control" id="receipt_file{{ enrollment.id }}_{{ month_num }}" name="receipt_file" accept="image/*,.pdf" required>
+                                                            <label for="receipt_file{{ enrollment.id }}_{{ show_year }}_{{ show_month }}" class="form-label">Payment Receipt</label>
+                                                            <input type="file" class="form-control" id="receipt_file{{ enrollment.id }}_{{ show_year }}_{{ show_month }}" name="receipt_file" accept="image/*,.pdf" required>
                                                             <small class="form-text text-muted">Upload image or PDF of your payment receipt</small>
                                                         </div>
+                                                        
+                                                        {% if payment and payment.status == 'pending' %}
+                                                        <div class="alert alert-warning">
+                                                            <i class="fas fa-clock me-2"></i>Your payment is pending admin approval.
+                                                        </div>
+                                                        {% elif payment and payment.status == 'rejected' %}
+                                                        <div class="alert alert-danger">
+                                                            <i class="fas fa-times-circle me-2"></i>Your payment was rejected. Please upload a new receipt.
+                                                        </div>
+                                                        {% endif %}
                                                         
                                                         <button type="submit" class="btn btn-primary w-100">
                                                             <i class="fas fa-upload me-2"></i>Upload Receipt
@@ -1025,7 +1060,15 @@
                                         </div>
                                     </div>
                                 {% endif %}
-                            {% endfor %}
+                                
+                                {# Move to next month #}
+                                {% set show_month = show_month + 1 %}
+                                {% if show_month > 12 %}
+                                    {% set show_month = 1 %}
+                                    {% set show_year = show_year + 1 %}
+                                {% endif %}
+                                {% set iteration = iteration + 1 %}
+                            {% endwhile %}
                             {% endif %}
                         {% endfor %}
                     {% else %}
@@ -1039,19 +1082,52 @@
                         {% for enrollment in enrollments %}
                             {% if enrollment.status == 'completed' %}
                             {% set payments = monthly_payments.get(enrollment.id, {}) %}
-                            {% for month_num in range(1, 13) %}
-                                {% set payment = payments.get(month_num) %}
-                                {% set month_name = month_names[month_num] %}
-                                {% if payment %}
+                            {% set enroll_info = enrollment_info.get(enrollment.id, {}) %}
+                            {% set enrollment_month = enroll_info.month if enroll_info else current_month %}
+                            {% set enrollment_year = enroll_info.year if enroll_info else current_year %}
+                            
+                            {# Show messages only for months from enrollment onwards #}
+                            {% set msg_year = enrollment_year %}
+                            {% set msg_month = enrollment_month %}
+                            {% set max_iterations = 15 %}
+                            {% set msg_iteration = 0 %}
+                            
+                            {% while msg_iteration < max_iterations and (msg_year < current_year or (msg_year == current_year and msg_month <= current_month)) %}
+                                {% set month_name = month_names[msg_month] %}
+                                {% set payment = payments.get(msg_month) if msg_year == current_year else None %}
+                                {% set is_enrollment_month = (msg_year == enrollment_year and msg_month == enrollment_month) %}
+                                
+                                {% if is_enrollment_month %}
                                     <div class="alert alert-success alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
-                                        <i class="fas fa-check me-1"></i>{{ month_name }}: You have already paid. Welcome to this class!
+                                        <i class="fas fa-check me-1"></i>{{ month_name }} {{ msg_year }}: Enrollment payment completed. Welcome to this class!
                                     </div>
-                                {% elif month_num <= current_month %}
+                                {% elif payment %}
+                                    {% if payment.status == 'verified' %}
+                                        <div class="alert alert-success alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                            <i class="fas fa-check me-1"></i>{{ month_name }} {{ msg_year }}: Payment verified. Thank you!
+                                        </div>
+                                    {% elif payment.status == 'pending' %}
+                                        <div class="alert alert-warning alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                            <i class="fas fa-clock me-1"></i>{{ month_name }} {{ msg_year }}: Payment pending admin approval.
+                                        </div>
+                                    {% elif payment.status == 'rejected' %}
+                                        <div class="alert alert-danger alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
+                                            <i class="fas fa-times me-1"></i>{{ month_name }} {{ msg_year }}: Payment rejected. Please upload a new receipt.
+                                        </div>
+                                    {% endif %}
+                                {% else %}
                                     <div class="alert alert-danger alert-sm mb-2" style="padding: 0.5rem; font-size: 0.85rem;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ month_name }}: You don't pay. Please upload your payment receipt.
+                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ month_name }} {{ msg_year }}: Payment not received. Please upload your receipt.
                                     </div>
                                 {% endif %}
-                            {% endfor %}
+                                
+                                {% set msg_month = msg_month + 1 %}
+                                {% if msg_month > 12 %}
+                                    {% set msg_month = 1 %}
+                                    {% set msg_year = msg_year + 1 %}
+                                {% endif %}
+                                {% set msg_iteration = msg_iteration + 1 %}
+                            {% endwhile %}
                             {% endif %}
                         {% endfor %}
                     {% endif %}

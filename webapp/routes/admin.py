@@ -2254,17 +2254,30 @@ def student_dashboard():
             if entity_id:
                 user_id_card = get_id_card_for_entity(entity_type, entity_id)
     
-    # Get monthly payments for all enrollments
+    # Get monthly payments for all enrollments - dynamic based on enrollment date
     monthly_payments = {}
+    enrollment_info = {}  # Store enrollment month/year for each enrollment
     current_year = datetime.now().year
     current_month = datetime.now().month
     
     try:
         for enrollment in enrollments:
-            # Get payments for this enrollment for the current year
-            payments = MonthlyPayment.query.filter_by(
-                enrollment_id=enrollment.id,
-                payment_year=current_year
+            # Get enrollment date (when student was enrolled/approved)
+            enrollment_date = enrollment.enrolled_at if enrollment.enrolled_at else datetime.utcnow()
+            enrollment_month = enrollment_date.month
+            enrollment_year = enrollment_date.year
+            
+            # Store enrollment info
+            enrollment_info[enrollment.id] = {
+                'month': enrollment_month,
+                'year': enrollment_year,
+                'date': enrollment_date
+            }
+            
+            # Get payments for this enrollment from enrollment year onwards
+            payments = MonthlyPayment.query.filter(
+                MonthlyPayment.enrollment_id == enrollment.id,
+                MonthlyPayment.payment_year >= enrollment_year
             ).all()
             
             # Create a dict with month as key
@@ -2272,16 +2285,27 @@ def student_dashboard():
             for payment in payments:
                 payment_dict[payment.payment_month] = payment
             
+            # Auto-mark enrollment month as verified (paid) if status is completed
+            # This represents the initial payment that got them approved
+            if enrollment.status == 'completed' and enrollment_month not in payment_dict:
+                # Create a virtual payment record for the enrollment month
+                # We'll handle this in the template by checking enrollment status
+                pass
+            
             monthly_payments[enrollment.id] = payment_dict
     except Exception as e:
         # If table doesn't exist yet, just use empty dict
         error_str = str(e)
         if 'monthly_payment' in error_str.lower() or 'does not exist' in error_str.lower():
             monthly_payments = {}
+            enrollment_info = {}
         else:
             raise
     
     return render_template('student_dashboard.html', 
+                          enrollment_info=enrollment_info,
+                          current_year=current_year,
+                          current_month=current_month,
                           purchases=purchases, 
                           projects=projects,
                           enrollments=enrollments,
@@ -4901,7 +4925,7 @@ def admin_individual_classes():
                 'uploaded_at': payment.uploaded_at,
                 'status': payment.status
             }
-    
+
     return render_template('admin_individual_classes.html',
         individual_students=individual_students,
         pending_enrollments=pending_enrollments,
@@ -5778,7 +5802,7 @@ def admin_schools():
     except Exception:
         db.session.rollback()
         school_classes = []
-    
+        
     # Get recent materials for school classes (limit 20)
     try:
         school_materials = LearningMaterial.query.filter_by(class_type='school').order_by(LearningMaterial.created_at.desc()).limit(20).all()

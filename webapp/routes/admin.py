@@ -554,6 +554,66 @@ def setup_school_tables():
         """, 500
 
 
+@bp.route('/admin/setup-monthly-payment-table')
+def setup_monthly_payment_table():
+    """Create monthly_payment table if it doesn't exist - accessible without login for initial setup"""
+    from sqlalchemy import text, inspect
+    
+    messages = []
+    try:
+        inspector = inspect(db.engine)
+        existing_tables = inspector.get_table_names()
+        
+        if 'monthly_payment' not in existing_tables:
+            # Create the monthly_payment table
+            create_table_sql = text("""
+                CREATE TABLE monthly_payment (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES "user"(id),
+                    enrollment_id INTEGER NOT NULL REFERENCES class_enrollment(id),
+                    class_type VARCHAR(20) NOT NULL,
+                    payment_month INTEGER NOT NULL,
+                    payment_year INTEGER NOT NULL,
+                    amount FLOAT NOT NULL,
+                    receipt_url VARCHAR(500) NOT NULL,
+                    receipt_filename VARCHAR(255),
+                    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    verified_by INTEGER REFERENCES "user"(id),
+                    verified_at TIMESTAMP,
+                    notes TEXT,
+                    CONSTRAINT unique_monthly_payment UNIQUE (user_id, enrollment_id, payment_month, payment_year)
+                )
+            """)
+            db.session.execute(create_table_sql)
+            db.session.commit()
+            messages.append("✅ Created monthly_payment table successfully!")
+        else:
+            messages.append("ℹ️ monthly_payment table already exists.")
+    except Exception as e:
+        db.session.rollback()
+        messages.append(f"❌ Error: {str(e)}")
+    
+    messages_html = "".join([f"<li>{m}</li>" for m in messages])
+    
+    return f"""
+    <html>
+    <head><title>Monthly Payment Table Setup</title>
+    <style>body {{ font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }}
+    .card {{ background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
+    h1 {{ color: #28a745; }} a {{ color: #667eea; }} ul {{ text-align: left; }}</style></head>
+    <body>
+        <div class="card">
+            <h1>Monthly Payment Table Setup</h1>
+            <ul>{messages_html}</ul>
+            <p><a href="/student/dashboard">Go to Student Dashboard</a></p>
+            <p><a href="/">Go to Homepage</a></p>
+        </div>
+    </body>
+    </html>
+    """
+
+
 @bp.route('/admin/setup-learning-material-columns')
 def setup_learning_material_columns():
     """Add new columns to learning_material table for enhanced materials support - accessible without login for initial setup"""

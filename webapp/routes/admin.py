@@ -2205,7 +2205,9 @@ def student_dashboard():
             fixed_times = class_times_by_type.get(class_type, [])
             for class_time in fixed_times:
                 # IMPORTANT: Verify class_time matches this enrollment's class_id
-                if class_time.class_id and class_time.class_id != enrollment.class_id:
+                # If class_id is None, it applies to all classes of this type
+                # If class_id is set, it must match the enrollment's class_id
+                if class_time.class_id is not None and class_time.class_id != enrollment.class_id:
                     continue  # Skip if time slot is for a different class
                 
                 try:
@@ -2238,7 +2240,10 @@ def student_dashboard():
                                 'class': class_obj
                             }
                             break  # Only one live class at a time
-                except Exception:
+                except Exception as e:
+                    from flask import current_app
+                    import traceback
+                    current_app.logger.error(f"Error checking live class for group/school: {str(e)}\n{traceback.format_exc()}")
                     pass  # If conversion fails, skip
     
     # Get ID card for user (always get it if it exists, regardless of viewing status)

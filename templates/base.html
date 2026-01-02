@@ -49,10 +49,10 @@
         
         /* Floating Contact Buttons */
         .floating-contact-buttons {
-            position: fixed;
-            right: 20px;
-            bottom: 20px;
-            z-index: 10000;
+            position: fixed !important;
+            right: 20px !important;
+            bottom: 20px !important;
+            z-index: 99999 !important;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -555,7 +555,6 @@
     </nav>
 
     <!-- Floating Contact Buttons (WhatsApp & Email) -->
-    {% if whatsapp_number or contact_email %}
     <div class="floating-contact-buttons">
         {% if whatsapp_number %}
         <a href="https://wa.me/{{ whatsapp_number|replace('+', '')|replace(' ', '')|replace('-', '') }}" 
@@ -574,7 +573,6 @@
         </a>
         {% endif %}
     </div>
-    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -117,12 +117,14 @@ def available_classes():
         
         pricing_type = request.args.get('type')
         
-        # If user is logged in, force their pricing type
-        try:
-            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated and hasattr(current_user, 'class_type') and current_user.class_type:
-                pricing_type = current_user.class_type
-        except Exception as e:
-            current_app.logger.error(f"Error checking user class_type: {e}")
+        # Don't override type parameter if explicitly provided in URL
+        # Only use user's class_type if no type parameter is provided
+        if not pricing_type:
+            try:
+                if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated and hasattr(current_user, 'class_type') and current_user.class_type:
+                    pricing_type = current_user.class_type
+            except Exception as e:
+                current_app.logger.error(f"Error checking user class_type: {e}")
 
         # Default to individual if not specified
         if not pricing_type:

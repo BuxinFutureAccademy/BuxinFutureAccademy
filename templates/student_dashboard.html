@@ -977,29 +977,7 @@
                 <span class="badge bg-primary">Join</span>
             </a>
 
-            <a href="{{ url_for('store.store') }}" class="action-btn">
-                <i class="fas fa-store"></i>
-                <span>Browse Classes</span>
-            </a>
-            
-            {% if not current_user.is_admin %}
-            <a href="{{ url_for('store.my_courses') }}" class="action-btn">
-                <i class="fas fa-book-open"></i>
-                <span>My Classes</span>
-            </a>
-            {% endif %}
-            
-            <a href="{{ url_for('store.available_classes') }}" class="action-btn">
-                <i class="fas fa-chalkboard-teacher"></i>
-                <span>Available Classes</span>
-            </a>
-            
-            {% if not current_user.is_admin %}
-            <a href="{{ url_for('store.my_course_orders') }}" class="action-btn">
-                <i class="fas fa-receipt"></i>
-                <span>Class Order</span>
-            </a>
-            {% endif %}
+            {# Hidden: Browse Classes, My Classes, Available Classes, Class Order #}
             
             {# Hide content creation features for school mentors #}
             {% if not current_user.is_school_admin %}
@@ -1009,10 +987,7 @@
             </a>
             
             {% if not current_user.is_admin %}
-            <a href="{{ url_for('student_projects.create_project') }}" class="action-btn">
-                <i class="fas fa-plus-circle"></i>
-                <span>Create Project</span>
-            </a>
+            {# Hidden: Create Project (plus icon) #}
             
             <a href="{{ url_for('student_projects.my_projects') }}" class="action-btn">
                 <i class="fas fa-user"></i>

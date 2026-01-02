@@ -1011,14 +1011,7 @@
             </a>
             
             {% if not current_user.is_admin %}
-            {% set cart_count = current_user.cart_items|length if current_user.cart_items else 0 %}
-            <a href="{{ url_for('store.cart') }}" class="action-btn">
-                <i class="fas fa-shopping-cart"></i>
-                <span>Cart</span>
-                {% if cart_count > 0 %}
-                    <span class="badge bg-danger">{{ cart_count }}</span>
-                {% endif %}
-            </a>
+            {# Hidden: Cart #}
             {% endif %}
             {% endif %}
         </div>

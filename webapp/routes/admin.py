@@ -1004,7 +1004,7 @@ def setup_group_class_columns():
         """, 500
 
 
-@bp.route('/admin/dashboard', methods=['GET', 'POST'])
+@bp.route('/admin/dashboard')
 @login_required
 def admin_dashboard():
     """Admin dashboard - requires admin authentication"""
@@ -1016,253 +1016,13 @@ def admin_dashboard():
         logout_user()
         return redirect(url_for('auth.login'))
     
-    from flask import request
+    # Note: Share materials functionality has been moved to individual admin pages:
+    # - /admin/schools (for schools)
+    # - /admin/individual-classes (for individual classes)
+    # - /admin/group-classes (for group classes)
+    # - /admin/family-classes (for family classes)
     
-    # Handle POST for sharing materials
-    if request.method == 'POST':
-        recipient_type = request.form.get('recipient_type', '')  # 'individual', 'school', 'family', 'group'
-        recipient_id = request.form.get('recipient_id', '')
-        title = request.form.get('title', '').strip()
-        content = request.form.get('message', '').strip()
-        
-        # Helper function to detect YouTube URLs
-        def extract_youtube_id(url):
-            """Extract YouTube video ID from various URL formats"""
-            import re
-            patterns = [
-                r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
-                r'youtube\.com\/watch\?.*v=([^&\n?#]+)'
-            ]
-            for pattern in patterns:
-                match = re.search(pattern, url)
-                if match:
-                    return match.group(1)
-            return None
-        
-        def detect_youtube_url(text):
-            """Detect if text contains YouTube URL"""
-            import re
-            youtube_pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})'
-            match = re.search(youtube_pattern, text)
-            if match:
-                return f"https://www.youtube.com/watch?v={match.group(1)}"
-            return None
-        
-        # Determine material type and handle file uploads
-        material_type = 'text'
-        file_url = None
-        file_type = None
-        file_name = None
-        youtube_url = None
-        
-        # Check for YouTube URL in content
-        youtube_url = detect_youtube_url(content)
-        if youtube_url:
-            material_type = 'youtube'
-        
-        # Check for file upload
-        uploaded_file = request.files.get('material_file')
-        if uploaded_file and uploaded_file.filename:
-            from ..services.cloudinary_service import CloudinaryService
-            from werkzeug.utils import secure_filename
-            
-            file_name = secure_filename(uploaded_file.filename)
-            file_ext = file_name.lower().split('.')[-1] if '.' in file_name else ''
-            
-            # Determine resource type and material type
-            if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']:
-                resource_type = 'image'
-                material_type = 'image'
-            elif file_ext in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv']:
-                resource_type = 'video'
-                material_type = 'video'
-            elif file_ext in ['pdf']:
-                resource_type = 'raw'
-                material_type = 'pdf'
-            else:
-                resource_type = 'raw'
-                material_type = 'text'
-            
-            # Upload to Cloudinary
-            folder = 'learning_materials'
-            success, result = CloudinaryService.upload_file(
-                file=uploaded_file,
-                folder=folder,
-                resource_type=resource_type
-            )
-            
-            if success:
-                file_url = result.get('url')
-                file_type = result.get('format', file_ext)
-            else:
-                flash(f'File upload failed: {result}', 'warning')
-        
-        # If no file and no YouTube, check if content is just a link (for backward compatibility)
-        if material_type == 'text' and content.startswith('http'):
-            # Keep as text with link
-            pass
-        
-        if not recipient_type or not recipient_id:
-            flash('Please select a recipient type and recipient.', 'danger')
-        elif not content and not file_url and not youtube_url:
-            flash('Please provide content, upload a file, or include a YouTube link.', 'danger')
-        else:
-            try:
-                if recipient_type == 'individual':
-                    # Share to individual student
-                    student_id = int(recipient_id)
-                    student = User.query.get(student_id)
-                    if student:
-                        material = LearningMaterial(
-                            class_id=f"student_{student_id}",
-                            class_type='individual',
-                            actual_class_id=student_id,
-                            title=title,
-                            content=content,
-                            created_by=current_user.id,
-                            material_type=material_type,
-                            file_url=file_url,
-                            file_type=file_type,
-                            file_name=file_name,
-                            youtube_url=youtube_url
-                        )
-                        db.session.add(material)
-                        db.session.commit()
-                        flash(f'Material shared with {student.first_name} {student.last_name}!', 'success')
-                    else:
-                        flash('Student not found.', 'danger')
-                
-                elif recipient_type == 'school':
-                    # Share to a school (entity) - material goes to all classes this school has joined
-                    school_id = int(recipient_id)
-                    school = School.query.get(school_id)
-                    if school and school.status == 'active':
-                        # Get all classes this school has joined
-                        # First check for completed enrollments
-                        enrollments = ClassEnrollment.query.filter_by(
-                            user_id=school.user_id,
-                            class_type='school',
-                            status='completed'
-                        ).all()
-                        
-                        # If no completed enrollments, check for pending ones and auto-activate them
-                        if not enrollments:
-                            pending_enrollments = ClassEnrollment.query.filter_by(
-                                user_id=school.user_id,
-                                class_type='school',
-                                status='pending'
-                            ).all()
-                            
-                            if pending_enrollments:
-                                # Auto-activate pending enrollments for active schools
-                                for enrollment in pending_enrollments:
-                                    enrollment.status = 'completed'
-                                db.session.commit()
-                                enrollments = pending_enrollments
-                                flash(f'Auto-activated {len(enrollments)} pending enrollment(s) for "{school.school_name}".', 'info')
-                        
-                        if not enrollments:
-                            flash(f'School "{school.school_name}" has not joined any classes yet.', 'warning')
-                        else:
-                            shared_count = 0
-                            # Share material to each class this school has joined
-                            for enrollment in enrollments:
-                                material = LearningMaterial(
-                                    class_id=f"school_{enrollment.class_id}",
-                                    class_type='school',
-                                    actual_class_id=enrollment.class_id,
-                                    title=title,
-                                    content=content,
-                                    created_by=current_user.id,
-                                    material_type=material_type,
-                                    file_url=file_url,
-                                    file_type=file_type,
-                                    file_name=file_name,
-                                    youtube_url=youtube_url
-                                )
-                                db.session.add(material)
-                                shared_count += 1
-                            
-                            db.session.commit()
-                            flash(f'Material shared with school "{school.school_name}"! It will appear in all {shared_count} class(es) this school has joined.', 'success')
-                    else:
-                        flash('School not found or not active.', 'danger')
-                
-                elif recipient_type == 'family':
-                    # Share to a family (entity) - material goes to all classes this family has joined
-                    family_user_id = int(recipient_id)  # family ID is the main user_id
-                    family_user = User.query.get(family_user_id)
-                    if family_user:
-                        # Get all classes this family has joined
-                        enrollments = ClassEnrollment.query.filter_by(
-                            user_id=family_user_id,
-                            class_type='family',
-                            status='completed'
-                        ).all()
-                        
-                        if not enrollments:
-                            flash(f'Family "{family_user.first_name} {family_user.last_name}\'s Family" has not joined any classes yet.', 'warning')
-                        else:
-                            shared_count = 0
-                            # Share material to each class this family has joined
-                            for enrollment in enrollments:
-                                material = LearningMaterial(
-                                    class_id=f"family_{enrollment.class_id}",
-                                    class_type='family',
-                                    actual_class_id=enrollment.class_id,
-                                    title=title,
-                                    content=content,
-                                    created_by=current_user.id,
-                                    material_type=material_type,
-                                    file_url=file_url,
-                                    file_type=file_type,
-                                    file_name=file_name,
-                                    youtube_url=youtube_url
-                                )
-                                db.session.add(material)
-                                shared_count += 1
-                            
-                            db.session.commit()
-                            flash(f'Material shared with family! It will appear in all {shared_count} class(es) this family has joined.', 'success')
-                    else:
-                        flash('Family not found.', 'danger')
-                
-                elif recipient_type == 'group':
-                    # Share to all students in a group class
-                    class_id = int(recipient_id)
-                    class_obj = GroupClass.query.get(class_id)
-                    if class_obj:
-                        # Get all enrollments for this group class
-                        group_enrollments = ClassEnrollment.query.filter_by(
-                            class_id=class_id,
-                            class_type='group',
-                            status='completed'
-                        ).all()
-                        
-                        # Create material for the group class - all enrolled students see it
-                        material = LearningMaterial(
-                            class_id=f"group_{class_id}",
-                            class_type='group',
-                            actual_class_id=class_id,
-                            title=title,
-                            content=content,
-                            created_by=current_user.id,
-                            material_type=material_type,
-                            file_url=file_url,
-                            file_type=file_type,
-                            file_name=file_name,
-                            youtube_url=youtube_url
-                        )
-                        db.session.add(material)
-                        db.session.commit()
-                        flash(f'Material shared with group class "{class_obj.name}"! All {len(group_enrollments)} enrolled students will see it.', 'success')
-                    else:
-                        flash('Group class not found.', 'danger')
-                
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Error sharing material: {str(e)}', 'danger')
-    
+    # Old POST handler removed - share materials now handled in individual admin pages
     # Get all data for the dashboard
     try:
         students = User.query.filter_by(is_student=True).all()
@@ -4769,6 +4529,102 @@ def admin_individual_classes():
     if admin_check:
         return admin_check
     
+    # Handle POST for sharing materials to multiple individual classes
+    if request.method == 'POST' and 'share_material' in request.form:
+        class_ids = request.form.getlist('class_ids')
+        title = request.form.get('title', '').strip()
+        content = request.form.get('message', '').strip()
+        
+        if not class_ids:
+            flash('Please select at least one individual class.', 'danger')
+        elif not content and not request.files.get('material_file'):
+            flash('Please provide content or upload a file.', 'danger')
+        else:
+            from ..services.cloudinary_service import CloudinaryService
+            from werkzeug.utils import secure_filename
+            import re
+            
+            material_type = 'text'
+            file_url = None
+            file_type = None
+            file_name = None
+            youtube_url = None
+            
+            youtube_pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})'
+            youtube_match = re.search(youtube_pattern, content)
+            if youtube_match:
+                youtube_url = f"https://www.youtube.com/watch?v={youtube_match.group(1)}"
+                material_type = 'youtube'
+            
+            uploaded_file = request.files.get('material_file')
+            if uploaded_file and uploaded_file.filename:
+                file_name = secure_filename(uploaded_file.filename)
+                file_ext = file_name.lower().split('.')[-1] if '.' in file_name else ''
+                
+                if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']:
+                    resource_type = 'image'
+                    material_type = 'image'
+                elif file_ext in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv']:
+                    resource_type = 'video'
+                    material_type = 'video'
+                elif file_ext in ['pdf']:
+                    resource_type = 'raw'
+                    material_type = 'pdf'
+                else:
+                    resource_type = 'raw'
+                    material_type = 'text'
+                
+                success, result = CloudinaryService.upload_file(
+                    file=uploaded_file,
+                    folder='learning_materials',
+                    resource_type=resource_type
+                )
+                
+                if success:
+                    file_url = result.get('url')
+                    file_type = result.get('format', file_ext)
+                else:
+                    flash(f'File upload failed: {result}', 'warning')
+            
+            try:
+                shared_count = 0
+                for class_id_str in class_ids:
+                    class_id = int(class_id_str)
+                    class_obj = GroupClass.query.filter_by(id=class_id, class_type='individual').first() or \
+                               IndividualClass.query.get(class_id)
+                    if class_obj:
+                        enrollments = ClassEnrollment.query.filter_by(
+                            class_id=class_id,
+                            class_type='individual',
+                            status='completed'
+                        ).all()
+                        
+                        for enrollment in enrollments:
+                            student = User.query.get(enrollment.user_id)
+                            if student:
+                                material = LearningMaterial(
+                                    class_id=f"student_{student.id}",
+                                    class_type='individual',
+                                    actual_class_id=student.id,
+                                    title=title,
+                                    content=content,
+                                    created_by=current_user.id,
+                                    material_type=material_type,
+                                    file_url=file_url,
+                                    file_type=file_type,
+                                    file_name=file_name,
+                                    youtube_url=youtube_url
+                                )
+                                db.session.add(material)
+                                shared_count += 1
+                
+                db.session.commit()
+                flash(f'Material shared with {len(class_ids)} individual class(es)! Total {shared_count} student(s) received the material.', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error sharing material: {str(e)}', 'danger')
+            return redirect(url_for('admin.admin_individual_classes'))
+    
     # Handle POST actions (approve, reject, deactivate)
     if request.method == 'POST':
         enrollment_id = request.form.get('enrollment_id', type=int)
@@ -4905,13 +4761,99 @@ def admin_individual_classes():
     )
 
 
-@bp.route('/admin/group-classes')
+@bp.route('/admin/group-classes', methods=['GET', 'POST'])
 @login_required
 def admin_group_classes():
     """View and manage group classes with multiple students"""
     admin_check = require_admin()
     if admin_check:
         return admin_check
+    
+    # Handle POST for sharing materials to multiple group classes
+    if request.method == 'POST' and 'share_material' in request.form:
+        class_ids = request.form.getlist('class_ids')
+        title = request.form.get('title', '').strip()
+        content = request.form.get('message', '').strip()
+        
+        if not class_ids:
+            flash('Please select at least one group class.', 'danger')
+        elif not content and not request.files.get('material_file'):
+            flash('Please provide content or upload a file.', 'danger')
+        else:
+            from ..services.cloudinary_service import CloudinaryService
+            from werkzeug.utils import secure_filename
+            import re
+            
+            material_type = 'text'
+            file_url = None
+            file_type = None
+            file_name = None
+            youtube_url = None
+            
+            youtube_pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})'
+            youtube_match = re.search(youtube_pattern, content)
+            if youtube_match:
+                youtube_url = f"https://www.youtube.com/watch?v={youtube_match.group(1)}"
+                material_type = 'youtube'
+            
+            uploaded_file = request.files.get('material_file')
+            if uploaded_file and uploaded_file.filename:
+                file_name = secure_filename(uploaded_file.filename)
+                file_ext = file_name.lower().split('.')[-1] if '.' in file_name else ''
+                
+                if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']:
+                    resource_type = 'image'
+                    material_type = 'image'
+                elif file_ext in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv']:
+                    resource_type = 'video'
+                    material_type = 'video'
+                elif file_ext in ['pdf']:
+                    resource_type = 'raw'
+                    material_type = 'pdf'
+                else:
+                    resource_type = 'raw'
+                    material_type = 'text'
+                
+                success, result = CloudinaryService.upload_file(
+                    file=uploaded_file,
+                    folder='learning_materials',
+                    resource_type=resource_type
+                )
+                
+                if success:
+                    file_url = result.get('url')
+                    file_type = result.get('format', file_ext)
+                else:
+                    flash(f'File upload failed: {result}', 'warning')
+            
+            try:
+                shared_count = 0
+                for class_id_str in class_ids:
+                    class_id = int(class_id_str)
+                    class_obj = GroupClass.query.get(class_id)
+                    if class_obj and class_obj.class_type == 'group':
+                        material = LearningMaterial(
+                            class_id=f"group_{class_id}",
+                            class_type='group',
+                            actual_class_id=class_id,
+                            title=title,
+                            content=content,
+                            created_by=current_user.id,
+                            material_type=material_type,
+                            file_url=file_url,
+                            file_type=file_type,
+                            file_name=file_name,
+                            youtube_url=youtube_url
+                        )
+                        db.session.add(material)
+                        shared_count += 1
+                
+                db.session.commit()
+                flash(f'Material shared with {len(class_ids)} group class(es)!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error sharing material: {str(e)}', 'danger')
+            return redirect(url_for('admin.admin_group_classes'))
     
     # Get search parameter
     search = request.args.get('search', '').strip()
@@ -5102,13 +5044,99 @@ def admin_group_class_detail(class_id):
     )
 
 
-@bp.route('/admin/family-classes')
+@bp.route('/admin/family-classes', methods=['GET', 'POST'])
 @login_required
 def admin_family_classes():
     """View and manage family-based registrations"""
     admin_check = require_admin()
     if admin_check:
         return admin_check
+    
+    # Handle POST for sharing materials to multiple family classes
+    if request.method == 'POST' and 'share_material' in request.form:
+        enrollment_ids = request.form.getlist('enrollment_ids')  # Family enrollments
+        title = request.form.get('title', '').strip()
+        content = request.form.get('message', '').strip()
+        
+        if not enrollment_ids:
+            flash('Please select at least one family class.', 'danger')
+        elif not content and not request.files.get('material_file'):
+            flash('Please provide content or upload a file.', 'danger')
+        else:
+            from ..services.cloudinary_service import CloudinaryService
+            from werkzeug.utils import secure_filename
+            import re
+            
+            material_type = 'text'
+            file_url = None
+            file_type = None
+            file_name = None
+            youtube_url = None
+            
+            youtube_pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})'
+            youtube_match = re.search(youtube_pattern, content)
+            if youtube_match:
+                youtube_url = f"https://www.youtube.com/watch?v={youtube_match.group(1)}"
+                material_type = 'youtube'
+            
+            uploaded_file = request.files.get('material_file')
+            if uploaded_file and uploaded_file.filename:
+                file_name = secure_filename(uploaded_file.filename)
+                file_ext = file_name.lower().split('.')[-1] if '.' in file_name else ''
+                
+                if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']:
+                    resource_type = 'image'
+                    material_type = 'image'
+                elif file_ext in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv']:
+                    resource_type = 'video'
+                    material_type = 'video'
+                elif file_ext in ['pdf']:
+                    resource_type = 'raw'
+                    material_type = 'pdf'
+                else:
+                    resource_type = 'raw'
+                    material_type = 'text'
+                
+                success, result = CloudinaryService.upload_file(
+                    file=uploaded_file,
+                    folder='learning_materials',
+                    resource_type=resource_type
+                )
+                
+                if success:
+                    file_url = result.get('url')
+                    file_type = result.get('format', file_ext)
+                else:
+                    flash(f'File upload failed: {result}', 'warning')
+            
+            try:
+                shared_count = 0
+                for enrollment_id_str in enrollment_ids:
+                    enrollment_id = int(enrollment_id_str)
+                    enrollment = ClassEnrollment.query.get(enrollment_id)
+                    if enrollment and enrollment.class_type == 'family' and enrollment.status == 'completed':
+                        material = LearningMaterial(
+                            class_id=f"family_{enrollment.class_id}",
+                            class_type='family',
+                            actual_class_id=enrollment.class_id,
+                            title=title,
+                            content=content,
+                            created_by=current_user.id,
+                            material_type=material_type,
+                            file_url=file_url,
+                            file_type=file_type,
+                            file_name=file_name,
+                            youtube_url=youtube_url
+                        )
+                        db.session.add(material)
+                        shared_count += 1
+                
+                db.session.commit()
+                flash(f'Material shared with {len(enrollment_ids)} family class(es)!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error sharing material: {str(e)}', 'danger')
+            return redirect(url_for('admin.admin_family_classes'))
     
     # Get search parameter
     search = request.args.get('search', '').strip()
@@ -5304,13 +5332,111 @@ def admin_family_class_detail(enrollment_id):
     )
 
 
-@bp.route('/admin/schools')
+@bp.route('/admin/schools', methods=['GET', 'POST'])
 @login_required
 def admin_schools():
     """View all registered schools and school classes"""
     admin_check = require_admin()
     if admin_check:
         return admin_check
+    
+    # Handle POST for sharing materials to multiple schools
+    if request.method == 'POST':
+        school_ids = request.form.getlist('school_ids')  # Get multiple school IDs
+        title = request.form.get('title', '').strip()
+        content = request.form.get('message', '').strip()
+        
+        if not school_ids:
+            flash('Please select at least one school.', 'danger')
+        elif not content and not request.files.get('material_file'):
+            flash('Please provide content or upload a file.', 'danger')
+        else:
+            # Process file upload and material creation (reuse logic from admin_dashboard)
+            from ..services.cloudinary_service import CloudinaryService
+            from werkzeug.utils import secure_filename
+            import re
+            
+            material_type = 'text'
+            file_url = None
+            file_type = None
+            file_name = None
+            youtube_url = None
+            
+            # Detect YouTube URL
+            youtube_pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})'
+            youtube_match = re.search(youtube_pattern, content)
+            if youtube_match:
+                youtube_url = f"https://www.youtube.com/watch?v={youtube_match.group(1)}"
+                material_type = 'youtube'
+            
+            # Handle file upload
+            uploaded_file = request.files.get('material_file')
+            if uploaded_file and uploaded_file.filename:
+                file_name = secure_filename(uploaded_file.filename)
+                file_ext = file_name.lower().split('.')[-1] if '.' in file_name else ''
+                
+                if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']:
+                    resource_type = 'image'
+                    material_type = 'image'
+                elif file_ext in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv']:
+                    resource_type = 'video'
+                    material_type = 'video'
+                elif file_ext in ['pdf']:
+                    resource_type = 'raw'
+                    material_type = 'pdf'
+                else:
+                    resource_type = 'raw'
+                    material_type = 'text'
+                
+                success, result = CloudinaryService.upload_file(
+                    file=uploaded_file,
+                    folder='learning_materials',
+                    resource_type=resource_type
+                )
+                
+                if success:
+                    file_url = result.get('url')
+                    file_type = result.get('format', file_ext)
+                else:
+                    flash(f'File upload failed: {result}', 'warning')
+            
+            # Share material to each selected school
+            try:
+                shared_count = 0
+                for school_id_str in school_ids:
+                    school_id = int(school_id_str)
+                    school = School.query.get(school_id)
+                    if school and school.status == 'active':
+                        # Get all classes this school has joined
+                        enrollments = ClassEnrollment.query.filter_by(
+                            user_id=school.user_id,
+                            class_type='school',
+                            status='completed'
+                        ).all()
+                        
+                        # Share material to each class this school has joined
+                        for enrollment in enrollments:
+                            material = LearningMaterial(
+                                class_id=f"school_{enrollment.class_id}",
+                                class_type='school',
+                                actual_class_id=enrollment.class_id,
+                                title=title,
+                                content=content,
+                                created_by=current_user.id,
+                                material_type=material_type,
+                                file_url=file_url,
+                                file_type=file_type,
+                                file_name=file_name,
+                                youtube_url=youtube_url
+                            )
+                            db.session.add(material)
+                            shared_count += 1
+                
+                db.session.commit()
+                flash(f'Material shared with {len(school_ids)} school(s)! Total {shared_count} class(es) received the material.', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error sharing material: {str(e)}', 'danger')
     
     schools = School.query.order_by(School.created_at.desc()).all()
     

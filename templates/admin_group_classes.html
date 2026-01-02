@@ -213,6 +213,79 @@
             </div>
         </div>
     {% endif %}
+
+    <!-- Share Materials Section -->
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-share me-2"></i>Share Learning Material to Group Classes</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="share_material" value="1">
+                
+                <!-- Group Class Selection (Multi-select) -->
+                <div class="form-group mb-3">
+                    <label class="form-label"><i class="fas fa-users me-2"></i>Select Group Classes (You can select multiple)</label>
+                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                        {% if group_classes %}
+                            {% for class in group_classes %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="class_ids" value="{{ class.id }}" id="class_{{ class.id }}">
+                                    <label class="form-check-label" for="class_{{ class.id }}">
+                                        <strong>{{ class.name }}</strong>
+                                        <small class="text-muted d-block">{{ class.total_students }} student(s) enrolled</small>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No group classes available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="title" class="form-label"><i class="fas fa-heading me-2"></i>Material Title</label>
+                    <input type="text" class="form-control" id="title" name="title" placeholder="Enter a title for this material (e.g. Week 1 Notes)">
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="message" class="form-label"><i class="fas fa-edit me-2"></i>Learning Content</label>
+                    <textarea class="form-control" id="message" name="message" rows="6" 
+                              placeholder="Enter your learning material here...
+
+📝 Text content, instructions, or assignments
+🔗 YouTube links: https://www.youtube.com/watch?v=... (will be embedded as video)
+🔗 Other links: https://example.com/resource
+
+Or upload a file below (Image, Video, or PDF)."></textarea>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="material_file" class="form-label"><i class="fas fa-upload me-2"></i>Upload File (Optional)</label>
+                    <input type="file" class="form-control" id="material_file" name="material_file" 
+                           accept="image/*,video/*,.pdf">
+                    <small class="form-text text-muted">
+                        Supported: Images (JPG, PNG, GIF), Videos (MP4, AVI, MOV), PDFs. 
+                        YouTube links in text will be automatically embedded.
+                    </small>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Tip:</strong> 
+                    <ul class="mb-0 mt-2">
+                        <li>Upload images, videos, or PDFs directly - they will be displayed inline</li>
+                        <li>Paste YouTube links in the text area - they will be embedded as playable videos</li>
+                        <li>All content will be visible/playable directly in the classroom without leaving the page</li>
+                    </ul>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Share Material to Selected Classes
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
 

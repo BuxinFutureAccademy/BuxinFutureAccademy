@@ -319,12 +319,7 @@ body {
     <!-- Navigation Tabs -->
     <ul class="nav nav-tabs" id="adminTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="share-tab" data-bs-toggle="tab" data-bs-target="#share" type="button">
-                <i class="fas fa-share me-2"></i>Share Material
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button">
+            <button class="nav-link active" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button">
                 <i class="fas fa-history me-2"></i>Recent Materials
             </button>
         </li>
@@ -347,8 +342,59 @@ body {
 
     <!-- Tab Content -->
     <div class="tab-content" id="adminTabContent">
-        <!-- Share Material Tab -->
-        <div class="tab-pane fade show active" id="share" role="tabpanel">
+        <!-- Recent Materials Tab (now active by default) -->
+        <div class="tab-pane fade show active" id="materials" role="tabpanel">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--info-color), #20c997);">
+                    <h5><i class="fas fa-history me-2"></i>Recent Learning Materials</h5>
+                </div>
+                <div class="card-body">
+                    {% if materials %}
+                        {% for material in materials %}
+                            <div class="material-item">
+                                <div class="material-header">
+                                    <h6 class="material-title">
+                                        {{ material.class_name }}
+                                        {% if material.title %}
+                                            <span class="ms-2 text-primary">- {{ material.title }}</span>
+                                        {% endif %}
+                                    </h6>
+                                    <span class="badge {{ material.class_type }}">
+                                        {{ material.class_type.title() }}
+                                    </span>
+                                </div>
+                                <div class="material-content">
+                                    {{ material.content|safe|urlize }}
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ material.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h5>No materials shared yet</h5>
+                            <p>Start sharing educational content with your students!</p>
+                            <p class="text-muted mt-3">
+                                <strong>Note:</strong> Share materials functionality has been moved to individual admin pages:
+                                <ul class="mt-2">
+                                    <li><a href="{{ url_for('admin.admin_schools') }}">School Management</a> - Share to schools</li>
+                                    <li><a href="{{ url_for('admin.admin_individual_classes') }}">Individual Classes</a> - Share to individual classes</li>
+                                    <li><a href="{{ url_for('admin.admin_group_classes') }}">Group Classes</a> - Share to group classes</li>
+                                    <li><a href="{{ url_for('admin.admin_family_classes') }}">Family Classes</a> - Share to family classes</li>
+                                </ul>
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Material Tab - REMOVED (moved to individual admin pages) -->
+        <!--
+        <div class="tab-pane fade" id="share" role="tabpanel">
             <div class="card">
                 <div class="card-header">
                     <h5><i class="fas fa-share me-2"></i>Share Learning Material</h5>
@@ -548,47 +594,6 @@ Or upload a file below (Image, Video, or PDF)."></textarea>
                         }
                     }
                     </script>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Materials Tab -->
-        <div class="tab-pane fade" id="materials" role="tabpanel">
-            <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, var(--info-color), #20c997);">
-                    <h5><i class="fas fa-history me-2"></i>Recent Learning Materials</h5>
-                </div>
-                <div class="card-body">
-                    {% if materials %}
-                        {% for material in materials %}
-                            <div class="material-item">
-                                <div class="material-header">
-                                    <h6 class="material-title">
-                                        {{ material.class_name }}
-                                        {% if material.title %}
-                                            <span class="ms-2 text-primary">- {{ material.title }}</span>
-                                        {% endif %}
-                                    </h6>
-                                    <span class="badge {{ material.class_type }}">
-                                        {{ material.class_type.title() }}
-                                    </span>
-                                </div>
-                                <div class="material-content">
-                                    {{ material.content|safe|urlize }}
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-clock me-1"></i>
-                                    {{ material.created_at.strftime('%B %d, %Y at %I:%M %p') }}
-                                </small>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-inbox"></i>
-                            <h5>No materials shared yet</h5>
-                            <p>Start sharing educational content with your students!</p>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
         </div>

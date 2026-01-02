@@ -7104,3 +7104,42 @@ def download_id_card(id_card_id):
     # Redirect to view page where user can print
     flash('Please use the "Print ID Card" button to print your ID card.', 'info')
     return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
+
+
+@bp.route('/admin/contact-settings', methods=['GET', 'POST'])
+@login_required
+def admin_contact_settings():
+    """Admin page for managing contact settings (WhatsApp and Email)"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    if request.method == 'POST':
+        whatsapp_number = request.form.get('whatsapp_number', '').strip()
+        contact_email = request.form.get('contact_email', '').strip()
+        
+        try:
+            # Save settings using SiteSettings model
+            if whatsapp_number:
+                SiteSettings.set_setting('whatsapp_number', whatsapp_number, current_user.id)
+            else:
+                SiteSettings.set_setting('whatsapp_number', '', current_user.id)
+            
+            if contact_email:
+                SiteSettings.set_setting('contact_email', contact_email, current_user.id)
+            else:
+                SiteSettings.set_setting('contact_email', '', current_user.id)
+            
+            flash('Contact settings saved successfully!', 'success')
+            return redirect(url_for('admin.admin_contact_settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error saving contact settings: {str(e)}', 'danger')
+    
+    # Get current settings
+    whatsapp_number = SiteSettings.get_setting('whatsapp_number', '')
+    contact_email = SiteSettings.get_setting('contact_email', '')
+    
+    return render_template('admin_contact_settings.html', 
+                         whatsapp_number=whatsapp_number, 
+                         contact_email=contact_email)

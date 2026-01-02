@@ -5651,6 +5651,61 @@ def upload_monthly_payment():
     return redirect(url_for('admin.student_dashboard'))
 
 
+@bp.route('/admin/monthly-payment/<int:payment_id>/approve', methods=['POST'])
+@login_required
+def approve_monthly_payment(payment_id):
+    """Approve a monthly payment"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    payment = MonthlyPayment.query.get_or_404(payment_id)
+    
+    try:
+        payment.status = 'verified'
+        payment.verified_by = current_user.id
+        payment.verified_at = datetime.utcnow()
+        db.session.commit()
+        month_name = payment.get_month_name()
+        flash(f'Payment for {month_name} {payment.payment_year} approved successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error approving payment: {str(e)}', 'danger')
+    
+    # Redirect back to the admin page that shows payments
+    referer = request.headers.get('Referer', url_for('admin.admin_dashboard'))
+    return redirect(referer)
+
+
+@bp.route('/admin/monthly-payment/<int:payment_id>/reject', methods=['POST'])
+@login_required
+def reject_monthly_payment(payment_id):
+    """Reject a monthly payment"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    payment = MonthlyPayment.query.get_or_404(payment_id)
+    notes = request.form.get('notes', '')
+    
+    try:
+        payment.status = 'rejected'
+        payment.verified_by = current_user.id
+        payment.verified_at = datetime.utcnow()
+        if notes:
+            payment.notes = notes
+        db.session.commit()
+        month_name = payment.get_month_name()
+        flash(f'Payment for {month_name} {payment.payment_year} rejected.', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error rejecting payment: {str(e)}', 'danger')
+    
+    # Redirect back to the admin page that shows payments
+    referer = request.headers.get('Referer', url_for('admin.admin_dashboard'))
+    return redirect(referer)
+
+
 @bp.route('/admin/schools', methods=['GET', 'POST'])
 @login_required
 def admin_schools():

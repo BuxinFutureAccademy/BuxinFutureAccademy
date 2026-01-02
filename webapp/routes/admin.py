@@ -2465,6 +2465,85 @@ def student_dashboard():
                           user=user)
 
 
+@bp.route('/my-curriculum')
+def my_curriculum():
+    """Display curriculum for all enrolled classes"""
+    from flask import session
+    from ..models.classes import GroupClass, IndividualClass, ClassEnrollment
+    
+    # NO LOGIN REQUIRED - Get user from session or current_user
+    user = None
+    user_id = None
+    
+    # Check if user is logged in (for admin or logged-in users)
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        # Get user from session (set by entry forms or ID card)
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    # If no user found, redirect to entry form
+    if not user:
+        flash('Please enter your Name and System ID to access your curriculum.', 'info')
+        return redirect(url_for('main.index'))
+    
+    # Get all completed enrollments
+    enrollments = ClassEnrollment.query.filter_by(
+        user_id=user_id,
+        status='completed'
+    ).all()
+    
+    # Also check for registered school students
+    from ..models.schools import RegisteredSchoolStudent
+    registered_school_students = RegisteredSchoolStudent.query.filter_by(user_id=user_id).all()
+    for reg_student in registered_school_students:
+        enrollment = ClassEnrollment.query.get(reg_student.enrollment_id)
+        if enrollment and enrollment.status == 'completed':
+            enrollments.append(enrollment)
+    
+    # Get classes with curriculum
+    classes_with_curriculum = []
+    seen_class_ids = set()  # Avoid duplicates
+    
+    for enrollment in enrollments:
+        if enrollment.class_id in seen_class_ids:
+            continue
+        seen_class_ids.add(enrollment.class_id)
+        
+        # Try GroupClass first (unified), then IndividualClass (legacy)
+        class_obj = GroupClass.query.get(enrollment.class_id) or IndividualClass.query.get(enrollment.class_id)
+        if class_obj:
+            # Get curriculum (only GroupClass has curriculum field)
+            curriculum_text = ''
+            if hasattr(class_obj, 'curriculum'):
+                curriculum_text = class_obj.curriculum or ''
+            
+            curriculum_items = []
+            
+            if curriculum_text and curriculum_text.strip():
+                # Split by newlines and filter empty lines
+                all_items = curriculum_text.split('\n')
+                for item in all_items:
+                    if item.strip():
+                        curriculum_items.append(item.strip())
+            
+            classes_with_curriculum.append({
+                'id': class_obj.id,
+                'name': class_obj.name,
+                'description': getattr(class_obj, 'description', None) or '',
+                'class_type': enrollment.class_type,
+                'curriculum_items': curriculum_items,
+                'has_curriculum': len(curriculum_items) > 0
+            })
+    
+    return render_template('my_curriculum.html', 
+                          classes_with_curriculum=classes_with_curriculum,
+                          user=user)
+
+
 @bp.route('/student/mark-attendance', methods=['POST'])
 @login_required
 def mark_attendance():

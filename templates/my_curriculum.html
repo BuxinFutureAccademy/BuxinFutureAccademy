@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}My Curriculum - BuXin Academy{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="min-height: 100vh; background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);">
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3" style="color: #00d4ff; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
+                <i class="fas fa-book-open me-3"></i>My Curriculum
+            </h1>
+            <p class="lead" style="color: rgba(255, 255, 255, 0.7);">
+                View all curriculum topics for your enrolled classes
+            </p>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Curriculum Cards -->
+        {% if classes_with_curriculum %}
+            <div class="row g-4">
+                {% for class_data in classes_with_curriculum %}
+                    <div class="col-lg-6 col-xl-4">
+                        <div class="card h-100" style="background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 20px; overflow: hidden; transition: all 0.3s ease;">
+                            <div class="card-header" style="background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); border: none; padding: 1.5rem;">
+                                <h3 class="card-title mb-0" style="color: #0a0e27; font-weight: 700; font-size: 1.3rem;">
+                                    <i class="fas fa-graduation-cap me-2"></i>{{ class_data.name }}
+                                </h3>
+                                <small style="color: rgba(10, 14, 39, 0.8); display: block; margin-top: 0.5rem;">
+                                    {% if class_data.class_type == 'individual' %}
+                                        <i class="fas fa-user me-1"></i>Individual Class
+                                    {% elif class_data.class_type == 'group' %}
+                                        <i class="fas fa-users me-1"></i>Group Class
+                                    {% elif class_data.class_type == 'family' %}
+                                        <i class="fas fa-home me-1"></i>Family Class
+                                    {% elif class_data.class_type == 'school' %}
+                                        <i class="fas fa-school me-1"></i>School Class
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="card-body" style="padding: 2rem;">
+                                {% if class_data.has_curriculum %}
+                                    <div class="curriculum-list" style="max-height: 500px; overflow-y: auto;">
+                                        {% for item in class_data.curriculum_items %}
+                                            <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(0, 212, 255, 0.08); border-left: 4px solid #00d4ff; border-radius: 10px; transition: all 0.3s ease;">
+                                                <div style="display: flex; align-items: start; gap: 1.2rem;">
+                                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: #0a0e27; font-size: 1rem; box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);">
+                                                        {{ loop.index }}
+                                                    </div>
+                                                    <div style="flex: 1; color: rgba(255, 255, 255, 0.95); line-height: 1.8; font-size: 1.05rem; padding-top: 2px;">
+                                                        <strong style="color: #00d4ff; display: block; margin-bottom: 0.3rem;">{{ item }}</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-info-circle fa-3x mb-3" style="color: rgba(0, 212, 255, 0.5);"></i>
+                                        <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">
+                                            Curriculum information will be available soon.
+                                        </p>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if class_data.description %}
+                                    <div class="mt-3 pt-3" style="border-top: 1px solid rgba(0, 212, 255, 0.2);">
+                                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; margin: 0;">
+                                            <i class="fas fa-info-circle me-2"></i>{{ class_data.description }}
+                                        </p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5" style="background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 20px; padding: 4rem;">
+                <i class="fas fa-book-open fa-4x mb-4" style="color: rgba(0, 212, 255, 0.5);"></i>
+                <h3 style="color: rgba(255, 255, 255, 0.9); margin-bottom: 1rem;">No Classes Found</h3>
+                <p style="color: rgba(255, 255, 255, 0.6); margin-bottom: 2rem;">
+                    You are not enrolled in any classes yet. Please register for a class to view curriculum.
+                </p>
+                <a href="{{ url_for('store.available_classes') }}" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); border: none; padding: 0.75rem 2rem;">
+                    <i class="fas fa-plus me-2"></i>Browse Classes
+                </a>
+            </div>
+        {% endif %}
+
+        <!-- Back Button -->
+        <div class="text-center mt-5">
+            <a href="{{ url_for('admin.student_dashboard') }}" class="btn btn-outline-light btn-lg" style="border: 2px solid rgba(0, 212, 255, 0.5); color: #00d4ff; padding: 0.75rem 2rem;">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom Scrollbar */
+    .curriculum-list::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .curriculum-list::-webkit-scrollbar-track {
+        background: rgba(0, 212, 255, 0.1);
+        border-radius: 10px;
+    }
+    
+    .curriculum-list::-webkit-scrollbar-thumb {
+        background: rgba(0, 212, 255, 0.5);
+        border-radius: 10px;
+    }
+    
+    .curriculum-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 212, 255, 0.7);
+    }
+    
+    .curriculum-item:hover {
+        background: rgba(0, 212, 255, 0.15) !important;
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+    }
+</style>
+{% endblock %}
+

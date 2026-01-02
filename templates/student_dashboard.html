@@ -777,7 +777,7 @@
     <!-- Profile Section -->
     <div class="profile-section" style="background: var(--surface-solid); border-radius: var(--radius); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow); border: 1px solid var(--border);">
         <div class="row align-items-start">
-            <div class="col-md-3 text-center">
+            <div class="col-md-2 text-center">
                 <div class="profile-picture-container" style="position: relative; display: inline-block;">
                     {% if current_user.profile_picture %}
                         <img src="{{ current_user.profile_picture }}" alt="Profile Picture" 
@@ -804,7 +804,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-9">
+            <div class="col-md-7">
                 <h2 style="color: var(--robotics-primary); font-family: var(--font-tech); margin-bottom: 1rem;">
                     <i class="fas fa-user-circle me-2"></i>Profile Information
                 </h2>
@@ -969,6 +969,7 @@
                     {% if enrollments %}
                         {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
                         {% for enrollment in enrollments %}
+                            {% if enrollment.status == 'completed' %}
                             {% set payments = monthly_payments.get(enrollment.id, {}) %}
                             {% for month_num in range(1, 13) %}
                                 {% set payment = payments.get(month_num) %}
@@ -1025,6 +1026,7 @@
                                     </div>
                                 {% endif %}
                             {% endfor %}
+                            {% endif %}
                         {% endfor %}
                     {% else %}
                         <p class="text-muted">No enrollments found.</p>
@@ -1032,10 +1034,10 @@
                 </div>
                 
                 <!-- Payment Status Messages -->
-                <div class="payment-messages mt-3" style="font-size: 0.9rem;">
+                <div class="payment-messages mt-3" style="font-size: 0.9rem; max-height: 200px; overflow-y: auto;">
                     {% if enrollments %}
-                        {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
                         {% for enrollment in enrollments %}
+                            {% if enrollment.status == 'completed' %}
                             {% set payments = monthly_payments.get(enrollment.id, {}) %}
                             {% for month_num in range(1, 13) %}
                                 {% set payment = payments.get(month_num) %}
@@ -1050,6 +1052,7 @@
                                     </div>
                                 {% endif %}
                             {% endfor %}
+                            {% endif %}
                         {% endfor %}
                     {% endif %}
                 </div>

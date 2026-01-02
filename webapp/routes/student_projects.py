@@ -23,6 +23,60 @@ def get_student_user():
     return user, user_id
 
 
+def get_or_create_guest_user(name):
+    """Create or get a guest user for anonymous likes/comments"""
+    if not name or not name.strip():
+        name = 'Guest'
+    
+    name = name.strip()
+    
+    # Check if a guest user with this name already exists (within last 24 hours)
+    from datetime import timedelta
+    recent_guest = User.query.filter(
+        User.username.like(f'guest_{name.lower().replace(" ", "_")}%'),
+        User.email.like('guest@temp%'),
+        User.created_at >= datetime.utcnow() - timedelta(hours=24)
+    ).first()
+    
+    if recent_guest:
+        return recent_guest
+    
+    # Create new guest user
+    import secrets
+    timestamp = int(datetime.utcnow().timestamp())
+    random_suffix = secrets.token_hex(4)
+    username_base = f"guest_{name.lower().replace(' ', '_')}_{timestamp}"
+    username = username_base[:80]  # Ensure it fits in username field
+    
+    # Ensure unique username
+    counter = 1
+    while User.query.filter_by(username=username).first():
+        username = f"{username_base[:75]}_{counter}"
+        counter += 1
+    
+    # Ensure unique email
+    email = f"guest_{timestamp}_{random_suffix}@temp.buxin.com"
+    counter = 1
+    while User.query.filter_by(email=email).first():
+        email = f"guest_{timestamp}_{random_suffix}_{counter}@temp.buxin.com"
+        counter += 1
+    
+    guest_user = User(
+        username=username,
+        email=email,
+        first_name=name.split()[0] if name.split() else name,
+        last_name=' '.join(name.split()[1:]) if len(name.split()) > 1 else 'Guest',
+        is_student=True,
+        is_admin=False
+    )
+    # Set a random password (won't be used)
+    guest_user.set_password(secrets.token_urlsafe(32))
+    db.session.add(guest_user)
+    db.session.flush()
+    
+    return guest_user
+
+
 def check_student_enrollment(user_id):
     """Check if student has a completed enrollment in any class type (individual, group, family, school)"""
     if not user_id:
@@ -261,18 +315,32 @@ def admin_projects():
 
 @bp.route('/project/<int:project_id>/like', methods=['POST'])
 def toggle_project_like(project_id):
-    """Toggle like/dislike for a project - supports System ID authentication"""
+    """Toggle like/dislike for a project - NO AUTHENTICATION REQUIRED - Anyone can like"""
     project = StudentProject.query.get_or_404(project_id)
     
-    # Get user (supports both login and System ID authentication)
+    # Try to get user (supports both login and System ID authentication)
     user, user_id = get_student_user()
     
+    # If no user, allow anonymous - use session ID or IP as identifier
     if not user_id:
-        return jsonify({'success': False, 'error': 'Please enter your Name and System ID to like projects.'}), 401
-    
-    # Check if student has completed enrollment
-    if not check_student_enrollment(user_id):
-        return jsonify({'success': False, 'error': 'You need to be registered in a class to like projects.'}), 403
+        # For anonymous users, use session ID to track likes
+        session_id = session.get('anonymous_session_id')
+        if not session_id:
+            import secrets
+            session_id = f"anon_{secrets.token_hex(16)}"
+            session['anonymous_session_id'] = session_id
+        
+        # For anonymous users, we'll use a special guest user
+        # Create a temporary guest user for this session
+        guest_name = session.get('anonymous_name', 'Guest')
+        user = get_or_create_guest_user(guest_name)
+        if not user:
+            # If we can't create guest user, use a default
+            user = get_or_create_guest_user('Guest')
+        user_id = user.id if user else None
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Unable to process like. Please try again.'}), 500
     
     try:
         data = request.get_json() or {}
@@ -326,28 +394,37 @@ def toggle_project_like(project_id):
 
 @bp.route('/project/<int:project_id>/comment', methods=['POST'])
 def add_project_comment(project_id):
-    """Add a comment to a project - supports System ID authentication"""
+    """Add a comment to a project - NO AUTHENTICATION REQUIRED - Anyone can comment"""
     project = StudentProject.query.get_or_404(project_id)
-    
-    # Get user (supports both login and System ID authentication)
-    user, user_id = get_student_user()
-    
-    if not user_id:
-        return jsonify({'success': False, 'error': 'Please enter your Name and System ID to comment on projects.'}), 401
-    
-    # Check if student has completed enrollment
-    if not check_student_enrollment(user_id):
-        return jsonify({'success': False, 'error': 'You need to be registered in a class to comment on projects.'}), 403
     
     try:
         data = request.get_json() or {}
         comment_text = data.get('comment', '').strip()
+        commenter_name = data.get('name', '').strip()  # Optional name for anonymous users
         
         if not comment_text:
             return jsonify({'success': False, 'error': 'Comment cannot be empty.'}), 400
         
         if len(comment_text) > 500:
             return jsonify({'success': False, 'error': 'Comment is too long. Maximum 500 characters.'}), 400
+        
+        # Try to get user (supports both login and System ID authentication)
+        user, user_id = get_student_user()
+        
+        # If no user, create/get guest user for anonymous commenter
+        if not user_id:
+            if commenter_name:
+                user = get_or_create_guest_user(commenter_name)
+                session['anonymous_name'] = commenter_name
+            else:
+                # Use default guest name
+                user = get_or_create_guest_user('Guest')
+            
+            if not user:
+                return jsonify({'success': False, 'error': 'Please provide a name to comment.'}), 400
+            
+            user_id = user.id
+            db.session.flush()  # Ensure user is saved
         
         # Create new comment
         comment = ProjectComment(
@@ -359,6 +436,7 @@ def add_project_comment(project_id):
         db.session.commit()
         
         # Return the new comment data
+        user_name = f"{user.first_name} {user.last_name}".strip() or user.username
         return jsonify({
             'success': True,
             'comment': {
@@ -367,7 +445,7 @@ def add_project_comment(project_id):
                 'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'user': {
                     'id': user.id,
-                    'name': f"{user.first_name} {user.last_name}".strip() or user.username
+                    'name': user_name
                 }
             },
             'comment_count': project.get_comment_count()

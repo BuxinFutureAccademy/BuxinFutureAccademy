@@ -617,22 +617,20 @@
                                 <small class="text-muted">{{ project.created_at.strftime('%B %d') }}</small>
                             </div>
 
-                            <!-- Action Buttons -->
-                            {% if current_user.is_authenticated %}
-                                <div class="action-buttons">
-                                    <button class="action-btn {% if project.user_reaction(current_user.id) == True %}active-like{% endif %}" 
-                                            onclick="toggleReaction({{ project.id }}, true)" id="like-btn-{{ project.id }}">
-                                        <i class="fas fa-thumbs-up"></i>
-                                    </button>
-                                    <button class="action-btn {% if project.user_reaction(current_user.id) == False %}active-dislike{% endif %}" 
-                                            onclick="toggleReaction({{ project.id }}, false)" id="dislike-btn-{{ project.id }}">
-                                        <i class="fas fa-thumbs-down"></i>
-                                    </button>
-                                    <button class="action-btn" onclick="focusCommentInput({{ project.id }})">
-                                        <i class="fas fa-comment"></i>
-                                    </button>
-                                </div>
-                            {% endif %}
+                            <!-- Action Buttons - Available to everyone (no login required) -->
+                            <div class="action-buttons">
+                                <button class="action-btn" 
+                                        onclick="toggleReaction({{ project.id }}, true)" id="like-btn-{{ project.id }}">
+                                    <i class="fas fa-thumbs-up"></i>
+                                </button>
+                                <button class="action-btn" 
+                                        onclick="toggleReaction({{ project.id }}, false)" id="dislike-btn-{{ project.id }}">
+                                    <i class="fas fa-thumbs-down"></i>
+                                </button>
+                                <button class="action-btn" onclick="focusCommentInput({{ project.id }})">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                            </div>
 
                             <!-- Comments Section -->
                             <div class="comments-section" id="comments-{{ project.id }}">
@@ -673,12 +671,26 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Comment Form -->
-                            {% if current_user.is_authenticated %}
-                                <div class="comment-form">
+                            <!-- Comment Form - Available to everyone (no login required) -->
+                            <div class="comment-form">
+                                {% if current_user.is_authenticated or user %}
                                     <div class="comment-avatar">
-                                        {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                                        {% if current_user.is_authenticated %}
+                                            {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                                        {% elif user %}
+                                            {{ user.first_name[0] }}{{ user.last_name[0] }}
+                                        {% endif %}
                                     </div>
+                                {% else %}
+                                    <!-- Name input for anonymous users -->
+                                    <div class="mb-2">
+                                        <input type="text" 
+                                               id="commenter-name-{{ project.id }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Your name (optional)" 
+                                               maxlength="50">
+                                    </div>
+                                {% endif %}
                                     <input type="text" class="comment-input" 
                                            placeholder="Add a comment..." 
                                            id="comment-input-{{ project.id }}"
@@ -847,56 +859,45 @@
             }
         }
 
-        // Toggle like/dislike reaction
+        // Toggle like/dislike reaction - NO AUTHENTICATION REQUIRED - Anyone can like
         function toggleReaction(projectId, isLike) {
-            // Check if user is authenticated (either via login or System ID)
-            {% if current_user.is_authenticated or user %}
-                fetch(`/project/${projectId}/like`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        is_like: isLike
-                    })
+            fetch(`/project/${projectId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    is_like: isLike
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update like count
-                        document.getElementById(`like-count-${projectId}`).textContent = data.like_count;
-                        
-                        // Update button states
-                        const likeBtn = document.getElementById(`like-btn-${projectId}`);
-                        const dislikeBtn = document.getElementById(`dislike-btn-${projectId}`);
-                        
-                        // Remove all active classes
-                        likeBtn.classList.remove('active-like');
-                        dislikeBtn.classList.remove('active-dislike');
-                        
-                        // Add appropriate active class
-                        if (data.user_reaction === true) {
-                            likeBtn.classList.add('active-like');
-                        } else if (data.user_reaction === false) {
-                            dislikeBtn.classList.add('active-dislike');
-                        }
-                    } else {
-                        if (data.error && data.error.includes('registered')) {
-                            alert(data.error);
-                            window.location.href = '{{ url_for("store.available_classes") }}';
-                        } else {
-                            alert('Error: ' + (data.error || 'Unknown error'));
-                        }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update like count
+                    document.getElementById(`like-count-${projectId}`).textContent = data.like_count;
+                    
+                    // Update button states
+                    const likeBtn = document.getElementById(`like-btn-${projectId}`);
+                    const dislikeBtn = document.getElementById(`dislike-btn-${projectId}`);
+                    
+                    // Remove all active classes
+                    likeBtn.classList.remove('active-like');
+                    dislikeBtn.classList.remove('active-dislike');
+                    
+                    // Add appropriate active class
+                    if (data.user_reaction === true) {
+                        likeBtn.classList.add('active-like');
+                    } else if (data.user_reaction === false) {
+                        dislikeBtn.classList.add('active-dislike');
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                });
-            {% else %}
-                alert('Please enter your Name and System ID to like projects');
-                window.location.href = '{{ url_for("main.index") }}';
-            {% endif %}
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
         }
 
         // Add comment

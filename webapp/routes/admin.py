@@ -2329,8 +2329,6 @@ def student_dashboard():
                           id_card=user_id_card,
                           today=today,
                           monthly_payments=monthly_payments,
-                          current_year=current_year,
-                          current_month=current_month,
                           Attendance=Attendance,
                           user=user)
 

@@ -6,8 +6,8 @@
     <title>ID Card - {{ id_card.name }}</title>
     <style>
         @page {
-            size: A4 landscape;
-            margin: 0;
+            size: A4 portrait; /* Exact A4 portrait size */
+            margin: 0; /* No margins for exact A4 fit */
         }
         * {
             margin: 0;
@@ -16,20 +16,27 @@
         }
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px;
+            background: white;
+            padding: 0;
+            margin: 0;
+            width: 210mm; /* Exact A4 width */
+            height: 297mm; /* Exact A4 height */
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            overflow: hidden;
         }
         .id-card-container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 800px;
+            height: 100%;
+            max-width: 210mm; /* Exact A4 width */
+            max-height: 297mm; /* Exact A4 height */
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         .id-card-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

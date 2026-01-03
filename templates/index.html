@@ -1718,7 +1718,8 @@
                                     
                                     {% set email_address = contact_email if contact_email else 'worldvlog13@gmail.com' %}
                                     <a href="mailto:{{ email_address }}" 
-                                       class="btn-cyber w-100" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem 2rem; font-size: 1.1rem; background: var(--gradient-fire); cursor: pointer;">
+                                       class="btn-cyber w-100" 
+                                       style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem 2rem; font-size: 1.1rem; background: var(--gradient-fire);">
                                         <i class="fas fa-envelope" style="font-size: 1.5rem;"></i>
                                         <span>Send us an Email</span>
                                     </a>
@@ -1735,7 +1736,7 @@
                                         <p>
                                             {% set email_address = contact_email if contact_email else 'worldvlog13@gmail.com' %}
                                             <a href="mailto:{{ email_address }}" 
-                                               style="color: var(--primary); text-decoration: none; cursor: pointer;">{{ email_address }}</a>
+                                               style="color: var(--primary); text-decoration: none;">{{ email_address }}</a>
                                         </p>
                 </div>
             </div>

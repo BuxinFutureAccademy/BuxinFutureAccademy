@@ -162,10 +162,10 @@
                     </a>
                     {% endif %}
                     {% set email_address = contact_email if contact_email else 'worldvlog13@gmail.com' %}
-                    <a href="mailto:{{ email_address }}" 
-                       class="email-link-btn"
+                    <a href="#" 
+                       class="show-email-btn"
                        data-email="{{ email_address }}"
-                       style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #00a8ff 0%, #0077b6 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0, 168, 255, 0.3);">
+                       style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #00a8ff 0%, #0077b6 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0, 168, 255, 0.3); cursor: pointer;">
                         <i class="fas fa-envelope" style="font-size: 1.2rem;"></i>
                         Email
                     </a>
@@ -198,6 +198,75 @@
             });
     }, 30000);
     {% endif %}
+    </script>
+
+    <!-- Email Modal -->
+    <div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #0a0a1a; border: 1px solid rgba(0, 212, 255, 0.3);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(0, 212, 255, 0.2);">
+                    <h5 class="modal-title" style="color: #00d4ff;">
+                        <i class="fas fa-envelope me-2"></i>Contact Email
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center" style="padding: 2rem;">
+                    <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 1.5rem;">Copy our email address:</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="emailDisplay" readonly 
+                               style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); color: white; font-size: 1.1rem; text-align: center;">
+                        <button class="btn btn-primary" type="button" id="copyEmailBtn" 
+                                style="background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); border: none;">
+                            <i class="fas fa-copy me-2"></i>Copy
+                        </button>
+                    </div>
+                    <p class="text-success" id="copySuccess" style="display: none; margin-top: 1rem;">
+                        <i class="fas fa-check-circle me-2"></i>Email copied to clipboard!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Email button handler - show email in modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+            
+            document.querySelectorAll('.show-email-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const email = this.getAttribute('data-email');
+                    if (email) {
+                        document.getElementById('emailDisplay').value = email;
+                        document.getElementById('copySuccess').style.display = 'none';
+                        emailModal.show();
+                    }
+                });
+            });
+            
+            // Copy email to clipboard
+            document.getElementById('copyEmailBtn').addEventListener('click', function() {
+                const emailInput = document.getElementById('emailDisplay');
+                emailInput.select();
+                emailInput.setSelectionRange(0, 99999);
+                
+                try {
+                    navigator.clipboard.writeText(emailInput.value).then(function() {
+                        document.getElementById('copySuccess').style.display = 'block';
+                        setTimeout(function() {
+                            document.getElementById('copySuccess').style.display = 'none';
+                        }, 3000);
+                    });
+                } catch (err) {
+                    document.execCommand('copy');
+                    document.getElementById('copySuccess').style.display = 'block';
+                    setTimeout(function() {
+                        document.getElementById('copySuccess').style.display = 'none';
+                    }, 3000);
+                }
+            });
+        });
     </script>
 </body>
 </html>

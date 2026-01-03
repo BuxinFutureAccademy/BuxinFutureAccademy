@@ -572,28 +572,81 @@
         {% endif %}
         
         {% set email_address = contact_email if contact_email else 'worldvlog13@gmail.com' %}
-        <a href="mailto:{{ email_address }}" 
-           class="floating-btn email-btn email-link-btn" 
+        <a href="#" 
+           class="floating-btn email-btn show-email-btn" 
            data-email="{{ email_address }}"
-           title="Send us an email">
+           title="View our email address">
             <i class="fas fa-envelope"></i>
         </a>
     </div>
 
+    <!-- Email Modal -->
+    <div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--darker); border: 1px solid rgba(0, 212, 255, 0.3);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(0, 212, 255, 0.2);">
+                    <h5 class="modal-title" style="color: var(--primary);">
+                        <i class="fas fa-envelope me-2"></i>Contact Email
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center" style="padding: 2rem;">
+                    <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 1.5rem;">Copy our email address:</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="emailDisplay" readonly 
+                               style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); color: white; font-size: 1.1rem; text-align: center;">
+                        <button class="btn btn-primary" type="button" id="copyEmailBtn" 
+                                style="background: var(--gradient-cyber); border: none;">
+                            <i class="fas fa-copy me-2"></i>Copy
+                        </button>
+                    </div>
+                    <p class="text-success" id="copySuccess" style="display: none; margin-top: 1rem;">
+                        <i class="fas fa-check-circle me-2"></i>Email copied to clipboard!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Email link handler - ensure mailto links work properly without page refresh
+        // Email button handler - show email in modal
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.email-link-btn, a[href^="mailto:"]').forEach(function(link) {
-                link.addEventListener('click', function(e) {
-                    const email = this.getAttribute('data-email') || this.getAttribute('href').replace('mailto:', '');
+            const emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+            
+            document.querySelectorAll('.show-email-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const email = this.getAttribute('data-email');
                     if (email) {
-                        window.location.href = 'mailto:' + email;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return false;
+                        document.getElementById('emailDisplay').value = email;
+                        document.getElementById('copySuccess').style.display = 'none';
+                        emailModal.show();
                     }
                 });
+            });
+            
+            // Copy email to clipboard
+            document.getElementById('copyEmailBtn').addEventListener('click', function() {
+                const emailInput = document.getElementById('emailDisplay');
+                emailInput.select();
+                emailInput.setSelectionRange(0, 99999); // For mobile devices
+                
+                try {
+                    navigator.clipboard.writeText(emailInput.value).then(function() {
+                        document.getElementById('copySuccess').style.display = 'block';
+                        setTimeout(function() {
+                            document.getElementById('copySuccess').style.display = 'none';
+                        }, 3000);
+                    });
+                } catch (err) {
+                    // Fallback for older browsers
+                    document.execCommand('copy');
+                    document.getElementById('copySuccess').style.display = 'block';
+                    setTimeout(function() {
+                        document.getElementById('copySuccess').style.display = 'none';
+                    }, 3000);
+                }
             });
         });
     </script>

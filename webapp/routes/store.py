@@ -600,15 +600,8 @@ def enrollment_pending_approval(enrollment_id):
     # Clean WhatsApp number for wa.me link (remove non-digits except +)
     whatsapp_number_clean = ''.join(c for c in whatsapp_number if c.isdigit() or c == '+') if whatsapp_number else ''
     
-    # Render template with contact info (for all cases)
-    return render_template('enrollment_pending_approval.html', 
-                         enrollment=enrollment,
-                         whatsapp_number=whatsapp_number,
-                         whatsapp_number_clean=whatsapp_number_clean,
-                         contact_email=contact_email)
-    
-    # Still pending - show waiting page
-    return render_template('enrollment_pending_approval.html', 
+    # Render template with contact info (for all cases - pending, approved but no ID card, etc.)
+    return render_template('enrollment_pending_approval.html',
                          enrollment=enrollment,
                          whatsapp_number=whatsapp_number,
                          whatsapp_number_clean=whatsapp_number_clean,

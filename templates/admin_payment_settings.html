@@ -119,9 +119,55 @@
                             </div>
                         </div>
                         
+                        <!-- Money Transfer Settings (Western Union, MoneyGram, Ria) -->
+                        <div class="card mb-4" style="border-color: #ff6b35;">
+                            <div class="card-header" style="background: rgba(255, 107, 53, 0.1); border-color: #ff6b35;">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-globe me-2" style="color: #ff6b35;"></i>Money Transfer Details (Western Union, MoneyGram, Ria)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">These details apply to all three money transfer services: Western Union, MoneyGram, and Ria Money Transfer.</p>
+                                
+                                <div class="mb-3">
+                                    <label for="money_transfer_receiver" class="form-label">Receiver Name *</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="money_transfer_receiver" 
+                                           name="money_transfer_receiver" 
+                                           value="{{ money_transfer_receiver }}" 
+                                           placeholder="e.g., Abdoukadir Jabbi"
+                                           required>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="money_transfer_country" class="form-label">Country *</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="money_transfer_country" 
+                                               name="money_transfer_country" 
+                                               value="{{ money_transfer_country }}" 
+                                               placeholder="e.g., India"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="money_transfer_phone" class="form-label">Phone Number *</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="money_transfer_phone" 
+                                               name="money_transfer_phone" 
+                                               value="{{ money_transfer_phone }}" 
+                                               placeholder="e.g., +91 93190 38312"
+                                               required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Note:</strong> These payment details will be displayed to students when they select a payment method during registration. Cash payment option does not require additional details.
+                            <strong>Note:</strong> These payment details will be displayed to students when they select a payment method during registration. The money transfer details apply to Western Union, MoneyGram, and Ria Money Transfer.
                         </div>
                         
                         <div class="d-flex justify-content-between">

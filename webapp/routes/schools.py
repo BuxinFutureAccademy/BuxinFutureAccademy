@@ -55,31 +55,13 @@ def register_school(class_id=None):
         admin_email = request.form.get('admin_email', '').strip().lower()
         admin_phone = request.form.get('admin_phone', '').strip()
         
-        # User account credentials
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        
-        # Validation
-        if not all([school_name, school_email, admin_name, admin_email, username, password]):
+        # Validation (removed username/password requirements)
+        if not all([school_name, school_email, admin_name, admin_email]):
             flash('All required fields must be filled.', 'danger')
             return render_template('register_school.html', class_id=class_id)
         
-        if len(password) < 6:
-            flash('Password must be at least 6 characters.', 'danger')
-            return render_template('register_school.html', class_id=class_id)
-        
-        if password != confirm_password:
-            flash('Passwords do not match.', 'danger')
-            return render_template('register_school.html', class_id=class_id)
-        
         try:
-            # Check existing user
-            existing_user = User.query.filter_by(username=username).first()
-            if existing_user:
-                flash('Username already taken.', 'danger')
-                return render_template('register_school.html', class_id=class_id)
-            
+            # Check if admin email already exists
             existing_email = User.query.filter_by(email=admin_email).first()
             if existing_email:
                 flash('Email already registered.', 'danger')
@@ -90,6 +72,22 @@ def register_school(class_id=None):
             if existing_school:
                 flash('School email already registered.', 'danger')
                 return render_template('register_school.html', class_id=class_id)
+            
+            # Auto-generate username from school email (before @ symbol)
+            import secrets
+            import string
+            base_username = admin_email.split('@')[0].replace('.', '_').replace('-', '_')
+            username = base_username
+            counter = 1
+            # Ensure username is unique
+            while User.query.filter_by(username=username).first():
+                username = f"{base_username}_{counter}"
+                counter += 1
+            
+            # Auto-generate secure password
+            password_length = 12
+            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+            password = ''.join(secrets.choice(alphabet) for i in range(password_length))
             
             # Create user account for school admin
             user = User(
@@ -130,10 +128,12 @@ def register_school(class_id=None):
             # Store data in session for payment flow
             session['pending_school_id'] = school.id
             session['school_system_id'] = school_system_id
+            session['school_username'] = username
+            session['school_password'] = password
             if class_id:
                 session['pending_school_class_id'] = class_id
             
-            flash(f'School registration submitted! Your School System ID is: {school_system_id}', 'success')
+            flash(f'School registration submitted! Your School System ID is: {school_system_id}. Account credentials will be provided after payment confirmation.', 'success')
             return redirect(url_for('schools.school_payment'))
             
         except Exception as e:
@@ -273,10 +273,91 @@ def school_payment():
         flash('Payment information submitted! Your school is pending admin approval.', 'success')
         return redirect(url_for('schools.school_pending_approval'))
     
+    # Get payment methods with details from settings (same as register_class)
+    def get_payment_methods():
+        """Get payment methods with details from SiteSettings"""
+        from ..models.site_settings import SiteSettings
+        
+        # Get payment details from settings
+        wave_name = SiteSettings.get_setting('payment_wave_name', 'Foday M J')
+        wave_number = SiteSettings.get_setting('payment_wave_number', '5427090')
+        
+        bank_account_holder = SiteSettings.get_setting('payment_bank_account_holder', 'ABDOUKADIR JABBI')
+        bank_name = SiteSettings.get_setting('payment_bank_name', 'State Bank of India (SBI)')
+        bank_branch = SiteSettings.get_setting('payment_bank_branch', 'Surajpur Greater Noida')
+        bank_account_number = SiteSettings.get_setting('payment_bank_account_number', '60541424234')
+        bank_ifsc = SiteSettings.get_setting('payment_bank_ifsc', 'SBIN0014022')
+        
+        # Money transfer details
+        money_transfer_receiver = SiteSettings.get_setting('payment_money_transfer_receiver', 'Abdoukadir Jabbi')
+        money_transfer_country = SiteSettings.get_setting('payment_money_transfer_country', 'India')
+        money_transfer_phone = SiteSettings.get_setting('payment_money_transfer_phone', '+91 93190 38312')
+        
+        return [
+            {
+                'id': 'wave',
+                'name': 'Wave',
+                'icon': 'fa-mobile-alt',
+                'color': '#00a8ff',
+                'details': f'{wave_name} - {wave_number}',
+                'full_details': {
+                    'name': wave_name,
+                    'number': wave_number
+                }
+            },
+            {
+                'id': 'bank',
+                'name': 'Bank Transfer',
+                'icon': 'fa-university',
+                'color': '#28a745',
+                'details': f'{bank_name} - {bank_account_number}',
+                'full_details': {
+                    'account_holder': bank_account_holder,
+                    'bank_name': bank_name,
+                    'branch': bank_branch,
+                    'account_number': bank_account_number,
+                    'ifsc': bank_ifsc
+                }
+            },
+            {
+                'id': 'cash',
+                'name': 'Cash',
+                'icon': 'fa-money-bill-wave',
+                'color': '#ffc107',
+                'details': 'Money Transfer Services (Western Union, MoneyGram, Ria)',
+                'full_details': {
+                    'receiver_name': money_transfer_receiver,
+                    'country': money_transfer_country,
+                    'phone': money_transfer_phone,
+                    'has_sub_options': True,
+                    'sub_options': [
+                        {
+                            'id': 'western_union',
+                            'name': '1️⃣ Western Union',
+                            'icon': 'fa-globe'
+                        },
+                        {
+                            'id': 'moneygram',
+                            'name': '2️⃣ MoneyGram',
+                            'icon': 'fa-exchange-alt'
+                        },
+                        {
+                            'id': 'ria',
+                            'name': '3️⃣ Ria Money Transfer',
+                            'icon': 'fa-money-bill-wave'
+                        }
+                    ]
+                }
+            }
+        ]
+    
+    payment_methods = get_payment_methods()
+    
     return render_template('school_payment.html', 
                          school=school, 
                          school_system_id=school_system_id,
-                         amount=amount)
+                         amount=amount,
+                         payment_methods=payment_methods)
 
 
 @bp.route('/school/pending-approval')
@@ -298,12 +379,29 @@ def school_pending_approval():
         # Redirect to dashboard
         return redirect(url_for('schools.school_dashboard'))
     
+    # Get contact information from SiteSettings
+    from ..models.site_settings import SiteSettings
+    whatsapp_number = SiteSettings.get_setting('whatsapp_number', '')
+    contact_email = SiteSettings.get_setting('contact_email', '')
+    # Clean WhatsApp number for wa.me link (remove non-digits except +)
+    whatsapp_number_clean = ''.join(c for c in whatsapp_number if c.isdigit() or c == '+') if whatsapp_number else ''
+    
     if school.status == 'rejected':
         flash('Your school registration has been rejected. Please contact support.', 'danger')
-        return render_template('school_pending_approval.html', school=school, rejected=True)
+        return render_template('school_pending_approval.html', 
+                             school=school, 
+                             rejected=True,
+                             whatsapp_number=whatsapp_number,
+                             whatsapp_number_clean=whatsapp_number_clean,
+                             contact_email=contact_email)
     
     # Still pending
-    return render_template('school_pending_approval.html', school=school, rejected=False)
+    return render_template('school_pending_approval.html', 
+                         school=school, 
+                         rejected=False,
+                         whatsapp_number=whatsapp_number,
+                         whatsapp_number_clean=whatsapp_number_clean,
+                         contact_email=contact_email)
 
 
 @bp.route('/school/dashboard')

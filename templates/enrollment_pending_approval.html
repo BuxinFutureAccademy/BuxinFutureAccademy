@@ -243,6 +243,31 @@
                 Our admin team is reviewing your payment. You will receive your Student ID via email once your payment is approved.
             </p>
             
+            <div style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--border); border-radius: 15px; padding: 1.5rem; margin: 2rem 0; text-align: center;">
+                <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 1rem; font-size: 1rem;">
+                    <strong>Already paid?</strong> Contact us via WhatsApp or Email to get your Student ID card and access to your class!
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    Text me on WhatsApp or send an email. I can send you your Student ID card and approve your class.
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    {% if whatsapp_number_clean %}
+                    <a href="https://wa.me/{{ whatsapp_number_clean }}" target="_blank" 
+                       style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
+                        <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i>
+                        WhatsApp
+                    </a>
+                    {% endif %}
+                    {% if contact_email %}
+                    <a href="mailto:{{ contact_email }}?subject=Payment Confirmation - Student ID Request" 
+                       style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #00a8ff 0%, #0077b6 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0, 168, 255, 0.3);">
+                        <i class="fas fa-envelope" style="font-size: 1.2rem;"></i>
+                        Email
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
             <div class="spinner"></div>
             
             <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem; margin-top: 2rem;">

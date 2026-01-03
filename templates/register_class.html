@@ -608,8 +608,33 @@
                                     <p style="margin-top: 0.5rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">Transfer to this bank account and upload the transaction receipt.</p>
                                     
                                     {% elif method.id == 'cash' %}
-                                    <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-money-bill-wave"></i> Cash Payment</h5>
-                                    <p>Pay in cash at our office. Please contact us for the office location.</p>
+                                    <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-money-bill-wave"></i> Money Transfer Services</h5>
+                                    <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.8);">Choose one of the following money transfer services:</p>
+                                    
+                                    <div style="margin-top: 1rem;">
+                                        <div style="background: rgba(255, 107, 53, 0.1); border-left: 3px solid #ff6b35; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                                            <h6 style="color: #ff6b35; margin-bottom: 0.5rem;"><i class="fas fa-globe"></i> 1️⃣ Western Union</h6>
+                                            <p style="margin: 0.25rem 0;"><strong>Receiver Name:</strong> {{ method.full_details.receiver_name }}</p>
+                                            <p style="margin: 0.25rem 0;"><strong>Country:</strong> {{ method.full_details.country }}</p>
+                                            <p style="margin: 0.25rem 0;"><strong>📞 Phone:</strong> {{ method.full_details.phone }}</p>
+                                        </div>
+                                        
+                                        <div style="background: rgba(155, 89, 182, 0.1); border-left: 3px solid #9b59b6; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                                            <h6 style="color: #9b59b6; margin-bottom: 0.5rem;"><i class="fas fa-exchange-alt"></i> 2️⃣ MoneyGram</h6>
+                                            <p style="margin: 0.25rem 0;"><strong>Receiver Name:</strong> {{ method.full_details.receiver_name }}</p>
+                                            <p style="margin: 0.25rem 0;"><strong>Country:</strong> {{ method.full_details.country }}</p>
+                                            <p style="margin: 0.25rem 0;"><strong>📞 Phone:</strong> {{ method.full_details.phone }}</p>
+                                        </div>
+                                        
+                                        <div style="background: rgba(231, 76, 60, 0.1); border-left: 3px solid #e74c3c; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                                            <h6 style="color: #e74c3c; margin-bottom: 0.5rem;"><i class="fas fa-money-bill-wave"></i> 3️⃣ Ria Money Transfer</h6>
+                                            <p style="margin: 0.25rem 0;"><strong>Receiver Name:</strong> {{ method.full_details.receiver_name }}</p>
+                                            <p style="margin: 0.25rem 0;"><strong>Country:</strong> {{ method.full_details.country }}</p>
+                                            <p style="margin: 0.25rem 0;"><strong>📞 Phone:</strong> {{ method.full_details.phone }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <p style="margin-top: 1rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">Send payment via any of these money transfer services and upload the receipt.</p>
                                     {% endif %}
                                 </div>
                                 {% endfor %}

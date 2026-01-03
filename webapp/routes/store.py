@@ -266,6 +266,11 @@ def register_class(class_type, class_id):
         bank_account_number = SiteSettings.get_setting('payment_bank_account_number', '60541424234')
         bank_ifsc = SiteSettings.get_setting('payment_bank_ifsc', 'SBIN0014022')
         
+        # Money transfer details
+        money_transfer_receiver = SiteSettings.get_setting('payment_money_transfer_receiver', 'Abdoukadir Jabbi')
+        money_transfer_country = SiteSettings.get_setting('payment_money_transfer_country', 'India')
+        money_transfer_phone = SiteSettings.get_setting('payment_money_transfer_phone', '+91 93190 38312')
+        
         return [
             {
                 'id': 'wave',
@@ -297,8 +302,30 @@ def register_class(class_type, class_id):
                 'name': 'Cash',
                 'icon': 'fa-money-bill-wave',
                 'color': '#ffc107',
-                'details': 'Pay in cash at our office',
-                'full_details': {}
+                'details': 'Money Transfer Services (Western Union, MoneyGram, Ria)',
+                'full_details': {
+                    'receiver_name': money_transfer_receiver,
+                    'country': money_transfer_country,
+                    'phone': money_transfer_phone,
+                    'has_sub_options': True,
+                    'sub_options': [
+                        {
+                            'id': 'western_union',
+                            'name': '1️⃣ Western Union',
+                            'icon': 'fa-globe'
+                        },
+                        {
+                            'id': 'moneygram',
+                            'name': '2️⃣ MoneyGram',
+                            'icon': 'fa-exchange-alt'
+                        },
+                        {
+                            'id': 'ria',
+                            'name': '3️⃣ Ria Money Transfer',
+                            'icon': 'fa-money-bill-wave'
+                        }
+                    ]
+                }
             }
         ]
     
@@ -561,16 +588,31 @@ def enrollment_pending_approval(enrollment_id):
             if id_card:
                 # SHOW ID CARD IMMEDIATELY - NO LOGIN REQUIRED
                 return redirect(url_for('admin.view_id_card', id_card_id=id_card.id))
-            else:
-                # ID card not found yet - might be generating, show message
-                flash('Your enrollment has been approved! Your ID card is being generated. Please refresh in a moment.', 'info')
-                return render_template('enrollment_pending_approval.html', enrollment=enrollment)
+            # ID card not found yet - might be generating, show message with contact info
+            flash('Your enrollment has been approved! Your ID card is being generated. Please refresh in a moment.', 'info')
         else:
             flash('User not found for this enrollment.', 'danger')
-            return render_template('enrollment_pending_approval.html', enrollment=enrollment)
+    
+    # Get contact information from SiteSettings (for all cases)
+    from ..models.site_settings import SiteSettings
+    whatsapp_number = SiteSettings.get_setting('whatsapp_number', '')
+    contact_email = SiteSettings.get_setting('contact_email', '')
+    # Clean WhatsApp number for wa.me link (remove non-digits except +)
+    whatsapp_number_clean = ''.join(c for c in whatsapp_number if c.isdigit() or c == '+') if whatsapp_number else ''
+    
+    # Render template with contact info (for all cases)
+    return render_template('enrollment_pending_approval.html', 
+                         enrollment=enrollment,
+                         whatsapp_number=whatsapp_number,
+                         whatsapp_number_clean=whatsapp_number_clean,
+                         contact_email=contact_email)
     
     # Still pending - show waiting page
-    return render_template('enrollment_pending_approval.html', enrollment=enrollment)
+    return render_template('enrollment_pending_approval.html', 
+                         enrollment=enrollment,
+                         whatsapp_number=whatsapp_number,
+                         whatsapp_number_clean=whatsapp_number_clean,
+                         contact_email=contact_email)
 
 
 @bp.route('/enroll/<int:class_id>', methods=['GET', 'POST'])

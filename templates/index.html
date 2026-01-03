@@ -1330,10 +1330,10 @@
                             <i class="fas {{ p_icon }}"></i>
                 </div>
                         <h3 class="class-type-title">{{ p_name }}</h3>
-                        <div class="class-type-price">
-                            ${{ p_price }}{% if type_key == 'group' %} / student{% endif %}{% if type_key == 'school' %} / school{% endif %} / month
+                        <div class="class-type-price" style="line-height: 1.2;">
+                            <span style="font-size: inherit;">${{ p_price }}</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;">{% if type_key == 'group' %} / student{% endif %}{% if type_key == 'school' %} / school{% endif %} / month</span>
                             {% if type_key == 'school' %}
-                            <span style="font-size: 0.7em; display: block; margin-top: 0.25rem; opacity: 0.8;">(Pilot Package)</span>
+                            <span style="font-size: 0.4em; display: block; margin-top: 0.25rem; opacity: 0.8; font-weight: 400;">(Pilot Package)</span>
                             {% endif %}
                         </div>
                         <p class="class-type-desc">

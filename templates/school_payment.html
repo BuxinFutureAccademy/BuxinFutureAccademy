@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .payment-method {
+        transition: all 0.3s ease;
+    }
+    .payment-method:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+    }
+    .payment-method input[type="radio"]:checked + .payment-icon {
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+    }
+    .payment-method:has(input[type="radio"]:checked) {
+        border-color: var(--primary) !important;
+        background: rgba(0, 168, 255, 0.1) !important;
+    }
+</style>
 <div class="container" style="min-height: 80vh; padding-top: 2rem;">
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
@@ -16,23 +33,101 @@
                     </div>
 
                     <form method="POST" enctype="multipart/form-data">
-                        <h5 class="mb-3">Payment Information</h5>
+                        <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Select Payment Method</h5>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Payment Method *</label>
-                            <select class="form-control" name="payment_method" required>
-                                <option value="">Select payment method</option>
-                                <option value="wave">Wave Money</option>
-                                <option value="bank">Bank Transfer</option>
-                                <option value="cash">Cash Payment</option>
-                            </select>
+                        <div class="payment-methods" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            {% for method in payment_methods %}
+                            <label class="payment-method" for="method-{{ method.id }}" onclick="showPaymentDetails('{{ method.id }}')" style="cursor: pointer; border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1rem; background: rgba(0, 0, 0, 0.2); transition: all 0.3s;">
+                                <input type="radio" name="payment_method" id="method-{{ method.id }}" 
+                                       value="{{ method.id }}" required onchange="showPaymentDetails('{{ method.id }}')" style="display: none;">
+                                <div class="payment-icon" style="background: {{ method.color }}; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem; color: white; font-size: 1.5rem;">
+                                    <i class="fas {{ method.icon }}"></i>
+                                </div>
+                                <div class="payment-name" style="text-align: center; font-weight: 600; color: white; margin-bottom: 0.25rem;">{{ method.name }}</div>
+                                <div class="payment-desc" style="text-align: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">{{ method.details }}</div>
+                            </label>
+                            
+                            <!-- Payment Details (hidden by default) -->
+                            <div id="details-{{ method.id }}" class="payment-details-box" style="display: none; margin-bottom: 1.5rem; padding: 1.5rem; background: rgba(0, 0, 0, 0.3); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); grid-column: 1 / -1;">
+                                {% if method.id == 'wave' %}
+                                <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-mobile-alt"></i> Wave Payment Details</h5>
+                                <p style="margin: 0.5rem 0;"><strong>Receiver Name:</strong> {{ method.full_details.name }}</p>
+                                <p style="margin: 0.5rem 0;"><strong>Wave Number:</strong> {{ method.full_details.number }}</p>
+                                <p style="margin-top: 0.5rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">Send payment to this Wave number and upload the screenshot.</p>
+                                
+                                {% elif method.id == 'bank' %}
+                                <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-university"></i> Bank Transfer Details</h5>
+                                <p style="margin: 0.5rem 0;"><strong>Account Holder Name:</strong> {{ method.full_details.account_holder }}</p>
+                                <p style="margin: 0.5rem 0;"><strong>Bank Name:</strong> {{ method.full_details.bank_name }}</p>
+                                <p style="margin: 0.5rem 0;"><strong>Branch Name:</strong> {{ method.full_details.branch }}</p>
+                                <p style="margin: 0.5rem 0;"><strong>Account Number:</strong> {{ method.full_details.account_number }}</p>
+                                <p style="margin: 0.5rem 0;"><strong style="color: #ffc107;">IFSC Code (VERY IMPORTANT):</strong> <span style="font-size: 1.1rem; font-weight: bold;">{{ method.full_details.ifsc }}</span></p>
+                                <p style="margin-top: 0.5rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">Transfer to this bank account and upload the transaction receipt.</p>
+                                
+                                {% elif method.id == 'cash' %}
+                                <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-money-bill-wave"></i> Money Transfer Services</h5>
+                                <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.8);">Choose one of the following money transfer services:</p>
+                                
+                                <div style="margin-top: 1rem;">
+                                    <div style="background: rgba(255, 107, 53, 0.1); border-left: 3px solid #ff6b35; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                                        <h6 style="color: #ff6b35; margin-bottom: 0.5rem;"><i class="fas fa-globe"></i> 1️⃣ Western Union</h6>
+                                        <p style="margin: 0.25rem 0;"><strong>Receiver Name:</strong> {{ method.full_details.receiver_name }}</p>
+                                        <p style="margin: 0.25rem 0;"><strong>Country:</strong> {{ method.full_details.country }}</p>
+                                        <p style="margin: 0.25rem 0;"><strong>📞 Phone:</strong> {{ method.full_details.phone }}</p>
+                                    </div>
+                                    
+                                    <div style="background: rgba(155, 89, 182, 0.1); border-left: 3px solid #9b59b6; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                                        <h6 style="color: #9b59b6; margin-bottom: 0.5rem;"><i class="fas fa-exchange-alt"></i> 2️⃣ MoneyGram</h6>
+                                        <p style="margin: 0.25rem 0;"><strong>Receiver Name:</strong> {{ method.full_details.receiver_name }}</p>
+                                        <p style="margin: 0.25rem 0;"><strong>Country:</strong> {{ method.full_details.country }}</p>
+                                        <p style="margin: 0.25rem 0;"><strong>📞 Phone:</strong> {{ method.full_details.phone }}</p>
+                                    </div>
+                                    
+                                    <div style="background: rgba(231, 76, 60, 0.1); border-left: 3px solid #e74c3c; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                                        <h6 style="color: #e74c3c; margin-bottom: 0.5rem;"><i class="fas fa-money-bill-wave"></i> 3️⃣ Ria Money Transfer</h6>
+                                        <p style="margin: 0.25rem 0;"><strong>Receiver Name:</strong> {{ method.full_details.receiver_name }}</p>
+                                        <p style="margin: 0.25rem 0;"><strong>Country:</strong> {{ method.full_details.country }}</p>
+                                        <p style="margin: 0.25rem 0;"><strong>📞 Phone:</strong> {{ method.full_details.phone }}</p>
+                                    </div>
+                                </div>
+                                
+                                <p style="margin-top: 1rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">Send payment via any of these money transfer services and upload the receipt.</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Payment Proof (Screenshot/Receipt)</label>
-                            <input type="file" class="form-control" name="payment_proof" accept="image/*">
+                            <label class="form-label">Payment Proof (Screenshot/Receipt) *</label>
+                            <input type="file" class="form-control" name="payment_proof" accept="image/*" required>
                             <small class="form-text text-muted">Upload a screenshot or photo of your payment confirmation</small>
                         </div>
+                        
+                        <script>
+                        function showPaymentDetails(methodId) {
+                            // Hide all payment details
+                            document.querySelectorAll('.payment-details-box').forEach(box => {
+                                box.style.display = 'none';
+                            });
+                            
+                            // Show selected payment details
+                            const selectedMethod = document.getElementById('method-' + methodId);
+                            if (selectedMethod && selectedMethod.checked) {
+                                const detailsBox = document.getElementById('details-' + methodId);
+                                if (detailsBox) {
+                                    detailsBox.style.display = 'block';
+                                }
+                            }
+                        }
+                        
+                        // Show details on page load if a method is already selected
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+                            if (selectedMethod) {
+                                showPaymentDetails(selectedMethod.value);
+                            }
+                        });
+                        </script>
 
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>

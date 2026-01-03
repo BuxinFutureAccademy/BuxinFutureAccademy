@@ -1312,56 +1312,135 @@
                     </div>
             
             <div class="row g-4 justify-content-center">
-                {% for type_key in ['individual', 'group', 'family', 'school'] %}
-                {% set pricing = pricing_data.get(type_key, {}) %}
-                {% set p_name = pricing.get('name', type_key|title) %}
-                {% set p_price = pricing.get('price', 100)|int %}
-                {% set p_icon = pricing.get('icon', 'fa-user') %}
-                {% set p_color = pricing.get('color', '#00d4ff') %}
-                {% set p_features = pricing.get('features', []) %}
-                {% set p_popular = pricing.get('is_popular', false) %}
-                
+                <!-- Individual Class -->
                 <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card {% if p_popular %}class-type-popular{% endif %}">
-                        {% if p_popular %}
-                        <div class="popular-badge">Popular</div>
-                        {% endif %}
-                        <div class="class-type-icon" style="background: {{ p_color }};">
-                            <i class="fas {{ p_icon }}"></i>
-                </div>
-                        <h3 class="class-type-title">{{ p_name }}</h3>
+                    <div class="class-type-card">
+                        <div class="class-type-icon" style="background: #00d4ff;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h3 class="class-type-title">Individual Class</h3>
                         <div class="class-type-price" style="line-height: 1.2;">
-                            <span style="font-size: inherit;">${{ p_price }}</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;">{% if type_key == 'group' %} / student{% endif %}{% if type_key == 'school' %} / school{% endif %} / month</span>
-                            {% if type_key == 'school' %}
-                            <span style="font-size: 0.4em; display: block; margin-top: 0.25rem; opacity: 0.8; font-weight: 400;">(Pilot Package)</span>
-                            {% endif %}
+                            <span style="font-size: inherit;">$100</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / month</span>
                         </div>
                         <p class="class-type-desc">
-                            {% if type_key == 'individual' %}One-on-one personalized learning with full instructor attention.
-                            {% elif type_key == 'group' %}Learn together with other students in interactive group sessions.
-                            {% elif type_key == 'family' %}Perfect for families learning robotics together at home.
-                            {% elif type_key == 'school' %}Designed for schools and educational institutions.
-                            {% endif %}
+                            One-on-one personalized learning with full instructor attention.
                         </p>
-                        <ul class="class-type-features">
-                            {% for feature in p_features %}
-                            <li>{{ feature }}</li>
-                            {% endfor %}
-                        </ul>
+                        <div style="margin: 1.5rem 0;">
+                            <strong style="color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">Includes:</strong>
+                            <ul class="class-type-features" style="margin-top: 0.75rem; margin-bottom: 0;">
+                                <li>👤 1 Student</li>
+                                <li>👨‍🏫 Personal Instructor</li>
+                                <li>⏰ Flexible Schedule (student-preferred time)</li>
+                            </ul>
+                        </div>
                         <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
-                            <strong>Best for:</strong> 
-                            {% if type_key == 'individual' %}Beginners, professionals, fast learners
-                            {% elif type_key == 'group' %}Students, friends, community learners
-                            {% elif type_key == 'family' %}Parents and children learning together
-                            {% elif type_key == 'school' %}Schools, ICT programs, STEM clubs
-                            {% endif %}
+                            <strong>Best for:</strong> Beginners, professionals, fast learners
                         </p>
-                        <a href="{{ url_for('store.available_classes', type=type_key) }}" class="class-type-btn" style="background: {{ p_color }}; color: {% if p_color == '#39ff14' or p_color == '#00d4ff' %}var(--dark){% else %}white{% endif %};">
+                        <a href="{{ url_for('store.available_classes', type='individual') }}" class="class-type-btn" style="background: #00d4ff; color: var(--dark);">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
-            </div>
                     </div>
-                {% endfor %}
+                </div>
+
+                <!-- Group Class -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="class-type-card">
+                        <div class="class-type-icon" style="background: #39ff14;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="class-type-title">Group Class</h3>
+                        <div class="class-type-price" style="line-height: 1.2;">
+                            <span style="font-size: inherit;">$25</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / student / month</span>
+                        </div>
+                        <p class="class-type-desc">
+                            Learn together with other students in interactive group sessions.
+                        </p>
+                        <div style="margin: 1.5rem 0;">
+                            <strong style="color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">Includes:</strong>
+                            <ul class="class-type-features" style="margin-top: 0.75rem; margin-bottom: 0;">
+                                <li>👥 2+ Students</li>
+                                <li>🤝 Team Projects</li>
+                                <li>🧠 Collaborative Learning</li>
+                                <li>📅 Day: Saturday</li>
+                                <li>⏰ Time: 5:00 – 6:30 PM (GMT)</li>
+                                <li>🌍 Pan-African session (local time adjusted)</li>
+                            </ul>
+                        </div>
+                        <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                            <strong>Best for:</strong> Students, friends, community learners
+                        </p>
+                        <a href="{{ url_for('store.available_classes', type='group') }}" class="class-type-btn" style="background: #39ff14; color: var(--dark);">
+                            <i class="fas fa-rocket me-2"></i>Register Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Family Class -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="class-type-card class-type-popular">
+                        <div class="popular-badge">Popular</div>
+                        <div class="class-type-icon" style="background: #ff6b35;">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <h3 class="class-type-title">⭐ Family Class (Popular)</h3>
+                        <div class="class-type-price" style="line-height: 1.2;">
+                            <span style="font-size: inherit;">$200</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / month</span>
+                        </div>
+                        <p class="class-type-desc">
+                            Perfect for families learning robotics together at home.
+                        </p>
+                        <div style="margin: 1.5rem 0;">
+                            <strong style="color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">Includes:</strong>
+                            <ul class="class-type-features" style="margin-top: 0.75rem; margin-bottom: 0;">
+                                <li>👨‍👩‍👧‍👦 Up to 4 Family Members</li>
+                                <li>❤️ Family Bonding Through Learning</li>
+                                <li>💡 Best Value Package</li>
+                                <li>⏰ Flexible Scheduling</li>
+                            </ul>
+                        </div>
+                        <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                            <strong>Best for:</strong> Parents and children learning together
+                        </p>
+                        <a href="{{ url_for('store.available_classes', type='family') }}" class="class-type-btn" style="background: #ff6b35; color: white;">
+                            <i class="fas fa-rocket me-2"></i>Register Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- School Class -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="class-type-card">
+                        <div class="class-type-icon" style="background: #9b59b6;">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <h3 class="class-type-title">School Class</h3>
+                        <div class="class-type-price" style="line-height: 1.2;">
+                            <span style="font-size: inherit;">$300</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / school / month</span> <span style="font-size: 0.4em; vertical-align: baseline; opacity: 0.8; font-weight: 400;">(Pilot Package)</span>
+                        </div>
+                        <p class="class-type-desc">
+                            Designed for schools and educational institutions.
+                        </p>
+                        <div style="margin: 1.5rem 0;">
+                            <strong style="color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">Includes:</strong>
+                            <ul class="class-type-features" style="margin-top: 0.75rem; margin-bottom: 0;">
+                                <li>🏫 School Student Groups</li>
+                                <li>📘 Curriculum Support</li>
+                                <li>📊 Attendance Tracking</li>
+                                <li>👨‍🏫 School Mentor Access</li>
+                                <li>📅 Days: Tuesday & Thursday</li>
+                                <li>⏰ Time</li>
+                                <li style="list-style: none; padding-left: 1.5rem;">• 2:00 – 3:30 PM</li>
+                                <li>🌍 Africa-focused (local time per country)</li>
+                            </ul>
+                        </div>
+                        <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                            <strong>Best for:</strong> Schools, ICT programs, STEM clubs
+                        </p>
+                        <a href="{{ url_for('store.available_classes', type='school') }}" class="class-type-btn" style="background: #9b59b6; color: white;">
+                            <i class="fas fa-rocket me-2"></i>Register Now
+                        </a>
+                    </div>
+                </div>
         </div>
     </div>
 </section>

@@ -121,43 +121,45 @@ class ClassPricing(db.Model):
     
     @staticmethod
     def get_default_pricing():
-        """Return default pricing if database is empty"""
+        """Return default pricing if database is empty - basic info only, features are in HTML template"""
         return {
-            'individual': {'name': 'Individual Class', 'price': 100, 'icon': 'fa-user', 'color': '#00d4ff', 'max_students': 1, 'features': ['👤 1 Student', '👨‍🏫 Personal Instructor', '⏰ Flexible Schedule (student-preferred time)'], 'description': 'One-on-one personalized learning with full instructor attention.'},
-            'group': {'name': 'Group Class', 'price': 25, 'icon': 'fa-users', 'color': '#39ff14', 'max_students': 10, 'features': ['👥 2+ Students', '🤝 Team Projects', '🧠 Collaborative Learning', '📅 Day: Saturday', '⏰ Time: 5:00 – 6:30 PM (GMT)', '🌍 Pan-African session (local time adjusted)'], 'description': 'Learn together with other students in interactive group sessions.'},
-            'family': {'name': '⭐ Family Class (Popular)', 'price': 200, 'icon': 'fa-home', 'color': '#ff6b35', 'max_students': 4, 'features': ['👨‍👩‍👧‍👦 Up to 4 Family Members', '❤️ Family Bonding Through Learning', '💡 Best Value Package', '⏰ Flexible Scheduling'], 'description': 'Perfect for families learning robotics together at home.', 'is_popular': True},
-            'school': {'name': 'School Class', 'price': 300, 'icon': 'fa-school', 'color': '#9b59b6', 'max_students': 30, 'features': ['🏫 School Student Groups', '📘 Curriculum Support', '📊 Attendance Tracking', '👨‍🏫 School Mentor Access', '📅 Days: Tuesday & Thursday', '⏰ Time: • 2:00 – 3:30 PM', '🌍 Africa-focused (local time per country)'], 'description': 'Designed for schools and educational institutions.', 'pilot_note': 'Pilot Package'}
+            'individual': {'name': 'Individual Class', 'price': 100, 'icon': 'fa-user', 'color': '#00d4ff', 'max_students': 1},
+            'group': {'name': 'Group Class', 'price': 25, 'icon': 'fa-users', 'color': '#39ff14', 'max_students': 10},
+            'family': {'name': '⭐ Family Class (Popular)', 'price': 200, 'icon': 'fa-home', 'color': '#ff6b35', 'max_students': 4, 'is_popular': True},
+            'school': {'name': 'School Class', 'price': 300, 'icon': 'fa-school', 'color': '#9b59b6', 'max_students': 30}
         }
     
     @staticmethod
     def get_all_pricing():
-        """Get all pricing from database or defaults"""
+        """Get all pricing from database or defaults - features are hardcoded in HTML templates"""
         from ..extensions import db
+        defaults = ClassPricing.get_default_pricing()
+        
         try:
             pricing_list = ClassPricing.query.filter_by(is_active=True).order_by(ClassPricing.display_order).all()
             if pricing_list:
                 result = {}
                 for p in pricing_list:
-                    features = p.features.split(',') if p.features else []
-                    # Strip whitespace from features
-                    features = [f.strip() for f in features if f.strip()]
+                    default_data = defaults.get(p.class_type, {})
                     result[p.class_type] = {
-                        'name': p.name,
-                        'price': p.price,
-                        'icon': p.icon,
-                        'color': p.color,
-                        'max_students': p.max_students,
-                        'features': features,
-                        'is_popular': p.is_popular
+                        'name': p.name if p.name else default_data.get('name', ''),
+                        'price': p.price if p.price else default_data.get('price', 100),
+                        'icon': p.icon if p.icon else default_data.get('icon', 'fa-user'),
+                        'color': p.color if p.color else default_data.get('color', '#00d4ff'),
+                        'max_students': p.max_students if p.max_students else default_data.get('max_students', 1),
+                        'is_popular': p.is_popular if p.is_popular is not None else default_data.get('is_popular', False)
                     }
+                # Ensure all default types are included
+                for class_type, default_data in defaults.items():
+                    if class_type not in result:
+                        result[class_type] = default_data
                 return result
         except Exception:
-            # Rollback to clear failed transaction
             try:
                 db.session.rollback()
             except:
                 pass
-        return ClassPricing.get_default_pricing()
+        return defaults
 
 
 class StudentVictory(db.Model):

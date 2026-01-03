@@ -110,7 +110,7 @@
         <!-- Live Class Video Area (Main) -->
         <div class="col-md-9">
             <div class="card">
-                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-danger text-white">
                     <div>
                         <h5 class="mb-0">
                             <i class="fas fa-video me-2"></i>Live Class Session
@@ -121,26 +121,27 @@
                             <i class="fas fa-book me-1 ms-2"></i>{{ selected_class_obj.name }}
                         </small>
                     </div>
-                    <div>
-                        <button class="btn btn-sm btn-light" onclick="toggleFullscreen()">
-                            <i class="fas fa-expand me-1"></i>Fullscreen
-                        </button>
-                    </div>
                 </div>
-                <div class="card-body p-0" id="videoContainer">
-                    <div style="background: #000; min-height: 600px; position: relative;">
-                        <iframe 
-                            id="liveClassIframe"
-                            allow="camera; microphone; fullscreen; display-capture; autoplay" 
-                            src="https://meet.jit.si/SportingDimensionsEmphasizeGenerally#config.prejoinPageEnabled=false&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false&userInfo.displayName=Admin" 
-                            style="height: 600px; width: 100%; border: 0px; display: block;">
-                        </iframe>
-                    </div>
-                    <div class="p-3">
-                        <div class="alert alert-info mb-0">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Live Class Controls:</strong> Use the controls in the video window to manage camera, microphone, screen sharing, and more.
-                            <br><small class="d-block mt-1">Students will see "LIVE CLASS IN SESSION" in their dashboard when this session is active.</small>
+                <div class="card-body p-5" id="videoContainer">
+                    <div class="text-center" style="min-height: 500px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                        <div class="mb-4">
+                            <i class="fas fa-video fa-5x mb-3" style="color: #dc3545;"></i>
+                            <h4 class="mb-3">Ready to Start Live Class</h4>
+                            <p class="text-muted mb-4">Click the button below to join the live class session directly.</p>
+                        </div>
+                        <button 
+                            id="joinLiveClassBtn"
+                            class="btn btn-danger btn-lg px-5 py-3"
+                            onclick="openLiveClass()"
+                            style="font-size: 1.2rem;">
+                            <i class="fas fa-video me-2"></i>Join Live Class
+                        </button>
+                        <div class="mt-4">
+                            <div class="alert alert-info mb-0" style="max-width: 600px;">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Live Class Controls:</strong> The video call will open in a new window. Use the controls in the video window to manage camera, microphone, screen sharing, and more.
+                                <br><small class="d-block mt-2">Students will see "LIVE CLASS IN SESSION" in their dashboard when this session is active.</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -315,16 +316,14 @@ function updateTimeDropdown() {
     console.log('Populated', filteredTimes.length, 'time slots');
 }
 
-// Toggle fullscreen
-function toggleFullscreen() {
-    const container = document.getElementById('videoContainer');
-    if (!document.fullscreenElement) {
-        container.requestFullscreen().catch(err => {
-            alert('Error attempting to enable fullscreen: ' + err.message);
-        });
-    } else {
-        document.exitFullscreen();
-    }
+// Open live class in new window
+function openLiveClass() {
+    // Jitsi Meet URL with JWT token and configuration to skip prejoin page and go directly into class
+    // This URL opens the class directly without showing login screen
+    const liveClassUrl = 'https://meet.jit.si/SportingDimensionsEmphasizeGenerally#jwt=%22eyJhbGciOiJSUzI1NiIsImtpZCI6ImEzOGVhNmEwNDA4YjBjYzVkYTE4OWRmYzg4ODgyZDBmMWI3ZmJmMGUiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoid29ybGQgdmxvZyIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NJQTV5MXJkT3VnVnotOHJUOWViWXRVcElTMThBcWY2UnNFdndyQWczY0VpWkRmSkE9czk2LWMiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbWVldC1qaXQtc2ktNjZjYmQiLCJhdWQiOiJtZWV0LWppdC1zaS02NmNiZCIsImF1dGhfdGltZSI6MTc2NTU5ODExMSwidXNlcl9pZCI6IktaZDBJbk9DVDVTTnlTRkJaaTlvSU84OU9EMTMiLCJzdWIiOiJLWmQwSW5PQ1Q1U055U0ZCWmk5b0lPODlPRDEzIiwiaWF0IjoxNzY3NDI2NDg3LCJleHAiOjE3Njc0MzAwODcsImVtYWlsIjoid29ybGR2bG9nMTNAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZ29vZ2xlLmNvbSI6WyIxMDk5NDMxOTQyMDc2Njg5NjI3MzciXSwiZW1haWwiOlsid29ybGR2bG9nMTNAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiZ29vZ2xlLmNvbSJ9fQ.NUjT3uvmI04qU1acnjDLzk4cQJw5MYR__fk-LA8gbQ50HEzY8kUTk98VoLlZCpNldNPrHziM8_v2M0QgYAcXfvfIvNZ1fEaqoyDiVInhgz9CK4GEjf54cMvU-j9sxM2ZGocGE79fX4l-oVqr9EgRidbKJ_y0A19L8UyFIMGb7GnI9Po4HQr3u8VeBtmub7wVOa7qYYXfGeCzsatHkBWza9T4nTO86wOrLbfXlBbFTuT0XhGGPXVPJvAXicqNejHB408XVfWrAbBVIglTbyheq3F7M1j4x25aZ6f7pU4Nz2Er1mk3EZ9JGm9U_bc_kWyqXVw6SRUwdW35gXxQn8vVEg%22&config.prejoinPageEnabled=false&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false&userInfo.displayName=Admin';
+    
+    // Open in new window/tab - opens directly into the class without login screen
+    window.open(liveClassUrl, '_blank', 'noopener,noreferrer');
 }
 
 // Initialize on page load

@@ -805,7 +805,7 @@
                     LIVE CLASSES
                 </h2>
                 <div class="live-class-card">
-                    <div class="live-class-header">
+                    <div class="live-class-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
                             <div class="live-class-title">
                                 <i class="fas fa-circle pulse-dot"></i>
@@ -820,10 +820,16 @@
                                 </small>
                             </div>
                         </div>
+                        <div>
+                            <button class="btn btn-sm" onclick="toggleLiveClassFullscreen()" style="background: var(--robotics-accent); color: white; border: none;">
+                                <i class="fas fa-expand" id="fullscreenIcon"></i> <span id="fullscreenText">Fullscreen</span>
+                            </button>
+                        </div>
                     </div>
                     
-                    <div class="mt-3" style="border-radius: var(--radius-sm); overflow: hidden; background: #000; min-height: 500px;">
+                    <div class="mt-3" id="liveClassContainer" style="border-radius: var(--radius-sm); overflow: hidden; background: #000; min-height: 500px;">
                         <iframe 
+                            id="liveClassIframe"
                             allow="camera; microphone; fullscreen; display-capture; autoplay" 
                             src="https://meet.jit.si/SportingDimensionsEmphasizeGenerally#config.prejoinPageEnabled=false&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false&userInfo.displayName={{ session.get('student_name', 'Student')|urlencode }}" 
                             style="height: 600px; width: 100%; border: 0px; display: block;">
@@ -1238,6 +1244,68 @@ function openImageModal(imageUrl, imageTitle) {
     
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
+}
+
+// Toggle fullscreen for live class
+function toggleLiveClassFullscreen() {
+    const container = document.getElementById('liveClassContainer');
+    const icon = document.getElementById('fullscreenIcon');
+    const text = document.getElementById('fullscreenText');
+    
+    if (!container) return;
+    
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+        // Enter fullscreen
+        if (container.requestFullscreen) {
+            container.requestFullscreen().catch(err => {
+                console.error('Error attempting to enable fullscreen:', err);
+            });
+        } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+        } else if (container.mozRequestFullScreen) {
+            container.mozRequestFullScreen();
+        } else if (container.msRequestFullscreen) {
+            container.msRequestFullscreen();
+        }
+        
+        // Update button text and icon
+        if (icon) icon.className = 'fas fa-compress';
+        if (text) text.textContent = 'Exit Fullscreen';
+    } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+        
+        // Update button text and icon
+        if (icon) icon.className = 'fas fa-expand';
+        if (text) text.textContent = 'Fullscreen';
+    }
+}
+
+// Listen for fullscreen changes to update button state
+document.addEventListener('fullscreenchange', updateFullscreenButton);
+document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+function updateFullscreenButton() {
+    const icon = document.getElementById('fullscreenIcon');
+    const text = document.getElementById('fullscreenText');
+    
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+        if (icon) icon.className = 'fas fa-compress';
+        if (text) text.textContent = 'Exit Fullscreen';
+    } else {
+        if (icon) icon.className = 'fas fa-expand';
+        if (text) text.textContent = 'Fullscreen';
+    }
 }
 </script>
 {% endblock %}

@@ -33,7 +33,7 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Class *</label>
+                        <label class="form-label" id="classSelectLabel">Select *</label>
                         <select name="class_id" class="form-select" id="classSelect" required onchange="updateTimeDropdown()">
                             <option value="">Select Class Type First</option>
                         </select>
@@ -161,16 +161,26 @@
 </div>
 
 <script>
-// Class data from server
+// Data from server - different structures for different types
 const classData = {
-    individual: {% if individual_classes %}{{ individual_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
-    individualNames: {% if individual_classes %}{{ individual_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    // Individual: students (user_id, name, student_id)
+    individual: {% if individual_students %}{{ individual_students|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    individualNames: {% if individual_students %}{{ individual_students|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    individualStudentIds: {% if individual_students %}{{ individual_students|map(attribute='student_id')|list|tojson }}{% else %}[]{% endif %},
+    
+    // Group: classes (class_id, name)
     group: {% if group_classes %}{{ group_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
     groupNames: {% if group_classes %}{{ group_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
-    family: {% if family_classes %}{{ family_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
-    familyNames: {% if family_classes %}{{ family_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
-    school: {% if school_classes %}{{ school_classes|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
-    schoolNames: {% if school_classes %}{{ school_classes|map(attribute='name')|list|tojson }}{% else %}[]{% endif %}
+    
+    // Family: families (enrollment_id, name, family_system_id)
+    family: {% if families %}{{ families|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    familyNames: {% if families %}{{ families|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    familySystemIds: {% if families %}{{ families|map(attribute='family_system_id')|list|tojson }}{% else %}[]{% endif %},
+    
+    // School: schools (school_id, name, school_system_id)
+    school: {% if schools %}{{ schools|map(attribute='id')|list|tojson }}{% else %}[]{% endif %},
+    schoolNames: {% if schools %}{{ schools|map(attribute='name')|list|tojson }}{% else %}[]{% endif %},
+    schoolSystemIds: {% if schools %}{{ schools|map(attribute='school_system_id')|list|tojson }}{% else %}[]{% endif %}
 };
 
 // Time data from server
@@ -205,11 +215,29 @@ const timeData = {
     ]
 };
 
-// Populate class dropdown based on class type
+// Populate dropdown based on class type
 function updateClassDropdown() {
     const classType = document.getElementById('classTypeSelect').value;
     const classSelect = document.getElementById('classSelect');
-    classSelect.innerHTML = '<option value="">Select Class...</option>';
+    const classSelectLabel = document.getElementById('classSelectLabel');
+    
+    // Update label based on class type
+    if (classType === 'individual') {
+        classSelectLabel.textContent = 'Student *';
+        classSelect.innerHTML = '<option value="">Select Student...</option>';
+    } else if (classType === 'family') {
+        classSelectLabel.textContent = 'Family *';
+        classSelect.innerHTML = '<option value="">Select Family...</option>';
+    } else if (classType === 'group') {
+        classSelectLabel.textContent = 'Class *';
+        classSelect.innerHTML = '<option value="">Select Class...</option>';
+    } else if (classType === 'school') {
+        classSelectLabel.textContent = 'School *';
+        classSelect.innerHTML = '<option value="">Select School...</option>';
+    } else {
+        classSelectLabel.textContent = 'Select *';
+        classSelect.innerHTML = '<option value="">Select Class Type First</option>';
+    }
     
     console.log('updateClassDropdown called with classType:', classType);
     
@@ -218,44 +246,65 @@ function updateClassDropdown() {
         return;
     }
     
-    let classes = [];
-    let classNames = [];
+    let items = [];
+    let itemNames = [];
+    let itemIds = [];
     
     if (classType === 'individual' && classData.individual && Array.isArray(classData.individual) && classData.individual.length > 0) {
-        classes = classData.individual;
-        classNames = classData.individualNames || [];
-        console.log('Individual classes found:', classes.length);
+        items = classData.individual;
+        itemNames = classData.individualNames || [];
+        itemIds = classData.individualStudentIds || [];
+        console.log('Individual students found:', items.length);
     } else if (classType === 'group' && classData.group && Array.isArray(classData.group) && classData.group.length > 0) {
-        classes = classData.group;
-        classNames = classData.groupNames || [];
-        console.log('Group classes found:', classes.length);
+        items = classData.group;
+        itemNames = classData.groupNames || [];
+        console.log('Group classes found:', items.length);
     } else if (classType === 'family' && classData.family && Array.isArray(classData.family) && classData.family.length > 0) {
-        classes = classData.family;
-        classNames = classData.familyNames || [];
-        console.log('Family classes found:', classes.length);
+        items = classData.family;
+        itemNames = classData.familyNames || [];
+        itemIds = classData.familySystemIds || [];
+        console.log('Families found:', items.length);
     } else if (classType === 'school' && classData.school && Array.isArray(classData.school) && classData.school.length > 0) {
-        classes = classData.school;
-        classNames = classData.schoolNames || [];
-        console.log('School classes found:', classes.length);
+        items = classData.school;
+        itemNames = classData.schoolNames || [];
+        itemIds = classData.schoolSystemIds || [];
+        console.log('Schools found:', items.length);
     }
     
-    if (classes.length === 0) {
+    if (items.length === 0) {
         const option = document.createElement('option');
         option.value = '';
-        option.textContent = 'No classes available';
+        if (classType === 'individual') {
+            option.textContent = 'No students available';
+        } else if (classType === 'family') {
+            option.textContent = 'No families available';
+        } else if (classType === 'school') {
+            option.textContent = 'No schools available';
+        } else {
+            option.textContent = 'No classes available';
+        }
         classSelect.appendChild(option);
-        console.log('No classes available for type:', classType);
+        console.log('No items available for type:', classType);
     } else {
-        classes.forEach((id, index) => {
+        items.forEach((id, index) => {
             const option = document.createElement('option');
             option.value = id;
-            option.textContent = classNames[index] || `Class ${id}`;
+            let displayText = itemNames[index] || `Item ${id}`;
+            // Add system ID for individual, family, and school
+            if (classType === 'individual' && itemIds[index]) {
+                displayText += ` (${itemIds[index]})`;
+            } else if (classType === 'family' && itemIds[index]) {
+                displayText += ` (${itemIds[index]})`;
+            } else if (classType === 'school' && itemIds[index]) {
+                displayText += ` (${itemIds[index]})`;
+            }
+            option.textContent = displayText;
             {% if selected_class_id %}
             if (id === {{ selected_class_id }}) option.selected = true;
             {% endif %}
             classSelect.appendChild(option);
         });
-        console.log('Populated', classes.length, 'classes');
+        console.log('Populated', items.length, 'items');
     }
     
     updateTimeDropdown();

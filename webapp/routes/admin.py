@@ -165,13 +165,21 @@ def require_id_card_viewed(f):
     CRITICAL Decorator to enforce ID card viewing on ALL student routes
     This MUST be the FIRST check - before any other logic
     Approval is NOT COMPLETE until student views ID card
+    
+    Made lazy to skip database access for health checks and status endpoints.
     """
     from functools import wraps
-    from flask import redirect, url_for, session
+    from flask import redirect, url_for, session, request
     import traceback
     
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Skip database access for health checks, status endpoints, or API endpoints
+        if request.endpoint in ['health.health_check', 'main.health'] or \
+           request.path.startswith('/api/health') or \
+           request.path in ['/health', '/status', '/ping']:
+            return f(*args, **kwargs)
+        
         # CRITICAL: Only check for authenticated non-admin users
         # If user is not authenticated, they can't have an ID card yet, so skip check
         if not current_user.is_authenticated:

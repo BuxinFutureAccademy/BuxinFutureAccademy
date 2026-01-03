@@ -24,6 +24,15 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
+    # Configure SQLAlchemy for lazy connections - no connection pool until actually needed
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': False,  # Don't ping on checkout
+        'pool_recycle': 3600,    # Recycle connections after 1 hour
+        'connect_args': {
+            'connect_timeout': 10
+        }
+    }
+    
     # Fix database URL - handle various formats from Neon/Render
     db_url = os.environ.get('DATABASE_URL', '')
     if db_url.startswith('psql '):
@@ -81,11 +90,24 @@ def create_app():
     # db.create_all() is not used when using Flask-Migrate
     login_manager.login_view = 'auth.login'
 
-    from .models.users import User
-
+    # Lazy user loader - only imports User model when actually needed
+    # This prevents database access during health checks or non-authenticated requests
     @login_manager.user_loader
     def load_user(user_id):
+        """
+        Lazy user loader - only queries database when user_id is actually present in session.
+        This prevents automatic database access during health checks or wake-up requests.
+        """
+        # Skip database access for health checks, status endpoints, or API endpoints
+        from flask import request
+        if request.endpoint in ['health.health_check', 'main.health'] or \
+           request.path.startswith('/api/health') or \
+           request.path in ['/health', '/status', '/ping']:
+            return None
+        
         try:
+            # Only import and query when actually needed
+            from .models.users import User
             return User.query.get(int(user_id))
         except Exception:
             return None
@@ -139,9 +161,25 @@ def create_app():
     app.register_blueprint(schools_bp)
     
     # Context processor to inject site settings into all templates
+    # Made lazy to avoid database access during health checks
     @app.context_processor
     def inject_site_settings():
-        """Inject site settings into all templates"""
+        """
+        Inject site settings into all templates.
+        Lazy implementation - skips database access for health/status endpoints.
+        """
+        from flask import request
+        
+        # Skip database access for health checks, status endpoints, or API endpoints
+        if request.endpoint in ['health.health_check', 'main.health'] or \
+           request.path.startswith('/api/health') or \
+           request.path in ['/health', '/status', '/ping']:
+            return {
+                'whatsapp_number': '',
+                'contact_email': ''
+            }
+        
+        # Only query database when actually rendering a template that needs it
         try:
             from .models.site_settings import SiteSettings
             whatsapp_number = SiteSettings.get_setting('whatsapp_number', '')
@@ -187,6 +225,11 @@ def create_app():
 
     @app.before_request
     def log_request_info():
+        # Skip logging for health checks to avoid any potential overhead
+        if request.endpoint in ['health.health_check', 'main.health'] or \
+           request.path.startswith('/api/health') or \
+           request.path in ['/health', '/status', '/ping']:
+            return None
         app.logger.debug('Headers: %s', request.headers)
         app.logger.debug('Body: %s', request.get_data())
 
@@ -220,8 +263,18 @@ def create_app():
         click.echo('Admin user "buxin" created successfully!')
 
     # Auto-create admin user on first request if doesn't exist
+    # Made conditional to skip database access for health checks
     @app.before_request
     def ensure_admin_exists():
+        from flask import request
+        
+        # Skip database access for health checks, status endpoints, or API endpoints
+        if request.endpoint in ['health.health_check', 'main.health'] or \
+           request.path.startswith('/api/health') or \
+           request.path in ['/health', '/status', '/ping']:
+            return None
+        
+        # Remove this hook after first execution
         app.before_request_funcs[None].remove(ensure_admin_exists)
         try:
             from .models.users import User

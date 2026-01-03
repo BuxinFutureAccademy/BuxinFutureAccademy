@@ -163,6 +163,8 @@
                     {% endif %}
                     {% set email_address = contact_email if contact_email else 'worldvlog13@gmail.com' %}
                     <a href="mailto:{{ email_address }}" 
+                       class="email-link-btn"
+                       data-email="{{ email_address }}"
                        style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #00a8ff 0%, #0077b6 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0, 168, 255, 0.3);">
                         <i class="fas fa-envelope" style="font-size: 1.2rem;"></i>
                         Email

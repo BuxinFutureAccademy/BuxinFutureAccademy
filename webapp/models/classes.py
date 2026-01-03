@@ -55,6 +55,7 @@ class GroupClass(db.Model):
     class_type = db.Column(db.String(20), nullable=False, default='group')  # 'individual', 'group', 'family', 'school'
     instructor_name = db.Column(db.String(100))
     curriculum = db.Column(db.Text)  # JSON string or newline-separated curriculum items
+    image_url = db.Column(db.String(500), nullable=True)  # Class image URL
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship to students through association table

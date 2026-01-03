@@ -49,6 +49,13 @@
                                 <label for="instructor_name" class="form-label fw-bold">Instructor Name (Optional)</label>
                                 <input type="text" class="form-control" id="instructor_name" name="instructor_name" placeholder="Name of the teacher">
                             </div>
+
+                            <div class="mb-3">
+                                <label for="image_url" class="form-label fw-bold">Class Image URL (Optional)</label>
+                                <input type="url" class="form-control" id="image_url" name="image_url" 
+                                       placeholder="https://example.com/robotics-image.jpg">
+                                <small class="text-muted">Enter a direct link to the class image. This will be displayed on the available classes page.</small>
+                            </div>
                             
                             <div class="mb-4">
                                 <label for="description" class="form-label fw-bold">Description <span class="text-danger">*</span></label>
@@ -151,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('name').value = '';
             document.getElementById('description').value = '';
             document.getElementById('instructor_name').value = '';
+            document.getElementById('image_url').value = '';
             // Clear curriculum
             curriculumContainer.innerHTML = '<div class="curriculum-item mb-2"><div class="input-group"><input type="text" class="form-control curriculum-input" name="curriculum[]" placeholder="e.g., Month 1: Introduction to Robotics"><button type="button" class="btn btn-outline-danger remove-curriculum" style="display: none;"><i class="fas fa-times"></i></button></div></div>';
             updateRemoveButtons();

@@ -573,14 +573,30 @@
         
         {% set email_address = contact_email if contact_email else 'worldvlog13@gmail.com' %}
         <a href="mailto:{{ email_address }}" 
-           class="floating-btn email-btn" 
-           title="Send us an email"
-           target="_self">
+           class="floating-btn email-btn email-link-btn" 
+           data-email="{{ email_address }}"
+           title="Send us an email">
             <i class="fas fa-envelope"></i>
         </a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Email link handler - ensure mailto links work properly without page refresh
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.email-link-btn, a[href^="mailto:"]').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    const email = this.getAttribute('data-email') || this.getAttribute('href').replace('mailto:', '');
+                    if (email) {
+                        window.location.href = 'mailto:' + email;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
 

@@ -701,6 +701,12 @@
                     {% for class in classes %}
                     <div class="col-lg-6 mb-4">
                         <div class="class-card {% if class.max_students is defined %}group-card{% endif %}">
+                            {% if class.image_url %}
+                            <div class="class-image-container" style="width: 100%; height: 200px; overflow: hidden; background: rgba(0, 0, 0, 0.3);">
+                                <img src="{{ class.image_url }}" alt="{{ class.name }}" 
+                                     style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                            </div>
+                            {% endif %}
                             <div class="class-header {% if class.max_students is defined %}group{% endif %}">
                                 <h4 class="class-name">{{ class.name }}</h4>
                                 {% if class.max_students is defined %}

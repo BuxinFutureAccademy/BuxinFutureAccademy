@@ -1306,6 +1306,7 @@ def create_class():
                             class_type=class_type,
                             instructor_name=existing_class.instructor_name,
                             curriculum=existing_class.curriculum,
+                            image_url=existing_class.image_url,
                             max_students=existing_class.max_students if existing_class.max_students else 100
                         )
                         db.session.add(new_class)
@@ -1340,6 +1341,9 @@ def create_class():
             return render_template('create_class.html', all_classes=all_classes)
         
         try:
+            # Get image URL from form
+            image_url = request.form.get('image_url', '').strip()
+            
             # Create the class using GroupClass as the unified model
             new_class = GroupClass(
                 name=name,
@@ -1348,6 +1352,7 @@ def create_class():
                 class_type=class_type,
                 instructor_name=instructor_name,
                 curriculum=curriculum_text if curriculum_text else None,
+                image_url=image_url if image_url else None,
                 max_students=100 # High default as limits are managed elsewhere
             )
             

@@ -33,9 +33,12 @@ def check_database_setup():
 @bp.route('/register-school', methods=['GET', 'POST'])
 @bp.route('/register-school/<int:class_id>', methods=['GET', 'POST'])
 def register_school(class_id=None):
-    """School registration form"""
-    if current_user.is_authenticated and not current_user.is_admin:
-        return redirect(url_for('main.index'))
+    """School registration form - Allow multiple registrations"""
+    # Allow registration even if logged in - schools can register for multiple classes
+    # Only block if user is admin (admins shouldn't register as schools)
+    if current_user.is_authenticated and current_user.is_admin:
+        flash('Admins cannot register as schools.', 'info')
+        return redirect(url_for('admin.admin_dashboard'))
     
     if request.method == 'POST':
         # Check database setup first
@@ -61,54 +64,52 @@ def register_school(class_id=None):
             return render_template('register_school.html', class_id=class_id)
         
         try:
-            # Check if admin email already exists
-            existing_email = User.query.filter_by(email=admin_email).first()
-            if existing_email:
-                flash('Email already registered.', 'danger')
-                return render_template('register_school.html', class_id=class_id)
-            
-            # Check if school email already exists
-            existing_school = School.query.filter_by(school_email=school_email).first()
-            if existing_school:
-                flash('School email already registered.', 'danger')
-                return render_template('register_school.html', class_id=class_id)
-            
-            # Auto-generate username from school email (before @ symbol)
+            # Allow same email, username, and school name for multiple classes
+            # Only system ID will be different
+            # Check if user with this email already exists - reuse if exists
             import secrets
             import string
-            base_username = admin_email.split('@')[0].replace('.', '_').replace('-', '_')
-            username = base_username
-            counter = 1
-            # Ensure username is unique
-            while User.query.filter_by(username=username).first():
-                username = f"{base_username}_{counter}"
-                counter += 1
             
-            # Auto-generate secure password
-            password_length = 12
-            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-            password = ''.join(secrets.choice(alphabet) for i in range(password_length))
+            existing_user = User.query.filter_by(email=admin_email).first()
+            is_new_user = False
+            if existing_user:
+                # Reuse existing user account for multiple school registrations
+                user = existing_user
+                username = user.username
+                password = None  # Don't change password for existing user
+            else:
+                # Create new user account
+                is_new_user = True
+                base_username = admin_email.split('@')[0].replace('.', '_').replace('-', '_')
+                username = base_username
+                # Allow same username - no uniqueness check needed
+                
+                # Auto-generate secure password
+                password_length = 12
+                alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+                password = ''.join(secrets.choice(alphabet) for i in range(password_length))
+                
+                # Create user account for school admin
+                user = User(
+                    username=username,
+                    email=admin_email,
+                    first_name=admin_name.split()[0] if admin_name.split() else admin_name,
+                    last_name=' '.join(admin_name.split()[1:]) if len(admin_name.split()) > 1 else '',
+                    is_student=False,
+                    is_admin=False,
+                    is_school_admin=True,
+                    class_type='school'
+                )
+                user.set_password(password)
+                db.session.add(user)
             
-            # Create user account for school admin
-            user = User(
-                username=username,
-                email=admin_email,
-                first_name=admin_name.split()[0] if admin_name.split() else admin_name,
-                last_name=' '.join(admin_name.split()[1:]) if len(admin_name.split()) > 1 else '',
-                is_student=False,
-                is_admin=False,
-                is_school_admin=True,
-                class_type='school'
-            )
-            user.set_password(password)
-            db.session.add(user)
             db.session.flush()  # Get user.id
             
             # Generate School System ID
             from ..models.schools import generate_school_id
             school_system_id = generate_school_id()
             
-            # Create school record
+            # Create school record (allow same school name and email for different classes)
             school = School(
                 school_system_id=school_system_id,
                 school_name=school_name,
@@ -129,11 +130,15 @@ def register_school(class_id=None):
             session['pending_school_id'] = school.id
             session['school_system_id'] = school_system_id
             session['school_username'] = username
-            session['school_password'] = password
+            if password:  # Only store password if it's a new user
+                session['school_password'] = password
             if class_id:
                 session['pending_school_class_id'] = class_id
             
-            flash(f'School registration submitted! Your School System ID is: {school_system_id}. Account credentials will be provided after payment confirmation.', 'success')
+            if not is_new_user:
+                flash(f'School registration submitted! Your School System ID is: {school_system_id}. Using existing account.', 'success')
+            else:
+                flash(f'School registration submitted! Your School System ID is: {school_system_id}. Account credentials will be provided after payment confirmation.', 'success')
             return redirect(url_for('schools.school_payment'))
             
         except Exception as e:
@@ -161,13 +166,26 @@ def school_payment():
             session['pending_school_class_id'] = class_id
     
     if not school_id:
-        flash('No pending school registration found.', 'danger')
-        return redirect(url_for('schools.register_school'))
+        flash('No pending school registration found. Please register first.', 'danger')
+        return redirect(url_for('schools.register_school', class_id=class_id))
     
     school = School.query.get(school_id)
     if not school:
-        flash('School registration not found.', 'danger')
-        return redirect(url_for('schools.register_school'))
+        # Clear invalid session data
+        session.pop('pending_school_id', None)
+        session.pop('school_system_id', None)
+        session.pop('pending_school_class_id', None)
+        flash('School registration not found. Please register again.', 'danger')
+        return redirect(url_for('schools.register_school', class_id=class_id))
+    
+    # Check if school already completed payment (allow new registration)
+    if school.payment_status == 'completed' and request.method == 'GET':
+        # This school already completed payment - clear session to allow new registration
+        session.pop('pending_school_id', None)
+        session.pop('school_system_id', None)
+        session.pop('pending_school_class_id', None)
+        flash('This school registration is already completed. You can register for another class.', 'info')
+        return redirect(url_for('schools.register_school', class_id=class_id))
     
     # Get pricing for school plan
     pricing_data = ClassPricing.get_all_pricing()
@@ -263,6 +281,13 @@ def school_payment():
                     existing_enrollment.amount = amount
         
         db.session.commit()
+        
+        # Clear session data after payment is submitted to allow multiple registrations
+        session.pop('pending_school_id', None)
+        session.pop('school_system_id', None)
+        session.pop('school_username', None)
+        session.pop('school_password', None)
+        session.pop('pending_school_class_id', None)
         
         # Log in the school admin
         if school.user_id:

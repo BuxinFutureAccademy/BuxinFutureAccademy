@@ -2,6 +2,23 @@
 
 {% block navbar %}
 <!-- Simplified Navigation - Logo Only -->
+<style>
+    /* Hide all navigation items except logo */
+    .navbar-collapse,
+    .navbar-nav,
+    .navbar-toggler {
+        display: none !important;
+    }
+    
+    .navbar {
+        padding: 0.5rem 0;
+    }
+    
+    .navbar .container {
+        display: flex;
+        justify-content: flex-start;
+    }
+</style>
 <nav class="navbar navbar-expand-lg navbar-light">
     <div class="container">
         <a class="navbar-brand" href="{{ url_for('main.index') }}">

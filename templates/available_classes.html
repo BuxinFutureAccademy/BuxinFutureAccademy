@@ -135,6 +135,72 @@
             color: white;
         }
 
+        /* ========== FLOATING CONTACT BUTTONS ========== */
+        .floating-contact-buttons {
+            position: fixed !important;
+            right: 20px !important;
+            bottom: 20px !important;
+            z-index: 99999 !important;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .floating-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+        
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .whatsapp-btn {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        }
+        
+        .email-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+            }
+            100% {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .floating-contact-buttons {
+                right: 15px;
+                bottom: 15px;
+            }
+            
+            .floating-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+
         /* ========== HERO SECTION ========== */
         .classes-hero {
             background: var(--gradient-dark);
@@ -890,6 +956,108 @@
         </div>
     </footer>
 
+    <!-- Floating Contact Buttons (WhatsApp & Email) -->
+    <div class="floating-contact-buttons">
+        {% if whatsapp_number %}
+        {% set whatsapp_clean = whatsapp_number|replace('+', '')|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') %}
+        <a href="https://wa.me/{{ whatsapp_clean }}" 
+           target="_blank" 
+           class="floating-btn whatsapp-btn" 
+           title="Contact us on WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+        {% endif %}
+        
+        {% set email_address = contact_email if contact_email else 'worldvlog13@gmail.com' %}
+        <a href="#" 
+           class="floating-btn email-btn show-email-btn" 
+           data-email="{{ email_address }}"
+           title="View our email address">
+            <i class="fas fa-envelope"></i>
+        </a>
+    </div>
+
+    <!-- Email Modal -->
+    <div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #0a0a1a; border: 1px solid rgba(0, 212, 255, 0.3);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(0, 212, 255, 0.2);">
+                    <h5 class="modal-title" style="color: #00d4ff;">
+                        <i class="fas fa-envelope me-2"></i>Contact Email
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center" style="padding: 2rem;">
+                    <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 1.5rem;">Copy our email address:</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="emailDisplay" readonly 
+                               style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); color: white; font-size: 1.1rem; text-align: center;">
+                        <button class="btn btn-primary" type="button" id="copyEmailBtn" 
+                                style="background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); border: none;">
+                            <i class="fas fa-copy me-2"></i>Copy
+                        </button>
+                    </div>
+                    <p class="text-success" id="copySuccess" style="display: none; margin-top: 1rem;">
+                        <i class="fas fa-check-circle me-2"></i>Email copied to clipboard!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Email button handler - show email in modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailModalElement = document.getElementById('emailModal');
+            if (emailModalElement) {
+                const emailModal = new bootstrap.Modal(emailModalElement);
+                
+                document.querySelectorAll('.show-email-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const email = this.getAttribute('data-email');
+                        if (email) {
+                            document.getElementById('emailDisplay').value = email;
+                            const copySuccess = document.getElementById('copySuccess');
+                            if (copySuccess) copySuccess.style.display = 'none';
+                            emailModal.show();
+                        }
+                    });
+                });
+                
+                // Copy email to clipboard
+                const copyEmailBtn = document.getElementById('copyEmailBtn');
+                if (copyEmailBtn) {
+                    copyEmailBtn.addEventListener('click', function() {
+                        const emailInput = document.getElementById('emailDisplay');
+                        emailInput.select();
+                        emailInput.setSelectionRange(0, 99999);
+                        
+                        try {
+                            navigator.clipboard.writeText(emailInput.value).then(function() {
+                                const copySuccess = document.getElementById('copySuccess');
+                                if (copySuccess) {
+                                    copySuccess.style.display = 'block';
+                                    setTimeout(function() {
+                                        copySuccess.style.display = 'none';
+                                    }, 3000);
+                                }
+                            });
+                        } catch (err) {
+                            document.execCommand('copy');
+                            const copySuccess = document.getElementById('copySuccess');
+                            if (copySuccess) {
+                                copySuccess.style.display = 'block';
+                                setTimeout(function() {
+                                    copySuccess.style.display = 'none';
+                                }, 3000);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 </html>

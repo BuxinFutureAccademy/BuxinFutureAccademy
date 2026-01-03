@@ -204,6 +204,15 @@ def available_classes():
                     pass
                 classes = []
         
+        # Get contact settings for floating buttons
+        try:
+            from ..models.site_settings import SiteSettings
+            whatsapp_number = SiteSettings.get_setting('whatsapp_number', '')
+            contact_email = SiteSettings.get_setting('contact_email', 'worldvlog13@gmail.com')
+        except Exception:
+            whatsapp_number = ''
+            contact_email = 'worldvlog13@gmail.com'
+        
         return render_template(
             'available_classes.html',
             classes=classes,
@@ -211,7 +220,9 @@ def available_classes():
             pricing_info=pricing_info,
             pricing_data=pricing_data,
             enrolled_class_ids=enrolled_class_ids,
-            user=user
+            user=user,
+            whatsapp_number=whatsapp_number,
+            contact_email=contact_email
         )
     except Exception as e:
         current_app.logger.error(f"Critical error in available_classes route: {e}")

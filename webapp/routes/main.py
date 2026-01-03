@@ -183,6 +183,15 @@ def index():
         db.session.rollback()
         pricing_data = ClassPricing.get_default_pricing()
     
+    # Get contact settings (WhatsApp and Email)
+    try:
+        from ..models.site_settings import SiteSettings
+        whatsapp_number = SiteSettings.get_setting('whatsapp_number', '')
+        contact_email = SiteSettings.get_setting('contact_email', 'info@buxin.com')
+    except Exception:
+        whatsapp_number = ''
+        contact_email = 'info@buxin.com'
+    
     return render_template('index.html',
         gallery_images=gallery_images,
         gallery_videos=gallery_videos,
@@ -193,6 +202,8 @@ def index():
         projects_with_images=projects_with_images,
         projects_with_videos=projects_with_videos,
         pricing_data=pricing_data,
+        whatsapp_number=whatsapp_number,
+        contact_email=contact_email,
         now=datetime.now
     )
 

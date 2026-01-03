@@ -7228,3 +7228,58 @@ def admin_contact_settings():
     return render_template('admin_contact_settings.html', 
                          whatsapp_number=whatsapp_number, 
                          contact_email=contact_email)
+
+
+@bp.route('/admin/payment-settings', methods=['GET', 'POST'])
+@login_required
+def admin_payment_settings():
+    """Admin page for managing payment method details"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    if request.method == 'POST':
+        # Wave settings
+        wave_name = request.form.get('wave_name', '').strip()
+        wave_number = request.form.get('wave_number', '').strip()
+        
+        # Bank settings
+        bank_account_holder = request.form.get('bank_account_holder', '').strip()
+        bank_name = request.form.get('bank_name', '').strip()
+        bank_branch = request.form.get('bank_branch', '').strip()
+        bank_account_number = request.form.get('bank_account_number', '').strip()
+        bank_ifsc = request.form.get('bank_ifsc', '').strip()
+        
+        try:
+            # Save settings using SiteSettings model
+            SiteSettings.set_setting('payment_wave_name', wave_name, current_user.id)
+            SiteSettings.set_setting('payment_wave_number', wave_number, current_user.id)
+            SiteSettings.set_setting('payment_bank_account_holder', bank_account_holder, current_user.id)
+            SiteSettings.set_setting('payment_bank_name', bank_name, current_user.id)
+            SiteSettings.set_setting('payment_bank_branch', bank_branch, current_user.id)
+            SiteSettings.set_setting('payment_bank_account_number', bank_account_number, current_user.id)
+            SiteSettings.set_setting('payment_bank_ifsc', bank_ifsc, current_user.id)
+            
+            flash('Payment settings saved successfully!', 'success')
+            return redirect(url_for('admin.admin_payment_settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error saving payment settings: {str(e)}', 'danger')
+    
+    # Get current settings with defaults
+    wave_name = SiteSettings.get_setting('payment_wave_name', 'Foday M J')
+    wave_number = SiteSettings.get_setting('payment_wave_number', '5427090')
+    bank_account_holder = SiteSettings.get_setting('payment_bank_account_holder', 'ABDOUKADIR JABBI')
+    bank_name = SiteSettings.get_setting('payment_bank_name', 'State Bank of India (SBI)')
+    bank_branch = SiteSettings.get_setting('payment_bank_branch', 'Surajpur Greater Noida')
+    bank_account_number = SiteSettings.get_setting('payment_bank_account_number', '60541424234')
+    bank_ifsc = SiteSettings.get_setting('payment_bank_ifsc', 'SBIN0014022')
+    
+    return render_template('admin_payment_settings.html',
+                         wave_name=wave_name,
+                         wave_number=wave_number,
+                         bank_account_holder=bank_account_holder,
+                         bank_name=bank_name,
+                         bank_branch=bank_branch,
+                         bank_account_number=bank_account_number,
+                         bank_ifsc=bank_ifsc)

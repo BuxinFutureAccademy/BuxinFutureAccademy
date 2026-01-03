@@ -465,15 +465,66 @@
                             <!-- Personal Information -->
                             <h3 class="section-title">
                                 <i class="fas fa-user"></i>
-                                Your Information
+                                {% if class_type == 'school' %}School Information{% elif class_type == 'family' %}Family Information{% else %}Your Information{% endif %}
                             </h3>
                         
+                            {% if class_type == 'school' %}
+                            <!-- School Registration Fields -->
                             <div class="mb-3">
-                                <label class="form-label">Full Name *</label>
-                                <input type="text" class="form-control" name="full_name" 
-                                       placeholder="Enter your full name" required>
+                                <label class="form-label">School Name *</label>
+                                <input type="text" class="form-control" name="school_name" 
+                                       placeholder="Enter school name" required>
                             </div>
-                        
+                            
+                            <div class="mb-3">
+                                <label class="form-label">School Email Address *</label>
+                                <input type="email" class="form-control" name="school_email" 
+                                       placeholder="school@email.com" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">School Contact Number *</label>
+                                <input type="tel" class="form-control" name="school_phone" 
+                                       placeholder="+220 XXX XXXX" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">School Address *</label>
+                                <textarea class="form-control" name="school_address" rows="2" 
+                                          placeholder="Enter school address" required></textarea>
+                            </div>
+                            
+                            <hr style="border-color: rgba(255, 255, 255, 0.2); margin: 2rem 0;">
+                            
+                            <h4 style="font-size: 1.1rem; margin-bottom: 1rem;">Admin Information</h4>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Admin Full Name *</label>
+                                <input type="text" class="form-control" name="admin_name" 
+                                       placeholder="Enter admin full name" required>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Admin Email Address *</label>
+                                    <input type="email" class="form-control" name="admin_email" 
+                                           placeholder="admin@email.com" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Admin Phone Number *</label>
+                                    <input type="tel" class="form-control" name="admin_phone" 
+                                           placeholder="+220 XXX XXXX" required>
+                                </div>
+                            </div>
+                            
+                            {% elif class_type == 'family' %}
+                            <!-- Family Registration Fields -->
+                            <div class="mb-3">
+                                <label class="form-label">Family Name (Parent's Name) *</label>
+                                <input type="text" class="form-control" name="full_name" 
+                                       placeholder="Enter parent's full name" required>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Phone Number *</label>
@@ -486,12 +537,40 @@
                                            placeholder="your@email.com" required>
                                 </div>
                             </div>
-                        
+                            
                             <div class="mb-4">
                                 <label class="form-label">Address *</label>
                                 <textarea class="form-control" name="address" rows="2" 
                                           placeholder="Enter your address" required></textarea>
                             </div>
+                            
+                            {% else %}
+                            <!-- Individual/Group Registration Fields -->
+                            <div class="mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" name="full_name" 
+                                       placeholder="Enter your full name" required>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" name="phone" 
+                                           placeholder="+220 XXX XXXX" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" name="email" 
+                                           placeholder="your@email.com" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Address *</label>
+                                <textarea class="form-control" name="address" rows="2" 
+                                          placeholder="Enter your address" required></textarea>
+                            </div>
+                            {% endif %}
                             
                             <!-- Payment Methods -->
                             <h3 class="section-title">
@@ -501,17 +580,66 @@
                             
                             <div class="payment-methods">
                                 {% for method in payment_methods %}
-                                <label class="payment-method" for="method-{{ method.id }}">
+                                <label class="payment-method" for="method-{{ method.id }}" onclick="showPaymentDetails('{{ method.id }}')">
                                     <input type="radio" name="payment_method" id="method-{{ method.id }}" 
-                                           value="{{ method.id }}" required>
+                                           value="{{ method.id }}" required onchange="showPaymentDetails('{{ method.id }}')">
                                     <div class="payment-icon" style="background: {{ method.color }};">
                                         <i class="fas {{ method.icon }}"></i>
                                     </div>
                                     <div class="payment-name">{{ method.name }}</div>
                                     <div class="payment-desc">{{ method.details }}</div>
                                 </label>
+                                
+                                <!-- Payment Details (hidden by default) -->
+                                <div id="details-{{ method.id }}" class="payment-details-box" style="display: none; margin-top: 1rem; padding: 1.5rem; background: rgba(0, 0, 0, 0.3); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    {% if method.id == 'wave' %}
+                                    <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-mobile-alt"></i> Wave Payment Details</h5>
+                                    <p><strong>Receiver Name:</strong> {{ method.full_details.name }}</p>
+                                    <p><strong>Wave Number:</strong> {{ method.full_details.number }}</p>
+                                    <p style="margin-top: 0.5rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">Send payment to this Wave number and upload the screenshot.</p>
+                                    
+                                    {% elif method.id == 'bank' %}
+                                    <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-university"></i> Bank Transfer Details</h5>
+                                    <p><strong>Account Holder Name:</strong> {{ method.full_details.account_holder }}</p>
+                                    <p><strong>Bank Name:</strong> {{ method.full_details.bank_name }}</p>
+                                    <p><strong>Branch Name:</strong> {{ method.full_details.branch }}</p>
+                                    <p><strong>Account Number:</strong> {{ method.full_details.account_number }}</p>
+                                    <p><strong style="color: #ffc107;">IFSC Code (VERY IMPORTANT):</strong> <span style="font-size: 1.1rem; font-weight: bold;">{{ method.full_details.ifsc }}</span></p>
+                                    <p style="margin-top: 0.5rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">Transfer to this bank account and upload the transaction receipt.</p>
+                                    
+                                    {% elif method.id == 'cash' %}
+                                    <h5 style="color: var(--primary); margin-bottom: 1rem;"><i class="fas fa-money-bill-wave"></i> Cash Payment</h5>
+                                    <p>Pay in cash at our office. Please contact us for the office location.</p>
+                                    {% endif %}
+                                </div>
                                 {% endfor %}
                             </div>
+                            
+                            <script>
+                            function showPaymentDetails(methodId) {
+                                // Hide all payment details
+                                document.querySelectorAll('.payment-details-box').forEach(box => {
+                                    box.style.display = 'none';
+                                });
+                                
+                                // Show selected payment details
+                                const selectedMethod = document.getElementById('method-' + methodId);
+                                if (selectedMethod && selectedMethod.checked) {
+                                    const detailsBox = document.getElementById('details-' + methodId);
+                                    if (detailsBox) {
+                                        detailsBox.style.display = 'block';
+                                    }
+                                }
+                            }
+                            
+                            // Show details on page load if a method is already selected
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+                                if (selectedMethod) {
+                                    showPaymentDetails(selectedMethod.value);
+                                }
+                            });
+                            </script>
                         
                             <!-- Payment Proof Upload -->
                             <h3 class="section-title">

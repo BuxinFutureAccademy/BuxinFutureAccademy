@@ -250,43 +250,97 @@ def register_class(class_type, class_id):
     features = selected_pricing.get('features', [])
     fee_display = f"${int(amount)} USD"
     
-    # Payment methods
-    payment_methods = [
-        {
-            'id': 'wave',
-            'name': 'Wave Money',
-            'icon': 'fa-mobile-alt',
-            'color': '#00a8ff',
-            'details': 'Send payment via Wave and upload screenshot'
-        },
-        {
-            'id': 'bank',
-            'name': 'Bank Transfer',
-            'icon': 'fa-university',
-            'color': '#28a745',
-            'details': 'Transfer to our bank account'
-        },
-        {
-            'id': 'cash',
-            'name': 'Cash Payment',
-            'icon': 'fa-money-bill-wave',
-            'color': '#ffc107',
-            'details': 'Pay in cash at our office'
-        }
-    ]
+    # Get payment methods with details from settings
+    def get_payment_methods():
+        """Get payment methods with details from SiteSettings"""
+        from ..models.site_settings import SiteSettings
+        import json
+        
+        # Get payment details from settings
+        wave_name = SiteSettings.get_setting('payment_wave_name', 'Foday M J')
+        wave_number = SiteSettings.get_setting('payment_wave_number', '5427090')
+        
+        bank_account_holder = SiteSettings.get_setting('payment_bank_account_holder', 'ABDOUKADIR JABBI')
+        bank_name = SiteSettings.get_setting('payment_bank_name', 'State Bank of India (SBI)')
+        bank_branch = SiteSettings.get_setting('payment_bank_branch', 'Surajpur Greater Noida')
+        bank_account_number = SiteSettings.get_setting('payment_bank_account_number', '60541424234')
+        bank_ifsc = SiteSettings.get_setting('payment_bank_ifsc', 'SBIN0014022')
+        
+        return [
+            {
+                'id': 'wave',
+                'name': 'Wave',
+                'icon': 'fa-mobile-alt',
+                'color': '#00a8ff',
+                'details': f'{wave_name} - {wave_number}',
+                'full_details': {
+                    'name': wave_name,
+                    'number': wave_number
+                }
+            },
+            {
+                'id': 'bank',
+                'name': 'Bank Transfer',
+                'icon': 'fa-university',
+                'color': '#28a745',
+                'details': f'{bank_name} - {bank_account_number}',
+                'full_details': {
+                    'account_holder': bank_account_holder,
+                    'bank_name': bank_name,
+                    'branch': bank_branch,
+                    'account_number': bank_account_number,
+                    'ifsc': bank_ifsc
+                }
+            },
+            {
+                'id': 'cash',
+                'name': 'Cash',
+                'icon': 'fa-money-bill-wave',
+                'color': '#ffc107',
+                'details': 'Pay in cash at our office',
+                'full_details': {}
+            }
+        ]
+    
+    payment_methods = get_payment_methods()
     
     if request.method == 'POST':
-        # Handle registration submission
-        full_name = request.form.get('full_name', '').strip()
-        phone = request.form.get('phone', '').strip()
-        email = request.form.get('email', '').strip()
-        address = request.form.get('address', '').strip()
+        # Handle registration submission - different fields for different class types
+        if class_type == 'school':
+            # School registration fields
+            school_name = request.form.get('school_name', '').strip()
+            school_email = request.form.get('school_email', '').strip()
+            school_phone = request.form.get('school_phone', '').strip()
+            school_address = request.form.get('school_address', '').strip()
+            admin_name = request.form.get('admin_name', '').strip()
+            admin_email = request.form.get('admin_email', '').strip()
+            admin_phone = request.form.get('admin_phone', '').strip()
+            
+            # Use school info for user creation, admin info for contact
+            full_name = school_name
+            email = school_email
+            phone = school_phone
+            address = school_address
+            # Store admin info in address field
+            admin_contact = f"Admin: {admin_name} | Email: {admin_email} | Phone: {admin_phone}"
+            address = f"{school_address}\n\n{admin_contact}"
+        else:
+            # Individual, Group, Family registration fields
+            full_name = request.form.get('full_name', '').strip()
+            phone = request.form.get('phone', '').strip()
+            email = request.form.get('email', '').strip()
+            address = request.form.get('address', '').strip()
+        
         payment_method = request.form.get('payment_method', '')
         payment_proof = request.files.get('payment_proof')
         
         # Validate required fields
-        if not full_name or not email or not phone:
-            flash('Please fill in all required fields.', 'danger')
+        if class_type == 'school':
+            if not school_name or not school_email or not school_phone or not school_address or not admin_name or not admin_email or not admin_phone:
+                flash('Please fill in all required fields.', 'danger')
+        else:
+            if not full_name or not email or not phone:
+                flash('Please fill in all required fields.', 'danger')
             return render_template('register_class.html',
                 class_obj=class_obj,
                 class_type=class_type,

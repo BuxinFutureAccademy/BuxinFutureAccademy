@@ -716,6 +716,49 @@
             overflow: hidden;
         }
 
+        .class-types-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 1rem 0 2rem 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thick;
+            scrollbar-color: rgba(255, 215, 0, 0.5) rgba(255, 255, 255, 0.1);
+        }
+
+        .class-types-scroll-container::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        .class-types-scroll-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .class-types-scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.5);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .class-types-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 0, 0.7);
+        }
+
+        .class-types-scroll-wrapper {
+            display: flex;
+            gap: 2rem;
+            padding: 0 1rem;
+            min-width: max-content;
+        }
+
+        .class-type-card-wrapper {
+            flex: 0 0 auto;
+            min-width: 420px;
+            max-width: 450px;
+            width: 420px;
+        }
+
         .class-types-section::before {
             content: '';
             position: absolute;
@@ -1299,7 +1342,7 @@
 
     <!-- Class Types Section -->
     <section class="section class-types-section" id="class-types">
-    <div class="container">
+    <div class="container-fluid px-4">
             <div class="section-header">
                 <div class="section-badge" style="border-color: rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.1);">
                     <i class="fas fa-graduation-cap" style="color: #ffd700;"></i>
@@ -1311,9 +1354,11 @@
                 </p>
                     </div>
             
-            <div class="row g-4 justify-content-center">
-                <!-- Individual Class -->
-                <div class="col-lg-3 col-md-6">
+            <!-- Horizontal Scrollable Container -->
+            <div class="class-types-scroll-container">
+                <div class="class-types-scroll-wrapper">
+                    <!-- Individual Class -->
+                    <div class="class-type-card-wrapper">
                     <div class="class-type-card">
                         <div class="class-type-icon" style="background: #00d4ff;">
                             <i class="fas fa-user"></i>
@@ -1339,12 +1384,12 @@
                         <a href="{{ url_for('store.available_classes', type='individual') }}" class="class-type-btn" style="background: #00d4ff; color: var(--dark);">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Group Class -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card">
+                    <!-- Group Class -->
+                    <div class="class-type-card-wrapper">
+                        <div class="class-type-card">
                         <div class="class-type-icon" style="background: #39ff14;">
                             <i class="fas fa-users"></i>
                         </div>
@@ -1372,12 +1417,12 @@
                         <a href="{{ url_for('store.available_classes', type='group') }}" class="class-type-btn" style="background: #39ff14; color: var(--dark);">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Family Class -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card class-type-popular">
+                    <!-- Family Class -->
+                    <div class="class-type-card-wrapper">
+                        <div class="class-type-card class-type-popular">
                         <div class="popular-badge">Popular</div>
                         <div class="class-type-icon" style="background: #ff6b35;">
                             <i class="fas fa-home"></i>
@@ -1404,12 +1449,12 @@
                         <a href="{{ url_for('store.available_classes', type='family') }}" class="class-type-btn" style="background: #ff6b35; color: white;">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
+                        </div>
                     </div>
-                </div>
 
-                <!-- School Class -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="class-type-card">
+                    <!-- School Class -->
+                    <div class="class-type-card-wrapper">
+                        <div class="class-type-card">
                         <div class="class-type-icon" style="background: #9b59b6;">
                             <i class="fas fa-school"></i>
                         </div>
@@ -1439,9 +1484,10 @@
                         <a href="{{ url_for('store.available_classes', type='school') }}" class="class-type-btn" style="background: #9b59b6; color: white;">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
+                        </div>
                     </div>
                 </div>
-        </div>
+            </div>
     </div>
 </section>
 

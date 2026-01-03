@@ -13,6 +13,19 @@
 
 {% block content %}
 <style>
+    /* Override any base template styles that might affect centering */
+    .container,
+    .main-content,
+    .content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+    
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
     
     :root {
@@ -26,17 +39,18 @@
     body {
         background-color: var(--dark-space);
         background-image: radial-gradient(circle at center, #1a1c2c 0%, #05070a 100%);
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
         min-height: 100vh;
-        margin: 0;
+        margin: 0 !important;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         color: white;
         overflow-x: hidden;
         perspective: 1000px;
         padding: 40px 20px;
-        width: 100%;
+        width: 100% !important;
+        position: relative;
     }
     
     /* Hide navbar completely */
@@ -49,24 +63,27 @@
 
     /* Container for centering and scaling */
     .id-card-container {
-        display: flex;
+        display: flex !important;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        max-width: 1400px;
-        margin: 0 auto;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        max-width: 100%;
+        margin: 0 auto !important;
         text-align: center;
+        position: relative;
     }
 
     /* The Card Container - Smaller on screen */
     #id-card-print-area {
         transform: scale(0.8);
         transform-origin: center;
-        margin: 30px auto;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        margin: 30px auto !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100%;
+        position: relative;
     }
 
     .id-card {

@@ -2204,15 +2204,24 @@ def student_dashboard():
                     is_active=True
                 ).order_by(ClassTime.day, ClassTime.start_time).all()
             
-            # Filter out time slots that are already booked in shared groups (only for individual/family)
+            # Filter out time slots that are already booked (only for individual/family)
             available_times = []
+            # Get student's existing selections first to exclude them from available list
+            student_existing_selections = StudentClassTimeSelection.query.filter_by(
+                enrollment_id=enrollment.id
+            ).all()
+            student_selected_time_ids = {sel.class_time_id for sel in student_existing_selections}
+            
             for time_slot in times:
                 is_available = True
                 
                 # Only check booking availability for individual/family (selectable classes)
                 if class_type in ['individual', 'family']:
-                    # If this time slot is part of a shared group, check if any slot in the group is booked
-                    if time_slot.shared_slot_group_id:
+                    # Skip if student has already selected this time slot
+                    if time_slot.id in student_selected_time_ids:
+                        is_available = False
+                    # If this time slot is part of a shared group, check if any slot in the group is booked by another student
+                    elif time_slot.shared_slot_group_id:
                         # Find all time slots in the same shared group with same day/time
                         shared_slots = ClassTime.query.filter_by(
                             shared_slot_group_id=time_slot.shared_slot_group_id,
@@ -2222,19 +2231,17 @@ def student_dashboard():
                             is_active=True
                         ).all()
                         
-                        # Check if any of the shared slots are already booked
+                        # Check if any of the shared slots are already booked by another student
                         for shared_slot in shared_slots:
                             existing_booking = StudentClassTimeSelection.query.filter_by(
                                 class_time_id=shared_slot.id
                             ).first()
                             
-                            if existing_booking:
-                                # If booked, check if it's by the current student (then it's still available for them)
-                                if existing_booking.enrollment_id != enrollment.id:
-                                    is_available = False
-                                    break
+                            if existing_booking and existing_booking.enrollment_id != enrollment.id:
+                                is_available = False
+                                break
                     else:
-                        # For non-shared slots, check if this specific slot is booked
+                        # For non-shared slots, check if this specific slot is booked by another student
                         existing_booking = StudentClassTimeSelection.query.filter_by(
                             class_time_id=time_slot.id
                         ).first()
@@ -2247,22 +2254,25 @@ def student_dashboard():
             
             class_times_by_type[times_key] = available_times
         
-        # Get student's time selection for this enrollment
-        selection = StudentClassTimeSelection.query.filter_by(
+        # Get student's time selections for this enrollment (can have up to 2)
+        selections = StudentClassTimeSelection.query.filter_by(
             enrollment_id=enrollment.id
-        ).first()
-        if selection:
-            student_time_selections[enrollment.id] = selection
+        ).order_by(StudentClassTimeSelection.selected_at).all()
+        if selections:
+            student_time_selections[enrollment.id] = selections
         
         # Check if Live Class should be active for this enrollment
         if class_type in ['individual', 'family']:
             # For Individual/Family: Check if student has selected a time and it matches current time
-            if selection and selection.class_time:
-                class_time = selection.class_time
-                # IMPORTANT: Verify class_time matches this enrollment's class_id
-                # If class_time.class_id is None, it applies to all classes of this type
-                # If class_time.class_id is set, it must match the enrollment's class_id
-                if class_time.class_id is None or class_time.class_id == enrollment.class_id:
+            # Check all selections to see if any match the current time
+            if selections:
+                for selection in selections:
+                    if selection and selection.class_time:
+                        class_time = selection.class_time
+                        # IMPORTANT: Verify class_time matches this enrollment's class_id
+                        # If class_time.class_id is None, it applies to all classes of this type
+                        # If class_time.class_id is set, it must match the enrollment's class_id
+                        if class_time.class_id is None or class_time.class_id == enrollment.class_id:
                     # Convert class time to student's timezone
                     try:
                         admin_tz = pytz.timezone(class_time.timezone)
@@ -2294,12 +2304,12 @@ def student_dashboard():
                                     'class_time': class_time,
                                     'class': class_obj
                                 }
-                                break  # Only one live class at a time
-                    except Exception as e:
-                        from flask import current_app
-                        import traceback
-                        current_app.logger.error(f"Error checking live class for individual/family: {str(e)}\n{traceback.format_exc()}")
-                        pass  # If conversion fails, skip
+                                break  # Only one live class at a time (use first matching selection)
+                        except Exception as e:
+                            from flask import current_app
+                            import traceback
+                            current_app.logger.error(f"Error checking live class for individual/family: {str(e)}\n{traceback.format_exc()}")
+                            pass  # If conversion fails, skip
                     
         elif class_type in ['group', 'school']:
             # For Group/School: Check if there's a fixed time that matches current time AND class_id

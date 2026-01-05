@@ -426,8 +426,9 @@ class StudentClassTimeSelection(db.Model):
     enrollment = db.relationship('ClassEnrollment', lazy='select')
     class_time = db.relationship('ClassTime', lazy='select')
     
-    # Unique constraint: one selection per enrollment
-    __table_args__ = (db.UniqueConstraint('enrollment_id', name='unique_enrollment_time_selection'),)
+    # Unique constraint: prevent selecting the same time slot twice for the same enrollment
+    # Students can select up to 2 different time slots per enrollment
+    __table_args__ = (db.UniqueConstraint('enrollment_id', 'class_time_id', name='unique_enrollment_time_selection'),)
     
     def __repr__(self):
         return f'<StudentClassTimeSelection user_id={self.user_id} time_id={self.class_time_id}>'

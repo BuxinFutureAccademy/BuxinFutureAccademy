@@ -1412,43 +1412,75 @@
                         
                         {% if cls.class_type == 'individual' or cls.class_type == 'family' %}
                             {% set available_times = class_times_by_type.get(cls.class_type, []) %}
-                            {% set current_selection = student_time_selections.get(cls.enrollment.id) %}
+                            {% set current_selections = student_time_selections.get(cls.enrollment.id, []) %}
+                            {% set selection_count = current_selections|length if current_selections is iterable and current_selections is not string else (1 if current_selections else 0) %}
+                            {% if current_selections is not iterable or current_selections is string %}
+                                {% set current_selections = [current_selections] if current_selections else [] %}
+                            {% endif %}
                             
-                            {% if current_selection and current_selection.class_time %}
-                                <div style="margin-bottom: 0.5rem;">
-                                    <div style="color: var(--on-surface);">
-                                        <i class="fas fa-calendar-day me-1"></i><strong>{{ current_selection.class_time.day }}</strong>
+                            {% if selection_count > 0 %}
+                                <div style="margin-bottom: 0.75rem;">
+                                    <div style="color: var(--on-surface); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-check-circle me-1" style="color: #28a745;"></i><strong>{{ selection_count }} of 2 time slots selected</strong>
                                     </div>
-                                    <div style="color: var(--robotics-accent); font-size: 1.1rem; font-weight: 600;">
-                                        <i class="fas fa-clock me-1"></i>{{ current_selection.class_time.get_display_time(student_timezone) }}
-                                    </div>
-                                    <small class="text-muted d-block mt-1">
-                                        <i class="fas fa-globe me-1"></i>{{ student_timezone|replace('_', ' ')|replace('/', ' - ') }}
-                                    </small>
-                                </div>
-                                
-                                {% if available_times|length > 1 %}
-                                    <div class="mt-2">
-                                        <button class="btn btn-sm" style="background: var(--robotics-gradient); color: white; border: none; width: 100%;" type="button" data-bs-toggle="collapse" data-bs-target="#timeOptions{{ cls.id }}" aria-expanded="false">
-                                            <i class="fas fa-chevron-down me-1"></i>Change Time
-                                        </button>
-                                        <div class="collapse mt-2" id="timeOptions{{ cls.id }}">
-                                            {% for time_slot in available_times %}
-                                                {% if current_selection.class_time_id != time_slot.id %}
-                                                    <form method="POST" action="{{ url_for('main.select_class_time') }}" style="margin-bottom: 0.5rem;">
-                                                        <input type="hidden" name="time_id" value="{{ time_slot.id }}">
-                                                        <button type="submit" class="btn btn-sm btn-outline-primary" style="width: 100%; text-align: left;">
-                                                            <i class="fas fa-calendar-day me-1"></i>{{ time_slot.day }} {{ time_slot.get_display_time(student_timezone) }}
+                                    
+                                    {% for selection in current_selections %}
+                                        {% if selection and selection.class_time %}
+                                            <div style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid var(--robotics-accent); padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 4px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                    <div style="flex: 1;">
+                                                        <div style="color: var(--on-surface); font-weight: 600;">
+                                                            <i class="fas fa-calendar-day me-1"></i><strong>{{ selection.class_time.day }}</strong>
+                                                        </div>
+                                                        <div style="color: var(--robotics-accent); font-size: 1rem; font-weight: 600; margin-top: 0.25rem;">
+                                                            <i class="fas fa-clock me-1"></i>{{ selection.class_time.get_display_time(student_timezone) }}
+                                                        </div>
+                                                        <small class="text-muted d-block mt-1">
+                                                            <i class="fas fa-globe me-1"></i>{{ student_timezone|replace('_', ' ')|replace('/', ' - ') }}
+                                                        </small>
+                                                    </div>
+                                                    <form method="POST" action="{{ url_for('main.remove_class_time') }}" style="margin-left: 0.5rem;">
+                                                        <input type="hidden" name="selection_id" value="{{ selection.id }}">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to remove this time slot?');" title="Remove this time slot">
+                                                            <i class="fas fa-times"></i>
                                                         </button>
                                                     </form>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if selection_count < 2 and available_times|length > 0 %}
+                                    <div class="mt-2">
+                                        <div style="color: var(--on-surface); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                                            <i class="fas fa-plus-circle me-1"></i>Select another time ({{ 2 - selection_count }} remaining):
+                                        </div>
+                                        {% for time_slot in available_times %}
+                                            {% set is_already_selected = false %}
+                                            {% for sel in current_selections %}
+                                                {% if sel and sel.class_time_id == time_slot.id %}
+                                                    {% set is_already_selected = true %}
                                                 {% endif %}
                                             {% endfor %}
-                                        </div>
+                                            {% if not is_already_selected %}
+                                                <form method="POST" action="{{ url_for('main.select_class_time') }}" style="margin-bottom: 0.5rem;">
+                                                    <input type="hidden" name="time_id" value="{{ time_slot.id }}">
+                                                    <button type="submit" class="btn btn-sm btn-primary" style="width: 100%; text-align: left;">
+                                                        <i class="fas fa-calendar-day me-1"></i>{{ time_slot.day }} {{ time_slot.get_display_time(student_timezone) }}
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% elif selection_count >= 2 %}
+                                    <div class="alert alert-success" style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.3); padding: 0.75rem; font-size: 0.875rem; margin-top: 0.5rem;">
+                                        <i class="fas fa-check-circle me-1"></i>You have selected all 2 required time slots.
                                     </div>
                                 {% endif %}
                             {% elif available_times %}
-                                <div class="alert alert-warning" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 0.75rem; font-size: 0.875rem;">
-                                    <i class="fas fa-exclamation-circle me-1"></i>Please select a time:
+                                <div class="alert alert-warning" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 0.75rem; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Please select 2 time slots ({{ available_times|length }} available):
                                 </div>
                                 {% for time_slot in available_times %}
                                     <form method="POST" action="{{ url_for('main.select_class_time') }}" style="margin-bottom: 0.5rem;">

@@ -501,7 +501,27 @@ def select_class_time():
     # Get student's timezone for display
     student_timezone = user.timezone if user.timezone else 'Asia/Kolkata'
     
-    # Check if this time slot is already booked by checking shared slots
+    # Check if student already has this exact time slot selected
+    existing_same_selection = StudentClassTimeSelection.query.filter_by(
+        enrollment_id=enrollment.id,
+        class_time_id=time_id
+    ).first()
+    
+    if existing_same_selection:
+        flash('You have already selected this time slot.', 'info')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Check how many time slots the student has already selected for this enrollment
+    existing_selections = StudentClassTimeSelection.query.filter_by(
+        enrollment_id=enrollment.id
+    ).all()
+    
+    # Individual and Family classes allow maximum 2 time slots
+    if len(existing_selections) >= 2:
+        flash('You have already selected 2 time slots. Please remove one before selecting a new time.', 'warning')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Check if this time slot is already booked by another student (checking shared slots)
     if class_time.shared_slot_group_id:
         # Find all time slots in the same shared group
         shared_slots = ClassTime.query.filter_by(
@@ -511,45 +531,91 @@ def select_class_time():
             end_time=class_time.end_time
         ).all()
         
-        # Check if any of the shared slots are already booked
+        # Check if any of the shared slots are already booked by another student
         for shared_slot in shared_slots:
             existing_booking = StudentClassTimeSelection.query.filter_by(
                 class_time_id=shared_slot.id
             ).first()
             
-            if existing_booking:
+            if existing_booking and existing_booking.enrollment_id != enrollment.id:
                 flash(f'This time slot is already booked by another student. Please select a different time.', 'warning')
                 return redirect(request.referrer or url_for('admin.student_dashboard'))
-    
-    # Check if student already has a selection for this enrollment
-    existing_selection = StudentClassTimeSelection.query.filter_by(
-        enrollment_id=enrollment.id
-    ).first()
-    
-    if existing_selection:
-        # Check if they're trying to select the same time slot
-        if existing_selection.class_time_id == time_id:
-            flash('You have already selected this time slot.', 'info')
-            return redirect(request.referrer or url_for('admin.student_dashboard'))
-        
-        # Update existing selection - but first check if new slot is available
-        # (check above already handled this)
-        existing_selection.class_time_id = time_id
-        existing_selection.selected_at = datetime.utcnow()
-        db.session.commit()
-        flash(f'Time updated to: {class_time.get_full_display(student_timezone)}', 'success')
     else:
-        # Create new selection
-        selection = StudentClassTimeSelection(
-            user_id=user_id,
-            enrollment_id=enrollment.id,
-            class_time_id=time_id,
-            class_type=class_time.class_type
-        )
-        db.session.add(selection)
-        db.session.commit()
-        flash(f'Time selected: {class_time.get_full_display(student_timezone)}', 'success')
+        # For non-shared slots, check if this specific slot is booked by another student
+        existing_booking = StudentClassTimeSelection.query.filter_by(
+            class_time_id=time_id
+        ).first()
+        
+        if existing_booking and existing_booking.enrollment_id != enrollment.id:
+            flash(f'This time slot is already booked by another student. Please select a different time.', 'warning')
+            return redirect(request.referrer or url_for('admin.student_dashboard'))
     
+    # Create new selection (student has less than 2 selections)
+    selection = StudentClassTimeSelection(
+        user_id=user_id,
+        enrollment_id=enrollment.id,
+        class_time_id=time_id,
+        class_type=class_time.class_type
+    )
+    db.session.add(selection)
+    db.session.commit()
+    
+    selection_count = len(existing_selections) + 1
+    flash(f'Time selected ({selection_count} of 2): {class_time.get_full_display(student_timezone)}', 'success')
+    
+    return redirect(request.referrer or url_for('admin.student_dashboard'))
+
+
+@bp.route('/remove-class-time', methods=['POST'])
+def remove_class_time():
+    """Student route for removing a selected class time (Individual and Family only) - NO LOGIN REQUIRED"""
+    from ..extensions import db
+    from flask_login import current_user
+    from ..models import User
+    
+    selection_id = request.form.get('selection_id', type=int)
+    
+    if not selection_id:
+        flash('Invalid selection.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Get the selection
+    selection = StudentClassTimeSelection.query.get(selection_id)
+    if not selection:
+        flash('Time selection not found.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Get user from session or current_user (no login required)
+    user = None
+    user_id = None
+    
+    if current_user.is_authenticated:
+        user = current_user
+        user_id = current_user.id
+    else:
+        # Get user from session (set by entry forms or ID card)
+        user_id = session.get('student_user_id') or session.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+    
+    if not user or not user_id:
+        flash('Please enter your Name and System ID to remove a time.', 'warning')
+        return redirect(request.referrer or url_for('main.index'))
+    
+    # Verify the selection belongs to this user
+    if selection.user_id != user_id:
+        flash('You can only remove your own time selections.', 'danger')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Get the class time for display message
+    class_time = selection.class_time
+    student_timezone = user.timezone if user.timezone else 'Asia/Kolkata'
+    
+    # Delete the selection
+    db.session.delete(selection)
+    db.session.commit()
+    
+    flash(f'Time removed: {class_time.get_full_display(student_timezone)}. You can now select a different time.', 'success')
     return redirect(request.referrer or url_for('admin.student_dashboard'))
 
 

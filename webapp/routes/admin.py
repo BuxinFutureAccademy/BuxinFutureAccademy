@@ -2273,43 +2273,43 @@ def student_dashboard():
                         # If class_time.class_id is None, it applies to all classes of this type
                         # If class_time.class_id is set, it must match the enrollment's class_id
                         if class_time.class_id is None or class_time.class_id == enrollment.class_id:
-                    # Convert class time to student's timezone
-                    try:
-                        admin_tz = pytz.timezone(class_time.timezone)
-                        today = current_datetime.date()
-                        start_dt = admin_tz.localize(datetime.combine(today, class_time.start_time))
-                        end_dt = admin_tz.localize(datetime.combine(today, class_time.end_time))
-                        
-                        start_dt_student = start_dt.astimezone(student_tz)
-                        end_dt_student = end_dt.astimezone(student_tz)
-                        
-                        student_start_time = start_dt_student.time()
-                        student_end_time = end_dt_student.time()
-                        student_day = start_dt_student.strftime('%A')
-                        
-                        # Check if current day and time match
-                        if (current_day == student_day and 
-                            student_start_time <= current_time <= student_end_time):
-                            # Get the class object based on class_type
-                            class_obj = None
-                            if class_type == 'individual':
-                                class_obj = IndividualClass.query.get(enrollment.class_id) or \
-                                           GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first()
-                            elif class_type == 'family':
-                                class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='family').first()
-                            
-                            if class_obj:
-                                active_live_class = {
-                                    'enrollment': enrollment,
-                                    'class_time': class_time,
-                                    'class': class_obj
-                                }
-                                break  # Only one live class at a time (use first matching selection)
-                        except Exception as e:
-                            from flask import current_app
-                            import traceback
-                            current_app.logger.error(f"Error checking live class for individual/family: {str(e)}\n{traceback.format_exc()}")
-                            pass  # If conversion fails, skip
+                            # Convert class time to student's timezone
+                            try:
+                                admin_tz = pytz.timezone(class_time.timezone)
+                                today = current_datetime.date()
+                                start_dt = admin_tz.localize(datetime.combine(today, class_time.start_time))
+                                end_dt = admin_tz.localize(datetime.combine(today, class_time.end_time))
+                                
+                                start_dt_student = start_dt.astimezone(student_tz)
+                                end_dt_student = end_dt.astimezone(student_tz)
+                                
+                                student_start_time = start_dt_student.time()
+                                student_end_time = end_dt_student.time()
+                                student_day = start_dt_student.strftime('%A')
+                                
+                                # Check if current day and time match
+                                if (current_day == student_day and 
+                                    student_start_time <= current_time <= student_end_time):
+                                    # Get the class object based on class_type
+                                    class_obj = None
+                                    if class_type == 'individual':
+                                        class_obj = IndividualClass.query.get(enrollment.class_id) or \
+                                                   GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first()
+                                    elif class_type == 'family':
+                                        class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='family').first()
+                                    
+                                    if class_obj:
+                                        active_live_class = {
+                                            'enrollment': enrollment,
+                                            'class_time': class_time,
+                                            'class': class_obj
+                                        }
+                                        break  # Only one live class at a time (use first matching selection)
+                            except Exception as e:
+                                from flask import current_app
+                                import traceback
+                                current_app.logger.error(f"Error checking live class for individual/family: {str(e)}\n{traceback.format_exc()}")
+                                pass  # If conversion fails, skip
                     
         elif class_type in ['group', 'school']:
             # For Group/School: Check if there's a fixed time that matches current time AND class_id

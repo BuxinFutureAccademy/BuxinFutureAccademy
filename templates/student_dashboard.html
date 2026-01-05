@@ -526,6 +526,35 @@
         backdrop-filter: blur(10px);
     }
 
+    /* Scrollable class schedule container */
+    .class-schedule-scrollable {
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(102, 126, 234, 0.5) transparent;
+        max-height: calc(80vh - 200px);
+    }
+
+    .class-schedule-scrollable::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .class-schedule-scrollable::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .class-schedule-scrollable::-webkit-scrollbar-thumb {
+        background: rgba(102, 126, 234, 0.5);
+        border-radius: 3px;
+    }
+
+    .class-schedule-scrollable::-webkit-scrollbar-thumb:hover {
+        background: rgba(102, 126, 234, 0.7);
+    }
+
     /* Clock Widget */
     .clock-widget {
         text-align: center;
@@ -1372,14 +1401,14 @@
         <div class="tools-sidebar">
             <!-- Class Schedule Card (TOP PRIORITY) -->
             {% if enrolled_classes %}
-            <div class="tool-widget" style="background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.5rem; margin-bottom: 1.5rem;">
-                <h4 class="section-title" style="color: var(--robotics-primary); margin-bottom: 1rem;">
+            <div class="tool-widget" style="background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; max-height: 80vh; position: relative; z-index: 10;">
+                <h4 class="section-title" style="color: var(--robotics-primary); margin-bottom: 1rem; flex-shrink: 0;">
                     <i class="fas fa-clock me-2"></i>
                     Class Schedule
                 </h4>
                 
                 <!-- Timezone Selector (Small) -->
-                <div class="mb-3">
+                <div class="mb-3" style="flex-shrink: 0;">
                     <form method="POST" action="{{ url_for('main.update_timezone') }}" class="d-inline" style="width: 100%;">
                         <select name="timezone" class="form-select form-select-sm" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--on-surface);" onchange="this.form.submit()">
                             <option value="Asia/Kolkata" {% if student_timezone == 'Asia/Kolkata' %}selected{% endif %}>India (IST)</option>
@@ -1403,8 +1432,10 @@
                     </small>
                 </div>
                 
-                <!-- Class Time Display for Each Enrolled Class -->
-                {% for cls in enrolled_classes %}
+                <!-- Scrollable Class Time Display Container -->
+                <div class="class-schedule-scrollable">
+                    <!-- Class Time Display for Each Enrolled Class -->
+                    {% for cls in enrolled_classes %}
                     <div class="mb-3" style="padding: 1rem; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);">
                         <div style="font-weight: 600; color: var(--robotics-primary); margin-bottom: 0.5rem;">
                             {{ cls.name }}
@@ -1524,7 +1555,8 @@
                             {% endif %}
                         {% endif %}
                     </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
             

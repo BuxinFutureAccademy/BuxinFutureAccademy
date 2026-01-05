@@ -72,17 +72,45 @@
                         <small class="text-muted">Individual & Family: Selectable | Group & School: Fixed</small>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Day *</label>
-                        <select name="day" class="form-select" required>
-                            <option value="">Select Day</option>
-                            <option value="Monday">Monday</option>
-                            <option value="Tuesday">Tuesday</option>
-                            <option value="Wednesday">Wednesday</option>
-                            <option value="Thursday">Thursday</option>
-                            <option value="Friday">Friday</option>
-                            <option value="Saturday">Saturday</option>
-                            <option value="Sunday">Sunday</option>
-                        </select>
+                        <label class="form-label">Select Days *</label>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Select one or more days</small>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllDays" style="font-size: 0.75rem;">Select All</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAllDays" style="font-size: 0.75rem;">Clear</button>
+                            </div>
+                        </div>
+                        <div class="border rounded p-2" style="background-color: #f8f9fa; min-height: 120px;" id="daysContainer">
+                            <div class="form-check">
+                                <input class="form-check-input day-checkbox" type="checkbox" name="days" value="Monday" id="day_monday">
+                                <label class="form-check-label" for="day_monday">Monday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input day-checkbox" type="checkbox" name="days" value="Tuesday" id="day_tuesday">
+                                <label class="form-check-label" for="day_tuesday">Tuesday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input day-checkbox" type="checkbox" name="days" value="Wednesday" id="day_wednesday">
+                                <label class="form-check-label" for="day_wednesday">Wednesday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input day-checkbox" type="checkbox" name="days" value="Thursday" id="day_thursday">
+                                <label class="form-check-label" for="day_thursday">Thursday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input day-checkbox" type="checkbox" name="days" value="Friday" id="day_friday">
+                                <label class="form-check-label" for="day_friday">Friday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input day-checkbox" type="checkbox" name="days" value="Saturday" id="day_saturday">
+                                <label class="form-check-label" for="day_saturday">Saturday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input day-checkbox" type="checkbox" name="days" value="Sunday" id="day_sunday">
+                                <label class="form-check-label" for="day_sunday">Sunday</label>
+                            </div>
+                        </div>
+                        <small class="text-muted" id="selectedDaysCount">0 day(s) selected</small>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Start Time *</label>
@@ -324,5 +352,62 @@
         </a>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+    const selectAllBtn = document.getElementById('selectAllDays');
+    const clearAllBtn = document.getElementById('clearAllDays');
+    const selectedDaysCount = document.getElementById('selectedDaysCount');
+    
+    // Update selected days count
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.day-checkbox:checked').length;
+        selectedDaysCount.textContent = `${selected} day(s) selected`;
+        if (selected === 0) {
+            selectedDaysCount.style.color = '#dc3545';
+        } else {
+            selectedDaysCount.style.color = '#28a745';
+        }
+    }
+    
+    // Select all days
+    selectAllBtn.addEventListener('click', function() {
+        dayCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    });
+    
+    // Clear all days
+    clearAllBtn.addEventListener('click', function() {
+        dayCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    });
+    
+    // Update count when any checkbox changes
+    dayCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+    
+    // Initial count update
+    updateSelectedCount();
+    
+    // Form validation - ensure at least one day is selected
+    const form = document.querySelector('form[method="POST"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const selectedDays = document.querySelectorAll('.day-checkbox:checked');
+            if (selectedDays.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one day for this time slot.');
+                return false;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 

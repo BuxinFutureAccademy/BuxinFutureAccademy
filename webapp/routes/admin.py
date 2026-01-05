@@ -6568,17 +6568,22 @@ def admin_class_time_settings():
         action = request.form.get('action')
         
         if action == 'add':
-            # Add new time slot
+            # Add new time slot(s) - can add multiple days at once
             class_type = request.form.get('class_type', '').strip()
             class_id = request.form.get('class_id', type=int) or None
-            day = request.form.get('day', '').strip()
+            days = request.form.getlist('days')  # Get all selected days
             start_time_str = request.form.get('start_time', '').strip()
             end_time_str = request.form.get('end_time', '').strip()
             timezone = request.form.get('timezone', 'Asia/Kolkata').strip()  # Default to India timezone
             max_capacity = request.form.get('max_capacity', type=int) or None
             
-            if not all([class_type, day, start_time_str, end_time_str, timezone]):
+            # Validate required fields
+            if not all([class_type, start_time_str, end_time_str, timezone]):
                 flash('Please fill in all required fields.', 'danger')
+                return redirect(url_for('admin.admin_class_time_settings'))
+            
+            if not days:
+                flash('Please select at least one day.', 'danger')
                 return redirect(url_for('admin.admin_class_time_settings'))
             
             # Determine if selectable based on class type
@@ -6590,22 +6595,50 @@ def admin_class_time_settings():
                 start_time = dt_time.fromisoformat(start_time_str)
                 end_time = dt_time.fromisoformat(end_time_str)
                 
-                class_time = ClassTime(
-                    class_type=class_type,
-                    class_id=class_id,
-                    day=day,
-                    start_time=start_time,
-                    end_time=end_time,
-                    timezone=timezone,
-                    is_selectable=is_selectable,
-                    max_capacity=max_capacity,
-                    created_by=current_user.id
-                )
-                db.session.add(class_time)
-                db.session.commit()
-                flash(f'Time slot added successfully: {day} {class_time.get_display_time()} ({class_time.get_timezone_name()})', 'success')
+                # Create a ClassTime entry for each selected day
+                created_days = []
+                for day in days:
+                    day = day.strip()
+                    if not day:
+                        continue
+                    
+                    # Check if this time slot already exists for this day
+                    existing = ClassTime.query.filter_by(
+                        class_type=class_type,
+                        class_id=class_id,
+                        day=day,
+                        start_time=start_time,
+                        end_time=end_time,
+                        timezone=timezone
+                    ).first()
+                    
+                    if existing:
+                        flash(f'Time slot already exists for {day} {start_time_str}-{end_time_str}. Skipping.', 'warning')
+                        continue
+                    
+                    class_time = ClassTime(
+                        class_type=class_type,
+                        class_id=class_id,
+                        day=day,
+                        start_time=start_time,
+                        end_time=end_time,
+                        timezone=timezone,
+                        is_selectable=is_selectable,
+                        max_capacity=max_capacity,
+                        created_by=current_user.id
+                    )
+                    db.session.add(class_time)
+                    created_days.append(day)
+                
+                if created_days:
+                    db.session.commit()
+                    days_str = ', '.join(created_days)
+                    flash(f'Time slot(s) added successfully for {days_str}: {start_time_str}-{end_time_str} ({timezone})', 'success')
+                else:
+                    flash('No new time slots were created. All selected days already have this time slot.', 'warning')
             except Exception as e:
                 db.session.rollback()
+                current_app.logger.error(f"Error adding time slot: {e}", exc_info=True)
                 flash(f'Error adding time slot: {str(e)}', 'danger')
         
         elif action == 'delete':

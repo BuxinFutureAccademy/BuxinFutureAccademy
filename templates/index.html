@@ -423,19 +423,19 @@
             gap: 8px;
             background: rgba(0, 212, 255, 0.1);
             border: 1px solid rgba(0, 212, 255, 0.3);
-            padding: 0.4rem 1rem;
+            padding: 0.35rem 0.9rem;
             border-radius: 20px;
             font-family: var(--font-tech);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--primary);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
             margin-bottom: 1rem;
         }
 
         .section-title {
             font-family: var(--font-tech);
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 800;
             text-transform: uppercase;
             margin-bottom: 1rem;
@@ -449,7 +449,7 @@
         }
 
         .section-subtitle {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             color: rgba(255, 255, 255, 0.6);
             max-width: 600px;
             margin: 0 auto;
@@ -730,11 +730,30 @@
             touch-action: pan-x;
             cursor: grab;
             cursor: -webkit-grab;
+            scroll-behavior: smooth;
+            position: relative;
+            scroll-snap-type: x proximity;
+            user-select: none; /* Prevent text selection while dragging */
         }
 
         .class-types-scroll-container:active {
             cursor: grabbing;
             cursor: -webkit-grabbing;
+        }
+
+        .class-types-scroll-container:hover {
+            cursor: grab;
+        }
+
+        /* Make scrollbar more visible on desktop */
+        @media (min-width: 768px) {
+            .class-types-scroll-container::-webkit-scrollbar {
+                height: 14px;
+            }
+            
+            .class-types-scroll-container::-webkit-scrollbar-thumb {
+                background: rgba(255, 215, 0, 0.7);
+            }
         }
 
         .class-types-scroll-container::-webkit-scrollbar {
@@ -763,6 +782,7 @@
             min-width: max-content;
             flex-wrap: nowrap;
             will-change: transform;
+            scroll-snap-align: start;
         }
 
         .class-type-card-wrapper {
@@ -1219,10 +1239,23 @@
                 padding: 0 1rem;
         }
 
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .section-subtitle {
+                font-size: 0.85rem;
+            }
+
+            .section-badge {
+                font-size: 0.6rem;
+                padding: 0.3rem 0.8rem;
+            }
+
             .class-type-card-wrapper {
-                min-width: 320px;
-                max-width: 350px;
-                width: 320px;
+                min-width: 300px;
+                max-width: 320px;
+                width: 300px;
             }
 
             .class-types-scroll-wrapper {
@@ -1243,9 +1276,9 @@
             
             <ul class="nav-links" id="navLinks">
                 <li><a href="#about" class="nav-link">About Us</a></li>
-                <li><a href="#gallery" class="nav-link">Student Gallery</a></li>
-                <li><a href="#videos" class="nav-link">Student Videos</a></li>
-                <li><a href="#victories" class="nav-link">Student Victory</a></li>
+                <li><a href="#gallery" class="nav-link">Gallery</a></li>
+                <li><a href="#videos" class="nav-link">Videos</a></li>
+                <li><a href="#victories" class="nav-link">Victory</a></li>
                 <li><a href="#contact" class="nav-link">Contact Us</a></li>
             </ul>
             
@@ -1541,9 +1574,9 @@
             <div class="section-header">
                 <div class="section-badge">
                     <i class="fas fa-images"></i>
-                    <span>Student Gallery</span>
+                    <span>Gallery</span>
         </div>
-                <h2 class="section-title">Student <span class="highlight">Projects</span></h2>
+                <h2 class="section-title"><span class="highlight">Projects</span></h2>
                 <p class="section-subtitle">
                     Explore amazing robotics projects created by our talented students.
                 </p>
@@ -1603,9 +1636,9 @@
             <div class="section-header">
                 <div class="section-badge" style="border-color: rgba(255, 107, 53, 0.3); background: rgba(255, 107, 53, 0.1);">
                     <i class="fas fa-video" style="color: var(--secondary);"></i>
-                    <span style="color: var(--secondary);">Student Videos</span>
+                    <span style="color: var(--secondary);">Videos</span>
         </div>
-                <h2 class="section-title">Student <span class="fire" style="background: var(--gradient-fire); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Videos</span></h2>
+                <h2 class="section-title"><span class="fire" style="background: var(--gradient-fire); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Videos</span></h2>
                 <p class="section-subtitle">
                     Watch our students showcase their robotics projects and achievements.
                 </p>
@@ -1685,9 +1718,9 @@
             <div class="section-header">
                 <div class="section-badge" style="border-color: rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.1);">
                     <i class="fas fa-trophy" style="color: #ffd700;"></i>
-                    <span style="color: #ffd700;">Student Victory</span>
+                    <span style="color: #ffd700;">Victory</span>
         </div>
-                <h2 class="section-title">Student <span style="background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Victories</span></h2>
+                <h2 class="section-title"><span style="background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Victories</span></h2>
                 <p class="section-subtitle">
                     Celebrating our students' achievements and accomplishments.
                 </p>
@@ -2003,6 +2036,85 @@
                 }
             }
         });
+
+        // Enable horizontal scrolling with mouse wheel for class types section (Desktop/Laptop)
+        const scrollContainer = document.querySelector('.class-types-scroll-container');
+        if (scrollContainer) {
+            let isHovering = false;
+            
+            // Track when mouse enters/leaves the container
+            scrollContainer.addEventListener('mouseenter', () => {
+                isHovering = true;
+            });
+            
+            scrollContainer.addEventListener('mouseleave', () => {
+                isHovering = false;
+            });
+
+            // Horizontal scrolling with mouse wheel when hovering
+            scrollContainer.addEventListener('wheel', function(e) {
+                // Only intercept wheel events when hovering over the container
+                if (isHovering && e.deltaY !== 0) {
+                    // Check if user is holding Shift (native horizontal scroll) or scroll normally
+                    if (e.shiftKey) {
+                        // Let native horizontal scroll work
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Scroll horizontally instead of vertically
+                    // Use deltaY for vertical wheel, deltaX for horizontal wheel/trackpad
+                    const scrollAmount = e.deltaY !== 0 ? e.deltaY : e.deltaX;
+                    scrollContainer.scrollLeft += scrollAmount;
+                }
+            }, { passive: false, capture: true });
+
+            // Click and drag scrolling (Desktop)
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            scrollContainer.addEventListener('mousedown', (e) => {
+                // Only start drag if clicking on the container itself, not on links/buttons
+                if (e.target === scrollContainer || e.target.closest('.class-types-scroll-wrapper')) {
+                    isDown = true;
+                    scrollContainer.style.cursor = 'grabbing';
+                    startX = e.pageX - scrollContainer.offsetLeft;
+                    scrollLeft = scrollContainer.scrollLeft;
+                    e.preventDefault();
+                }
+            });
+
+            scrollContainer.addEventListener('mouseleave', () => {
+                isDown = false;
+                scrollContainer.style.cursor = 'grab';
+            });
+
+            scrollContainer.addEventListener('mouseup', () => {
+                isDown = false;
+                scrollContainer.style.cursor = 'grab';
+            });
+
+            scrollContainer.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - scrollContainer.offsetLeft;
+                const walk = (x - startX) * 2; // Scroll speed
+                scrollContainer.scrollLeft = scrollLeft - walk;
+            });
+
+            // Prevent default link behavior when dragging
+            const links = scrollContainer.querySelectorAll('a');
+            links.forEach(link => {
+                link.addEventListener('mousedown', (e) => {
+                    if (isDown) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        }
 </script>
 
 <!-- Email Modal -->

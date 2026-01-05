@@ -61,15 +61,60 @@
                 <input type="hidden" name="action" value="add">
                 <div class="row">
                     <div class="col-md-3">
-                        <label class="form-label">Class Type *</label>
-                        <select name="class_type" class="form-select" required>
-                            <option value="">Select Class Type</option>
-                            <option value="individual">Individual</option>
-                            <option value="family">Family</option>
-                            <option value="group">Group</option>
-                            <option value="school">School</option>
-                        </select>
-                        <small class="text-muted">Individual & Family: Selectable | Group & School: Fixed</small>
+                        <label class="form-label">Class Type(s) *</label>
+                        <div class="border rounded p-2" style="background-color: #f8f9fa;">
+                            <div class="mb-2">
+                                <strong class="text-primary">Selectable Classes:</strong>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input class-type-checkbox" type="checkbox" name="class_types" value="individual" id="class_individual">
+                                    <label class="form-check-label" for="class_individual">Individual</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input class-type-checkbox" type="checkbox" name="class_types" value="family" id="class_family">
+                                    <label class="form-check-label" for="class_family">Family</label>
+                                </div>
+                            </div>
+                            <div class="mt-2 pt-2" style="border-top: 1px solid #dee2e6;">
+                                <strong class="text-success">Fixed Classes:</strong>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input class-type-checkbox" type="checkbox" name="class_types" value="group" id="class_group">
+                                    <label class="form-check-label" for="class_group">Group</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input class-type-checkbox" type="checkbox" name="class_types" value="school" id="class_school">
+                                    <label class="form-check-label" for="class_school">School</label>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted" id="selectedClassTypesCount">0 class type(s) selected</small>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllClassTypes" style="font-size: 0.75rem;">Select All</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAllClassTypes" style="font-size: 0.75rem;">Clear</button>
+                        </div>
+                    </div>
+                    <div class="col-md-3" id="classSelectionContainer" style="display: none;">
+                        <label class="form-label">Select Class(es)</label>
+                        <div id="groupClassSelection" style="display: none;">
+                            <label class="form-label small">Group Classes:</label>
+                            <select name="group_class_ids" class="form-select form-select-sm mb-2" multiple size="4">
+                                {% for group_class in group_classes %}
+                                    {% if group_class.class_type == 'group' %}
+                                    <option value="{{ group_class.id }}">{{ group_class.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div id="schoolClassSelection" style="display: none;">
+                            <label class="form-label small">School Classes:</label>
+                            <select name="school_class_ids" class="form-select form-select-sm" multiple size="4">
+                                {% for group_class in group_classes %}
+                                    {% if group_class.class_type == 'school' %}
+                                    <option value="{{ group_class.id }}">{{ group_class.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <small class="text-muted">Hold Ctrl/Cmd to select multiple classes</small>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Select Days *</label>
@@ -395,14 +440,97 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial count update
     updateSelectedCount();
     
-    // Form validation - ensure at least one day is selected
+    // Class Type Selection Management
+    const classTypeCheckboxes = document.querySelectorAll('.class-type-checkbox');
+    const selectAllClassTypesBtn = document.getElementById('selectAllClassTypes');
+    const clearAllClassTypesBtn = document.getElementById('clearAllClassTypes');
+    const selectedClassTypesCount = document.getElementById('selectedClassTypesCount');
+    const classSelectionContainer = document.getElementById('classSelectionContainer');
+    const groupClassSelection = document.getElementById('groupClassSelection');
+    const schoolClassSelection = document.getElementById('schoolClassSelection');
+    
+    // Update selected class types count and show/hide class selection
+    function updateClassTypesCount() {
+        const selected = document.querySelectorAll('.class-type-checkbox:checked').length;
+        selectedClassTypesCount.textContent = `${selected} class type(s) selected`;
+        if (selected === 0) {
+            selectedClassTypesCount.style.color = '#dc3545';
+            classSelectionContainer.style.display = 'none';
+        } else {
+            selectedClassTypesCount.style.color = '#28a745';
+            
+            // Show class selection if group or school is selected
+            const groupSelected = document.getElementById('class_group').checked;
+            const schoolSelected = document.getElementById('class_school').checked;
+            
+            if (groupSelected || schoolSelected) {
+                classSelectionContainer.style.display = 'block';
+                groupClassSelection.style.display = groupSelected ? 'block' : 'none';
+                schoolClassSelection.style.display = schoolSelected ? 'block' : 'none';
+            } else {
+                classSelectionContainer.style.display = 'none';
+            }
+        }
+    }
+    
+    // Select all class types
+    selectAllClassTypesBtn.addEventListener('click', function() {
+        classTypeCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateClassTypesCount();
+    });
+    
+    // Clear all class types
+    clearAllClassTypesBtn.addEventListener('click', function() {
+        classTypeCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateClassTypesCount();
+    });
+    
+    // Update count when any class type checkbox changes
+    classTypeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateClassTypesCount);
+    });
+    
+    // Initial class types count update
+    updateClassTypesCount();
+    
+    // Form validation - ensure at least one day and one class type is selected
     const form = document.querySelector('form[method="POST"]');
     if (form) {
         form.addEventListener('submit', function(e) {
             const selectedDays = document.querySelectorAll('.day-checkbox:checked');
+            const selectedClassTypes = document.querySelectorAll('.class-type-checkbox:checked');
+            
             if (selectedDays.length === 0) {
                 e.preventDefault();
                 alert('Please select at least one day for this time slot.');
+                return false;
+            }
+            
+            if (selectedClassTypes.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one class type.');
+                return false;
+            }
+            
+            // Check if group/school is selected but no classes are selected
+            const groupSelected = document.getElementById('class_group').checked;
+            const schoolSelected = document.getElementById('class_school').checked;
+            const groupClassIds = document.querySelectorAll('select[name="group_class_ids"] option:checked');
+            const schoolClassIds = document.querySelectorAll('select[name="school_class_ids"] option:checked');
+            
+            if (groupSelected && groupClassIds.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one Group class, or uncheck Group class type.');
+                return false;
+            }
+            
+            if (schoolSelected && schoolClassIds.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one School class, or uncheck School class type.');
                 return false;
             }
         });

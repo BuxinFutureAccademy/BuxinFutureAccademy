@@ -492,13 +492,39 @@ def select_class_time():
     # Get student's timezone for display
     student_timezone = user.timezone if user.timezone else 'Asia/Kolkata'
     
+    # Check if this time slot is already booked by checking shared slots
+    if class_time.shared_slot_group_id:
+        # Find all time slots in the same shared group
+        shared_slots = ClassTime.query.filter_by(
+            shared_slot_group_id=class_time.shared_slot_group_id,
+            day=class_time.day,
+            start_time=class_time.start_time,
+            end_time=class_time.end_time
+        ).all()
+        
+        # Check if any of the shared slots are already booked
+        for shared_slot in shared_slots:
+            existing_booking = StudentClassTimeSelection.query.filter_by(
+                class_time_id=shared_slot.id
+            ).first()
+            
+            if existing_booking:
+                flash(f'This time slot is already booked by another student. Please select a different time.', 'warning')
+                return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
     # Check if student already has a selection for this enrollment
     existing_selection = StudentClassTimeSelection.query.filter_by(
         enrollment_id=enrollment.id
     ).first()
     
     if existing_selection:
-        # Update existing selection
+        # Check if they're trying to select the same time slot
+        if existing_selection.class_time_id == time_id:
+            flash('You have already selected this time slot.', 'info')
+            return redirect(request.referrer or url_for('admin.student_dashboard'))
+        
+        # Update existing selection - but first check if new slot is available
+        # (check above already handled this)
         existing_selection.class_time_id = time_id
         existing_selection.selected_at = datetime.utcnow()
         db.session.commit()

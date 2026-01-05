@@ -413,6 +413,26 @@ def add_timezone_columns():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@bp.route('/admin/add-shared-slot-group-column')
+def add_shared_slot_group_column():
+    """Add shared_slot_group_id column to ClassTime table - accessible without login for initial setup"""
+    from sqlalchemy import text
+    from flask import jsonify
+    
+    try:
+        # Add shared_slot_group_id column to class_time table
+        db.session.execute(text("""
+            ALTER TABLE class_time 
+            ADD COLUMN IF NOT EXISTS shared_slot_group_id VARCHAR(100)
+        """))
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Shared slot group column added successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @bp.route('/admin/add-school-student-system-id-column')
 def add_school_student_system_id_column():
     """Add student_system_id column to school_student table - ADMIN ONLY"""
@@ -2155,13 +2175,77 @@ def student_dashboard():
     
     for enrollment in enrollments:
         class_type = enrollment.class_type
-        if class_type not in class_times_by_type:
+        class_id = enrollment.class_id
+        
+        # Create a unique key for this class type and class_id combination
+        # For individual/family, we use just class_type (class_id is None)
+        # For group/school, we need to filter by specific class_id
+        if class_type in ['group', 'school']:
+            times_key = f"{class_type}_{class_id}"
+        else:
+            times_key = class_type
+        
+        if times_key not in class_times_by_type:
             # Get active time slots for this class type
-            times = ClassTime.query.filter_by(
-                class_type=class_type,
-                is_active=True
-            ).order_by(ClassTime.day, ClassTime.start_time).all()
-            class_times_by_type[class_type] = times
+            # For group/school: filter by class_id (if class_id is None, get all; if set, get only that class)
+            # For individual/family: get all (class_id is None)
+            if class_type in ['group', 'school']:
+                # Get times ONLY for this specific class (class_id must match exactly)
+                # If class_id is None, don't show any times (each group/school class must have its own time slots)
+                times = ClassTime.query.filter(
+                    ClassTime.class_type == class_type,
+                    ClassTime.is_active == True,
+                    ClassTime.class_id == class_id  # Must match exactly - no general times
+                ).order_by(ClassTime.day, ClassTime.start_time).all()
+            else:
+                # For individual/family, get all times for this class type
+                times = ClassTime.query.filter_by(
+                    class_type=class_type,
+                    is_active=True
+                ).order_by(ClassTime.day, ClassTime.start_time).all()
+            
+            # Filter out time slots that are already booked in shared groups (only for individual/family)
+            available_times = []
+            for time_slot in times:
+                is_available = True
+                
+                # Only check booking availability for individual/family (selectable classes)
+                if class_type in ['individual', 'family']:
+                    # If this time slot is part of a shared group, check if any slot in the group is booked
+                    if time_slot.shared_slot_group_id:
+                        # Find all time slots in the same shared group with same day/time
+                        shared_slots = ClassTime.query.filter_by(
+                            shared_slot_group_id=time_slot.shared_slot_group_id,
+                            day=time_slot.day,
+                            start_time=time_slot.start_time,
+                            end_time=time_slot.end_time,
+                            is_active=True
+                        ).all()
+                        
+                        # Check if any of the shared slots are already booked
+                        for shared_slot in shared_slots:
+                            existing_booking = StudentClassTimeSelection.query.filter_by(
+                                class_time_id=shared_slot.id
+                            ).first()
+                            
+                            if existing_booking:
+                                # If booked, check if it's by the current student (then it's still available for them)
+                                if existing_booking.enrollment_id != enrollment.id:
+                                    is_available = False
+                                    break
+                    else:
+                        # For non-shared slots, check if this specific slot is booked
+                        existing_booking = StudentClassTimeSelection.query.filter_by(
+                            class_time_id=time_slot.id
+                        ).first()
+                        
+                        if existing_booking and existing_booking.enrollment_id != enrollment.id:
+                            is_available = False
+                
+                if is_available:
+                    available_times.append(time_slot)
+            
+            class_times_by_type[times_key] = available_times
         
         # Get student's time selection for this enrollment
         selection = StudentClassTimeSelection.query.filter_by(
@@ -2219,12 +2303,12 @@ def student_dashboard():
                     
         elif class_type in ['group', 'school']:
             # For Group/School: Check if there's a fixed time that matches current time AND class_id
-            fixed_times = class_times_by_type.get(class_type, [])
+            times_key = f"{class_type}_{enrollment.class_id}"
+            fixed_times = class_times_by_type.get(times_key, [])
             for class_time in fixed_times:
-                # IMPORTANT: Verify class_time matches this enrollment's class_id
-                # If class_id is None, it applies to all classes of this type
-                # If class_id is set, it must match the enrollment's class_id
-                if class_time.class_id is not None and class_time.class_id != enrollment.class_id:
+                # IMPORTANT: class_time.class_id MUST match enrollment.class_id exactly
+                # For group/school, each class has its own time slots (no general times with class_id=None)
+                if class_time.class_id != enrollment.class_id:
                     continue  # Skip if time slot is for a different class
                 
                 try:
@@ -6568,26 +6652,34 @@ def admin_class_time_settings():
         action = request.form.get('action')
         
         if action == 'add':
-            # Add new time slot(s) - can add multiple days at once
-            class_type = request.form.get('class_type', '').strip()
-            class_id = request.form.get('class_id', type=int) or None
+            # Add new time slot(s) - can add multiple class types and days at once
+            class_types = request.form.getlist('class_types')  # Get all selected class types
             days = request.form.getlist('days')  # Get all selected days
             start_time_str = request.form.get('start_time', '').strip()
             end_time_str = request.form.get('end_time', '').strip()
             timezone = request.form.get('timezone', 'Asia/Kolkata').strip()  # Default to India timezone
             max_capacity = request.form.get('max_capacity', type=int) or None
             
+            # Get class IDs for group and school classes
+            group_class_ids = request.form.getlist('group_class_ids', type=int)
+            school_class_ids = request.form.getlist('school_class_ids', type=int)
+            
             # Validate required fields
-            if not all([class_type, start_time_str, end_time_str, timezone]):
+            if not all([start_time_str, end_time_str, timezone]):
                 flash('Please fill in all required fields.', 'danger')
+                return redirect(url_for('admin.admin_class_time_settings'))
+            
+            if not class_types:
+                flash('Please select at least one class type.', 'danger')
                 return redirect(url_for('admin.admin_class_time_settings'))
             
             if not days:
                 flash('Please select at least one day.', 'danger')
                 return redirect(url_for('admin.admin_class_time_settings'))
             
-            # Determine if selectable based on class type
-            is_selectable = class_type in ['individual', 'family']
+            # Generate a shared slot group ID for linking time slots across class types
+            import uuid
+            shared_slot_group_id = f"shared_{uuid.uuid4().hex[:16]}"
             
             try:
                 # Parse time strings
@@ -6595,47 +6687,72 @@ def admin_class_time_settings():
                 start_time = dt_time.fromisoformat(start_time_str)
                 end_time = dt_time.fromisoformat(end_time_str)
                 
-                # Create a ClassTime entry for each selected day
-                created_days = []
-                for day in days:
-                    day = day.strip()
-                    if not day:
-                        continue
-                    
-                    # Check if this time slot already exists for this day
-                    existing = ClassTime.query.filter_by(
-                        class_type=class_type,
-                        class_id=class_id,
-                        day=day,
-                        start_time=start_time,
-                        end_time=end_time,
-                        timezone=timezone
-                    ).first()
-                    
-                    if existing:
-                        flash(f'Time slot already exists for {day} {start_time_str}-{end_time_str}. Skipping.', 'warning')
-                        continue
-                    
-                    class_time = ClassTime(
-                        class_type=class_type,
-                        class_id=class_id,
-                        day=day,
-                        start_time=start_time,
-                        end_time=end_time,
-                        timezone=timezone,
-                        is_selectable=is_selectable,
-                        max_capacity=max_capacity,
-                        created_by=current_user.id
-                    )
-                    db.session.add(class_time)
-                    created_days.append(day)
+                # Create time slots for each class type, day, and (if applicable) class_id combination
+                created_slots = []
                 
-                if created_days:
+                for class_type in class_types:
+                    class_type = class_type.strip()
+                    if not class_type:
+                        continue
+                    
+                    # Determine if selectable based on class type
+                    is_selectable = class_type in ['individual', 'family']
+                    
+                    # Get class IDs for this class type
+                    class_ids_to_use = []
+                    if class_type == 'group':
+                        # For Group: MUST select at least one class (validation done in frontend)
+                        class_ids_to_use = group_class_ids if group_class_ids else []
+                    elif class_type == 'school':
+                        # For School: MUST select at least one class (validation done in frontend)
+                        class_ids_to_use = school_class_ids if school_class_ids else []
+                    else:
+                        # Individual and Family don't need specific class_id
+                        class_ids_to_use = [None]
+                    
+                    for class_id in class_ids_to_use:
+                        for day in days:
+                            day = day.strip()
+                            if not day:
+                                continue
+                            
+                            # Check if this time slot already exists
+                            existing = ClassTime.query.filter_by(
+                                class_type=class_type,
+                                class_id=class_id,
+                                day=day,
+                                start_time=start_time,
+                                end_time=end_time,
+                                timezone=timezone
+                            ).first()
+                            
+                            if existing:
+                                continue  # Skip if already exists
+                            
+                            class_time = ClassTime(
+                                class_type=class_type,
+                                class_id=class_id,
+                                day=day,
+                                start_time=start_time,
+                                end_time=end_time,
+                                timezone=timezone,
+                                is_selectable=is_selectable,
+                                max_capacity=max_capacity,
+                                shared_slot_group_id=shared_slot_group_id,  # Link all slots together
+                                created_by=current_user.id
+                            )
+                            db.session.add(class_time)
+                            class_name = f" ({GroupClass.query.get(class_id).name})" if class_id and GroupClass.query.get(class_id) else ""
+                            created_slots.append(f"{class_type.title()}{class_name} - {day}")
+                
+                if created_slots:
                     db.session.commit()
-                    days_str = ', '.join(created_days)
-                    flash(f'Time slot(s) added successfully for {days_str}: {start_time_str}-{end_time_str} ({timezone})', 'success')
+                    slots_str = ', '.join(created_slots[:5])  # Show first 5
+                    if len(created_slots) > 5:
+                        slots_str += f" and {len(created_slots) - 5} more"
+                    flash(f'Time slot(s) added successfully: {slots_str} | {start_time_str}-{end_time_str} ({timezone})', 'success')
                 else:
-                    flash('No new time slots were created. All selected days already have this time slot.', 'warning')
+                    flash('No new time slots were created. All selected combinations already exist.', 'warning')
             except Exception as e:
                 db.session.rollback()
                 current_app.logger.error(f"Error adding time slot: {e}", exc_info=True)

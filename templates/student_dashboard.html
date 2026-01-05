@@ -1465,7 +1465,8 @@
                             {% endif %}
                             
                         {% elif cls.class_type == 'group' or cls.class_type == 'school' %}
-                            {% set fixed_times = class_times_by_type.get(cls.class_type, []) %}
+                            {% set times_key = cls.class_type + '_' + cls.id|string %}
+                            {% set fixed_times = class_times_by_type.get(times_key, []) %}
                             
                             {% if fixed_times %}
                                 {% for time_slot in fixed_times %}

@@ -340,6 +340,7 @@ class ClassTime(db.Model):
     is_selectable = db.Column(db.Boolean, default=True)  # True for Individual/Family, False for Group/School
     is_active = db.Column(db.Boolean, default=True)
     max_capacity = db.Column(db.Integer, nullable=True)  # Optional: max students for this time slot
+    shared_slot_group_id = db.Column(db.String(100), nullable=True)  # Links time slots that share capacity across class types
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     

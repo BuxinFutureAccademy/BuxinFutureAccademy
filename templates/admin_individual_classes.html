@@ -291,7 +291,7 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) if student.user else '#' }}" 
+                                        <a href="{{ url_for('admin.view_student', user_id=student.user.id, class_type='individual') if student.user else '#' }}" 
                                            class="btn btn-sm btn-outline-info action-btn" 
                                            {% if not student.user %}disabled title="User account not found"{% endif %}>
                                             <i class="fas fa-eye"></i> View
@@ -311,6 +311,14 @@
                                             </button>
                                         </form>
                                         {% endif %}
+                                        <form action="{{ url_for('admin.admin_individual_classes') }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="enrollment_id" value="{{ student.enrollment.id }}">
+                                            <input type="hidden" name="action" value="delete">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger action-btn" 
+                                                    onclick="return confirm('Are you sure you want to DELETE this student from the class? This action cannot be undone!');">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

@@ -3229,6 +3229,90 @@ def admin_edit_user(user_id):
                            account_age_days=account_age_days)
 
 
+@bp.route('/admin/view-student/<int:user_id>')
+@login_required
+def view_student(user_id):
+    """View student details with ID card, photo, and all information"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    user = User.query.get_or_404(user_id)
+    class_type = request.args.get('class_type', 'individual')
+    
+    # Get student's enrollment
+    enrollment = ClassEnrollment.query.filter_by(
+        user_id=user_id,
+        class_type=class_type,
+        status='completed'
+    ).first()
+    
+    # Get ID card
+    id_card = None
+    if class_type == 'individual':
+        id_card = IDCard.query.filter_by(
+            entity_type='individual',
+            entity_id=user_id
+        ).first()
+    elif class_type == 'group':
+        id_card = IDCard.query.filter_by(
+            entity_type='group',
+            entity_id=user_id
+        ).first()
+    elif class_type == 'family':
+        if enrollment:
+            id_card = IDCard.query.filter_by(
+                entity_type='family',
+                entity_id=enrollment.id
+            ).first()
+    elif class_type == 'school':
+        from ..models.schools import School
+        school = School.query.filter_by(user_id=user_id).first()
+        if school:
+            id_card = IDCard.query.filter_by(
+                entity_type='school',
+                entity_id=school.id
+            ).first()
+    
+    # Get class information
+    class_obj = None
+    if enrollment and enrollment.class_id:
+        if class_type == 'individual':
+            class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='individual').first() or \
+                       IndividualClass.query.get(enrollment.class_id)
+        elif class_type in ['group', 'family']:
+            class_obj = GroupClass.query.get(enrollment.class_id)
+        elif class_type == 'school':
+            class_obj = GroupClass.query.filter_by(id=enrollment.class_id, class_type='school').first()
+    
+    # Get user statistics
+    purchases_count = Purchase.query.filter_by(user_id=user.id, status='completed').count()
+    enrollments_count = ClassEnrollment.query.filter_by(user_id=user.id, status='completed').count()
+    projects_count = len(user.student_projects) if hasattr(user, 'student_projects') else 0
+    account_age_days = (datetime.utcnow() - user.created_at).days if user.created_at else 0
+    
+    # Get time selections for individual/family (can have multiple)
+    time_selection = None
+    if class_type in ['individual', 'family'] and enrollment:
+        time_selections = StudentClassTimeSelection.query.filter_by(
+            enrollment_id=enrollment.id
+        ).order_by(StudentClassTimeSelection.selected_at).all()
+        time_selection = time_selections if time_selections else None
+    
+    return render_template('view_student.html',
+                         user=user,
+                         enrollment=enrollment,
+                         class_obj=class_obj,
+                         id_card=id_card,
+                         class_type=class_type,
+                         purchases_count=purchases_count,
+                         enrollments_count=enrollments_count,
+                         projects_count=projects_count,
+                         account_age_days=account_age_days,
+                         time_selection=time_selection,
+                         datetime=datetime)
+
+
 # ========== GALLERY MANAGEMENT ==========
 @bp.route('/admin/gallery')
 @login_required
@@ -4923,6 +5007,28 @@ def admin_individual_classes():
                     enrollment.status = 'rejected'  # Mark as rejected to deactivate
                     db.session.commit()
                     flash('Individual class has been deactivated.', 'success')
+                elif action == 'delete':
+                    # Delete the enrollment and related data
+                    enrollment_id = enrollment.id
+                    user_id = enrollment.user_id
+                    
+                    # Delete related time selections
+                    from ..models.classes import StudentClassTimeSelection
+                    StudentClassTimeSelection.query.filter_by(enrollment_id=enrollment_id).delete()
+                    
+                    # Delete related ID card if exists
+                    from ..models.id_cards import IDCard
+                    id_card = IDCard.query.filter_by(
+                        entity_type='individual',
+                        entity_id=user_id
+                    ).first()
+                    if id_card:
+                        db.session.delete(id_card)
+                    
+                    # Delete the enrollment
+                    db.session.delete(enrollment)
+                    db.session.commit()
+                    flash('Student has been deleted from the class.', 'success')
             return redirect(url_for('admin.admin_individual_classes'))
     
     # Get search and filter parameters

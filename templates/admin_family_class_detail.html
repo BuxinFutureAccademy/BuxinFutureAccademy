@@ -121,9 +121,13 @@
                                 <td>
                                     <div class="btn-group">
                                         {% if student.user %}
-                                        <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) }}" 
+                                        <a href="{{ url_for('admin.view_student', user_id=student.user.id, class_type='family') }}" 
                                            class="btn btn-sm btn-outline-info action-btn">
-                                            <i class="fas fa-eye"></i> View Profile
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="{{ url_for('admin.admin_edit_user', user_id=student.user.id) }}" 
+                                           class="btn btn-sm btn-outline-primary action-btn">
+                                            <i class="fas fa-edit"></i> Edit
                                         </a>
                                         {% else %}
                                         <span class="text-muted small">No user account</span>

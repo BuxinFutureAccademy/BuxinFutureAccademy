@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user, logout_user, login_user
 
 from ..extensions import db
@@ -4869,7 +4869,6 @@ def admin_individual_classes():
             
             # Get student's class time selection
             from ..models.classes import StudentClassTimeSelection, ClassTime
-            from datetime import datetime
             
             time_selection = StudentClassTimeSelection.query.filter_by(
                 enrollment_id=enrollment.id
@@ -4878,32 +4877,52 @@ def admin_individual_classes():
             class_time_info = None
             time_priority = 9999  # Higher priority = appears first (lower number = higher priority)
             if time_selection and time_selection.class_time:
-                ct = time_selection.class_time
-                # Calculate priority: current/upcoming times get priority 0-100, past times get 100+
-                now = datetime.now()
-                # Get next occurrence of this time
-                days_ahead = (ct.day - now.weekday()) % 7
-                if days_ahead == 0 and ct.start_time > now.time():
-                    # Today, upcoming
-                    time_priority = 0
-                elif days_ahead == 0:
-                    # Today, past
-                    time_priority = 50
-                elif days_ahead == 1:
-                    # Tomorrow
-                    time_priority = 10
-                elif days_ahead <= 7:
-                    # This week
-                    time_priority = 20 + days_ahead
-                else:
-                    # Next week or later
-                    time_priority = 100 + days_ahead
-                
-                class_time_info = {
-                    'time': ct,
-                    'display': ct.get_full_display(user.timezone or 'Asia/Kolkata'),
-                    'priority': time_priority
-                }
+                try:
+                    ct = time_selection.class_time
+                    # Calculate priority: current/upcoming times get priority 0-100, past times get 100+
+                    now = datetime.now()
+                    
+                    # Convert day string to weekday number (Monday=0, Sunday=6)
+                    day_map = {
+                        'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3,
+                        'Friday': 4, 'Saturday': 5, 'Sunday': 6
+                    }
+                    class_day_num = day_map.get(ct.day, 0)
+                    current_weekday = now.weekday()
+                    
+                    # Get next occurrence of this time
+                    days_ahead = (class_day_num - current_weekday) % 7
+                    if days_ahead == 0 and ct.start_time and ct.start_time > now.time():
+                        # Today, upcoming
+                        time_priority = 0
+                    elif days_ahead == 0:
+                        # Today, past
+                        time_priority = 50
+                    elif days_ahead == 1:
+                        # Tomorrow
+                        time_priority = 10
+                    elif days_ahead <= 7:
+                        # This week
+                        time_priority = 20 + days_ahead
+                    else:
+                        # Next week or later
+                        time_priority = 100 + days_ahead
+                    
+                    # Safely get display with error handling
+                    try:
+                        display = ct.get_full_display(user.timezone or 'Asia/Kolkata') if hasattr(ct, 'get_full_display') else f"{ct.day} {ct.start_time}"
+                    except Exception:
+                        display = f"{ct.day} {ct.start_time}" if ct.day and ct.start_time else "No time set"
+                    
+                    class_time_info = {
+                        'time': ct,
+                        'display': display,
+                        'priority': time_priority
+                    }
+                except Exception as e:
+                    # If there's any error processing class time, just skip it
+                    current_app.logger.warning(f"Error processing class time for enrollment {enrollment.id}: {e}")
+                    class_time_info = None
             
             student_data = {
                 'enrollment': enrollment,

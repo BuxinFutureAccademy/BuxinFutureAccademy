@@ -715,7 +715,8 @@
         .class-types-section {
             background: var(--gradient-dark);
             position: relative;
-            overflow: hidden;
+            overflow-x: visible;
+            overflow-y: hidden;
         }
 
         .class-types-scroll-container {
@@ -726,6 +727,14 @@
             -webkit-overflow-scrolling: touch;
             scrollbar-width: thick;
             scrollbar-color: rgba(255, 215, 0, 0.5) rgba(255, 255, 255, 0.1);
+            touch-action: pan-x;
+            cursor: grab;
+            cursor: -webkit-grab;
+        }
+
+        .class-types-scroll-container:active {
+            cursor: grabbing;
+            cursor: -webkit-grabbing;
         }
 
         .class-types-scroll-container::-webkit-scrollbar {
@@ -752,6 +761,8 @@
             gap: 2rem;
             padding: 0 1rem;
             min-width: max-content;
+            flex-wrap: nowrap;
+            will-change: transform;
         }
 
         .class-type-card-wrapper {
@@ -759,6 +770,7 @@
             min-width: 420px;
             max-width: 450px;
             width: 420px;
+            flex-shrink: 0;
         }
 
         .class-types-section::before {
@@ -1178,6 +1190,12 @@
             .floating-badge {
                 display: none;
             }
+
+            .class-type-card-wrapper {
+                min-width: 380px;
+                max-width: 400px;
+                width: 380px;
+            }
         }
 
         @media (max-width: 576px) {
@@ -1200,6 +1218,17 @@
             .nav-container {
                 padding: 0 1rem;
         }
+
+            .class-type-card-wrapper {
+                min-width: 320px;
+                max-width: 350px;
+                width: 320px;
+            }
+
+            .class-types-scroll-wrapper {
+                gap: 1.5rem;
+                padding: 0 1rem;
+            }
     }
 </style>
 </head>

@@ -369,16 +369,12 @@ def register_class(class_type, class_id):
             email = request.form.get('email', '').strip()
             address = request.form.get('address', '').strip()
         
-        payment_method = request.form.get('payment_method', '')
+        payment_method = request.form.get('payment_method', '').strip()
         payment_proof = request.files.get('payment_proof')
         
         # Validate required fields
-        if class_type == 'school':
-            if not school_name or not school_email or not school_phone or not school_address or not admin_name or not admin_email or not admin_phone:
-                flash('Please fill in all required fields.', 'danger')
-        else:
-            if not full_name or not email or not phone:
-                flash('Please fill in all required fields.', 'danger')
+        if not payment_method:
+            flash('Please select a payment method.', 'danger')
             return render_template('register_class.html',
                 class_obj=class_obj,
                 class_type=class_type,
@@ -392,6 +388,39 @@ def register_class(class_type, class_id):
                 amount=amount,
                 payment_methods=payment_methods
             )
+        
+        if class_type == 'school':
+            if not school_name or not school_email or not school_phone or not school_address or not admin_name or not admin_email or not admin_phone:
+                flash('Please fill in all required fields.', 'danger')
+                return render_template('register_class.html',
+                    class_obj=class_obj,
+                    class_type=class_type,
+                    pricing_type=class_type,
+                    pricing_name=pricing_name,
+                    pricing_color=pricing_color,
+                    pricing_icon=pricing_icon,
+                    max_students=max_students,
+                    features=features,
+                    fee_display=fee_display,
+                    amount=amount,
+                    payment_methods=payment_methods
+                )
+        else:
+            if not full_name or not email or not phone:
+                flash('Please fill in all required fields.', 'danger')
+                return render_template('register_class.html',
+                    class_obj=class_obj,
+                    class_type=class_type,
+                    pricing_type=class_type,
+                    pricing_name=pricing_name,
+                    pricing_color=pricing_color,
+                    pricing_icon=pricing_icon,
+                    max_students=max_students,
+                    features=features,
+                    fee_display=fee_display,
+                    amount=amount,
+                    payment_methods=payment_methods
+                )
         
         try:
             # Create or get user account (temporary account for enrollment)
@@ -543,14 +572,30 @@ def register_class(class_type, class_id):
                 group_system_id=group_system_id
             )
             db.session.add(enrollment)
+            db.session.flush()  # Get enrollment.id without committing
+            enrollment_id = enrollment.id
             db.session.commit()
             
             # Redirect to waiting for approval page (existing page)
-            return redirect(url_for('store.enrollment_pending_approval', enrollment_id=enrollment.id))
+            current_app.logger.info(f"Enrollment created successfully: {enrollment_id} for user {user.id}, class_type {class_type}")
+            return redirect(url_for('store.enrollment_pending_approval', enrollment_id=enrollment_id))
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Enrollment failed: {e}")
+            current_app.logger.error(f"Enrollment failed: {e}", exc_info=True)
             flash(f'Registration failed: {str(e)}', 'danger')
+            return render_template('register_class.html',
+                class_obj=class_obj,
+                class_type=class_type,
+                pricing_type=class_type,
+                pricing_name=pricing_name,
+                pricing_color=pricing_color,
+                pricing_icon=pricing_icon,
+                max_students=max_students,
+                features=features,
+                fee_display=fee_display,
+                amount=amount,
+                payment_methods=payment_methods
+            )
     
     return render_template('register_class.html',
         class_obj=class_obj,

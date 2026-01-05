@@ -343,10 +343,19 @@ def user_profile(user_id):
     enrollments = ClassEnrollment.query.filter_by(user_id=user.id).order_by(ClassEnrollment.enrolled_at.desc()).all()
     purchases = Purchase.query.filter_by(user_id=user.id).order_by(Purchase.purchased_at.desc()).all()
     
+    # Calculate total spent from purchases and enrollments
+    total_spent = 0.0
+    for purchase in purchases:
+        total_spent += float(purchase.price or 0)
+    for enrollment in enrollments:
+        if enrollment.amount:
+            total_spent += float(enrollment.amount)
+    
     return render_template('user_profile.html', 
                            user=user, 
                            enrollments=enrollments, 
                            purchases=purchases,
+                           total_spent=total_spent,
                            GroupClass=GroupClass,
                            IndividualClass=IndividualClass)
 

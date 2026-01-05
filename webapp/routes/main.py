@@ -521,7 +521,18 @@ def select_class_time():
         flash('You have already selected 2 time slots. Please remove one before selecting a new time.', 'warning')
         return redirect(request.referrer or url_for('admin.student_dashboard'))
     
-    # Check if this time slot is already booked by another student (checking shared slots)
+    # Check if this time slot is already booked by ANY student
+    # Individual and Family classes share the same time pool - once selected, it's unavailable for all
+    existing_booking = StudentClassTimeSelection.query.filter_by(
+        class_time_id=time_id
+    ).first()
+    
+    if existing_booking:
+        # Time slot is already taken - unavailable for everyone
+        flash(f'This time slot is already booked by another student. Please select a different time.', 'warning')
+        return redirect(request.referrer or url_for('admin.student_dashboard'))
+    
+    # Also check shared slots - if any slot in the shared group is booked, all are unavailable
     if class_time.shared_slot_group_id:
         # Find all time slots in the same shared group
         shared_slots = ClassTime.query.filter_by(
@@ -531,24 +542,16 @@ def select_class_time():
             end_time=class_time.end_time
         ).all()
         
-        # Check if any of the shared slots are already booked by another student
+        # Check if any of the shared slots are already booked by ANY student
         for shared_slot in shared_slots:
             existing_booking = StudentClassTimeSelection.query.filter_by(
                 class_time_id=shared_slot.id
             ).first()
             
-            if existing_booking and existing_booking.enrollment_id != enrollment.id:
+            if existing_booking:
+                # Any slot in the shared group is booked - all are unavailable
                 flash(f'This time slot is already booked by another student. Please select a different time.', 'warning')
                 return redirect(request.referrer or url_for('admin.student_dashboard'))
-    else:
-        # For non-shared slots, check if this specific slot is booked by another student
-        existing_booking = StudentClassTimeSelection.query.filter_by(
-            class_time_id=time_id
-        ).first()
-        
-        if existing_booking and existing_booking.enrollment_id != enrollment.id:
-            flash(f'This time slot is already booked by another student. Please select a different time.', 'warning')
-            return redirect(request.referrer or url_for('admin.student_dashboard'))
     
     # Create new selection (student has less than 2 selections)
     selection = StudentClassTimeSelection(

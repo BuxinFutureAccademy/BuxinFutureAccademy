@@ -2205,6 +2205,7 @@ def student_dashboard():
                 ).order_by(ClassTime.day, ClassTime.start_time).all()
             
             # Filter out time slots that are already booked (only for individual/family)
+            # Individual and Family classes share the same time pool - if ANY student selects a time, it's gone for ALL
             available_times = []
             # Get student's existing selections first to exclude them from available list
             student_existing_selections = StudentClassTimeSelection.query.filter_by(
@@ -2220,34 +2221,38 @@ def student_dashboard():
                     # Skip if student has already selected this time slot
                     if time_slot.id in student_selected_time_ids:
                         is_available = False
-                    # If this time slot is part of a shared group, check if any slot in the group is booked by another student
-                    elif time_slot.shared_slot_group_id:
-                        # Find all time slots in the same shared group with same day/time
-                        shared_slots = ClassTime.query.filter_by(
-                            shared_slot_group_id=time_slot.shared_slot_group_id,
-                            day=time_slot.day,
-                            start_time=time_slot.start_time,
-                            end_time=time_slot.end_time,
-                            is_active=True
-                        ).all()
-                        
-                        # Check if any of the shared slots are already booked by another student
-                        for shared_slot in shared_slots:
-                            existing_booking = StudentClassTimeSelection.query.filter_by(
-                                class_time_id=shared_slot.id
-                            ).first()
-                            
-                            if existing_booking and existing_booking.enrollment_id != enrollment.id:
-                                is_available = False
-                                break
                     else:
-                        # For non-shared slots, check if this specific slot is booked by another student
+                        # Check if this time slot is already selected by ANY student (individual or family)
+                        # Individual and Family share the same time pool - once selected, it's unavailable for all
                         existing_booking = StudentClassTimeSelection.query.filter_by(
                             class_time_id=time_slot.id
                         ).first()
                         
-                        if existing_booking and existing_booking.enrollment_id != enrollment.id:
+                        if existing_booking:
+                            # Time slot is already taken by someone else - unavailable
                             is_available = False
+                        else:
+                            # Also check shared slots - if any slot in the shared group is booked, all are unavailable
+                            if time_slot.shared_slot_group_id:
+                                # Find all time slots in the same shared group with same day/time
+                                shared_slots = ClassTime.query.filter_by(
+                                    shared_slot_group_id=time_slot.shared_slot_group_id,
+                                    day=time_slot.day,
+                                    start_time=time_slot.start_time,
+                                    end_time=time_slot.end_time,
+                                    is_active=True
+                                ).all()
+                                
+                                # Check if any of the shared slots are already booked by ANY student
+                                for shared_slot in shared_slots:
+                                    existing_booking = StudentClassTimeSelection.query.filter_by(
+                                        class_time_id=shared_slot.id
+                                    ).first()
+                                    
+                                    if existing_booking:
+                                        # Any slot in the shared group is booked - all are unavailable
+                                        is_available = False
+                                        break
                 
                 if is_available:
                     available_times.append(time_slot)
@@ -6774,7 +6779,6 @@ def admin_class_time_settings():
             start_time_str = request.form.get('start_time', '').strip()
             end_time_str = request.form.get('end_time', '').strip()
             timezone = request.form.get('timezone', 'Asia/Kolkata').strip()  # Default to India timezone
-            max_capacity = request.form.get('max_capacity', type=int) or None
             
             # Get class IDs for group and school classes
             group_class_ids = request.form.getlist('group_class_ids', type=int)
@@ -6853,7 +6857,7 @@ def admin_class_time_settings():
                                 end_time=end_time,
                                 timezone=timezone,
                                 is_selectable=is_selectable,
-                                max_capacity=max_capacity,
+                                max_capacity=None,  # Not used - each time slot can only be selected once
                                 shared_slot_group_id=shared_slot_group_id,  # Link all slots together
                                 created_by=current_user.id
                             )

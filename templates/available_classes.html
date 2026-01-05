@@ -862,13 +862,19 @@
                                         {% if filtered_items|length > 0 %}
                                         <div class="curriculum-list">
                                             {% for item in filtered_items %}
+                                                {% set item_parts = item.split(':', 1) %}
+                                                {% set item_title = item_parts[0].strip() if item_parts|length > 0 else item.strip() %}
+                                                {% set item_desc = item_parts[1].strip() if item_parts|length > 1 else '' %}
                                                 <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(0, 212, 255, 0.08); border-left: 4px solid var(--primary); border-radius: 10px; transition: all 0.3s ease;">
                                                     <div style="display: flex; align-items: start; gap: 1.2rem;">
                                                         <div style="width: 40px; height: 40px; background: var(--gradient-cyber); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: var(--dark); font-size: 1rem; box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);">
                                                             {{ loop.index }}
                                                         </div>
                                                         <div style="flex: 1; color: rgba(255, 255, 255, 0.95); line-height: 1.8; font-size: 1.05rem; padding-top: 2px;">
-                                                            <strong style="color: var(--primary); display: block; margin-bottom: 0.3rem;">{{ item }}</strong>
+                                                            <strong style="color: var(--primary); display: block; margin-bottom: 0.3rem;">{{ item_title }}</strong>
+                                                            {% if item_desc %}
+                                                            <p style="color: rgba(255, 255, 255, 0.7); margin: 0; font-size: 0.95rem;">{{ item_desc }}</p>
+                                                            {% endif %}
                                                         </div>
                                                     </div>
                                                 </div>

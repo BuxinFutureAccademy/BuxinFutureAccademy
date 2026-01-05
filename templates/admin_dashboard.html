@@ -348,12 +348,69 @@ body {
                     {% if all_individual_classes %}
                         {% for class in all_individual_classes[:5] %}
                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                                <div>
+                                <div style="flex: 1;">
                                     <strong>{{ class.name }}</strong>
                                     <br><small class="text-muted">{{ class.instructor_name or 'No instructor' }}</small>
+                                    {% if class.curriculum and class.curriculum.strip() %}
+                                    <br><button type="button" class="btn btn-sm btn-outline-info mt-1" data-bs-toggle="modal" data-bs-target="#dashboardCurriculumModal{{ class.id }}">
+                                        <i class="fas fa-book-open me-1"></i>View Curriculum
+                                    </button>
+                                    {% endif %}
                                 </div>
-                                <a href="{{ url_for('admin.edit_class', class_id=class.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <div>
+                                    <a href="{{ url_for('admin.edit_class', class_id=class.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                </div>
                             </div>
+                            
+                            <!-- Curriculum Modal -->
+                            {% if class.curriculum and class.curriculum.strip() %}
+                            <div class="modal fade" id="dashboardCurriculumModal{{ class.id }}" tabindex="-1" aria-labelledby="dashboardCurriculumModalLabel{{ class.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-info text-white">
+                                            <h5 class="modal-title" id="dashboardCurriculumModalLabel{{ class.id }}">
+                                                <i class="fas fa-book-open me-2"></i>{{ class.name }} - Curriculum
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                                            {% set curriculum_items = class.curriculum.split('\n') %}
+                                            {% set filtered_items = [] %}
+                                            {% for item in curriculum_items %}
+                                                {% if item.strip() %}
+                                                    {% set _ = filtered_items.append(item.strip()) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if filtered_items|length > 0 %}
+                                            <div class="curriculum-list">
+                                                {% for item in filtered_items %}
+                                                    {% set item_parts = item.split(':', 1) %}
+                                                    {% set item_title = item_parts[0].strip() if item_parts|length > 0 else item.strip() %}
+                                                    {% set item_desc = item_parts[1].strip() if item_parts|length > 1 else '' %}
+                                                    <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(23, 162, 184, 0.08); border-left: 4px solid #17a2b8; border-radius: 10px;">
+                                                        <div style="display: flex; align-items: start; gap: 1.2rem;">
+                                                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: white; font-size: 1rem;">
+                                                                {{ loop.index }}
+                                                            </div>
+                                                            <div style="flex: 1;">
+                                                                <strong style="color: #17a2b8; display: block; margin-bottom: 0.3rem; font-size: 1.05rem;">{{ item_title }}</strong>
+                                                                {% if item_desc %}
+                                                                <p style="color: rgba(0, 0, 0, 0.7); margin: 0; font-size: 0.95rem;">{{ item_desc }}</p>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         {% endfor %}
                         <div class="text-center mt-2">
                             <a href="{{ url_for('admin.admin_individual_classes') }}" class="btn btn-sm btn-info text-white">Manage Individual Students & Classes</a>
@@ -373,12 +430,69 @@ body {
                     {% if group_classes_data %}
                         {% for class in group_classes_data[:5] %}
                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                                <div>
+                                <div style="flex: 1;">
                                     <strong>{{ class.name }}</strong>
                                     <br><small class="text-muted">{{ class.student_count }} enrolled</small>
+                                    {% if class.curriculum and class.curriculum.strip() %}
+                                    <br><button type="button" class="btn btn-sm btn-outline-success mt-1" data-bs-toggle="modal" data-bs-target="#dashboardGroupCurriculumModal{{ class.id }}">
+                                        <i class="fas fa-book-open me-1"></i>View Curriculum
+                                    </button>
+                                    {% endif %}
                                 </div>
-                                <a href="{{ url_for('admin.admin_group_class_detail', class_id=class.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                <div>
+                                    <a href="{{ url_for('admin.admin_group_class_detail', class_id=class.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                </div>
                             </div>
+                            
+                            <!-- Curriculum Modal -->
+                            {% if class.curriculum and class.curriculum.strip() %}
+                            <div class="modal fade" id="dashboardGroupCurriculumModal{{ class.id }}" tabindex="-1" aria-labelledby="dashboardGroupCurriculumModalLabel{{ class.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-success text-white">
+                                            <h5 class="modal-title" id="dashboardGroupCurriculumModalLabel{{ class.id }}">
+                                                <i class="fas fa-book-open me-2"></i>{{ class.name }} - Curriculum
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                                            {% set curriculum_items = class.curriculum.split('\n') %}
+                                            {% set filtered_items = [] %}
+                                            {% for item in curriculum_items %}
+                                                {% if item.strip() %}
+                                                    {% set _ = filtered_items.append(item.strip()) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if filtered_items|length > 0 %}
+                                            <div class="curriculum-list">
+                                                {% for item in filtered_items %}
+                                                    {% set item_parts = item.split(':', 1) %}
+                                                    {% set item_title = item_parts[0].strip() if item_parts|length > 0 else item.strip() %}
+                                                    {% set item_desc = item_parts[1].strip() if item_parts|length > 1 else '' %}
+                                                    <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(40, 167, 69, 0.08); border-left: 4px solid #28a745; border-radius: 10px;">
+                                                        <div style="display: flex; align-items: start; gap: 1.2rem;">
+                                                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: white; font-size: 1rem;">
+                                                                {{ loop.index }}
+                                                            </div>
+                                                            <div style="flex: 1;">
+                                                                <strong style="color: #28a745; display: block; margin-bottom: 0.3rem; font-size: 1.05rem;">{{ item_title }}</strong>
+                                                                {% if item_desc %}
+                                                                <p style="color: rgba(0, 0, 0, 0.7); margin: 0; font-size: 0.95rem;">{{ item_desc }}</p>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         {% endfor %}
                         <div class="text-center mt-2">
                             <a href="{{ url_for('admin.admin_group_classes') }}" class="btn btn-sm btn-success">Manage Group Classes</a>

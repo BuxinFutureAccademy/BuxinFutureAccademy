@@ -48,6 +48,46 @@
         </div>
     </div>
     
+    <!-- Curriculum Section -->
+    {% if group_class.curriculum and group_class.curriculum.strip() %}
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>Class Curriculum</h5>
+        </div>
+        <div class="card-body">
+            {% set curriculum_items = group_class.curriculum.split('\n') %}
+            {% set filtered_items = [] %}
+            {% for item in curriculum_items %}
+                {% if item.strip() %}
+                    {% set _ = filtered_items.append(item.strip()) %}
+                {% endif %}
+            {% endfor %}
+            {% if filtered_items|length > 0 %}
+            <div class="curriculum-list">
+                {% for item in filtered_items %}
+                    {% set item_parts = item.split(':', 1) %}
+                    {% set item_title = item_parts[0].strip() if item_parts|length > 0 else item.strip() %}
+                    {% set item_desc = item_parts[1].strip() if item_parts|length > 1 else '' %}
+                    <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(17, 153, 142, 0.08); border-left: 4px solid #11998e; border-radius: 10px;">
+                        <div style="display: flex; align-items: start; gap: 1.2rem;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: white; font-size: 1rem;">
+                                {{ loop.index }}
+                            </div>
+                            <div style="flex: 1;">
+                                <strong style="color: #11998e; display: block; margin-bottom: 0.3rem; font-size: 1.05rem;">{{ item_title }}</strong>
+                                {% if item_desc %}
+                                <p style="color: rgba(0, 0, 0, 0.7); margin: 0; font-size: 0.95rem;">{{ item_desc }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- Note: ID cards for individual students are shown in the student list below -->
     
     <!-- Pending Registrations Section -->

@@ -1207,7 +1207,8 @@ def admin_dashboard():
                 group_classes_data.append({
                     'id': class_obj.id,
                     'name': class_obj.name,
-                    'student_count': student_count
+                    'student_count': student_count,
+                    'curriculum': getattr(class_obj, 'curriculum', None) or ''
                 })
     except Exception:
         db.session.rollback()

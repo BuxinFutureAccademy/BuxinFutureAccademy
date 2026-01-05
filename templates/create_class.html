@@ -66,21 +66,50 @@
                             <!-- Curriculum Section -->
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Class Curriculum</label>
+                                
+                                <!-- Excel Upload Option -->
+                                <div class="mb-3 p-3 border rounded" style="background-color: #f8f9fa;">
+                                    <label class="form-label fw-bold text-success">
+                                        <i class="fas fa-file-excel me-2"></i>Upload Curriculum from Excel
+                                    </label>
+                                    <input type="file" class="form-control" id="curriculumExcelFile" accept=".xlsx,.xls" style="display: none;">
+                                    <button type="button" class="btn btn-success btn-sm" onclick="document.getElementById('curriculumExcelFile').click()">
+                                        <i class="fas fa-upload me-1"></i>Choose Excel File
+                                    </button>
+                                    <span id="excelFileName" class="ms-2 text-muted"></span>
+                                    <small class="text-muted d-block mt-2">
+                                        Excel format: Column A = Title, Column B = Description
+                                    </small>
+                                </div>
+                                
+                                <div class="text-center mb-2">
+                                    <span class="text-muted">OR</span>
+                                </div>
+                                
+                                <!-- Manual Entry -->
                                 <div id="curriculumContainer">
                                     <div class="curriculum-item mb-2">
-                                        <div class="input-group">
-                                            <input type="text" class="form-control curriculum-input" name="curriculum[]" 
-                                                   placeholder="e.g., Month 1: Introduction to Robotics">
-                                            <button type="button" class="btn btn-outline-danger remove-curriculum" style="display: none;">
-                                                <i class="fas fa-times"></i>
-                                            </button>
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <input type="text" class="form-control curriculum-title" name="curriculum_title[]" 
+                                                       placeholder="Title (e.g., Month 1: Introduction)">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control curriculum-desc" name="curriculum_desc[]" 
+                                                       placeholder="Description">
+                                            </div>
+                                            <div class="col-md-1">
+                                                <button type="button" class="btn btn-outline-danger remove-curriculum" style="display: none;">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-outline-primary btn-sm" id="addCurriculum">
                                     <i class="fas fa-plus me-1"></i>Add Curriculum Item
                                 </button>
-                                <small class="text-muted d-block mt-2">Add curriculum items like "Month 1: Learn X", "Month 2: Learn Y", etc.</small>
+                                <small class="text-muted d-block mt-2">Add curriculum items manually or upload from Excel file.</small>
                             </div>
                         </div>
                         
@@ -98,6 +127,9 @@
         </div>
     </div>
 </div>
+
+<!-- SheetJS Library for Excel parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -160,7 +192,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('instructor_name').value = '';
             document.getElementById('image_url').value = '';
             // Clear curriculum
-            curriculumContainer.innerHTML = '<div class="curriculum-item mb-2"><div class="input-group"><input type="text" class="form-control curriculum-input" name="curriculum[]" placeholder="e.g., Month 1: Introduction to Robotics"><button type="button" class="btn btn-outline-danger remove-curriculum" style="display: none;"><i class="fas fa-times"></i></button></div></div>';
+            curriculumContainer.innerHTML = '<div class="curriculum-item mb-2"><div class="row"><div class="col-md-5"><input type="text" class="form-control curriculum-title" name="curriculum_title[]" placeholder="Title (e.g., Month 1: Introduction)"></div><div class="col-md-6"><input type="text" class="form-control curriculum-desc" name="curriculum_desc[]" placeholder="Description"></div><div class="col-md-1"><button type="button" class="btn btn-outline-danger remove-curriculum" style="display: none;"><i class="fas fa-times"></i></button></div></div></div>';
+            document.getElementById('curriculumExcelFile').value = '';
+            document.getElementById('excelFileName').textContent = '';
             updateRemoveButtons();
         } else {
             newClassForm.style.display = 'none';
@@ -178,16 +212,109 @@ document.addEventListener('DOMContentLoaded', function() {
         const newItem = document.createElement('div');
         newItem.className = 'curriculum-item mb-2';
         newItem.innerHTML = `
-            <div class="input-group">
-                <input type="text" class="form-control curriculum-input" name="curriculum[]" 
-                       placeholder="e.g., Month 1: Introduction to Robotics">
-                <button type="button" class="btn btn-outline-danger remove-curriculum">
-                    <i class="fas fa-times"></i>
-                </button>
+            <div class="row">
+                <div class="col-md-5">
+                    <input type="text" class="form-control curriculum-title" name="curriculum_title[]" 
+                           placeholder="Title (e.g., Month 1: Introduction)">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control curriculum-desc" name="curriculum_desc[]" 
+                           placeholder="Description">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-outline-danger remove-curriculum">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
         `;
         curriculumContainer.appendChild(newItem);
         updateRemoveButtons();
+    });
+    
+    // Handle Excel file upload
+    const excelFileInput = document.getElementById('curriculumExcelFile');
+    const excelFileName = document.getElementById('excelFileName');
+    
+    excelFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        excelFileName.textContent = file.name;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Get first worksheet
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // Convert to JSON
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                // Clear existing curriculum
+                curriculumContainer.innerHTML = '';
+                
+                // Process rows (skip header row if exists)
+                let startRow = 0;
+                if (jsonData.length > 0) {
+                    // Check if first row looks like headers
+                    const firstRow = jsonData[0];
+                    if (firstRow && (firstRow[0] && firstRow[0].toString().toLowerCase().includes('title') || 
+                        firstRow[0] && firstRow[0].toString().toLowerCase().includes('name'))) {
+                        startRow = 1;
+                    }
+                }
+                
+                // Add curriculum items from Excel
+                for (let i = startRow; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if (!row || row.length === 0) continue;
+                    
+                    const title = row[0] ? row[0].toString().trim() : '';
+                    const description = row[1] ? row[1].toString().trim() : '';
+                    
+                    if (!title && !description) continue;
+                    
+                    const newItem = document.createElement('div');
+                    newItem.className = 'curriculum-item mb-2';
+                    newItem.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control curriculum-title" name="curriculum_title[]" 
+                                       value="${title.replace(/"/g, '&quot;')}" placeholder="Title">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control curriculum-desc" name="curriculum_desc[]" 
+                                       value="${description.replace(/"/g, '&quot;')}" placeholder="Description">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-outline-danger remove-curriculum">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    curriculumContainer.appendChild(newItem);
+                }
+                
+                updateRemoveButtons();
+                
+                if (curriculumContainer.children.length === 0) {
+                    alert('No valid curriculum data found in Excel file. Please check the format: Column A = Title, Column B = Description');
+                } else {
+                    alert(`Successfully loaded ${curriculumContainer.children.length} curriculum item(s) from Excel!`);
+                }
+            } catch (error) {
+                console.error('Error parsing Excel:', error);
+                alert('Error reading Excel file. Please make sure it is a valid Excel file (.xlsx or .xls)');
+            }
+        };
+        
+        reader.readAsArrayBuffer(file);
     });
     
     // Remove curriculum item (delegated event)
@@ -219,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Form validation
+    // Form validation and curriculum formatting
     document.getElementById('createClassForm').addEventListener('submit', function(e) {
         const classType = classTypeSelect.value;
         const existingClassId = existingClassSelect.value;
@@ -240,6 +367,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Class Name and Description are required when creating a new class.');
                 return false;
             }
+            
+            // Format curriculum items as "Title: Description" for backend
+            const curriculumTitles = document.querySelectorAll('.curriculum-title');
+            const curriculumDescs = document.querySelectorAll('.curriculum-desc');
+            const curriculumItems = [];
+            
+            for (let i = 0; i < curriculumTitles.length; i++) {
+                const title = curriculumTitles[i].value.trim();
+                const desc = curriculumDescs[i].value.trim();
+                
+                if (title || desc) {
+                    if (title && desc) {
+                        curriculumItems.push(`${title}: ${desc}`);
+                    } else if (title) {
+                        curriculumItems.push(title);
+                    } else if (desc) {
+                        curriculumItems.push(desc);
+                    }
+                }
+            }
+            
+            // Create hidden inputs for curriculum
+            // Remove old hidden inputs if any
+            document.querySelectorAll('input[name="curriculum[]"]').forEach(input => input.remove());
+            
+            // Add new hidden inputs
+            curriculumItems.forEach(item => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'curriculum[]';
+                hiddenInput.value = item;
+                this.appendChild(hiddenInput);
+            });
         }
     });
 });

@@ -334,6 +334,118 @@
         </div>
     {% endif %}
 
+    <!-- All Individual Classes with Curriculum -->
+    {% if all_individual_classes %}
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>All Individual Classes - Curriculum</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for class in all_individual_classes %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">{{ class.name }}</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if class.curriculum and class.curriculum.strip() %}
+                                {% set curriculum_items = class.curriculum.split('\n') %}
+                                {% set filtered_items = [] %}
+                                {% for item in curriculum_items %}
+                                    {% if item.strip() %}
+                                        {% set _ = filtered_items.append(item.strip()) %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if filtered_items|length > 0 %}
+                                <div class="curriculum-preview" style="max-height: 300px; overflow-y: auto;">
+                                    {% for item in filtered_items[:5] %}
+                                        {% set item_parts = item.split(':', 1) %}
+                                        {% set item_title = item_parts[0].strip() if item_parts|length > 0 else item.strip() %}
+                                        {% set item_desc = item_parts[1].strip() if item_parts|length > 1 else '' %}
+                                        <div class="mb-2 p-2" style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; border-radius: 5px;">
+                                            <strong style="color: #667eea; font-size: 0.9rem;">{{ item_title }}</strong>
+                                            {% if item_desc %}
+                                            <p class="mb-0 text-muted" style="font-size: 0.85rem;">{{ item_desc|truncate(60) }}</p>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                    {% if filtered_items|length > 5 %}
+                                    <p class="text-muted text-center mt-2">
+                                        <small>... and {{ filtered_items|length - 5 }} more items</small>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary w-100 mt-2" data-bs-toggle="modal" data-bs-target="#curriculumModal{{ class.id }}">
+                                    <i class="fas fa-eye me-1"></i>View Full Curriculum
+                                </button>
+                                {% else %}
+                                <p class="text-muted text-center">No curriculum available</p>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted text-center">No curriculum available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Curriculum Modal for each class -->
+                <div class="modal fade" id="curriculumModal{{ class.id }}" tabindex="-1" aria-labelledby="curriculumModalLabel{{ class.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-info text-white">
+                                <h5 class="modal-title" id="curriculumModalLabel{{ class.id }}">
+                                    <i class="fas fa-book-open me-2"></i>{{ class.name }} - Curriculum
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                                {% if class.curriculum and class.curriculum.strip() %}
+                                    {% set curriculum_items = class.curriculum.split('\n') %}
+                                    {% set filtered_items = [] %}
+                                    {% for item in curriculum_items %}
+                                        {% if item.strip() %}
+                                            {% set _ = filtered_items.append(item.strip()) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if filtered_items|length > 0 %}
+                                    <div class="curriculum-list">
+                                        {% for item in filtered_items %}
+                                            {% set item_parts = item.split(':', 1) %}
+                                            {% set item_title = item_parts[0].strip() if item_parts|length > 0 else item.strip() %}
+                                            {% set item_desc = item_parts[1].strip() if item_parts|length > 1 else '' %}
+                                            <div class="curriculum-item mb-3" style="padding: 1.2rem; background: rgba(102, 126, 234, 0.08); border-left: 4px solid #667eea; border-radius: 10px;">
+                                                <div style="display: flex; align-items: start; gap: 1.2rem;">
+                                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; color: white; font-size: 1rem;">
+                                                        {{ loop.index }}
+                                                    </div>
+                                                    <div style="flex: 1;">
+                                                        <strong style="color: #667eea; display: block; margin-bottom: 0.3rem; font-size: 1.05rem;">{{ item_title }}</strong>
+                                                        {% if item_desc %}
+                                                        <p style="color: rgba(0, 0, 0, 0.7); margin: 0; font-size: 0.95rem;">{{ item_desc }}</p>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="text-muted text-center py-4">No curriculum available for this class.</p>
+                                {% endif %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Share Materials Button -->
     <div class="mt-4 mb-3">
         <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#shareMaterialModal">

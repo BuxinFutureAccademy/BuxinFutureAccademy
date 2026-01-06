@@ -497,3 +497,105 @@ def add_project_comment(project_id):
         db.session.rollback()
         current_app.logger.error(f"Error adding project comment: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/delete-project/<int:project_id>', methods=['POST'], endpoint='delete_project')
+@login_required
+def delete_project(project_id):
+    """Delete a project - Admin only or project owner"""
+    try:
+        project = StudentProject.query.get_or_404(project_id)
+        
+        # Check permissions - admin or project owner
+        if not getattr(current_user, 'is_admin', False) and project.student_id != current_user.id:
+            flash('You can only delete your own projects.', 'danger')
+            if getattr(current_user, 'is_admin', False):
+                return redirect(url_for('student_projects.admin_projects'))
+            else:
+                return redirect(url_for('student_projects.my_projects'))
+        
+        project_title = project.title
+        
+        # Delete the project (cascade will handle likes and comments)
+        db.session.delete(project)
+        db.session.commit()
+        
+        flash(f'Project "{project_title}" deleted successfully.', 'success')
+        
+        if getattr(current_user, 'is_admin', False):
+            return redirect(url_for('student_projects.admin_projects'))
+        else:
+            return redirect(url_for('student_projects.my_projects'))
+            
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting project: {e}")
+        flash('An error occurred while deleting the project. Please try again.', 'danger')
+        if getattr(current_user, 'is_admin', False):
+            return redirect(url_for('student_projects.admin_projects'))
+        else:
+            return redirect(url_for('student_projects.view_project', project_id=project_id))
+
+
+@bp.route('/admin/project/<int:project_id>/toggle-status', methods=['POST'], endpoint='toggle_project_status')
+@login_required
+def toggle_project_status(project_id):
+    """Toggle project active status - Admin only"""
+    if not getattr(current_user, 'is_admin', False):
+        return jsonify({'success': False, 'error': 'Admin privileges required.'}), 403
+    
+    try:
+        project = StudentProject.query.get_or_404(project_id)
+        data = request.get_json() or {}
+        new_status = data.get('is_active')
+        
+        if new_status is None:
+            # Toggle current status
+            project.is_active = not project.is_active
+        else:
+            project.is_active = bool(new_status)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'is_active': project.is_active,
+            'message': f'Project {"activated" if project.is_active else "deactivated"} successfully.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error toggling project status: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/admin/project/<int:project_id>/toggle-featured', methods=['POST'], endpoint='toggle_project_featured')
+@login_required
+def toggle_project_featured(project_id):
+    """Toggle project featured status - Admin only"""
+    if not getattr(current_user, 'is_admin', False):
+        return jsonify({'success': False, 'error': 'Admin privileges required.'}), 403
+    
+    try:
+        project = StudentProject.query.get_or_404(project_id)
+        data = request.get_json() or {}
+        new_featured = data.get('featured')
+        
+        if new_featured is None:
+            # Toggle current status
+            project.featured = not project.featured
+        else:
+            project.featured = bool(new_featured)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'featured': project.featured,
+            'message': f'Project {"featured" if project.featured else "unfeatured"} successfully.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error toggling project featured status: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500

@@ -1440,14 +1440,18 @@
             <div class="class-types-scroll-container">
                 <div class="class-types-scroll-wrapper">
                     <!-- Individual Class -->
+                    {% set individual_pricing = pricing_data.get('individual', {}) %}
+                    {% set individual_price = individual_pricing.get('price', 100) | int %}
+                    {% set individual_name = individual_pricing.get('name', 'Individual Class') %}
+                    {% set individual_color = individual_pricing.get('color', '#00d4ff') %}
                     <div class="class-type-card-wrapper">
                     <div class="class-type-card">
-                        <div class="class-type-icon" style="background: #00d4ff;">
+                        <div class="class-type-icon" style="background: {{ individual_color }};">
                             <i class="fas fa-user"></i>
                         </div>
-                        <h3 class="class-type-title">Individual Class</h3>
+                        <h3 class="class-type-title">{{ individual_name }}</h3>
                         <div class="class-type-price" style="line-height: 1.2;">
-                            <span style="font-size: inherit;">$100</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / month</span>
+                            <span style="font-size: inherit;">${{ individual_price }}</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / month</span>
                         </div>
                         <p class="class-type-desc">
                             One-on-one personalized learning with full instructor attention.
@@ -1467,21 +1471,25 @@
                         <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
                             <strong>Best for:</strong> Beginners, professionals, fast learners
                         </p>
-                        <a href="{{ url_for('store.available_classes', type='individual') }}" class="class-type-btn" style="background: #00d4ff; color: var(--dark);">
+                        <a href="{{ url_for('store.available_classes', type='individual') }}" class="class-type-btn" style="background: {{ individual_color }}; color: var(--dark);">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
                         </div>
                     </div>
 
                     <!-- Group Class -->
+                    {% set group_pricing = pricing_data.get('group', {}) %}
+                    {% set group_price = group_pricing.get('price', 25) | int %}
+                    {% set group_name = group_pricing.get('name', 'Group Class') %}
+                    {% set group_color = group_pricing.get('color', '#39ff14') %}
                     <div class="class-type-card-wrapper">
                         <div class="class-type-card">
-                        <div class="class-type-icon" style="background: #39ff14;">
+                        <div class="class-type-icon" style="background: {{ group_color }};">
                             <i class="fas fa-users"></i>
                         </div>
-                        <h3 class="class-type-title">Group Class</h3>
+                        <h3 class="class-type-title">{{ group_name }}</h3>
                         <div class="class-type-price" style="line-height: 1.2;">
-                            <span style="font-size: inherit;">$25</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / student / month</span>
+                            <span style="font-size: inherit;">${{ group_price }}</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / student / month</span>
                         </div>
                         <p class="class-type-desc">
                             Learn together with other students in interactive group sessions.
@@ -1501,22 +1509,27 @@
                         <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
                             <strong>Best for:</strong> Students, friends, community learners
                         </p>
-                        <a href="{{ url_for('store.available_classes', type='group') }}" class="class-type-btn" style="background: #39ff14; color: var(--dark);">
+                        <a href="{{ url_for('store.available_classes', type='group') }}" class="class-type-btn" style="background: {{ group_color }}; color: var(--dark);">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
                         </div>
                     </div>
 
                     <!-- Family Class -->
+                    {% set family_pricing = pricing_data.get('family', {}) %}
+                    {% set family_price = family_pricing.get('price', 200) | int %}
+                    {% set family_name = family_pricing.get('name', 'Family Class') %}
+                    {% set family_color = family_pricing.get('color', '#ff6b35') %}
+                    {% set family_popular = family_pricing.get('is_popular', True) %}
                     <div class="class-type-card-wrapper">
-                        <div class="class-type-card class-type-popular">
-                        <div class="popular-badge">Popular</div>
-                        <div class="class-type-icon" style="background: #ff6b35;">
+                        <div class="class-type-card {% if family_popular %}class-type-popular{% endif %}">
+                        {% if family_popular %}<div class="popular-badge">Popular</div>{% endif %}
+                        <div class="class-type-icon" style="background: {{ family_color }};">
                             <i class="fas fa-home"></i>
                         </div>
-                        <h3 class="class-type-title">⭐ Family Class </h3>
+                        <h3 class="class-type-title">{% if family_popular %}⭐ {% endif %}{{ family_name }}</h3>
                         <div class="class-type-price" style="line-height: 1.2;">
-                            <span style="font-size: inherit;">$200</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / month</span>
+                            <span style="font-size: inherit;">${{ family_price }}</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / month</span>
                         </div>
                         <p class="class-type-desc">
                             Perfect for families learning robotics together at home.
@@ -1536,21 +1549,25 @@
                         <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
                             <strong>Best for:</strong> Parents and children learning together
                         </p>
-                        <a href="{{ url_for('store.available_classes', type='family') }}" class="class-type-btn" style="background: #ff6b35; color: white;">
+                        <a href="{{ url_for('store.available_classes', type='family') }}" class="class-type-btn" style="background: {{ family_color }}; color: white;">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
                         </div>
                     </div>
 
                     <!-- School Class -->
+                    {% set school_pricing = pricing_data.get('school', {}) %}
+                    {% set school_price = school_pricing.get('price', 300) | int %}
+                    {% set school_name = school_pricing.get('name', 'School Class') %}
+                    {% set school_color = school_pricing.get('color', '#9b59b6') %}
                     <div class="class-type-card-wrapper">
                         <div class="class-type-card">
-                        <div class="class-type-icon" style="background: #9b59b6;">
+                        <div class="class-type-icon" style="background: {{ school_color }};">
                             <i class="fas fa-school"></i>
                         </div>
-                        <h3 class="class-type-title">School Class</h3>
+                        <h3 class="class-type-title">{{ school_name }}</h3>
                         <div class="class-type-price" style="line-height: 1.2;">
-                            <span style="font-size: inherit;">$300</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / school / month</span> <span style="font-size: 0.4em; vertical-align: baseline; opacity: 0.8; font-weight: 400;">(Pilot Package)</span>
+                            <span style="font-size: inherit;">${{ school_price }}</span><span style="font-size: 0.45em; vertical-align: baseline; font-weight: 500;"> / school / month</span> <span style="font-size: 0.4em; vertical-align: baseline; opacity: 0.8; font-weight: 400;">(Pilot Package)</span>
                         </div>
                         <p class="class-type-desc">
                             Designed for schools and educational institutions.
@@ -1570,7 +1587,7 @@
                         <p class="class-type-best-for" style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
                             <strong>Best for:</strong> Schools, ICT programs, STEM clubs
                         </p>
-                        <a href="{{ url_for('store.available_classes', type='school') }}" class="class-type-btn" style="background: #9b59b6; color: white;">
+                        <a href="{{ url_for('store.available_classes', type='school') }}" class="class-type-btn" style="background: {{ school_color }}; color: white;">
                             <i class="fas fa-rocket me-2"></i>Register Now
                         </a>
                         </div>

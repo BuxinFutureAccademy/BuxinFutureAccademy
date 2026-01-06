@@ -482,11 +482,16 @@
             width: 100%;
             height: 220px;
             object-fit: cover;
-            transition: transform 0.4s ease;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
         }
 
         .gallery-item:hover .gallery-image {
-            transform: scale(1.1);
+            transform: scale(1.3);
+        }
+        
+        .gallery-item:not(:hover) .gallery-image {
+            transform: scale(1);
         }
 
         .gallery-overlay {

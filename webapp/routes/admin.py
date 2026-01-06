@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user, logout_user, login_user
 
 from ..extensions import db
@@ -3631,6 +3631,43 @@ def admin_gallery_import_project():
         flash(f'Error importing media: {str(e)}', 'danger')
     
     return redirect(url_for('admin.admin_gallery'))
+
+
+@bp.route('/admin/gallery/reorder', methods=['POST'])
+@login_required
+def admin_gallery_reorder():
+    """Update display order of gallery items via drag-and-drop"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+    
+    try:
+        data = request.get_json()
+        if not data or 'item_ids' not in data:
+            return jsonify({'success': False, 'error': 'Invalid request data'}), 400
+        
+        item_ids = data.get('item_ids', [])
+        media_type = data.get('media_type', '')  # Optional: filter by media type
+        
+        # Update display_order for each item based on its position in the array
+        for index, item_id in enumerate(item_ids):
+            try:
+                item = HomeGallery.query.get(item_id)
+                if item:
+                    # If media_type filter is provided, only update items of that type
+                    if not media_type or item.media_type == media_type:
+                        item.display_order = index
+            except Exception as e:
+                current_app.logger.error(f"Error updating item {item_id}: {e}")
+                continue
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Display order updated successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error reordering gallery items: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ========== STUDENT VICTORIES ==========

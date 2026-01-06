@@ -106,6 +106,39 @@
         padding: 1.5rem;
         margin-bottom: 2rem;
     }
+    /* Drag and Drop Styles */
+    .sortable-ghost {
+        opacity: 0.4;
+    }
+    .sortable-drag {
+        opacity: 0.8;
+        transform: rotate(5deg);
+    }
+    .gallery-card.dragging {
+        cursor: grabbing;
+        transform: scale(1.05);
+        z-index: 1000;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .gallery-card.drag-handle {
+        cursor: grab;
+    }
+    .gallery-card.drag-handle:hover {
+        transform: translateY(-5px) scale(1.02);
+    }
+    .reorder-hint {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .reorder-hint i {
+        font-size: 1.2rem;
+    }
 </style>
 
 <div class="container py-4">
@@ -219,12 +252,20 @@
         </a>
     </div>
 
+    <!-- Reorder Hint for Videos -->
+    {% if media_type_filter == 'video' and gallery_items %}
+    <div class="reorder-hint">
+        <i class="fas fa-grip-vertical"></i>
+        <span><strong>Drag and drop</strong> videos to reorder them. The order here determines how they appear on the homepage.</span>
+    </div>
+    {% endif %}
+
     <!-- Gallery Grid -->
     {% if gallery_items %}
-    <div class="row g-4">
+    <div class="row g-4" id="gallery-grid" {% if media_type_filter == 'video' %}data-sortable="true"{% endif %}>
         {% for item in gallery_items %}
-        <div class="col-lg-3 col-md-4 col-6">
-            <div class="gallery-card">
+        <div class="col-lg-3 col-md-4 col-6" data-item-id="{{ item.id }}" data-media-type="{{ item.media_type }}">
+            <div class="gallery-card {% if media_type_filter == 'video' %}drag-handle{% endif %}">
                 <div class="gallery-media">
                     {% if item.media_type == 'image' %}
                     <img src="{{ item.media_url }}" alt="{{ item.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -283,5 +324,79 @@
     </div>
     {% endif %}
 </div>
+
+<!-- SortableJS Library for Drag and Drop -->
+{% if media_type_filter == 'video' %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const galleryGrid = document.getElementById('gallery-grid');
+    if (!galleryGrid || galleryGrid.getAttribute('data-sortable') !== 'true') {
+        return;
+    }
+
+    // Initialize SortableJS
+    const sortable = new Sortable(galleryGrid, {
+        animation: 150,
+        handle: '.gallery-card',
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        onStart: function(evt) {
+            evt.item.classList.add('dragging');
+        },
+        onEnd: function(evt) {
+            evt.item.classList.remove('dragging');
+            
+            // Get the new order of items
+            const items = Array.from(galleryGrid.children);
+            const itemIds = items.map(item => {
+                return parseInt(item.getAttribute('data-item-id'));
+            }).filter(id => !isNaN(id));
+            
+            // Only send update if order actually changed
+            const mediaType = '{{ media_type_filter }}';
+            
+            // Send update to server
+            fetch('{{ url_for("admin.admin_gallery_reorder") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    item_ids: itemIds,
+                    media_type: mediaType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const hint = document.querySelector('.reorder-hint');
+                    if (hint) {
+                        const originalText = hint.innerHTML;
+                        hint.innerHTML = '<i class="fas fa-check-circle"></i><span>Order saved successfully!</span>';
+                        hint.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';
+                        setTimeout(() => {
+                            hint.innerHTML = originalText;
+                            hint.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        }, 2000);
+                    }
+                } else {
+                    alert('Error updating order: ' + (data.error || 'Unknown error'));
+                    // Reload page to restore original order
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving the order. Please try again.');
+                // Reload page to restore original order
+                location.reload();
+            });
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
 

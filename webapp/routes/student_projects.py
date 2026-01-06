@@ -289,58 +289,70 @@ def create_project():
 @bp.route('/admin/projects', endpoint='admin_projects')
 @login_required
 def admin_projects():
-    if not getattr(current_user, 'is_admin', False):
-        flash('Access denied. Admin privileges required.', 'danger')
-        return redirect(url_for('main.health'))
-    search = request.args.get('search', '').strip()
-    status = request.args.get('status', '')
-    featured = request.args.get('featured', '')
-    sort_by = request.args.get('sort', 'newest')
+    try:
+        if not getattr(current_user, 'is_admin', False):
+            flash('Access denied. Admin privileges required.', 'danger')
+            return redirect(url_for('main.health'))
+        search = request.args.get('search', '').strip()
+        status = request.args.get('status', '')
+        featured = request.args.get('featured', '')
+        sort_by = request.args.get('sort', 'newest')
 
-    query = StudentProject.query
-    if search:
-        like = f"%{search}%"
-        query = query.filter(db.or_(StudentProject.title.like(like), StudentProject.description.like(like)))
-    if status == 'active':
-        query = query.filter_by(is_active=True)
-    elif status == 'inactive':
-        query = query.filter_by(is_active=False)
-    if featured == 'true':
-        query = query.filter_by(featured=True)
-    elif featured == 'false':
-        query = query.filter_by(featured=False)
+        query = StudentProject.query
+        if search:
+            like = f"%{search}%"
+            query = query.filter(db.or_(StudentProject.title.like(like), StudentProject.description.like(like)))
+        if status == 'active':
+            query = query.filter_by(is_active=True)
+        elif status == 'inactive':
+            query = query.filter_by(is_active=False)
+        if featured == 'true':
+            query = query.filter_by(featured=True)
+        elif featured == 'false':
+            query = query.filter_by(featured=False)
 
-    if sort_by == 'title':
-        query = query.order_by(StudentProject.title.asc())
-    elif sort_by == 'student':
-        query = query.join(User).order_by(User.first_name.asc(), User.last_name.asc())
-    elif sort_by == 'popular':
-        like_counts = db.session.query(
-            ProjectLike.project_id,
-            db.func.count(ProjectLike.id).label('like_count'),
-        ).filter_by(is_like=True).group_by(ProjectLike.project_id).subquery()
-        query = query.outerjoin(like_counts, StudentProject.id == like_counts.c.project_id).order_by(
-            db.desc(db.func.coalesce(like_counts.c.like_count, 0))
+        if sort_by == 'title':
+            query = query.order_by(StudentProject.title.asc())
+        elif sort_by == 'student':
+            # Use outerjoin to handle cases where student might be deleted
+            # Join User table explicitly through the foreign key relationship
+            query = query.outerjoin(User, StudentProject.student_id == User.id).order_by(
+                User.first_name.asc(), 
+                User.last_name.asc()
+            )
+        elif sort_by == 'popular':
+            like_counts = db.session.query(
+                ProjectLike.project_id,
+                db.func.count(ProjectLike.id).label('like_count'),
+            ).filter_by(is_like=True).group_by(ProjectLike.project_id).subquery()
+            query = query.outerjoin(like_counts, StudentProject.id == like_counts.c.project_id).order_by(
+                db.desc(db.func.coalesce(like_counts.c.like_count, 0))
+            )
+        else:
+            query = query.order_by(StudentProject.created_at.desc())
+
+        projects = query.all()
+        total_projects = StudentProject.query.count()
+        active_projects = StudentProject.query.filter_by(is_active=True).count()
+        featured_projects = StudentProject.query.filter_by(featured=True).count()
+
+        return render_template(
+            'admin_projects.html',
+            projects=projects,
+            total_projects=total_projects,
+            active_projects=active_projects,
+            featured_projects=featured_projects,
+            search_term=search,
+            status_filter=status,
+            featured_filter=featured,
+            sort_by=sort_by,
         )
-    else:
-        query = query.order_by(StudentProject.created_at.desc())
-
-    projects = query.all()
-    total_projects = StudentProject.query.count()
-    active_projects = StudentProject.query.filter_by(is_active=True).count()
-    featured_projects = StudentProject.query.filter_by(featured=True).count()
-
-    return render_template(
-        'admin_projects.html',
-        projects=projects,
-        total_projects=total_projects,
-        active_projects=active_projects,
-        featured_projects=featured_projects,
-        search_term=search,
-        status_filter=status,
-        featured_filter=featured,
-        sort_by=sort_by,
-    )
+    except Exception as e:
+        current_app.logger.error(f"Error in admin_projects route: {e}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        flash('An error occurred while loading projects. Please try again later.', 'danger')
+        return redirect(url_for('admin.admin_dashboard'))
 
 
 @bp.route('/project/<int:project_id>/like', methods=['POST'])

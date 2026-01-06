@@ -424,15 +424,21 @@
                                     </div>
                                 </td>
                                 <td>
+                                    {% if project.student %}
                                     <div class="student-info">
                                         <div class="student-avatar">
-                                            {{ project.student.first_name[0] }}{{ project.student.last_name[0] }}
+                                            {{ project.student.first_name[0] if project.student.first_name else '?' }}{{ project.student.last_name[0] if project.student.last_name else '?' }}
                                         </div>
                                         <div>
-                                            <div class="fw-bold small">{{ project.student.first_name }} {{ project.student.last_name }}</div>
-                                            <small class="text-muted">{{ project.student.username }}</small>
+                                            <div class="fw-bold small">{{ project.student.first_name or '' }} {{ project.student.last_name or '' }}</div>
+                                            <small class="text-muted">{{ project.student.username or 'N/A' }}</small>
                                         </div>
                                     </div>
+                                    {% else %}
+                                    <div class="text-muted">
+                                        <small>Student not found</small>
+                                    </div>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <div class="engagement-stats">
@@ -690,5 +696,6 @@
     </script>
 </body>
 </html>
+
 
 

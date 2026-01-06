@@ -252,20 +252,20 @@
         </a>
     </div>
 
-    <!-- Reorder Hint for Videos -->
-    {% if media_type_filter == 'video' and gallery_items %}
+    <!-- Reorder Hint for Images and Videos -->
+    {% if (media_type_filter == 'video' or media_type_filter == 'image' or not media_type_filter) and gallery_items %}
     <div class="reorder-hint">
         <i class="fas fa-grip-vertical"></i>
-        <span><strong>Drag and drop</strong> videos to reorder them. The order here determines how they appear on the homepage.</span>
+        <span><strong>Drag and drop</strong> {% if media_type_filter == 'video' %}videos{% elif media_type_filter == 'image' %}images{% else %}items{% endif %} to reorder them. The order here determines how they appear on the homepage.</span>
     </div>
     {% endif %}
 
     <!-- Gallery Grid -->
     {% if gallery_items %}
-    <div class="row g-4" id="gallery-grid" {% if media_type_filter == 'video' %}data-sortable="true"{% endif %}>
+    <div class="row g-4" id="gallery-grid" {% if media_type_filter == 'video' or media_type_filter == 'image' or not media_type_filter %}data-sortable="true"{% endif %}>
         {% for item in gallery_items %}
         <div class="col-lg-3 col-md-4 col-6" data-item-id="{{ item.id }}" data-media-type="{{ item.media_type }}">
-            <div class="gallery-card {% if media_type_filter == 'video' %}drag-handle{% endif %}">
+            <div class="gallery-card {% if media_type_filter == 'video' or media_type_filter == 'image' or not media_type_filter %}drag-handle{% endif %}">
                 <div class="gallery-media">
                     {% if item.media_type == 'image' %}
                     <img src="{{ item.media_url }}" alt="{{ item.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -326,7 +326,7 @@
 </div>
 
 <!-- SortableJS Library for Drag and Drop -->
-{% if media_type_filter == 'video' %}
+{% if media_type_filter == 'video' or media_type_filter == 'image' or not media_type_filter %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -353,8 +353,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return parseInt(item.getAttribute('data-item-id'));
             }).filter(id => !isNaN(id));
             
-            // Only send update if order actually changed
-            const mediaType = '{{ media_type_filter }}';
+            // Get current filter type (or empty for 'all')
+            const mediaType = '{{ media_type_filter }}' || '';
             
             // Send update to server
             fetch('{{ url_for("admin.admin_gallery_reorder") }}', {
